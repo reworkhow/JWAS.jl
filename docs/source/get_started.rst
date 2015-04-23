@@ -15,22 +15,8 @@ An example to run BayesB:
 	myOption["nuRes"]        = 4
 	myOption["varGenotypic"] = 1  
 	myOption["varResidual"]  = 1
+	output = runJWAS(parm,X,y)
 	
-	parm=GenSelOptions(myOption["run"], 
-                        	myOption["seed"],
-                        	myOption["chainLength"],
-                        	myOption["probFixed"],
-                        	myOption["estimatePi"], 
-                        	myOption["dfEffectVar"],
-                        	myOption["nuRes"],
-                        	myOption["varGenotypic"],
-                        	myOption["varResidual"])
-                            
-    output = runGenSel(parm,X,y,C,Rinv)
-
-
-
-
 To read in X, y,
 
 
