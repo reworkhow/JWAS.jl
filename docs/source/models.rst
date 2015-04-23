@@ -39,8 +39,32 @@ parameter :math:`S^2_{\alpha}` and :math:`\nu_{\alpha}` degrees of freedom.
 
 BayesB
 ^^^^^^
+In BayesB, the prior assumption is that marker effects have identical
+and independent mixture distributions, where each has a point mass at
+zero with probability :math:`\pi` and a univariate-t distribution with
+probability :math:`1-\pi` having a null mean, scale parameter :math:`S^2_{\alpha}`
+and :math:`\nu` degrees of freedom. Thus, BayesA is a special case of BayesB
+with :math:`\pi=0`. Further, as in BayesA, the t-distribution in BayesB is
+equivalent to a univariate normal with null mean and unknown,
+locus-specific variance, which in turn is assigned a scaled inverse chi-square
+prior with scale parameter :math:`S^2_{\alpha}` and :math:`\nu_{\alpha}` degrees
+of freedom. 
 
-description of model
+Here, we introduce a third form of the BayesB prior that is equivalent
+to the two given above in that all three produce the same posterior
+for locus effects. To do so, we introduce a Bernoulli variable
+:math:`\delta_i` for locus :math:`i` that is 1 with probability :math:`1-\pi` and zero
+with probability :math:`\pi`. Then, the effect of locus :math:`i` is written as
+
+.. math::
+
+  \alpha_i = \zeta_i\delta_i
+
+where :math:`\zeta_i` has a normal distribution with null mean and
+locus-specific variance :math:`\sigma^2_i`, which in turn has a scaled
+inverse chi-square prior with scale parameter :math:`S^2_{\alpha}` and
+:math:`\nu_{\alpha}` degrees of freedom.
+
 
 BayesCPi
 ^^^^^^^^
