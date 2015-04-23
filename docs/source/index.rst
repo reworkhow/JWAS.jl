@@ -13,8 +13,8 @@ Contents
    :maxdepth: 2
    
    about     
-   getStarted
-   Model
+   get_started
+   models
    license
 
 
