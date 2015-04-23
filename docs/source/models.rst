@@ -26,7 +26,16 @@ is a diagonal matrix. Further, :math:`\sigma^2_e` is treated as an unknown
 with a scaled inverse chi-square prior. The alternative methods differ 
 only in the prior used for :math:`\alpha`.
 
+BayesA
+^^^^^^
 
+The prior assumption is that marker effects have identical
+and independent univariate-t distributions each with a null mean,
+scale parameter :math:`S^2_{\alpha}` and :math:`\nu` degrees of freedom.
+This is equivalent to assuming that the marker effect at locus :math:`i` has a univariate normal
+with null mean and unknown, locus-specific variance :math:`\sigma^2_i`,
+which in turn is assigned a scaled inverse chi-square prior with scale
+parameter :math:`S^2_{\alpha}` and :math:`\nu_{\alpha}` degrees of freedom. 
 
 BayesB
 ^^^^^^
