@@ -66,7 +66,7 @@ inverse chi-square prior with scale parameter :math:`S^2_{\alpha}` and
 :math:`\nu_{\alpha}` degrees of freedom.
 
 
-BayesC and BayesC:math:`\pi`
+BayesC and BayesC :math:`\pi`
 ^^^^^^^^
 In BayesC, the prior assumption is that marker effects have identical
 and independent mixture distributions, where each has a point mass at
@@ -74,11 +74,9 @@ zero with probability :math:`\pi` and a univariate-normal distribution with
 probability :math:`1-\pi` having a null mean and variance
 :math:`\sigma^2_{\alpha}`, which in turn has a scaled inverse chi-square
 prior with scale parameter :math:`S^2_{\alpha}` and :math:`\nu_{\alpha}` degrees
-of freedom. Then with :math:`\pi=0`, the marginal distribution of locus
-effects becomes a multivariate-t distribution with null mean, scale
-matrix :math:`S^2\bo{I}` and :math:`\nu_{\alpha}` degrees of freedom. 
+of freedom.  
 
-In addition to the above assumptions, in BayesC:math:`\pi`, :math:`\pi` is treated
+In addition to the above assumptions, in BayesC :math:`\pi`, :math:`\pi` is treated
 as unknown with a uniform prior. 
 
 
