@@ -7,7 +7,7 @@ The starting point for these methods is a mixed linear model of the form:
 
   \boldsymbol{y=X\beta+Z\alpha+e}
 
-where  :math:`boldsymbol{y}`  is an :math:`n\times 1` vector of trait
+where  :math:`y`  is an :math:`n\times 1` vector of trait
 phenotypic values, :math:`\boldsymbol{X}` is an :math:`n\times p` incidence matrix relating
 the vector :math:`\boldsymbol{\beta}` of non-genetic fixed effects to :math:`\boldsymbol{y}`,  :math:`\boldsymbol{Z}`
 is an :math:`n\times k` matrix of genotype covariates (coded as 0, 1 or 2)
