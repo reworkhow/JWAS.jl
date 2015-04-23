@@ -1,7 +1,7 @@
 JWAS.jl Package Documentation
 ===============================
 
-The JWAS packages provides tools for Bayesian multiple-regerssion methods for genome-wide association study (GWAS) and 
+The JWAS packages provides tools for Bayesian multiple-regression methods for genome-wide association study (GWAS) and 
 genomic prediction.
 
 
