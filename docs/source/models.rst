@@ -7,7 +7,7 @@ The starting point for these methods is a mixed linear model of the form:
 
   \boldsymbol{y=X\beta+Z\alpha+e}
 
-where :math:`\boldsymbol{y}` is an nx1 vector of trait phenotypic values,  :math:`boldsymbol{X}` is an nxp incidence matrix relating 
+where :math:`\boldsymbol{y}` is an nx1 vector of trait phenotypic values,  :math:`\boldsymbol{X}` is an nxp incidence matrix relating 
 the vector  :math:`boldsymbol{\beta}` of non-genetic fixed effects to  
 
 where :math:`boldsymbol{y}` is an :math:`n\times 1` vector of trait
