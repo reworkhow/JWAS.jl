@@ -15,6 +15,7 @@ Contents
    about     
    get_started
    models
+   functions
    license
 
 
