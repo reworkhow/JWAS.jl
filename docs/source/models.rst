@@ -28,9 +28,9 @@ description of model
 BayesR
 ^^^^^^
 
-description of model
+Coming soon!
 
 BayesN
 ^^^^^^
 
-description of model
+Coming soon!
