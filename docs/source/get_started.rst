@@ -3,6 +3,8 @@ Get Started
 
 An example to run BayesB:
 
+.. code-block:: julia
+
 	using GenSel
 	
 	myOption=Dict()
@@ -11,10 +13,6 @@ An example to run BayesB:
 	myOption["chainLength"]  = 2000
 	myOption["probFixed"]    = 0.5 
 	myOption["estimatePi"]   = "no"
-	myOption["dfEffectVar"]  = 4
-	myOption["nuRes"]        = 4
-	myOption["varGenotypic"] = 1  
-	myOption["varResidual"]  = 1
 	output = runJWAS(parm,X,y)
 	
 To read in X, y,
