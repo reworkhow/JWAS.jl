@@ -66,7 +66,7 @@ inverse chi-square prior with scale parameter :math:`S^2_{\alpha}` and
 :math:`\nu_{\alpha}` degrees of freedom.
 
 
-BayesC and BayesC :math:`\pi`
+BayesC and BayesCpi
 ^^^^^^^^
 In BayesC, the prior assumption is that marker effects have identical
 and independent mixture distributions, where each has a point mass at
