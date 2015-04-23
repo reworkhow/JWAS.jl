@@ -38,12 +38,3 @@ population mean as fixed effects.
 	output = runJWAS(myOption,X,y)
 	
 Posterior samples for all parameters of interest are saved in the dictionary ``output``. A plot of the result is shown below. 
-
-.. math:: 
-
-	P(X = k) = \begin{cases}
-		p & \quad \text{for } k = 0, \\
-		1 - p & \quad \text{for } k = 1.
-	\end{cases} 
-
-Posterior samples for all parameters of interest are saved in the dictionary ``output``. A plot of the result is shown below. 
