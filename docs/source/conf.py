@@ -46,7 +46,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'GenSel.jl'
+project = u'JWAS.jl'
 copyright = u'2015, GS'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -199,7 +199,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'GenSeljl.tex', u'GenSel.jl Documentation',
+  ('index', 'jwasjl.tex', u'JWAS.jl Documentation',
    u'GS', 'manual'),
 ]
 
@@ -229,7 +229,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'genseljl', u'GenSel.jl Documentation',
+    ('index', 'jwasjl', u'JWAS.jl Documentation',
      [u'GS'], 1)
 ]
 
