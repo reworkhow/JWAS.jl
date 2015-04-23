@@ -2,7 +2,7 @@ Get Started
 ===========
 
 An example to run BayesC is shown below. Let's start by simulating a dataset (a more complicated simulation 
-package ``GenSim`` can be found at `QTL.rocks<http://QTL.rocks>`_.) Here a naive simulation is performed using Distributions.jl.
+package ``GenSim`` can be found at `QTL.rocks <http://QTL.rocks>`_.) Here a naive simulation is performed using Distributions.jl.
 
 .. code-block:: julia
 
