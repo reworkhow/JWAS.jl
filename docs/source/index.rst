@@ -1,7 +1,7 @@
-GenSel.jl Package Documentation
+JWAS.jl Package Documentation
 ===============================
 
-The GenSel package provides tools for Bayesian multiple-regerssion methods for genome-wide association study (GWAS) and 
+The JWAS packages provides tools for Bayesian multiple-regerssion methods for genome-wide association study (GWAS) and 
 genomic prediction.
 
 

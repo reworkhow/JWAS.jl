@@ -1,4 +1,4 @@
-Why GenSel.jl?
+Why JWAS.jl?
 ==============
 
 Features
