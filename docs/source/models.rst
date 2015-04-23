@@ -1,8 +1,14 @@
 Models
 ======
 
-Brief decriptions about models in GenSel.jl
+The starting point for these methods is a mixed linear model of the form:
 
+.. math::
+
+  \boldsymbol{y=X\beta+Z\alpha+e}
+
+
+hakshdkjahfk
 BayesB
 ^^^^^^
 
