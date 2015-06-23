@@ -18,7 +18,7 @@ package ``XSim`` can be found at `QTL.rocks <http://QTL.rocks>`_.) Here a naive 
 	a        = a/stdGen
 	y        = a + randn(nObs)
 
-Though ``JWAS`` can fit any fixed effects and weighted phenotypes, this example below showed how to run BayesC with only 
+Though ``JWAS`` can fit any fixed effects and weighted phenotypes, this example below shows how to run BayesC with only 
 population mean as fixed effects.
 
 .. code-block:: julia
