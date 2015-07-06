@@ -11,7 +11,7 @@ package ``XSim`` can be found at `QTL.rocks <http://QTL.rocks>`_.) Here a naive 
 
 	nObs     = 10
 	nMarkers = 100
-	X        = rand(d,(nObs,nMarkers))
+	X        = float(rand(d,(nObs,nMarkers)))
 	α        = randn(nMarkers)
 	a        = X*α
 	stdGen   = std(a)
