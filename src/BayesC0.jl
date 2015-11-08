@@ -88,7 +88,7 @@ function BayesC0!(options,X,y)
         if (i%100)==0
             yhat = meanMu+X*meanAlpha
             resCorr = cor(yhat,yhat) #modify
-            println ("Correlation of between true and predicted breeding value: ", resCorr[1])
+            println("Correlation of between true and predicted breeding value: ", resCorr[1])
         end
     end
 

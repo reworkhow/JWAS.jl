@@ -126,7 +126,7 @@ function BayesB!(options,X,y,C,Rinv)
 
         if (i%100)==0
             yCorr = y - C*β - X*u  # remove rounding errors
-            println ("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[i], ", vare ", vare)
+            println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[i], ", vare ", vare)
         end
     end
 

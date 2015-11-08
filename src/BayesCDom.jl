@@ -197,7 +197,7 @@ function BayesCDom!(options,X,y,C,Rinv)
                 w = w - mean(w)
                 yCorr = yCorr - w*d[j]
             end
-            println ("Iter ",i,
+            println("Iter ",i,
                      ", number of additive effects ",  nEffects[1],
                      ", number of dominance effects ", nEffects[2])
         end
