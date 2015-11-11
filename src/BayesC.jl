@@ -55,7 +55,7 @@ function BayesC!(options,X,y,C,Rinv)
     nuRes           =   options.nuRes           # hyper parameter (degrees of freedom) for residual variance
     varGenotypic    =   options.varGenotypic    # used to derive hyper parameter (scale) for locus effect variance
     varResidual     =   options.varResidual     # used to derive hyper parameter (scale) for locus effect variance
-
+    windowSize      =   options.windowSize      # number of markers in window for computing window variance
     numIter         =   chainLength
     nObs,nMarkers = size(X)
     nFixedEffects = size(C,2)
