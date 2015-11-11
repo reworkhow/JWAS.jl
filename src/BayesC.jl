@@ -89,6 +89,9 @@ function BayesC!(options,X,y,C,Rinv)
     pi         = zeros(chainLength)
     scale      = zeros(chainLength)
 
+    nWindows    = round(Int64,nMarkers/windowSize)
+    winVarProps = zeros(chainLength,nWindows)
+
     # MCMC sampling
     for i=1:numIter
         # sample fixed effects
@@ -118,6 +121,15 @@ function BayesC!(options,X,y,C,Rinv)
         end
         scale[i] = scaleVar
 
+        wEnd = 0
+        for win=1:nWindows
+            wStart = wEnd + 1
+            wEnd  += windowSize
+            wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
+            winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[i]
+        end
+
+
         if (i%100)==0
             yCorr = y - C*β - X*α  # remove rounding errors
             println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[i], ", vare ", vare)
@@ -133,6 +145,8 @@ function BayesC!(options,X,y,C,Rinv)
     output["posterior sample of scale"]               = scale
     output["posterior sample of genotypic variance"]  = genVar
     output["posterior sample of residual variance"]   = resVar
+    output["Proportion of variance explained by genomic window"]   = winVarProps
+
 
     return output
 

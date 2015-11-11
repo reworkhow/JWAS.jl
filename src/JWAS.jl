@@ -13,7 +13,7 @@ type JWASOptions
     varResidual    # used to derive hyper parameter (scale) for locus effect variance
     dfEffectVar    # hyper parameter (degrees of freedom) for locus effect variance
     nuRes          # hyper parameter (degrees of freedom) for residual variance
-
+    windowSize
     #parameters for BayesN
     fittedSNPperWindow   # for BayesN
     windowWidth          # in mega-basepaire unit
@@ -32,6 +32,7 @@ type JWASOptions
         global nuRes              = 4
         global fittedSNPperWindow = 5
         global windowWidth        = 1e6
+        global windowSize         = 100
         global markerMap          = NaN
 
         #parameter list
@@ -39,7 +40,8 @@ type JWASOptions
                     "varGenotypic","varResidual",
                     "dfEffectVar","nuRes",
                     "probFixed","estimatePi","estimateScale",
-                    "fittedSNPperWindow","windowWidth","markerMap"]
+                    "fittedSNPperWindow","windowWidth","windowSize","markerMap"] #,"windowSize"
+
 
         for par in parmlist
            if (haskey(opt,par)==true)
@@ -49,7 +51,7 @@ type JWASOptions
         end
 
         new(seed,run,chainLength,probFixed,estimatePi,estimateScale,
-            varGenotypic,varResidual,dfEffectVar,nuRes,
+            varGenotypic,varResidual,dfEffectVar,nuRes,windowSize,
             fittedSNPperWindow,windowWidth,markerMap)
     end
 end
@@ -83,7 +85,7 @@ function runJWAS(parmdict::Dict{Any,Any},X::Array{Float64,2},y::Array{Float64,1}
       srand(myOptions.seed)
 
       if myOptions.run=="BayesC0"
-        BayesC0!(myOptions,X,y)
+        BayesC!(myOptions,X,y)
       elseif myOptions.run=="BayesB"
         BayesB!(myOptions,X,y,C,Rinv)
       elseif myOptions.run=="BayesC"

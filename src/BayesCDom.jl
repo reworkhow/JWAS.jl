@@ -144,6 +144,9 @@ function BayesCDom!(options,X,y,C,Rinv)
     resVar       = zeros(chainLength)
     meanGenVal   = zeros(nObs)
 
+    nWindows    = round(Int64,nMarkers/windowSize)
+    winVarProps = zeros(chainLength,nWindows)
+
     # MCMC sampling
     for i=1:numIter
         u = zeros(nObs)   # sample of animal breeding values
@@ -188,6 +191,14 @@ function BayesCDom!(options,X,y,C,Rinv)
         scaleAddVar[i] = scaleVar[1]
         scaleDomVar[i] = scaleVar[2]
 
+        wEnd = 0
+        for win=1:nWindows
+            wStart = wEnd + 1
+            wEnd  += windowSize
+            wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
+            winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[i]
+        end
+
         # display progress
         if (i%100)==0
             # remove rounding errors
@@ -219,6 +230,7 @@ function BayesCDom!(options,X,y,C,Rinv)
     output["posterior sample of genotypic variance"]         = genVar
     output["posterior sample of additive genetic variance"]  = addVar
     output["posterior sample of residual variance"]          = resVar
+    output["Proportion of variance explained by genomic window"]   = winVarProps
 
     return output
 end
