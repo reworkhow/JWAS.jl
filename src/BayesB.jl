@@ -58,6 +58,7 @@ function BayesB!(options,X,y,C,Rinv)
     varGenotypic    =   options.varGenotypic    # used to derive hyper parameter (scale) for locus effect variance
     varResidual     =   options.varResidual     # used to derive hyper parameter (scale) for locus effect variance
     windowSize      =   options.windowSize      # number of markers in window for computing window variance
+    outFreq         =   options.outFreq         # output frequency for window variance
     numIter         =   chainLength
 
     nObs,nMarkers = size(X)
@@ -90,12 +91,12 @@ function BayesB!(options,X,y,C,Rinv)
     meanMrkEff  = zeros(nMarkers,1)
     mdlFrq     = zeros(nMarkers)
     resVar     = zeros(chainLength)
-    genVar     = zeros(chainLength)
+    genVar     = zeros(round(Int64,chainLength/outFreq))
     pi         = zeros(chainLength)
     scale      = zeros(chainLength)
 
     nWindows    = round(Int64,nMarkers/windowSize)
-    winVarProps = zeros(chainLength,nWindows)
+    winVarProps = zeros(round(Int64,chainLength/outFreq),nWindows)
 
     #MCMC sampling
     for i=1:numIter
@@ -107,7 +108,7 @@ function BayesB!(options,X,y,C,Rinv)
         nLoci = sampleEffectsBayesB!(nMarkers, xArray, XpRinvX, yCorr, u, α, δ, vare, locusEffectVar, π, Rinv)
         meanMrkEff = meanMrkEff + (u - meanMrkEff)/i
         mdlFrq     = mdlFrq     + (δ - mdlFrq    )/i
-        genVar[i]  = var(X*u)
+
 
         # sample residula variance
         vare = sampleVariance(yCorr.*RinvSqrt, nObs, nuRes, scaleRes)
@@ -126,19 +127,19 @@ function BayesB!(options,X,y,C,Rinv)
         if (estimateScale == "yes")
             scaleVar = sampleScale(varEffects, dfEffectVar, 1, 1)
         end
-        scale[i] = scaleVar
-
-        wEnd = 0
-        for win=1:nWindows
-            wStart = wEnd + 1
-            wEnd  += windowSize
-            wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
-            winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[i]
-        end
-
-        if (i%100)==0
-            yCorr = y - C*β - X*u  # remove rounding errors
-            println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[i], ", vare ", vare)
+        scale[i] = scaleVar       
+	    if (i%outFreq)==0
+            # yCorr = y - C*β - X*u  # remove rounding errors
+            wEnd = 0
+            j = round(Int64,i/outFreq)
+            genVar[j]  = var(X*u)
+        	for win=1:nWindows
+            	wStart = wEnd + 1
+            	wEnd  += windowSize
+            	wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
+            	winVarProps[j,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[j]
+        	end
+        	println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[j], ", vare ", vare)
         end
     end
 
