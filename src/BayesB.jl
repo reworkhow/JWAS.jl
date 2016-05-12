@@ -60,6 +60,7 @@ function BayesB!(options,X,y,C,Rinv)
     windowSize      =   options.windowSize      # number of markers in window for computing window variance
     outFreq         =   options.outFreq         # output frequency for window variance
     numIter         =   chainLength
+    thin            =   options.thin
 
     nObs,nMarkers = size(X)
     nFixedEffects = size(C,2)
@@ -98,6 +99,8 @@ function BayesB!(options,X,y,C,Rinv)
     nWindows    = round(Int64,nMarkers/windowSize)
     winVarProps = zeros(round(Int64,chainLength/outFreq),nWindows)
 
+    outputfile  =open("markerEffects.txt","w")
+
     #MCMC sampling
     for i=1:numIter
         # sample fixed effects
@@ -127,21 +130,32 @@ function BayesB!(options,X,y,C,Rinv)
         if (estimateScale == "yes")
             scaleVar = sampleScale(varEffects, dfEffectVar, 1, 1)
         end
-        scale[i] = scaleVar       
-	    if (i%outFreq)==0
-            # yCorr = y - C*β - X*u  # remove rounding errors
-            wEnd = 0
-            j = round(Int64,i/outFreq)
-            genVar[j]  = var(X*u)
-        	for win=1:nWindows
-            	wStart = wEnd + 1
-            	wEnd  += windowSize
-            	wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
-            	winVarProps[j,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[j]
-        	end
-        	println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[j], ", vare ", vare)
+        scale[i] = scaleVar
+
+
+	      #if (i%outFreq)==0
+        #    # yCorr = y - C*β - X*u  # remove rounding errors
+        #    wEnd = 0
+        #    j = round(Int64,i/outFreq)
+        #    genVar[j]  = var(X*u)
+        #	for win=1:nWindows
+        #    	wStart = wEnd + 1
+        #    	wEnd  += windowSize
+        #    	wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
+        #    	winVarProps[j,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[j]
+        #	end
+        #println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[j], ", vare ", vare)
+
+        if (i%outFreq)==0
+          println("This is iteration ", i, ", number of loci ", nLoci, "and vare ", vare)
         end
+
+        if (i%thin)==0
+        	writedlm(outputfile,u')
+        end
+
     end
+    close(outputfile)
 
     ###OUTPUT
     output = Dict()

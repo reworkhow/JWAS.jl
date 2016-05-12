@@ -19,6 +19,7 @@ type JWASOptions
     windowWidth          # in mega-basepaire unit
     markerMap            # marker_id, chrom_id, position
     outFreq              # output frequency for window vars
+    thin
 
     function JWASOptions(opt::Dict{Any,Any})
         global seed               = 314
@@ -36,13 +37,15 @@ type JWASOptions
         global windowSize         = 100
         global markerMap          = NaN
         global outFreq            = 100
+        global thin               = 100
+
 
         #parameter list
         parmlist = ["seed","run","chainLength",
                     "varGenotypic","varResidual",
                     "dfEffectVar","nuRes",
                     "probFixed","estimatePi","estimateScale",
-                    "fittedSNPperWindow","windowWidth","windowSize","markerMap", "outFreq"] #,"windowSize"
+                    "fittedSNPperWindow","windowWidth","windowSize","markerMap", "outFreq","thin"] #,"windowSize"
 
 
         for par in parmlist
@@ -54,7 +57,7 @@ type JWASOptions
 
         new(seed,run,chainLength,probFixed,estimatePi,estimateScale,
             varGenotypic,varResidual,dfEffectVar,nuRes,windowSize,
-            fittedSNPperWindow,windowWidth,markerMap,outFreq)
+            fittedSNPperWindow,windowWidth,markerMap,outFreq,thin)
     end
 end
 
