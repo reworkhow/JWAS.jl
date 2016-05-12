@@ -153,7 +153,6 @@ function BayesB!(options,X,y,C,Rinv)
         if (i%thin)==0
         	writedlm(outputfile,u')
         end
-
     end
     close(outputfile)
 
