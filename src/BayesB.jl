@@ -137,7 +137,7 @@ function BayesB!(options,X,y,C,Rinv)
             	wStart = wEnd + 1
             	wEnd  += windowSize
             	wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
-            	winVarProps[j,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar[j]
+            	winVarProps[j,win] = var(X[:,wStart:wEnd]*u[wStart:wEnd])/genVar[j]
         	end
         	println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[j], ", vare ", vare)
         end
