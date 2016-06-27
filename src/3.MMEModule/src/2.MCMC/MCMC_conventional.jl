@@ -1,20 +1,22 @@
-function MCMC_conventional(nIter,mme,df;sol=zeros(size(mme.mmeRhs,1)),outFreq=100)
+function MCMC_conventional(nIter,mme,df;
+                           sol=false,
+                           outFreq=100)
     if size(mme.mmeRhs)==()
         MMEModule.getMME(mme,df)
     end
-    p = size(mme.mmeRhs,1)
-    solMean = zeros(p)
 
-    initSampleArrays(mme,nIter)
+    if sol == false
+        sol=zeros(size(mme.mmeLhs,1))
+    end #starting value for sol can be provided
 
+    #######################################################
+    # PRIORS
+    #######################################################
     #prior for residual variance
     vRes     = mme.RNew
     nuRes    = 4
     scaleRes = vRes*(nuRes-2)/nuRes
-
-    #priors for genetic variance (polygenic effects;A)
-    #e.g Animal"&"Animal*Age"
-    G0Mean   = 0.0 #only for println
+    #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
         ν = 4
         pedTrmVec = mme.pedTrmVec
@@ -26,12 +28,24 @@ function MCMC_conventional(nIter,mme,df;sol=zeros(size(mme.mmeRhs,1)),outFreq=10
         G0Mean = zeros(Float64,k,k)
     end
 
-    #starting values for marker effects are all zeros
-    #starting values for other location parameters are sol
-    ycorr    = vec(full(mme.ySparse)-mme.X*sol)
-    meanVare = 0.0
-    meanVara = 0.0
+    #####################################################
+    # WORKING VECTORS (ycor, saving values)
+    #####################################################
+    #vectors to save solutions for conventional MME part
+    p           = size(mme.mmeRhs,1)
+    solMean     = zeros(p)
+    #initiate vectors to save samples of MCMC
+    initSampleArrays(mme,nIter)
+    #variables to save variance for marker effects or residual
+    meanVare    = 0.0
+    meanVara    = 0.0
+    #adjust y for strating values
+    ycorr       = vec(full(mme.ySparse)-mme.X*sol)   #starting values for location parameters(no marker) are sol
 
+
+    #######################################################
+    # MCMC
+    #######################################################
     for iter=1:nIter
 
         #sample non-marker part
@@ -77,9 +91,8 @@ function MCMC_conventional(nIter,mme,df;sol=zeros(size(mme.mmeRhs,1)),outFreq=10
 
         #sample residual variance
         mme.ROld = mme.RNew
-        vRes  = sampleVariance(ycorr, length(ycorr), nuRes, scaleRes)
+        vRes  = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         mme.RNew = vRes
-
         meanVare += (vRes - meanVare)/iter
         mme.resVarSampleArray[iter] = vRes
 

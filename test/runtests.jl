@@ -1,4 +1,4 @@
-using JWAS
+using MME
 using Base.Test
 
 # write your own tests here

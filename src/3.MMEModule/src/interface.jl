@@ -79,8 +79,7 @@ function runMCMC(mme,df;
   if mme.M ==0
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
-                          outFreq=printout_frequency,
-                          thin=thin)
+                          outFreq=printout_frequency)
   elseif methods=="BayesC" && Pi == 0.0
     res=MCMC_BayesC0(chain_length,mme,df,
                      sol=starting_value,
