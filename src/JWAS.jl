@@ -1,8 +1,6 @@
 module JWAS
 
-include("PedModule/PedModule.jl")
-include("deprecated/deprecated.jl")
-include("MTJWAS/MTJWAS.jl")
-include("MME/MME.jl")
+include("2.PedModule/PedModule.jl")
+include("3.MMEModule/MMEModule.jl")
 
 end

@@ -34,7 +34,7 @@ function initMME(modelEquation::AbstractString,R::Float64)
     lhsRhs = split(modelEquation,"=") #"y","A+B+A*B"
     lhs = symbol(strip(lhsRhs[1]))    #:y
     rhs = strip(lhsRhs[2])            #"A+B+A*B"
-    rhsVec = split(rhs,"+")           #"A","B","A*B" 
+    rhsVec = split(rhs,"+")           #"A","B","A*B"
     dict = Dict{AbstractString,ModelTerm}()
     modelTerms = [getTerm(strip(trmStr)) for trmStr in rhsVec]
     for (i,trm) = enumerate(modelTerms)
@@ -63,21 +63,23 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME)  #ModelTerm("A*B")
         str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
         val = df[trm.factors[1]]                      #df[:A]
     else
+        #animal or maternal effects ID also come here
+        #trm.nFactors=1, factors
         str = [string(i) for i in df[trm.factors[1]]] #["A1","A2","A1",...]
         val = fill(1.0,nObs)
     end
 
-    #for ModelTerm object such as "A*B" whose nFactors>1 
+    #for ModelTerm object such as "A*B" whose nFactors>1
     for i=2:trm.nFactors
         if trm.factors[i] in mme.covVec
             str = str .* fill(" x "*string(trm.factors[i]),nObs) #["A x B","A x B",...]
-            val = val .* df[trm.factors[i]] 
+            val = val .* df[trm.factors[i]]
         else
-            str = str .* fill(" x ",nObs) .* [string(j) for j in df[trm.factors[i]]] 
-            val = val .* fill(1.0,nObs)                          #["A1 X B1","A2 x B2",...]                
+            str = str .* fill(" x ",nObs) .* [string(j) for j in df[trm.factors[i]]]
+            val = val .* fill(1.0,nObs)                          #["A1 X B1","A2 x B2",...]
         end
     end
-    
+
     trm.str = str #detailed example in types.jl
     trm.val = val
 end
@@ -93,12 +95,12 @@ getFactor1(str) = [strip(i) for i in split(str,"x")][1] #using in may be better.
 function getX(trm::ModelTerm,mme::MME) #make incidence matrix
     pedSize = 0
     nObs  = size(trm.str,1)
-    if trm.trmStr in mme.pedTrmVec   
+    if trm.trmStr in mme.pedTrmVec
         #random variables related to A(pedigree),e.g."Animal"
         trm.names   = PedModule.getIDs(mme.ped)
         trm.nLevels = length(mme.ped.idMap)
-        xj = round(Int64,[mme.ped.idMap[getFactor1(i)].seqID for i in trm.str]) #column index
-    else   
+        xj = round(Int64,[mme.ped.idMap[getFactor1(i)].seqID for i in trm.str[trm.str .!= "0"]]) #column index
+    else
         #fixed effects
         dict,trm.names  = mkDict(trm.str)
         trm.nLevels     = length(dict)
@@ -106,14 +108,18 @@ function getX(trm::ModelTerm,mme::MME) #make incidence matrix
     end
     xi    = 1:nObs  #row index
     xv    = trm.val #value
-    
-    #some animal ID may be missing in data (df), 
-    #below to ensure number of columns for BV = number of animals 
+
+    #remove "0",introducing by maternal effects
+    xv    = xv[trm.str .!= "0"]
+    xi    = xi[trm.str .!= "0"]
+
+    #some animal ID may be missing in data (df),
+    #below to ensure number of columns for BV = number of animals
     if mme.ped!=0
         pedSize = length(mme.ped.idMap)
         if trm.trmStr in mme.pedTrmVec
             # adding a zero to the last column in row 1
-            ii = 1         
+            ii = 1
             jj = pedSize
             vv = [0.0]
             xi = [xi;ii]
@@ -168,9 +174,9 @@ end
 function setAsRandom(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G)
     mme.pedTrmVec = split(randomStr," ",keep=false)
     mme.ped = ped
-    if issubtype(typeof(G),Number)==true  
+    if issubtype(typeof(G),Number)==true
         #when G is a scalar instead of matrix, make G 1x1 Matrix
-        G=reshape([G],1,1)  
+        G=reshape([G],1,1)
     end
     mme.GiOld = zeros(G)
     mme.GiNew = inv(G)
@@ -195,7 +201,7 @@ function addA(mme::MME) #add Ainv*lambda
             startPosj  = pedTrmj.startPos
             endPosj    = startPosj + pedTrmj.nLevels - 1
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] +             
+            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] +
             mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld)
         end
     end
@@ -207,31 +213,7 @@ function addLambdas(mme::MME) #for iid random effects
         startPosi  = trmi.startPos
         endPosi    = startPosi + trmi.nLevels - 1
         lambdaDiff = mme.RNew/effect.vcNew - mme.ROld/effect.vcOld
-        mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] = 
+        mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
         mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*lambdaDiff
-    end   
-end
-
-function getSolJ(mme::MME, df::DataFrame)
-    if size(mme.mmeRhs)==()
-        getMME(mme,df)
     end
-    p = size(mme.mmeRhs,1)
-    return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,0.3,tol=0.000001)]
-end
-
-function getSolG(mme::MME, df::DataFrame;outFreq=10)
-    if size(mme.mmeRhs)==()
-        getMME(mme,df)
-    end
-    p = size(mme.mmeRhs,1)
-    return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,tol=0.000001,output=outFreq)]
-end
-
-function getSolGibbs(mme::MME, df::DataFrame;nIter=50000,outFreq=100)
-    if size(mme.mmeRhs)==()
-        getMME(mme,df)
-    end
-    p = size(mme.mmeRhs,1)
-    return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,mme.RNew,nIter,outFreq=outFreq)]
 end
