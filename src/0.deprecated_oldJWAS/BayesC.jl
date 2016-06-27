@@ -130,7 +130,7 @@ function BayesC!(options,X,y,C,Rinv)
         end
 
 
-        if (i%100)==0
+        if (i%5000)==0
             yCorr = y - C*β - X*α  # remove rounding errors
             println("This is iteration ", i, ", number of loci ", nLoci, ", vara ", genVar[i], ", vare ", vare)
         end

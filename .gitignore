@@ -1,3 +1,12 @@
 *.jl.cov
 *.jl.mem
-.DS_Store 
+.DS_Store
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+*checkpoint.ipynb
+*.ipynb_checkpoints/*
+*.DS_Store
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
