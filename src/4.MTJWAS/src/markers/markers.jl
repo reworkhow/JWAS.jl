@@ -8,13 +8,13 @@ type Genotypes
   sum2pq::Float64
   centered::Bool
   genotypes::Array{Float64,2}
-  G::Array{Float64,2} ##Genetic covairnce matrix
+  G::Array{Float64,2} ##marker effects covariance matrix
   Genotypes(a,b,c,d,e,f,g,h)=new(a,b,c,d,e,f,g,h,zeros(2,2))
 end
 
 function addMarkers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true)
     mme.M   = readgenotypes(file;separator=separator,header=header,center=true)
-    mme.M.G = G
+    mme.M.G = G/mme.M.sum2pq
 end
 
 include("tools.jl")
