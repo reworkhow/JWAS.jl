@@ -72,7 +72,8 @@ function MCMC_BayesC(nIter,mme,df,Pi;
                                                             #wArray is list version reference of ycor
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
-        deltaArray[traiti]     = zeros(nMarkers)
+        #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
+        deltaArray[traiti]     = ones(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
         meanDeltaArray[traiti] = zeros(nMarkers)
         uArray[traiti]         = zeros(nMarkers)
         meanuArray[traiti]     = zeros(nMarkers)
@@ -146,7 +147,6 @@ function MCMC_BayesC(nIter,mme,df,Pi;
           BigPiMean[i] += (tempPi[iloci]-BigPiMean[i])/iter
           iloci = iloci +1
         end
-
         #####################################
         #sample residual covariance matrix
         #AND marker covariance matrix

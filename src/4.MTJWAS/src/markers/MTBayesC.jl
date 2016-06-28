@@ -21,6 +21,7 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
         for trait = 1:nTraits
             α[trait]  = alphaArray[trait][marker]
          oldu[trait]  = newu[trait] = uArray[trait][marker]
+            δ[trait]  = deltaArray[trait][marker]
             w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldu[trait]
         end
 
@@ -29,8 +30,8 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
             nok    = deleteat!(collect(1:nTraits),k)
             Ginv12 = Ginv[k,nok]
             C11    = Ginv11+Rinv[k,k]*xpx[marker]
-            #C12    = Ginv12+mpm[j]*Rinv[k,nok]*diagm(δ[nok])#slower
-            C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector
+            C12    = Ginv12+xpx[marker]*Rinv[k,nok]*diagm(δ[nok])
+            #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
 
             invLhs0  = 1/Ginv11
             rhs0     = - Ginv12*α[nok]
@@ -49,7 +50,6 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
             logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log(BigPi[d1]) #logPiComp
 
             probDelta1 =  1.0/(1.0+exp(logDelta0-logDelta1))
-
             if(rand()<probDelta1)
                 δ[k] = 1
                 α[k] = newu[k] = gHat1 + randn()*sqrt(invLhs1)

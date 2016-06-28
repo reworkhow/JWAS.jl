@@ -37,6 +37,7 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray
         for trait = 1:nTraits
             α[trait]  = alphaArray[trait][marker]
          oldu[trait]  = newu[trait] = uArray[trait][marker]
+            #δ[trait]  = deltaArray[trait][marker]
             w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldu[trait]
         end
 
