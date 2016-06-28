@@ -47,7 +47,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     mArray         = mGibbs.xArray
     mpm            = mGibbs.xpx
     M              = mGibbs.X
-    vEff           = mme.M.G/mme.M.sum2pq
+    vEff           = mme.M.G
     νGM            = dfEffectVar + nTraits
     PM             = vEff*(νGM - nTraits - 1)
     SM             = zeros(Float64,nTraits,nTraits)
