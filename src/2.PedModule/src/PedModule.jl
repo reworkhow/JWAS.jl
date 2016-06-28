@@ -192,6 +192,5 @@ function getIDs(ped::Pedigree)
 end
 
 include("forSSBR.jl")
-include("AInverseSlow.jl")
 
 end # of PedModule
