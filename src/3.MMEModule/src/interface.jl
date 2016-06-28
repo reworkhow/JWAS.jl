@@ -130,12 +130,12 @@ function runMCMC(mme,df;
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency)
-  elseif methods=="BayesC" && Pi == 0.0
+  elseif methods=="BayesC0"
     res=MCMC_BayesC0(chain_length,mme,df,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      output_marker_effects_frequency =output_marker_effects_frequency)
-  elseif methods=="BayesC" && Pi != 0.0
+  elseif methods=="BayesC"
     res=MCMC_BayesC(chain_length,mme,df,Pi,
                      estimatePi = estimatePi,
                      sol=starting_value,
