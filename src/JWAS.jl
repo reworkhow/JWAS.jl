@@ -1,3 +1,5 @@
+__precompile__(true)
+
 module JWAS
 
 include("2.PedModule/src/PedModule.jl")

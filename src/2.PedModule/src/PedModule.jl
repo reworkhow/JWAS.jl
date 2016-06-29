@@ -63,23 +63,23 @@ function calcAddRel!(ped::Pedigree,id1::AbstractString,id2::AbstractString)
     old,yng = ped.idMap[id1].seqID<ped.idMap[id2].seqID ? (id1,id2):(id2,id1)
     oldID = ped.idMap[old].seqID
     yngID = ped.idMap[yng].seqID
-    
+
     n = yngID - 1
-    aijKey = n*(n+1)/2 + oldID 
-    if haskey(ped.aij,aijKey)     
+    aijKey = n*(n+1)/2 + oldID
+    if haskey(ped.aij,aijKey)
         return ped.aij[aijKey]
-    end       
-    
+    end
+
     sireOfYng = ped.idMap[yng].sire
     damOfYng  = ped.idMap[yng].dam
-    
+
     if old==yng                       # aii
         #aii = 1.0 + calcInbreeding!(ped,old)
         aii = 1.0 + 0.5*calcAddRel!(ped,sireOfYng,damOfYng)
         ped.aij[aijKey] = aii
         return (aii)
     end
-    
+
     aOldDamYoung  = (old=="0" || damOfYng =="0")? 0.0:calcAddRel!(ped,old,damOfYng)
     aOldSireYoung = (old=="0" || sireOfYng=="0")? 0.0:calcAddRel!(ped,old,sireOfYng)
     aijVal = 0.5*(aOldSireYoung + aOldDamYoung)
@@ -170,15 +170,15 @@ function  mkPed(pedFile::AbstractString;header=false,separator=' ')
                      Set(),Set(),Set(),Set())
 
     fillMap!(ped,df)
-    
+
     for id in keys(ped.idMap)
      code!(ped,id)
     end
-    
+
     for id in keys(ped.idMap)
       calcInbreeding!(ped,id)
     end
-    
+
     return ped
 end
 
