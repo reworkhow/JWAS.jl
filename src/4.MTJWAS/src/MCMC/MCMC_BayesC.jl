@@ -90,7 +90,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
         outfile = Array{IOStream}(nTraits)
         for traiti in 1:nTraits
-           outfile[traiti]=open(output_files*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
+           outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
         end
 
         if mme.M.markerID[1]!="NA"
