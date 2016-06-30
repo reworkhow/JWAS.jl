@@ -81,8 +81,8 @@ end
     runMCMC(mme,df;Pi=0.0,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes= false,methods="no markers",output_marker_effects_frequency::Int64 = 0)
 
 Run MCMC (marker information included or not) with sampling of variance components.
-Available methods include "no markers", "BayesC", "BayesCC".
-Pi is a dictionary...
+Available methods include "no markers", "BayesC0", "BayesC", "BayesCC".
+Pi is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
 """
 
 function runMCMC(mme,df;
@@ -91,26 +91,26 @@ function runMCMC(mme,df;
                 starting_value    =false,
                 printout_frequency=100,
                 missing_phenotypes= false,
-                methods           = "no markers", #BayesC,BayesCC
+                methods           = "no markers", #BayesC0,BayesC,BayesCC
                 output_marker_effects_frequency::Int64 = 0)
   if mme.M ==0
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency,
                           missing_phenotypes=missing_phenotypes)
-  elseif Pi ==0.0
+  elseif methods=="BayesC0"
     res=MCMC_BayesC0(chain_length,mme,df,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      output_marker_effects_frequency=output_marker_effects_frequency)
-  elseif Pi != 0.0
+  elseif methods=="BayesC"
     res=MCMC_BayesC(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      output_marker_effects_frequency=output_marker_effects_frequency)
-  elseif Pi != 0 && methods=="BayesCC"
+  elseif methods=="BayesCC"
     res=MCMC_BayesCC(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
