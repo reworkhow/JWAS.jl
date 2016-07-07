@@ -105,19 +105,25 @@ function runMCMC(mme,df;
                      missing_phenotypes=missing_phenotypes,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesC"
+    if Pi == 0.0
+      error("Pi is not provided!!")
+    end
     res=MCMC_BayesC(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesCC"
+    if Pi == 0.0
+      error("Pi is not provided!!")
+    end
     res=MCMC_BayesCC(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   else
-    error("No options!!!")
+    error("No methods options!!!")
   end
   res
 end

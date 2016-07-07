@@ -1,4 +1,4 @@
-module MMEModule
+module ST
 
 using Distributions
 using DataFrames

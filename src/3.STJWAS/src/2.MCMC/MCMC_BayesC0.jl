@@ -1,16 +1,15 @@
-function MCMC_BayesB(nIter,mme,df,π;
-                     estimatePi=false,
-                     sol       =false,
-                     outFreq   =100,
-                     output_marker_effects_frequency =0)
+function MCMC_BayesC0(nIter,mme,df;
+                      estimatePi=false,
+                      sol       =false,
+                      outFreq   =100,
+                      output_marker_effects_frequency =0)
     if size(mme.mmeRhs)==()
-        MMEModule.getMME(mme,df)
+        getMME(mme,df)
     end
 
     if sol == false
         sol=zeros(size(mme.mmeLhs,1))
     end #starting value for sol can be provided
-
 
     #######################################################
     # PRIORS
@@ -27,19 +26,18 @@ function MCMC_BayesB(nIter,mme,df,π;
     mpm         = mGibbs.xpx
     M           = mGibbs.X
     dfEffectVar = 4.0
-    vEff        = mme.M.G/((1-π)*mme.M.sum2pq)
-    locusEffectVar = fill(vEff,nMarkers)
+    vEff        = mme.M.G/mme.M.sum2pq
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
-       ν = 4
-       pedTrmVec = mme.pedTrmVec
-       k         = size(pedTrmVec,1)  #2
-       νG0       = ν + k
-       G0        = inv(mme.GiNew)
-       P         = G0*(νG0 - k - 1)
-       S         = zeros(Float64,k,k)
-       G0Mean    = zeros(Float64,k,k)
+        ν = 4
+        pedTrmVec = mme.pedTrmVec
+        k         = size(pedTrmVec,1)  #2
+        νG0       = ν + k
+        G0        = inv(mme.GiNew)
+        P         = G0*(νG0 - k - 1)
+        S         = zeros(Float64,k,k)
+        G0Mean    = zeros(Float64,k,k)
     end
 
     #####################################################
@@ -49,10 +47,8 @@ function MCMC_BayesB(nIter,mme,df,π;
     p           = size(mme.mmeRhs,1)
     solMean     = zeros(p)
     #vectors to save solutions for marker effects
-    α           = zeros(nMarkers)       #starting values for marker effeccts are zeros
-    δ           = zeros(nMarkers)       # inclusion indicator for marker effects
-    u           = zeros(nMarkers)       # inclusion indicator for marker effects
-    meanu       = zeros(nMarkers)
+    α           = zeros(nMarkers)                 #starting values for marker effeccts are zeros
+    meanAlpha   = zeros(nMarkers)
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
       outfile   = open("MCMC samples for marker effects"*"_$(now()).txt","w")
       if mme.M.markerID[1]!="NA"
@@ -65,8 +61,6 @@ function MCMC_BayesB(nIter,mme,df,π;
     #variables to save variance for marker effects or residual
     meanVare    = 0.0
     meanVara    = 0.0
-    #vector to save π
-    pi          = zeros(nIter)
     #adjust y for strating values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)   #starting values for location parameters(no marker) are sol
 
@@ -79,14 +73,14 @@ function MCMC_BayesB(nIter,mme,df,π;
         ycorr = ycorr + mme.X*sol
         rhs = mme.X'ycorr
 
-        MMEModule.Gibbs(mme.mmeLhs,sol,rhs,vRes)
+        Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
         ycorr = ycorr - mme.X*sol
         solMean += (sol - solMean)/iter
 
         #sample marker effects
-        nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,u,α,δ,vRes,locusEffectVar,π)
-        meanu += (u - meanu)/iter
+        sampleEffectsBayesC0!(mArray,mpm,ycorr,α,meanAlpha,vRes,vEff,iter)
+        meanAlpha += (α - meanAlpha)/iter
 
         #sample variances for polygenic effects
         if mme.ped != 0
@@ -112,7 +106,7 @@ function MCMC_BayesB(nIter,mme,df,π;
             G0Mean  += (G0  - G0Mean )/iter
             mme.genVarSampleArray[iter,:] = vec(G0)
 
-            MMEModule.addA(mme) #add Ainverse*lambda
+            addA(mme) #add Ainverse*lambda
         end
 
         #sample varainces for (iid) random effects;not required(empty)=>jump out
@@ -126,22 +120,15 @@ function MCMC_BayesB(nIter,mme,df,π;
         meanVare += (vRes - meanVare)/iter
         mme.resVarSampleArray[iter] = vRes
 
-        # sample locus effect variance
-        for j=1:nMarkers
-            locusEffectVar[j] = sample_variance(α[j],1,dfEffectVar, scaleVar)
-        end
-
-        ##sample Pi
-        #if estimatePi == true
-        #  π = samplePi(nLoci, nMarkers)
-        #  pi[iter] = π
-        #end
+        #sample marker effect variance
+        vEff  = sample_variance(α, nMarkers, dfEffectVar, scaleVar)
+        meanVara += (vEff - meanVara)/iter
 
         #output samples for different effects
         outputSamples(mme,sol,iter)
         if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
           if iter%output_marker_effects_frequency==0
-            writedlm(outfile,u')
+            writedlm(outfile,α')
           end
         end
 
@@ -158,16 +145,13 @@ function MCMC_BayesB(nIter,mme,df,π;
     end
 
     output = Dict()
-    output["Posterior Mean of Location Parameters"] = [MMEModule.getNames(mme) solMean]
+    output["Posterior Mean of Location Parameters"] = [getNames(mme) solMean]
     output["MCMC samples for residual variance"]    = mme.resVarSampleArray
     if mme.ped != 0
         output["MCMC samples for genetic var-cov parameters"] = mme.genVarSampleArray
     end
     if mme.M != 0
-        output["Posterior Mean of Marker Effects"] = meanu
-    end
-    if estimatePi == true
-        output["MCMC samples for: π"] = pi
+        output["Posterior Mean of Marker Effects"] = meanAlpha
     end
     for i in  mme.outputSamplesVec
         trmi   = i.term

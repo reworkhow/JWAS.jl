@@ -1,4 +1,4 @@
-function readgenotypes(file::ASCIIString;separator=' ',header=false,center=true)
+function readgenotypes(file::AbstractString;separator=' ',header=false,center=true)
     println("The delimiters in file $file is ",separator,"  .")
 
     myfile = open(file)
