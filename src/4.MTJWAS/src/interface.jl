@@ -1,10 +1,22 @@
 """
-    build_model(models::AbstractString,R::Array{Float64,2})
+    build_model(model_equations::AbstractString,R::Array{Float64,2})
 
-build model from model equations
+build models from **model equations** with residual covaraince matrix **R**
+
+```julia
+#string for model equations
+model_equations = "BW = intercept + age + sex;
+                  CW = intercept + age + sex";
+
+#residual covariance matrix
+R=[6.72   24.84
+   24.84  708.41]
+#model building
+models = buildModel(model_equations,R);
+```
 """
-function build_model(models::AbstractString,R::Array{Float64,2})
-  initMME(models,R)
+function build_model(model_equations::AbstractString,R::Array{Float64,2})
+  initMME(model_equations,R)
 end
 
 """
