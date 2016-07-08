@@ -1,18 +1,14 @@
 """
     build_model(model_equations::AbstractString,R::Array{Float64,2})
 
-build models from **model equations** with residual covaraince matrix **R**
+build models from **model equations** with a residual covaraince matrix **R**
 
 ```julia
-#string for model equations
 model_equations = "BW = intercept + age + sex;
-                  CW = intercept + age + sex";
-
-#residual covariance matrix
-R=[6.72   24.84
-   24.84  708.41]
-#model building
-models = buildModel(model_equations,R);
+                   CW = intercept + age + sex";
+R               = [6.72   24.84
+                   24.84  708.41]
+models          = MT.build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString,R::Array{Float64,2})
@@ -22,8 +18,18 @@ end
 """
     set_covariate(mme::MME,covStr::AbstractString)
 
-set variables as covariates
-covStr is a string of varaibles separated by spaces
+set variables as covariates; covStr is a string of varaibles separated by spaces
+
+```julia
+model_equations = "BW = intercept + age + sex;
+                   CW = intercept + age + sex";
+R               = [6.72   24.84
+                   24.84  708.41]
+models          = MT.build_model(model_equations,R)
+
+#set the variable age as covariates
+MT.set_covariate(models,"age")
+```
 """
 function set_covariate(mme::MME,covStr::AbstractString)
     covList(mme,covStr)
@@ -33,6 +39,15 @@ end
     set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G::Array{Float64,2})
 
 set variables as random polygenic effects
+
+```julia
+model_equations = "BW = intercept + age + sex + Animal;
+                   CW = intercept + age + sex + Animal";
+model           = MT.build_model(model_equations,R);
+ped             = MT.get_pedigree(pedfile);
+
+setAsRandom(model,"Animal", ped,G)
+```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G::Array{Float64,2})
     setAsRandom(mme,randomStr,ped, G)
@@ -93,8 +108,13 @@ end
     runMCMC(mme,df;Pi=0.0,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes= false,methods="no markers",output_marker_effects_frequency::Int64 = 0)
 
 Run MCMC (marker information included or not) with sampling of variance components.
-Available methods include "no markers", "BayesC0", "BayesC", "BayesCC".
-Pi is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
+
+* available **methods** include "no markers", "BayesC0", "BayesC", "BayesCC".
+* **missing_phenotypes**
+* **Pi** is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
+* save samples of marker effects every **output_marker_effects_frequency** iterations to files 
+* **starting_value** can be provided as vector for all location parameteres except marker effects.
+* print out the monte carlo mean in REPL with **printout_frequency**,
 """
 
 function runMCMC(mme,df;
