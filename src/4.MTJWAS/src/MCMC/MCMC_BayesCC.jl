@@ -223,7 +223,7 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
             println("at sample: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean,"\n")
-            println(BigPi)
+            println(BigPiMean)
         end
 
         if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
