@@ -223,6 +223,7 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
             println("at sample: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean,"\n")
+            println(labels)
             println(BigPiMean)
         end
 
