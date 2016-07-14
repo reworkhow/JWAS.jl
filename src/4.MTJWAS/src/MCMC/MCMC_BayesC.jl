@@ -1,6 +1,7 @@
 function MCMC_BayesC(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
+                      constraint=nothing,
                       output_marker_effects_frequency=0)
 
     #Pi is of length nTrait^2
@@ -22,6 +23,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
+    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
@@ -172,6 +174,9 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
         mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
+        if contraint != nothing
+          R0 = R0.*!constraint+ prior_R.*constraint
+        end
 
         mme.R = R0
         if missing_phenotypes==true
@@ -216,10 +221,10 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         GMMean  += (mme.M.G  - GMMean)/iter
 
         if iter%outFreq==0
-            println("at sample: ",iter)
+            println("posterior means at sample: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean,"\n")
-            println(BigPiMean)
+            println("π: \n",BigPiMean)
         end
 
         if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file

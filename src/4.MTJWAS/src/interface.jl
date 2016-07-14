@@ -1,7 +1,7 @@
 """
     build_model(model_equations::AbstractString,R::Array{Float64,2})
 
-build models from **model equations** with a residual covaraince matrix **R**
+* build models from **model equations** with a residual covaraince matrix **R**
 
 ```julia
 model_equations = "BW = intercept + age + sex;
@@ -18,7 +18,8 @@ end
 """
     set_covariate(mme::MME,covStr::AbstractString)
 
-set variables as covariates; covStr is a string of varaibles separated by spaces
+* set variables as covariates; covStr is a string of varaibles separated by spaces
+
 
 ```julia
 model_equations = "BW = intercept + age + sex;
@@ -26,7 +27,6 @@ model_equations = "BW = intercept + age + sex;
 R               = [6.72   24.84
                    24.84  708.41]
 models          = MT.build_model(model_equations,R)
-
 #set the variable age as covariates
 MT.set_covariate(models,"age")
 ```
@@ -62,15 +62,17 @@ function get_pedigree(pedfile::AbstractString)
 end
 
 """
-    add_markers(mme::MME,file,G::Array{Float64,2});separator=' ',header=true,G_is_genetic_variance=true)
-Get marker informtion from a genotype file (same order as the phenotype file).\\
-File format:\\
+    add_markers(mme::MME,file,G::Array{Float64,2});separator=' ',header=true,G_is_marker_variance=false)
+* Get marker informtion from a genotype file (same order as the phenotype file).
+* File format:
 
-Animal,marker1,marker2,marker3,marker4,marker5\\
-S1,1,0,1,1,1\\
-D1,2,0,2,2,1\\
-O1,1,2,0,1,0\\
-O3,0,0,2,1,1\\
+```
+Animal,marker1,marker2,marker3,marker4,marker5
+S1,1,0,1,1,1
+D1,2,0,2,2,1
+O1,1,2,0,1,0
+O3,0,0,2,1,1
+```
 """
 function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true,G_is_genetic_variance=true)
     addMarkers(mme,file,G,separator=separator,header=header,G_is_genetic_variance=G_is_genetic_variance)
@@ -80,7 +82,7 @@ end
 """
     solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,niterations = 5000)
 
-Solve the mixed model equations (no marker information) without estimating variance components.
+* Solve the mixed model equations (no marker information) without estimating variance components.
 Available solvers includes `Jacobi`,`GaussSeidel`,`Gibbs sampler`.
 """
 function solve(mme::MME,
@@ -124,6 +126,7 @@ function runMCMC(mme,df;
                 starting_value    =false,
                 printout_frequency=100,
                 missing_phenotypes= false,
+                constraint        = nothing,
                 methods           = "no markers", #BayesC0,BayesC,BayesCC
                 output_marker_effects_frequency::Int64 = 0)
   if mme.M ==0
@@ -136,6 +139,7 @@ function runMCMC(mme,df;
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
+                     constraint=constraint,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesC"
     if Pi == 0.0
@@ -145,6 +149,7 @@ function runMCMC(mme,df;
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
+                     constraint=constraint,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesCC"
     if Pi == 0.0
@@ -154,6 +159,7 @@ function runMCMC(mme,df;
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
+                     constraint=constraint,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesB"
     if Pi == 0.0
@@ -163,6 +169,7 @@ function runMCMC(mme,df;
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
+                     constraint=constraint,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   else
     error("No methods options!!!")

@@ -64,6 +64,7 @@ function MCMC_BayesC(nIter,mme,df,π;
     meanVara    = 0.0
     #vector to save π
     pi          = zeros(nIter)
+    mean_pi     = 0.0
     #adjust y for strating values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)   #starting values for location parameters(no marker) are sol
 
@@ -132,6 +133,7 @@ function MCMC_BayesC(nIter,mme,df,π;
         if estimatePi == true
           π = samplePi(nLoci, nMarkers)
           pi[iter] = π
+          mean_pi += (π-mean_pi)/iter
         end
 
         #output samples for different effects
@@ -143,7 +145,10 @@ function MCMC_BayesC(nIter,mme,df,π;
         end
 
         if iter%outFreq==0
-            println("at sample: ",iter, " with meanVare: ",meanVare)
+            println("posterior means at sample: ",iter)
+            println("Residual variance: ",meanVare)
+            println("Marker effects variance: ",meanVara,"\n")
+            println("π: ", mean_pi)
         end
     end
 
@@ -158,7 +163,7 @@ function MCMC_BayesC(nIter,mme,df,π;
     output["Posterior Mean of Location Parameters"] = [getNames(mme) solMean]
     output["MCMC samples for residual variance"]    = mme.resVarSampleArray
     if mme.ped != 0
-        output["MCMC samples for genetic var-cov parameters"] = mme.genVarSampleArray
+        output["MCMC samples for polygenic effects var-cov parameters"] = mme.genVarSampleArray
     end
     if mme.M != 0
         output["Posterior Mean of Marker Effects"] = meanAlpha

@@ -1,6 +1,7 @@
 function MCMC_BayesC0(nIter,mme,df;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
+                      constraint=nothing,
                       output_marker_effects_frequency=0)
 
 
@@ -22,6 +23,7 @@ function MCMC_BayesC0(nIter,mme,df;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
+    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
@@ -121,6 +123,10 @@ function MCMC_BayesC0(nIter,mme,df;
         mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
 
+        if contraint != nothing
+          R0 = R0.*!constraint+ prior_R.*constraint
+        end
+
         mme.R = R0
         if missing_phenotypes==true
           RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
@@ -164,7 +170,7 @@ function MCMC_BayesC0(nIter,mme,df;
         GMMean  += (mme.M.G  - GMMean)/iter
 
         if iter%outFreq==0
-            println("at sample: ",iter)
+            println("posterior means at sample: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean,"\n")
         end

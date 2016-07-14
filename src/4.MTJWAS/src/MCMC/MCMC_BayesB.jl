@@ -1,6 +1,7 @@
 function MCMC_BayesB(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
+                      constraint=nothing,
                       output_marker_effects_frequency=0)
 
     #Pi is of length nTrait^2
@@ -22,6 +23,7 @@ function MCMC_BayesB(nIter,mme,df,Pi;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
+    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
@@ -195,6 +197,10 @@ function MCMC_BayesB(nIter,mme,df,Pi;
         end
 
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
+        if contraint != nothing
+          R0 = R0.*!constraint+ prior_R.*constraint
+        end
+
 
         mme.R = R0
         if missing_phenotypes==true

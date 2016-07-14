@@ -47,15 +47,17 @@ end
 """
     add_markers(mme::MME,file,G::Float64;separator=' ',header=true)
 
-Get marker informtion from a genotype file (same order as the phenotype file).\\
-G is the genetic variance. \\
-File format:
+* Get marker informtion from a genotype file (same order as the phenotype file).
+* G is the additive genetic variance.
+* File format:
 
-Animal,marker1,marker2,marker3,marker4,marker5\\
-S1,1,0,1,1,1\\
-D1,2,0,2,2,1\\
-O1,1,2,0,1,0\\
-O3,0,0,2,1,1\\
+```
+Animal,marker1,marker2,marker3,marker4,marker5
+S1,1,0,1,1,1
+D1,2,0,2,2,1
+O1,1,2,0,1,0
+O3,0,0,2,1,1
+```
 """
 function add_markers(mme::MME,file,G::Float64;separator=' ',header=true)
     addMarkers(mme,file,G,separator=separator,header=header)
@@ -87,8 +89,8 @@ end
 """
     solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,niterations = 5000)
 
-Solve the mixed model equations (no marker information) without estimating variance components.
-Available solvers includes `Jacobi`,`GaussSeidel`,`Gibbs sampler`.
+* Solve the mixed model equations (no marker information) without estimating variance components.
+Available solvers includes `Jacobi`, `GaussSeidel`, `Gibbs sampler`.
 """
 function solve(mme::MME,
                 df::DataFrame;

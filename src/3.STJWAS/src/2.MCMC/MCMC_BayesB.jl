@@ -146,7 +146,10 @@ function MCMC_BayesB(nIter,mme,df,π;
         end
 
         if iter%outFreq==0
-            println("at sample: ",iter, " with meanVare: ",meanVare)
+          println("posterior means at sample: ",iter)
+          println("Residual variance: ",meanVare)
+          #println("Marker effects variance: ",GMMean,"\n")
+          #println("π: ", pi)
         end
     end
 
@@ -161,7 +164,7 @@ function MCMC_BayesB(nIter,mme,df,π;
     output["Posterior Mean of Location Parameters"] = [getNames(mme) solMean]
     output["MCMC samples for residual variance"]    = mme.resVarSampleArray
     if mme.ped != 0
-        output["MCMC samples for genetic var-cov parameters"] = mme.genVarSampleArray
+      output["MCMC samples for polygenic effects var-cov parameters"] = mme.genVarSampleArray
     end
     if mme.M != 0
         output["Posterior Mean of Marker Effects"] = meanu
