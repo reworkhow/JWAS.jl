@@ -12,13 +12,19 @@ type Genotypes
   Genotypes(a,b,c,d,e,f,g,h)=new(a,b,c,d,e,f,g,h,zeros(2,2))
 end
 
-function addMarkers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true)
+function addMarkers(mme::MME,file,G::Array{Float64,2};separator=' ',
+                    header=true,G_is_marker_variance=false)
     mme.M   = readgenotypes(file;separator=separator,header=header,center=true)
-    mme.M.G = G/mme.M.sum2pq
+    if G_is_marker_variance==false
+      mme.M.G = G/mme.M.sum2pq
+    else
+      mme.M.G = G
+    end
 end
 
 include("tools.jl")
 include("MTBayesC0.jl")
 include("MTBayesC.jl")
 include("MTBayesCC.jl")
+include("MTBayesB.jl")
 include("readgenotypes.jl")

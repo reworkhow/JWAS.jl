@@ -112,7 +112,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * available **methods** include "no markers", "BayesC0", "BayesC", "BayesCC".
 * **missing_phenotypes**
 * **Pi** is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
-* save samples of marker effects every **output_marker_effects_frequency** iterations to files 
+* save samples of marker effects every **output_marker_effects_frequency** iterations to files
 * **starting_value** can be provided as vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**,
 """
@@ -150,6 +150,15 @@ function runMCMC(mme,df;
       error("Pi is not provided!!")
     end
     res=MCMC_BayesCC(chain_length,mme,df,Pi,
+                     sol=starting_value,
+                     outFreq=printout_frequency,
+                     missing_phenotypes=missing_phenotypes,
+                     output_marker_effects_frequency=output_marker_effects_frequency)
+  elseif methods=="BayesB"
+    if Pi == 0.0
+      error("Pi is not provided!!")
+    end
+    res=MCMC_BayesB(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
