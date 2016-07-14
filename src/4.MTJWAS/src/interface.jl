@@ -62,7 +62,7 @@ function get_pedigree(pedfile::AbstractString)
 end
 
 """
-    add_markers(mme::MME,file,G::Array{Float64,2});separator=' ',header=true)
+    add_markers(mme::MME,file,G::Array{Float64,2});separator=' ',header=true,G_is_genetic_variance=true)
 Get marker informtion from a genotype file (same order as the phenotype file).\\
 File format:
 Animal,marker1,marker2,marker3,marker4,marker5\\
@@ -71,8 +71,8 @@ D1,2,0,2,2,1\\
 O1,1,2,0,1,0\\
 O3,0,0,2,1,1\\
 """
-function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true,G_is_marker_variance=false)
-    addMarkers(mme,file,G,separator=separator,header=header,G_is_marker_variance=G_is_marker_variance)
+function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true,G_is_genetic_variance=true)
+    addMarkers(mme,file,G,separator=separator,header=header,G_is_genetic_variance=G_is_genetic_variance)
 end
 
 
