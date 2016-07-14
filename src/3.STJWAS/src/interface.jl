@@ -48,6 +48,7 @@ end
     add_markers(mme::MME,file,G::Float64;separator=' ',header=true)
 
 Get marker informtion from a genotype file (same order as the phenotype file).\\
+G is the genetic variance. \\
 File format:
 
 Animal,marker1,marker2,marker3,marker4,marker5\\
