@@ -10,7 +10,7 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 * **Examples**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/test/)
 
 
-## Structure of JWAS Module
+### Structure of JWAS Module
 
 ```
 JWAS.j
@@ -38,5 +38,10 @@ JWAS.j
            ├── MT.solve
            └── MT.runMCMC
 
-├──────── ???.jl
+├──────── QTL.jl
 ```
+
+### Troubleshooting
+
+1. Get help about functions above through **?foo** or **@doc(foo)**
+
