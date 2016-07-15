@@ -12,33 +12,31 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 
 ## Structure of JWAS Module
 
-<figure class="highlight"><pre><code class="language-shell" data-lang="shell">
-<mark style="background-color:red;"><big>JWAS.jl</big></mark>
+```
+JWAS.j
 
-├──────── <mark style="background-color:orange;">PedModule.jl</mark>
+├──────── PedModule.jl
 
-├──────── <mark style="background-color:orange;">ST.jl</mark>
-           ├── <i>build_model</i>
-           ├── <i>set_covariate</i>
-           ├── <i>set_random</i>
-           ├── <i>get_pedigree</i>
-           ├── <i>add_markers</i>
-           ├── <i>outputMCMCsamples</i>
-           ├── <i>showMME</i>
-           ├── <i>solve</i>
-           └── <i>runMCMC</i>
+├──────── ST.jl
+           ├── build_model
+           ├── set_covariate
+           ├── set_random
+           ├── get_pedigree
+           ├── add_markers
+           ├── outputMCMCsamples
+           ├── showMME
+           ├── solve
+           └── runMCMC
 
-├──────── <mark style="background-color:orange;">MT.jl</mark>
-           ├── <i>MT.build_model</i>
-           ├── <i>MT.set_covariate</i>
-           ├── <i>MT.set_random</i>
-           ├── <i>MT.get_pedigree</i>
-           ├── <i>MT.add_markers</i>
-           ├── <i>MT.showMME</i>
-           ├── <i>MT.solve</i>
-           └── <i>MT.runMCMC</i>
+├──────── MT.jl
+           ├── MT.build_model
+           ├── MT.set_covariate
+           ├── MT.set_random
+           ├── MT.get_pedigree
+           ├── MT.add_markers
+           ├── MT.showMME
+           ├── MT.solve
+           └── MT.runMCMC
 
-├──────── <mark style="background-color:orange;">???.jl</mark>
-</code>
-</pre>
-</figure>
+├──────── ???.jl
+```
