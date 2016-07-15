@@ -21,6 +21,7 @@ function MCMC_conventional(nIter,mme,df;
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
+    scaleRes= diag(mme.R)*(ν-2)/ν #for chisq for constrant diagonal R
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -56,6 +57,15 @@ function MCMC_conventional(nIter,mme,df;
             end
         end
         R0    = rand(InverseWishart(νR0 + nObs, PRes + SRes))
+
+        #for constraint R, chisq
+        if constraint == true
+          R0 = zeros(nTraits,nTraits)
+          for traiti = 1:nTraits
+            R0[i,i]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+          end
+        end
+
         mme.R = R0
         if missing_phenotypes==true
           RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar

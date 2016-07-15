@@ -27,6 +27,7 @@ function MCMC_BayesC0(nIter,mme,df;
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
+    scaleRes= diag(mme.R)*(ν-2)/ν #for chisq for constrant diagonal R
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -123,8 +124,12 @@ function MCMC_BayesC0(nIter,mme,df;
         mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
 
-        if constraint != nothing
-          R0 = R0.*!constraint+ prior_R.*constraint
+        #for constraint R, chisq
+        if constraint == true
+          R0 = zeros(nTraits,nTraits)
+          for traiti = 1:nTraits
+            R0[i,i]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+          end
         end
 
         mme.R = R0

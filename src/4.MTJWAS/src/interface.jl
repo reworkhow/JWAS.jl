@@ -126,7 +126,7 @@ function runMCMC(mme,df;
                 starting_value    =false,
                 printout_frequency=100,
                 missing_phenotypes= false,
-                constraint        = nothing,
+                constraint        = false,
                 methods           = "no markers", #BayesC0,BayesC,BayesCC
                 output_marker_effects_frequency::Int64 = 0)
   if mme.M ==0

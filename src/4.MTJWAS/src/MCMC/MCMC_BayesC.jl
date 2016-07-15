@@ -1,7 +1,7 @@
 function MCMC_BayesC(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
-                      constraint=nothing,
+                      constraint=false,
                       output_marker_effects_frequency=0)
 
     #Pi is of length nTrait^2
@@ -23,10 +23,10 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
-    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
+    scaleRes= diag(mme.R)*(ν-2)/ν #for chisq for constrant diagonal R
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -174,8 +174,13 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
         mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
-        if constraint != nothing
-          R0 = R0.*!constraint+ prior_R.*constraint
+
+        #for constraint R, chisq
+        if constraint == true
+          R0 = zeros(nTraits,nTraits)
+          for traiti = 1:nTraits
+            R0[i,i]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+          end
         end
 
         mme.R = R0
