@@ -44,6 +44,7 @@ JWAS.j
            └── get_breeding_values
 ```
 
-### Troubleshooting
+### Help
 
-1. Get help about functions above through **?foo** or **@doc(foo)**
+1. Show this README file in REPL or notebook using **Markdown.readme("JWAS")**
+2. Get help about functions above using **?foo** or **@doc(foo)**
