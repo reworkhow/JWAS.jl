@@ -12,6 +12,7 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 
 ### Structure of JWAS Module
 
+
 ```
 JWAS.j
 
@@ -39,9 +40,10 @@ JWAS.j
            └── MT.runMCMC
 
 ├──────── QTL.jl
+           ├── get_additive_genetic_variances
+           └── get_breeding_values
 ```
 
 ### Troubleshooting
 
 1. Get help about functions above through **?foo** or **@doc(foo)**
-
