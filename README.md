@@ -1,5 +1,4 @@
-JWAS.jl
-=========
+# JWAS.jl
 
 [![Build Status](https://travis-ci.org/reworkhow/JWAS.jl.svg?branch=master)](https://travis-ci.org/reworkhow/JWAS.jl)
 
@@ -9,6 +8,9 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 * **Installation**: at the Julia REPL, `Pkg.clone("https://github.com/reworkhow/JWAS.jl.git")`
 * ~~**Documentation**: [available here](http://jwasjl.readthedocs.org/en/latest/)~~
 * **Examples**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/test/)
+
+
+## Structure of JWAS Module
 
 <figure class="highlight"><pre><code class="language-shell" data-lang="shell">
 <mark style="background-color:red;"><big>JWAS.jl</big></mark>
