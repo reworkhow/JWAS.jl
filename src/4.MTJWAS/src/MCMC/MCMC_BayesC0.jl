@@ -123,7 +123,7 @@ function MCMC_BayesC0(nIter,mme,df;
         mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
 
-        if contraint != nothing
+        if constraint != nothing
           R0 = R0.*!constraint+ prior_R.*constraint
         end
 
