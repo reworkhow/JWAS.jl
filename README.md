@@ -46,5 +46,5 @@ JWAS.jl
 
 ### Help
 
-1. Show this README file in REPL or notebook using **Markdown.readme("JWAS")**
-2. Get help about functions above using **?foo** or **@doc(foo)**
+1. Show this README file in REPL or notebook using `?JWAS`
+2. For help on a specific function above, type ? followed by its name, e.g. `?runMCMC` and press enter.
