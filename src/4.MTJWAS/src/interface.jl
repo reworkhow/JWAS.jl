@@ -74,8 +74,8 @@ O1,1,2,0,1,0
 O3,0,0,2,1,1
 ```
 """
-function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true,G_is_genetic_variance=true)
-    addMarkers(mme,file,G,separator=separator,header=header,G_is_genetic_variance=G_is_genetic_variance)
+function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true,G_is_marker_variance=false)
+    addMarkers(mme,file,G,separator=separator,header=header,G_is_marker_variance=G_is_marker_variance)
 end
 
 
