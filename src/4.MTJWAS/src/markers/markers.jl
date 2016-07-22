@@ -13,9 +13,9 @@ type Genotypes
 end
 
 function addMarkers(mme::MME,file,G::Array{Float64,2};separator=' ',
-                    header=true,G_is_genetic_variance=G_is_genetic_variance)
+                    header=true,G_is_marker_variance=G_is_marker_variance)
     mme.M   = readgenotypes(file;separator=separator,header=header,center=true)
-    if G_is_genetic_variance==true
+    if G_is_marker_variance==false
       mme.M.G = G/mme.M.sum2pq
     else
       mme.M.G = G
