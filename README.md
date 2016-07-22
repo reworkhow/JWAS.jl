@@ -52,3 +52,4 @@ JWAS.jl
 
 1. Show this README file in REPL or notebook using `?JWAS`
 2. For help on a specific function above, type ? followed by its name, e.g. `?runMCMC` and press enter.
+3. Run `Pkg.checkout("JWAS")` to get the newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
