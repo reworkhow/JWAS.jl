@@ -1,6 +1,7 @@
 function MCMC_conventional(nIter,mme,df;
                            sol=false,outFreq=100,
-                           missing_phenotypes=false)
+                           missing_phenotypes=false,
+                          constraint=false)
     if size(mme.mmeRhs)==()
        getMME(mme,df)
     end
