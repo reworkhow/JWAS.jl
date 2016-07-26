@@ -128,7 +128,7 @@ function MCMC_BayesC0(nIter,mme,df;
         if constraint == true
           R0 = zeros(nTraits,nTraits)
           for traiti = 1:nTraits
-            R0[i,i]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+            R0[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
           end
         end
 
