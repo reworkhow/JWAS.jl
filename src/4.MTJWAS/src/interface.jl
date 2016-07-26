@@ -108,7 +108,7 @@ function solve(mme::MME,
 end
 
 """
-    runMCMC(mme,df;Pi=0.0,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes= false,methods="no markers",output_marker_effects_frequency::Int64 = 0)
+    runMCMC(mme,df;Pi=0.0,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="no markers",output_marker_effects_frequency::Int64 = 0)
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
@@ -116,8 +116,9 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * **missing_phenotypes**
 * **Pi** is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
 * save samples of marker effects every **output_marker_effects_frequency** iterations to files
-* **starting_value** can be provided as vector for all location parameteres except marker effects.
-* print out the monte carlo mean in REPL with **printout_frequency**,
+* **starting_value** can be provided as a vector for all location parameteres except marker effects.
+* print out the monte carlo mean in REPL with **printout_frequency**
+* **constraint**=true if constrain residual covariances between traits to be zero. 
 """
 
 function runMCMC(mme,df;
@@ -133,7 +134,8 @@ function runMCMC(mme,df;
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency,
-                          missing_phenotypes=missing_phenotypes)
+                          missing_phenotypes=missing_phenotypes,
+                          constraint=constraint)
   elseif methods=="BayesC0"
     res=MCMC_BayesC0(chain_length,mme,df,
                      sol=starting_value,
