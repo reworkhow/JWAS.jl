@@ -1,10 +1,9 @@
 function MCMC_BayesCC(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
-                      constraint=nothing,
+                      constraint=false,
+                      estimatePi=false,
                       output_marker_effects_frequency=0)
-
-    #Pi is of length nTrait^2
 
     if size(mme.mmeRhs)==()
        getMME(mme,df)
@@ -23,7 +22,6 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
-    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
@@ -56,9 +54,25 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
     SM             = zeros(Float64,nTraits,nTraits)
     GMMean         = zeros(Float64,nTraits,nTraits)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     #starting values for marker effects are all zeros
     #starting values for other location parameters are sol
-
     ycorr          = vec(full(mme.ySparse))
     wArray         = Array(Array{Float64,1},nTraits)
     alphaArray     = Array(Array{Float64,1},nTraits)
@@ -75,8 +89,7 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
                                                             #wArray is list version reference of ycor
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
-        #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
-        deltaArray[traiti]     = ones(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
+        deltaArray[traiti]     = zeros(nMarkers)
         meanDeltaArray[traiti] = zeros(nMarkers)
         uArray[traiti]         = zeros(nMarkers)
         meanuArray[traiti]     = zeros(nMarkers)

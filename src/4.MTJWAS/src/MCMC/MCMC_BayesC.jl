@@ -1,12 +1,10 @@
 function MCMC_BayesC(nIter,mme,df,Pi;
-                      sol=false,outFreq=100,
+                      sol=false,outFreq=0,
                       missing_phenotypes=false,
                       constraint=false,
                       estimatePi=false,
                       methods="BayesC0",
                       output_marker_effects_frequency=0)
-
-    #Pi is of length nTrait^2
 
     if size(mme.mmeRhs)==()
        getMME(mme,df)
@@ -67,6 +65,26 @@ function MCMC_BayesC(nIter,mme,df,Pi;
       for key in keys(BigPiMean)
         BigPiMean[key]=0.0
       end
+
+    elseif methods == "BayesCC"
+      if Pi == 0.0
+        error("Pi is not provided!!")
+      end
+      #label with the index of Array
+      #labels[1]=[0.0,0.0],labels[2]=[1.0,1.0]
+      #BigPi[1]=0.3,BigPi[2]=0.7
+      nlabels= length(Pi)
+      labels = Array(Array{Float64,1},nlabels)
+      BigPi  = Array(Float64,nlabels)
+      whichlabel=1
+      for pair in sort(collect(Pi), by=x->x[2],rev=true)
+        key=pair[1]
+        labels[whichlabel]=copy(key)
+        BigPi[whichlabel]=copy(pair[2])
+        whichlabel = whichlabel+1
+      end
+      BigPiMean = zeros(BigPi)
+
     elseif methods == "BayesC0"
       if estimatePi==true
         error("Estimating π is not allowed in BayesC0")
@@ -133,10 +151,20 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         elseif methods == "BayesC0"
           sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,
                                meanAlphaArray,iR0,iGM,iter)
+        elseif methods == "BayesCC"
+          sampleMarkerEffectsBayesCC!(mArray,mpm,wArray,
+                                     alphaArray,meanAlphaArray,
+                                     deltaArray,meanDeltaArray,
+                                     uArray,meanuArray,
+                                     iR0,iGM,iter,BigPi,labels)
         end
 
         if estimatePi == true
-          samplePi(deltaArray,BigPi,BigPiMean,iter)
+          if methods == "BayesC"
+            samplePi(deltaArray,BigPi,BigPiMean,iter)
+          elseif methods == "BayesCC"
+            samplePi(deltaArray,BigPi,BigPiMean,iter,labels)
+          end
         end
 
         #####################################
@@ -215,18 +243,22 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         GMMean  += (mme.M.G  - GMMean)/iter
 
         if iter%outFreq==0
-            println("posterior means at sample: ",iter)
+            println("Posterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
-            println("Marker effects covariance matrix: \n",GMMean,"\n")
-            if estimatePi == true
+            println("Marker effects covariance matrix: \n",GMMean)
+            if methods=="BayesC" && estimatePi == true
               println("π: \n",BigPiMean)
+            elseif methods=="BayesCC" && estimatePi == true
+              println("π for ", labels)
+              println(BigPiMean)
             end
+            println()
         end
 
         if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
           if iter%output_marker_effects_frequency==0
             for traiti in 1:nTraits
-              if methods == "BayesC"
+              if methods == "BayesC" || methods=="BayesCC"
                 writedlm(outfile[traiti],uArray[traiti]')
               elseif methods == "BayesC0"
                 writedlm(outfile[traiti],alphaArray[traiti]')
@@ -254,7 +286,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
     if mme.M.markerID[1]!="NA"
       markerout        = []
-      if methods == "BayesC"
+      if methods == "BayesC"||methods=="BayesCC"
         for markerArray in meanuArray
           push!(markerout,[mme.M.markerID markerArray])
         end
@@ -264,7 +296,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         end
       end
     else
-      if methods == "BayesC"
+      if methods == "BayesC"||methods=="BayesCC"
         markerout        = meanuArray
       elseif methods == "BayesC0"
         markerout        = meanAlphaArray
