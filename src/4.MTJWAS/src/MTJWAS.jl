@@ -12,5 +12,6 @@ include("MCMC/MCMC.jl")
 include("markers/markers.jl")
 include("output.jl")
 include("interface.jl")
+include("Pi.jl")
 
 end

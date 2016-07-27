@@ -118,16 +118,17 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * save samples of marker effects every **output_marker_effects_frequency** iterations to files
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
-* **constraint**=true if constrain residual covariances between traits to be zero. 
+* **constraint**=true if constrain residual covariances between traits to be zero.
 """
 
 function runMCMC(mme,df;
-                Pi                =0.0,   #Dict{Array{Float64,1},Float64}()
-                chain_length      =1000,
-                starting_value    =false,
-                printout_frequency=100,
+                Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
+                chain_length      = 100,
+                starting_value    = false,
+                printout_frequency= 0,
                 missing_phenotypes= false,
                 constraint        = false,
+                estimatePi        = false,
                 methods           = "no markers", #BayesC0,BayesC,BayesCC
                 output_marker_effects_frequency::Int64 = 0)
   if mme.M ==0
@@ -136,22 +137,14 @@ function runMCMC(mme,df;
                           outFreq=printout_frequency,
                           missing_phenotypes=missing_phenotypes,
                           constraint=constraint)
-  elseif methods=="BayesC0"
-    res=MCMC_BayesC0(chain_length,mme,df,
-                     sol=starting_value,
-                     outFreq=printout_frequency,
-                     missing_phenotypes=missing_phenotypes,
-                     constraint=constraint,
-                     output_marker_effects_frequency=output_marker_effects_frequency)
-  elseif methods=="BayesC"
-    if Pi == 0.0
-      error("Pi is not provided!!")
-    end
+  elseif methods=="BayesC" || methods == "BayesC0"
     res=MCMC_BayesC(chain_length,mme,df,Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      constraint=constraint,
+                     estimatePi = estimatePi,
+                     methods = methods,
                      output_marker_effects_frequency=output_marker_effects_frequency)
   elseif methods=="BayesCC"
     if Pi == 0.0

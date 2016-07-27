@@ -2,6 +2,8 @@ function MCMC_BayesC(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
                       constraint=false,
+                      estimatePi=false,
+                      methods="BayesC0",
                       output_marker_effects_frequency=0)
 
     #Pi is of length nTrait^2
@@ -28,7 +30,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     R0Mean  = zeros(Float64,nTraits,nTraits)
     scaleRes= diag(mme.R)*(ν-2)/ν #for chisq for constrant diagonal R
 
-    #priors for genetic variance matrix
+    #priors for polygenic effect variance matrix
     if mme.ped != 0
         ν         = 4
         pedTrmVec = mme.pedTrmVec
@@ -55,17 +57,33 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     SM             = zeros(Float64,nTraits,nTraits)
     GMMean         = zeros(Float64,nTraits,nTraits)
 
+    #priors for π
+    if methods == "BayesC"
+      if Pi == 0.0
+        error("Pi is not provided!!")
+      end
+      BigPi = copy(Pi)
+      BigPiMean = copy(Pi)
+      for key in keys(BigPiMean)
+        BigPiMean[key]=0.0
+      end
+    elseif methods == "BayesC0"
+      if estimatePi==true
+        error("Estimating π is not allowed in BayesC0")
+      end
+    end
+
+
     #starting values for marker effects are all zeros
     #starting values for other location parameters are sol
-
     ycorr          = vec(full(mme.ySparse))
     wArray         = Array(Array{Float64,1},nTraits)
     alphaArray     = Array(Array{Float64,1},nTraits)
     meanAlphaArray = Array(Array{Float64,1},nTraits)
-    deltaArray     = Array(Array{Float64,1},nTraits)
-    meanDeltaArray = Array(Array{Float64,1},nTraits)
-    uArray         = Array(Array{Float64,1},nTraits)
-    meanuArray     = Array(Array{Float64,1},nTraits)
+    deltaArray     = Array(Array{Float64,1},nTraits) #BayesC
+    meanDeltaArray = Array(Array{Float64,1},nTraits) #BayesC
+    uArray         = Array(Array{Float64,1},nTraits) #BayesC
+    meanuArray     = Array(Array{Float64,1},nTraits) #BayesC
 
     for traiti = 1:nTraits
         startPosi              = (traiti-1)*nObs  + 1
@@ -74,20 +92,12 @@ function MCMC_BayesC(nIter,mme,df,Pi;
                                                             #wArray is list version reference of ycor
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
-        #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
-        deltaArray[traiti]     = ones(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
+        deltaArray[traiti]     = zeros(nMarkers)
         meanDeltaArray[traiti] = zeros(nMarkers)
         uArray[traiti]         = zeros(nMarkers)
         meanuArray[traiti]     = zeros(nMarkers)
     end
 
-    nLoci = zeros(nTraits)
-
-    BigPi = copy(Pi)
-    BigPiMean = copy(Pi)
-    for key in keys(BigPiMean)
-        BigPiMean[key]=0.0
-    end
 
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
         outfile = Array{IOStream}(nTraits)
@@ -100,17 +110,9 @@ function MCMC_BayesC(nIter,mme,df,Pi;
               writedlm(outfile[traiti],mme.M.markerID')
            end
         end
-     end
+    end
 
-
-
-
-
-
-
-
-
-
+    #MCMC
     for iter=1:nIter
         #####################################
         #sample non-marker location parameter
@@ -122,33 +124,21 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         #sample marker effects
         #####################################
         iR0,iGM = inv(mme.R),inv(mme.M.G)
-        sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
-                                   alphaArray,meanAlphaArray,
-                                   deltaArray,meanDeltaArray,
-                                   uArray,meanuArray,
-                                   iR0,iGM,iter,BigPi)
-
-        temp = deltaArray[1]
-        for traiti = 2:nTraits
-          temp = [temp deltaArray[traiti]]
+        if methods == "BayesC"
+          sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
+                                    alphaArray,meanAlphaArray,
+                                    deltaArray,meanDeltaArray,
+                                    uArray,meanuArray,
+                                    iR0,iGM,iter,BigPi)
+        elseif methods == "BayesC0"
+          sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,
+                               meanAlphaArray,iR0,iGM,iter)
         end
 
-        iloci = 1
-        nLoci_array=zeros(2^nTraits)
-        for i in keys(BigPi) #assume order of key won't change
-          temp2 = broadcast(-,temp,i')
-          nLoci =  sum(mean(abs(temp2),2).==0.0)
-          nLoci_array[iloci] = nLoci +1
-          iloci = iloci +1
+        if estimatePi == true
+          samplePi(deltaArray,BigPi,BigPiMean,iter)
         end
-        tempPi = rand(Dirichlet(nLoci_array))
 
-        iloci = 1
-        for i in keys(BigPi)
-          BigPi[i] = tempPi[iloci]
-          BigPiMean[i] += (tempPi[iloci]-BigPiMean[i])/iter
-          iloci = iloci +1
-        end
         #####################################
         #sample residual covariance matrix
         #AND marker covariance matrix
@@ -167,7 +157,6 @@ function MCMC_BayesC(nIter,mme,df,Pi;
                 SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
                 SRes[traitj,traiti] = SRes[traiti,traitj]
                 SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])[1]
-                #  SM[traiti,traitj]   = (uArray[traiti]'uArray[traitj])[1]
                 SM[traitj,traiti]   = SM[traiti,traitj]
             end
         end
@@ -229,13 +218,19 @@ function MCMC_BayesC(nIter,mme,df,Pi;
             println("posterior means at sample: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean,"\n")
-            println("π: \n",BigPiMean)
+            if estimatePi == true
+              println("π: \n",BigPiMean)
+            end
         end
 
         if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
           if iter%output_marker_effects_frequency==0
             for traiti in 1:nTraits
-              writedlm(outfile[traiti],uArray[traiti]')
+              if methods == "BayesC"
+                writedlm(outfile[traiti],uArray[traiti]')
+              elseif methods == "BayesC0"
+                writedlm(outfile[traiti],alphaArray[traiti]')
+              end
             end
           end
         end
@@ -259,14 +254,28 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
     if mme.M.markerID[1]!="NA"
       markerout        = []
-      for markerArray in meanuArray
-        push!(markerout,[mme.M.markerID markerArray])
+      if methods == "BayesC"
+        for markerArray in meanuArray
+          push!(markerout,[mme.M.markerID markerArray])
+        end
+      elseif methods == "BayesC0"
+        for markerArray in meanAlphaArray
+          push!(markerout,[mme.M.markerID markerArray])
+        end
       end
     else
-      markerout        = meanuArray
+      if methods == "BayesC"
+        markerout        = meanuArray
+      elseif methods == "BayesC0"
+        markerout        = meanAlphaArray
+      end
+
     end
+
     output["posterior mean of marker effects"] = markerout
-    output["posterior mean of Pi"] = BigPiMean
+    if estimatePi == true
+      output["posterior mean of Pi"] = BigPiMean
+    end
 
     return output
 end

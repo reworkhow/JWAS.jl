@@ -23,7 +23,6 @@ function MCMC_BayesC0(nIter,mme,df;
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
     R0      = mme.R
-    prior_R = copy(mme.R)
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
@@ -58,11 +57,15 @@ function MCMC_BayesC0(nIter,mme,df;
 
     #starting values for marker effects are all zeros
     #starting values for other location parameters are sol
-
     ycorr          = vec(full(mme.ySparse))
     wArray         = Array(Array{Float64,1},nTraits)
     alphaArray     = Array(Array{Float64,1},nTraits)
     meanAlphaArray = Array(Array{Float64,1},nTraits)
+
+
+
+
+
     for traiti = 1:nTraits
         startPosi              = (traiti-1)*nObs  + 1
         ptr                    = pointer(ycorr,startPosi)
@@ -70,6 +73,18 @@ function MCMC_BayesC0(nIter,mme,df;
                                                             #wArray is list version reference of ycor
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
+
+
+
+
+
+
+
+
+
+
+
+
     end
 
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
@@ -98,6 +113,19 @@ function MCMC_BayesC0(nIter,mme,df;
         #####################################
         iR0, iGM = inv(mme.R),inv(mme.M.G)
         sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,meanAlphaArray,iR0,iGM,iter)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         #####################################
         #sample residual covariance matrix
