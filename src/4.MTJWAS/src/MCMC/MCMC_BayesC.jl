@@ -131,7 +131,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     end
 
     #MCMC
-    for iter=1:nIter
+    @showprogress "running MCMC for "*methods for iter=1:nIter
         #####################################
         #sample non-marker location parameter
         #####################################
@@ -243,7 +243,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         GMMean  += (mme.M.G  - GMMean)/iter
 
         if iter%outFreq==0
-            println("Posterior means at iteration: ",iter)
+            println("\n Posterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",R0Mean)
             println("Marker effects covariance matrix: \n",GMMean)
             if methods=="BayesC" && estimatePi == true
