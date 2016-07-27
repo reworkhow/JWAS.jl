@@ -125,7 +125,7 @@ function runMCMC(mme,df;
                 Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
                 chain_length      = 100,
                 starting_value    = false,
-                printout_frequency= 0,
+                printout_frequency= chain_length,
                 missing_phenotypes= false,
                 constraint        = false,
                 estimatePi        = false,
