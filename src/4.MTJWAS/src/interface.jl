@@ -138,7 +138,8 @@ function runMCMC(mme,df;
     if !isposdef(mme.M.G)
       error("Maker effect variance is not postive definite! Please modify the argument: Pi")
     end
-    println("Marker effect variances", round(mme.M.G), "is positive definite")
+    println("Marker effect variances = ")
+    println(round(mme.M.G,2))
   end
 
   if mme.M ==0
