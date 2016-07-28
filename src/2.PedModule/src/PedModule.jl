@@ -172,14 +172,14 @@ function  mkPed(pedFile::AbstractString;header=false,separator=' ')
 
     fillMap!(ped,df)
 
-    for id in keys(ped.idMap)
+    @showprogress "coding pedigree... " for id in keys(ped.idMap)
      code!(ped,id)
     end
 
-    for id in keys(ped.idMap)
+    @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
       calcInbreeding!(ped,id)
     end
-
+    println("Finished!")
     return ped
 end
 

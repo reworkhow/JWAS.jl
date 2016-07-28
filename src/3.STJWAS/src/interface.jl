@@ -133,11 +133,6 @@ function runMCMC(mme,df;
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency)
-  elseif methods=="BayesC0" ||
-    res=MCMC_BayesC0(chain_length,mme,df,
-                     sol=starting_value,
-                     outFreq=printout_frequency,
-                     output_marker_effects_frequency =output_marker_effects_frequency)
   elseif methods=="BayesC" || methods=="BayesC0"
     res=MCMC_BayesC(chain_length,mme,df,Pi,
                     methods=methods,

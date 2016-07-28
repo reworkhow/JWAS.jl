@@ -2,7 +2,7 @@ function MCMC_BayesC(nIter,mme,df,π;
                      estimatePi=false,
                      sol       =false,
                      outFreq   =100,
-                     methods   ="BayesC"
+                     methods   ="BayesC",
                      output_marker_effects_frequency =0)
 
     if π==0.0
