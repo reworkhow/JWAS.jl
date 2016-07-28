@@ -1,4 +1,4 @@
-function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,meanAlpha,vRes,vEff,iIter)#sample vare and vara
+function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,vRes,vEff)#sample vare and vara
     nMarkers      = length(α)
     λ    = vRes/vEff
     for j=1:nMarkers
@@ -10,6 +10,5 @@ function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,meanAlpha,vRes,vEff,iIter)#sa
         oldAlpha = α[j,1]
         α[j]     = mean + randn()*sqrt(invLhs*vRes)
         BLAS.axpy!(oldAlpha-α[j,1],x,yCorr)
-        meanAlpha[j] += (α[j] - meanAlpha[j])/iIter
     end
 end

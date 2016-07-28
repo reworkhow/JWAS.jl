@@ -59,8 +59,8 @@ O1,1,2,0,1,0
 O3,0,0,2,1,1
 ```
 """
-function add_markers(mme::MME,file,G::Float64;separator=' ',header=true)
-    addMarkers(mme,file,G,separator=separator,header=header)
+function add_markers(mme::MME,file,G::Float64;separator=' ',header=true,G_is_marker_variance=false)
+    addMarkers(mme,file,G,separator=separator,header=header,G_is_marker_variance=G_is_marker_variance)
 end
 
 """
@@ -133,17 +133,18 @@ function runMCMC(mme,df;
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency)
-  elseif methods=="BayesC0"
+  elseif methods=="BayesC0" ||
     res=MCMC_BayesC0(chain_length,mme,df,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      output_marker_effects_frequency =output_marker_effects_frequency)
-  elseif methods=="BayesC"
+  elseif methods=="BayesC" || methods=="BayesC0"
     res=MCMC_BayesC(chain_length,mme,df,Pi,
-                     estimatePi = estimatePi,
-                     sol=starting_value,
-                     outFreq=printout_frequency,
-                     output_marker_effects_frequency =output_marker_effects_frequency)
+                    methods=methods,
+                    estimatePi = estimatePi,
+                    sol=starting_value,
+                    outFreq=printout_frequency,
+                    output_marker_effects_frequency =output_marker_effects_frequency)
   elseif methods=="BayesB"
     res=MCMC_BayesB(chain_length,mme,df,Pi,
                      estimatePi = false,

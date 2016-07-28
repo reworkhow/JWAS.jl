@@ -2,7 +2,22 @@ function MCMC_BayesC(nIter,mme,df,π;
                      estimatePi=false,
                      sol       =false,
                      outFreq   =100,
+                     methods   ="BayesC"
                      output_marker_effects_frequency =0)
+
+    if π==0.0
+      methods="BayesC0"
+    end
+    if methods=="BayesC0" && π != 0.0
+      error("BayesC0 runs only with π=0
+             Please remove argument: Pi")
+    end #π for BayesC0 = 0.0
+    if methods=="BayesC0" && estimatePi == true
+      error("BayesC0 runs with estimatePi == false
+             Please remove argument: estimatePi")
+    end #π for BayesC0 = 0.0
+
+
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
@@ -26,7 +41,11 @@ function MCMC_BayesC(nIter,mme,df,π;
     mpm         = mGibbs.xpx
     M           = mGibbs.X
     dfEffectVar = 4.0
-    vEff        = mme.M.G/((1-π)*mme.M.sum2pq)
+    if mme.M.G_is_marker_variance == false
+      vEff = mme.M.G/((1-π)*mme.M.sum2pq)
+    else
+      vEff = mme.M.G
+    end
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
@@ -48,7 +67,7 @@ function MCMC_BayesC(nIter,mme,df,π;
     solMean     = zeros(p)
     #vectors to save solutions for marker effects
     α           = zeros(nMarkers)                 #starting values for marker effeccts are zeros
-    δ           = zeros(nMarkers)       # inclusion indicator for marker effects
+    δ           = zeros(nMarkers)       # inclusion indicator for marker effects (for BayesC)
     meanAlpha   = zeros(nMarkers)
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
       outfile   = open("MCMC samples for marker effects"*"_$(now()).txt","w")
@@ -62,7 +81,7 @@ function MCMC_BayesC(nIter,mme,df,π;
     #variables to save variance for marker effects or residual
     meanVare    = 0.0
     meanVara    = 0.0
-    #vector to save π
+    #vector to save π (for BayesC)
     pi          = zeros(nIter)
     mean_pi     = 0.0
     #adjust y for strating values
@@ -84,7 +103,12 @@ function MCMC_BayesC(nIter,mme,df,π;
         solMean += (sol - solMean)/iter
 
         #sample marker effects
-        nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
+        if methods=="BayesC"
+          nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
+        elseif methods=="BayesC0"
+          sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
+          nLoci = nMarkers
+        end
         meanAlpha += (α - meanAlpha)/iter
 
         #sample variances for polygenic effects

@@ -1,6 +1,7 @@
 module PedModule
 
 using DataFrames
+using ProgressMeter
 
 type PedNode
     seqID::Int64
