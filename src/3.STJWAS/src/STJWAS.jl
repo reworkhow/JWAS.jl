@@ -3,6 +3,7 @@ module ST
 using Distributions
 using DataFrames
 using ..PedModule
+using ProgressMeter
 
 include("solver.jl")
 include("types.jl")

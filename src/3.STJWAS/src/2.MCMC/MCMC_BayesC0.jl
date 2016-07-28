@@ -67,7 +67,7 @@ function MCMC_BayesC0(nIter,mme,df;
     #######################################################
     # MCMC
     #######################################################
-    for iter=1:nIter
+    @showprogress "running MCMC " for iter=1:nIter
 
         #sample non-marker part
         ycorr = ycorr + mme.X*sol
@@ -133,11 +133,11 @@ function MCMC_BayesC0(nIter,mme,df;
         end
 
         if iter%outFreq==0
-            println("posterior means at sample: ",iter)
-            println("Residual variance: ",meanVare)
-            println("Marker effects variance: ",meanVara,"\n")
-            #println("π: ", pi)
+            println("\nPosterior means at iteration: ",iter)
+            println("Residual variance: ",round(meanVare,3))
+            println("Marker effects variance: ",round(meanVara,3))
         end
+
     end
 
     #######################################################

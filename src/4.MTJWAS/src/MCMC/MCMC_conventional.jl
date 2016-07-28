@@ -54,7 +54,7 @@ function MCMC_conventional(nIter,mme,df;
                 startPosj = (traitj-1)*nObs + 1
                 endPosj   = startPosj + nObs - 1
                 SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
-                SRes[traitj,traiti] = SRes[traiti,traitj]###typo??
+                SRes[traitj,traiti] = SRes[traiti,traitj]
             end
         end
         R0    = rand(InverseWishart(νR0 + nObs, PRes + SRes))
@@ -103,8 +103,8 @@ function MCMC_conventional(nIter,mme,df;
         R0Mean  += (R0  - R0Mean )/iter
 
         if iter%outFreq==0
-            println("at sample: ",iter)
-            println("Residual covariance matrix: \n",R0Mean,"\n")
+            println("\nPosterior means at iteration: ",iter)
+            println("Residual covariance matrix: \n",round(R0Mean,3),"\n")
         end
     end
     output = Dict()

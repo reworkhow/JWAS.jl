@@ -46,7 +46,7 @@ function MCMC_conventional(nIter,mme,df;
     #######################################################
     # MCMC
     #######################################################
-    for iter=1:nIter
+    @showprogress "running MCMC " for iter=1:nIter
 
         #sample non-marker part
         ycorr = ycorr + mme.X*sol
@@ -100,7 +100,8 @@ function MCMC_conventional(nIter,mme,df;
         outputSamples(mme,sol,iter)
 
         if iter%outFreq==0
-            println("at sample: ",iter, " with meanVare: ",meanVare)
+            println("\nPosterior means at iteration: ",iter)
+            println("Residual variance: ",round(meanVare,3))
         end
     end
 

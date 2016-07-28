@@ -124,7 +124,7 @@ function runMCMC(mme,df;
                 Pi                =0.0,
                 chain_length      =1000,
                 starting_value    =false,
-                printout_frequency=100,
+                printout_frequency=chain_length,
                 estimatePi        =false,
                 methods           ="no markers", #BayesC0,BayesC,BayesCπ,BayesB
                 output_marker_effects_frequency::Int64 = 0 # 0=>save samples to a file

@@ -243,14 +243,14 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         GMMean  += (mme.M.G  - GMMean)/iter
 
         if iter%outFreq==0
-            println("\n Posterior means at iteration: ",iter)
-            println("Residual covariance matrix: \n",R0Mean)
-            println("Marker effects covariance matrix: \n",GMMean)
+            println("\nPosterior means at iteration: ",iter)
+            println("Residual covariance matrix: \n",round(R0Mean,3))
+            println("Marker effects covariance matrix: \n",round(GMMean,3))
             if methods=="BayesC" && estimatePi == true
               println("π: \n",BigPiMean)
             elseif methods=="BayesCC" && estimatePi == true
               println("π for ", labels)
-              println(BigPiMean)
+              println(round(BigPiMean,3))
             end
             println()
         end
