@@ -107,7 +107,7 @@ function calcInbreeding!(ped::Pedigree,id::AbstractString)
 end
 
 function AInverse(ped::Pedigree)
-    ii,jj,vv = HAi(ped)#cholesky??
+    ii,jj,vv = HAi(ped)
     hAi      = sparse(ii,jj,vv)
     Ai       = hAi'hAi
     return Ai
