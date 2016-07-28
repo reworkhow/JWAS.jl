@@ -131,6 +131,16 @@ function runMCMC(mme,df;
                 estimatePi        = false,
                 methods           = "no markers", #BayesC0,BayesC,BayesCC
                 output_marker_effects_frequency::Int64 = 0)
+
+  if mme.M != 0 && mme.M.G_is_marker_variance==false
+    genetic2marker(mme.M,Pi)
+    println("Priors for marker effect variances were calculated from genetic variance provided")
+    if !isposdef(mme.M.G)
+      error("Maker effect variance is not postive definite! Please modify the argument: Pi")
+    end
+    println("Marker effect variances", round(mme.M.G), "is positive definite")
+  end
+
   if mme.M ==0
     res=MCMC_conventional(chain_length,mme,df,
                           sol=starting_value,
