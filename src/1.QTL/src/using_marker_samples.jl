@@ -31,7 +31,7 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...)
     end
 
     num_samples = size(BV[1],2)
-    G = Array(Any,num_samples)
+    G = Array(Array{Float64,2},num_samples)
     for i = 1:num_samples
         BVi = vec(BV[1][:,i])
         for j = 2:nTraits
@@ -41,7 +41,10 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...)
     end
     Gmean = mean(G)
     Gvar  = mean(G.^2)-Gmean.^2
-    return G,Gmean,Gvar
+    df_G  = Dict("mean_of_additive_genetic_covariance_matrix"=>Gmean,
+            "variance_of_additive_genetic_covariance_matrix"=>Gvar)
+
+    return G,df_G
 end
 
 
@@ -100,5 +103,22 @@ function get_breeding_values(model,files...)
     return EBV
 end
 
+function get_heritability(G::Array{Array{Float64,2},1},R::Array{Array{Float64,2},1})
+  if size(G,1)!=size(R,1)
+    error("Number of MCMC samples for genetic variances and residual vairances are not equal!")
+  end
+  h2 = Array(Array{Float64,2},size(G,1))
+  for i in 1:size(G,1)
+    h2[i]=G[i] ./ (G[i]+R[i])
+  end
+
+  h2mean = mean(h2)
+  h2var  = mean(h2.^2)-h2mean.^2
+  df_h2  = Dict("mean_of_heritability"=>h2mean,
+          "variance_of_heritability"=>h2var)
+  h2, df_h2
+end
+
 export get_additive_genetic_variances
 export get_breeding_values
+export get_heritability

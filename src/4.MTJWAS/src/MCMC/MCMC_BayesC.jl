@@ -4,7 +4,7 @@ function MCMC_BayesC(nIter,mme,df,Pi;
                       constraint=false,
                       estimatePi=false,
                       methods="BayesC0",
-                      output_marker_effects_frequency=0)
+                      output_samples_frequency=0)
 
     if size(mme.mmeRhs)==()
        getMME(mme,df)
@@ -117,21 +117,25 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     end
 
 
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-        outfile = Array{IOStream}(nTraits)
-        for traiti in 1:nTraits
-           outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
-        end
+    if output_samples_frequency != 0
+      #initialize arrays to save MCMC samples
+      array4samples = init_sample_arrays(mme,Int(floor(nIter/output_samples_frequency)))
+      out_i = 1
+      #write samples for marker effects to a txt file
+      outfile = Array{IOStream}(nTraits)
+      for traiti in 1:nTraits
+        outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
+      end
 
-        if mme.M.markerID[1]!="NA"
-           for traiti in 1:nTraits
-              writedlm(outfile[traiti],mme.M.markerID')
-           end
+      if mme.M.markerID[1]!="NA"
+        for traiti in 1:nTraits
+            writedlm(outfile[traiti],mme.M.markerID')
         end
+      end
     end
 
     #MCMC
-    @showprogress "running MCMC for "*methods for iter=1:nIter
+    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
         #####################################
         #sample non-marker location parameter
         #####################################
@@ -204,7 +208,6 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         if missing_phenotypes==true
           RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
         end
-
         R0    = mme.R
         Ri    = kron(inv(R0),speye(nObs))
 
@@ -255,8 +258,13 @@ function MCMC_BayesC(nIter,mme,df,Pi;
             println()
         end
 
-        if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-          if iter%output_marker_effects_frequency==0
+        if output_samples_frequency != 0  #write samples for marker effects to a txt file
+          if iter%output_samples_frequency==0
+            array4samples.samples4R[out_i]=R0
+            if mme.ped != 0
+              array4samples.samples4G[out_i]=G0
+            end
+            out_i +=1
             for traiti in 1:nTraits
               if methods == "BayesC" || methods=="BayesCC"
                 writedlm(outfile[traiti],uArray[traiti]')
@@ -268,19 +276,26 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         end
     end
 
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
+
+    output = Dict()
+
+    if output_samples_frequency != 0  #write samples for marker effects to a txt file
         for traiti in 1:nTraits
            close(outfile[traiti])
         end
+          output["MCMC samples for residual covariance matrix"]= array4samples.samples4R
+        if mme.ped != 0
+          output["MCMC samples for polygenic effects covariance matrix"]  = array4samples.samples4G
+        end
     end
 
-    output = Dict()
-    output["posterior mean of location parameters"]    = [getNames(mme) solMean]
-    output["posterior mean of marker effects covariance matrix"]    = GMMean
-    output["posterior mean of residual covaraince matrix"]          = R0Mean
+    output["Posterior mean of location parameters"]    = [getNames(mme) solMean]
+    output["Posterior mean of marker effects covariance matrix"] = GMMean
+    output["Posterior mean of residual covariance matrix"]       = R0Mean
 
     if mme.ped != 0
-      output["posterior mean of polygenic effects covariance matrix"] = G0Mean
+      output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
+      output["MCMC samples for polygenic effects covariance matrix"]  = array4samples.samples4G
     end
 
 
@@ -304,9 +319,9 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
     end
 
-    output["posterior mean of marker effects"] = markerout
+    output["Posterior mean of marker effects"] = markerout
     if estimatePi == true
-      output["posterior mean of Pi"] = BigPiMean
+      output["Posterior mean of Pi"] = BigPiMean
     end
 
     return output

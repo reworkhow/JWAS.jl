@@ -125,21 +125,21 @@ function runMCMC(mme,df;
                 Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
                 chain_length      = 100,
                 starting_value    = false,
-                printout_frequency= chain_length,
+                printout_frequency= chain_length+1,
                 missing_phenotypes= false,
                 constraint        = false,
                 estimatePi        = false,
                 methods           = "no markers", #BayesC0,BayesC,BayesCC
-                output_marker_effects_frequency::Int64 = 0)
+                output_samples_frequency::Int64 = 0)
 
   if mme.M != 0 && mme.M.G_is_marker_variance==false
     genetic2marker(mme.M,Pi)
-    println("Priors for marker effect variances were calculated from genetic variance provided")
+    println("Priors for marker effects covariance matrix were calculated from genetic covaraince matrix and π.")
     if !isposdef(mme.M.G)
-      error("Maker effect variance is not postive definite! Please modify the argument: Pi")
+      error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
     end
-    println("Marker effect variances = ")
-    println(round(mme.M.G,2))
+    println("Marker effects covariance matrix is ")
+    println(round(mme.M.G,2),".\n\n")
   end
 
   if mme.M ==0
@@ -156,7 +156,7 @@ function runMCMC(mme,df;
                      constraint=constraint,
                      estimatePi = estimatePi,
                      methods = methods,
-                     output_marker_effects_frequency=output_marker_effects_frequency)
+                     output_samples_frequency=output_samples_frequency)
   elseif methods=="BayesB"
     if Pi == 0.0
       error("Pi is not provided!!")
@@ -166,7 +166,7 @@ function runMCMC(mme,df;
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
                      constraint=constraint,
-                     output_marker_effects_frequency=output_marker_effects_frequency)
+                     output_marker_effects_frequency=output_samples_frequency)
   else
     error("No methods options!!!")
   end
