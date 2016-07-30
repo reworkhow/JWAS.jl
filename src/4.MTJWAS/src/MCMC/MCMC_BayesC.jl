@@ -295,9 +295,10 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
     if mme.ped != 0
       output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
-      output["MCMC samples for polygenic effects covariance matrix"]  = array4samples.samples4G
+      if output_samples_frequency != 0
+        output["MCMC samples for polygenic effects covariance matrix"]  = array4samples.samples4G
+      end
     end
-
 
     if mme.M.markerID[1]!="NA"
       markerout        = []

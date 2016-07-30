@@ -134,7 +134,7 @@ function runMCMC(mme,df;
 
   if mme.M != 0 && mme.M.G_is_marker_variance==false
     genetic2marker(mme.M,Pi)
-    println("Priors for marker effects covariance matrix were calculated from genetic covaraince matrix and π.")
+    println("Priors for marker effects covariance matrix were calculated from genetic covariance matrix and π.")
     if !isposdef(mme.M.G)
       error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
     end
