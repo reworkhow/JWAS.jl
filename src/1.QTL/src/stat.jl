@@ -22,6 +22,7 @@ function describe(X::Array{Array{Float64,1},1};index=false)
     println("Summary Stats:")
     println("Mean:\n",round(mean(X),6))
   else
+    xArray = zeros(length(X))
     i=1
     for thisX in X
       xArray[i]=thisX[index]
