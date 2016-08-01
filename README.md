@@ -13,6 +13,7 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 ### Structure of JWAS Module
 
 
+
 ```
 JWAS.jl
 
