@@ -2,7 +2,7 @@ module QTL
 
 using DataFrames
 using Distributions
-using PyPlot
+using Plots
 
 #=
 include("genotypes.jl")

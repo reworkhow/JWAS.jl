@@ -2,4 +2,4 @@ julia 0.4
 Distributions
 DataFrames
 ProgressMeter
-PyPlot
+Plots

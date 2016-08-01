@@ -13,7 +13,9 @@ function describe(X::Array{Array{Float64,2},1};index=false)
       i+=1
     end
     println(DataFrames.describe(xArray))
-    plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
+    #plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
+    Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
+    Plots.title!("Trait $(index[1]) and Trait $(index[2])")
   end
 end
 
@@ -29,9 +31,8 @@ function describe(X::Array{Array{Float64,1},1};index=false)
       i+=1
     end
     println(DataFrames.describe(xArray))
-    plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
+    #plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
+    Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
+    Plots.title!("Trait $index")
   end
 end
-
-
-#export summary
