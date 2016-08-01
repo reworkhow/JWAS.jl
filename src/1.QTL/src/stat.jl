@@ -1,3 +1,7 @@
+"""
+    describe(X::Array{Array{Float64,2},1};index=false)
+* show summary statistics for MCMC samples (matrices or index [i,j] of matrices)
+"""
 function describe(X::Array{Array{Float64,2},1};index=false)
   if index == false
     Xmean = mean(X)
