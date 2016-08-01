@@ -44,7 +44,8 @@ JWAS.jl
            ├── get_breeding_values
            ├── get_additive_genetic_variances
            ├── get_heritability
-           └── get_genetic_correlatiions
+           ├── get_genetic_correlatiions
+           └── QTL.describe
 
 
 ├──────── Datasets.jl
