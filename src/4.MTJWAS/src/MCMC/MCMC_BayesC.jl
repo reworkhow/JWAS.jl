@@ -321,6 +321,11 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     end
 
     output["Posterior mean of marker effects"] = markerout
+    
+    if methods=="BayesC"||methods=="BayesCC"
+        output["Model frequency"] = meanDeltaArray
+    end
+    
     if estimatePi == true
       output["Posterior mean of Pi"] = BigPiMean
     end
