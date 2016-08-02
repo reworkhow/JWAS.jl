@@ -7,26 +7,26 @@ function get_BV_samples(M::Array{Float64,2},marker_file;header=true)
     M*alpha'
 end
 
-function get_breeding_values(M::Array{Float64,2},files...)
+function get_breeding_values(M::Array{Float64,2},files...;header=true)
     nTraits = length(files)
     BV  = Array(Array{Float64,2},nTraits)
     traiti=1
 
     EBV = Array(Any,nTraits)
     for i in files
-        BV[traiti] = get_BV_samples(M,i)
+        BV[traiti] = get_BV_samples(M,i,header=header)
         EBV[traiti]= DataFrame(EBV=vec(mean(BV[traiti],2)),PEV=vec(var(BV[traiti],2)))
         traiti +=1
     end
     return EBV
 end
 
-function get_additive_genetic_variances(M::Array{Float64,2},files...)
+function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true)
     nTraits = length(files)
     BV  = Array(Array{Float64,2},nTraits)
     traiti=1
     for i in files
-        BV[traiti] = get_BV_samples(M,i)
+        BV[traiti] = get_BV_samples(M,i,header=header)
         traiti +=1
     end
 
@@ -43,12 +43,12 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...)
 end
 
 """
-    get_breeding_values(model::MME,files...)
+    get_breeding_values(model::MME,files...;header=true)
 
 * Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**.
 """
-function get_breeding_values(model,files...)
-    EBV=get_breeding_values(model.M.genotypes,files...)
+function get_breeding_values(model,files...;header=true)
+    EBV=get_breeding_values(model.M.genotypes,files...,header=header)
     if model.M.obsID[1] != "NA"
         EBVwithID = Any(EBV)
         traiti=1
@@ -63,12 +63,12 @@ function get_breeding_values(model,files...)
 end
 
 """
-    get_additive_genetic_variances(model::MME,files...)
+    get_additive_genetic_variances(model::MME,files...;header=true)
 
 * Get MCMC samples for additive genetic variances using samples of marker effects stored in **files**.
 """
-function get_additive_genetic_variances(model,files...)
-    return get_additive_genetic_variances(model.M.genotypes,files...)
+function get_additive_genetic_variances(model,files...;header=true)
+    return get_additive_genetic_variances(model.M.genotypes,files...,header=header)
 end
 
 """
