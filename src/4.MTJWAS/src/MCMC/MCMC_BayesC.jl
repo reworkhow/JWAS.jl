@@ -14,7 +14,8 @@ function MCMC_BayesC(nIter,mme,df,Pi;
        sol=zeros(size(mme.mmeLhs,1))
     end #starting value for sol can be provided
 
-    p = size(mme.mmeLhs,1)
+    p       = size(mme.mmeLhs,1)
+    sol     = map(Float64,sol) #bedure type is Float64
     solMean = fill(0.0,p)
 
     #priors for residual covariance matrix
@@ -321,11 +322,11 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     end
 
     output["Posterior mean of marker effects"] = markerout
-    
+
     if methods=="BayesC"||methods=="BayesCC"
         output["Model frequency"] = meanDeltaArray
     end
-    
+
     if estimatePi == true
       output["Posterior mean of Pi"] = BigPiMean
     end

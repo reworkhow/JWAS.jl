@@ -80,7 +80,7 @@ end
 
 
 """
-    solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,niterations = 5000)
+    solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)
 
 * Solve the mixed model equations (no marker information) without estimating variance components.
 Available solvers includes `Jacobi`,`GaussSeidel`,`Gibbs sampler`.
@@ -90,18 +90,21 @@ function solve(mme::MME,
                 solver="Jacobi",
                 printout_frequency=100,
                 tolerance = 0.000001,
-                niterations = 5000
+                maxiter = 5000
                 )
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
     p = size(mme.mmeRhs,1)
     if solver=="Jacobi"
-        return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,0.3,tolerance=tolerance,output=printout_frequency)]
+        return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,0.3,
+                                    tolerance=tolerance,outFreq=printout_frequency,maxiter=maxiter)]
     elseif solver=="GaussSeidel"
-        return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,tolerance=tolerance,output=printout_frequency)]
+        return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
+                              tolerance=tolerance,outFreq=printout_frequency,maxiter=maxiter)]
     elseif solver=="Gibbs"
-        return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,mme.RNew,niterations,outFreq=printout_frequency)]
+        return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,maxiter,
+                              outFreq=printout_frequency)]
     else
         error("No this solver\n")
     end
@@ -112,10 +115,10 @@ end
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
-* available **methods** include "no markers", "BayesC0", "BayesC", "BayesCC".
+* available **methods** include "conventional (no markers)", "BayesC0", "BayesC", "BayesCC","BayesB".
 * **missing_phenotypes**
 * **Pi** is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
-* save samples of marker effects every **output_marker_effects_frequency** iterations to files
+* save MCMC samples of variance components and marker effects every **output_samples_frequency** iterations to files
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
 * **constraint**=true if constrain residual covariances between traits to be zero.
@@ -129,7 +132,7 @@ function runMCMC(mme,df;
                 missing_phenotypes= false,
                 constraint        = false,
                 estimatePi        = false,
-                methods           = "no markers", #BayesC0,BayesC,BayesCC
+                methods           = "conventional (no markers)", #BayesC0,BayesC,BayesCC
                 output_samples_frequency::Int64 = 0)
 
   if mme.M != 0 && mme.M.G_is_marker_variance==false
@@ -142,14 +145,9 @@ function runMCMC(mme,df;
     println(round(mme.M.G,2),".\n\n")
   end
 
-  if mme.M ==0
-    res=MCMC_conventional(chain_length,mme,df,
-                          sol=starting_value,
-                          outFreq=printout_frequency,
-                          missing_phenotypes=missing_phenotypes,
-                          constraint=constraint)
-  elseif methods=="BayesC" || methods == "BayesC0" || methods=="BayesCC"
-    res=MCMC_BayesC(chain_length,mme,df,Pi,
+  if methods != "BayesB"
+    res=MCMC_BayesC(chain_length,mme,df,
+                     Pi = Pi,
                      sol=starting_value,
                      outFreq=printout_frequency,
                      missing_phenotypes=missing_phenotypes,
