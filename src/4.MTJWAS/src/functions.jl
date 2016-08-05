@@ -126,8 +126,10 @@ function getMME(mme::MME, df::DataFrame)
         trm = mme.modelTerms[i]
         X = [X trm.X]
     end
+    #y = convert(Array,df[mme.lhsVec[1]],0.0)
     y = convert(Array,df[mme.lhsVec[1]],0.0)
     for i=2:size(mme.lhsVec,1)
+        #y    = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
         y    = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
     end
     N  = size(y,1)

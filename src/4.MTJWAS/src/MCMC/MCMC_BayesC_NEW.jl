@@ -1,7 +1,7 @@
 function MCMC_BayesC(nIter,mme,df;
                       Pi      =0.0,
                       sol     =false,
-                      outFreq =0,
+                      outFreq =1000,
                       estimatePi         =false,
                       missing_phenotypes =false,
                       constraint         =false,
@@ -157,9 +157,16 @@ function MCMC_BayesC(nIter,mme,df;
         #####################################
         # 1.2 Marker Effects
         #####################################
+        #println("1",mme.mmeLhs)
+        #println("2",mme.mmeRhs)
+        println("3",sol)
+
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
           iR0,iGM = inv(mme.R),inv(mme.M.G)
+
+          #println("2",ycorr)
+
 
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
@@ -187,14 +194,19 @@ function MCMC_BayesC(nIter,mme,df;
           end
         end
 
+
         ###############################################
         # 2.1 Residual Covariance Matrix
         ###############################################
         resVec = (mme.M==0?(mme.ySparse - mme.X*sol):ycorr)
+        #here resVec is alias for ycor ***
 
+        println("4",resVec)
         if missing_phenotypes==true
           sampleMissingResiduals(mme,resVec)
         end
+        println("5",resVec)
+
 
         for traiti = 1:nTraits
             startPosi = (traiti-1)*nObs + 1
@@ -206,6 +218,8 @@ function MCMC_BayesC(nIter,mme,df;
                 SRes[traitj,traiti] = SRes[traiti,traitj]
             end
         end
+
+
         R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
 
         #for constraint R, chisq
@@ -216,12 +230,17 @@ function MCMC_BayesC(nIter,mme,df;
           end
         end
 
-        mme.R = R0
-        if missing_phenotypes==true
-          RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
+        if mme.M != 0
+          mme.R = R0
+          R0    = mme.R
+          Ri    = kron(inv(R0),speye(nObs))
         end
-        R0    = mme.R
-        Ri    = kron(inv(R0),speye(nObs))
+
+        if mme.M == 0
+          mme.R = R0
+          RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
+          Ri = RiNotUsing
+        end
         R0Mean  += (R0  - R0Mean )/iter
 
         ###############################################
@@ -232,6 +251,7 @@ function MCMC_BayesC(nIter,mme,df;
         mme.mmeLhs = X'Ri*X
         if mme.M != 0
           ycorr[:]   = ycorr[:] + X*sol
+          #same to ycorr[:]=resVec+X*sol
         end
         mme.mmeRhs = (mme.M == 0?(X'Ri*mme.ySparse):(X'Ri*ycorr))
 

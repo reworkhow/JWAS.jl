@@ -1,5 +1,5 @@
-function MCMC_BayesC(nIter,mme,df,Pi;
-                      sol=false,outFreq=0,
+function MCMC_BayesC_old(nIter,mme,df,Pi;
+                      sol=false,outFreq=1000,
                       missing_phenotypes=false,
                       constraint=false,
                       estimatePi=false,

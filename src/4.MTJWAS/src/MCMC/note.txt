@@ -1,0 +1,47 @@
+In MCMC_BayesC,
+conventional methods, sol may have NA there but those NA  are usually corresponding to
+missing values, which won't affect the results. Because
+
+1) Get NA in sol when solve
+    Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
+  because several diagonal elements of mme.mmeLhs are zeros.
+Dorian: Maybe better keeping previous sample when dignal is zero.
+
+1)sample_missing_residual will only use  the non-NA part in ySparse ,the these sampled missing
+residuals are only used for calculate residual variance.
+2)when construct mmeLHS, NA part in ysparse actually is not used (not affect Lhs)
+(Based on my experiment, always NAN in sol when Gibbs(mmeLhs,sol,mmeRhs))
+
+For conventional one,
+if mme.M != 0
+  mme.R = R0
+  R0    = mme.R
+  Ri    = kron(inv(R0),speye(nObs))
+end
+
+if mme.M == 0
+  mme.R = R0
+  RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
+  Ri = RiNotUsing
+end
+
+The second one is used, this is because lhs is construct with ySparse, in which missing elements NA
+are denoted as 0, but not updated (different form ycorr in marker) with
+
+resVec = (mme.M==0?(mme.ySparse - mme.X*sol):ycorr)
+#here resVec is alias for ycor ***
+if missing_phenotypes==true
+  sampleMissingResiduals(mme,resVec)
+end
+
+Thus only the first second one (mme.M ==0) should be used, constructing the
+tricky R to get rid of the effect of NA(0) in ySparse. If wanna use 1 mme.M!=0,
+NA in ySparse should be updated with resVec+ other effects part.
+
+On the country ycorr in Marker methods is updated with resVec (Have to , because ycorr used in BayesC)
+Thus, should use (if mme.M != 0 kron(inv(R0),speye(nObs)))
+
+But in maker stuff,
+If NA in sol, there will be NA in ycor, which is also used in markersampler part.
+Not like conventional methods, only y sparse is used and won't affect mmeLhs and mmeRhs if use the
+tricky way construct mmeLhs, mmeRhs.

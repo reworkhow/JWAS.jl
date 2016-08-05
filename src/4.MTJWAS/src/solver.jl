@@ -60,8 +60,10 @@ end
 function Gibbs(A,x,b) #one iteration of General Gibbs (NOT \lambda version of MME)
     n = size(x,1)
     for i=1:n
+      if A[i,i] != 0
         cVarInv = 1.0/A[i,i]
         cMean   = cVarInv*(b[i] - A[:,i]'x)[1,1] + x[i]
         x[i]    = randn()*sqrt(cVarInv) + cMean
+      end
     end
 end
