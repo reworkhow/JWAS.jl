@@ -111,7 +111,7 @@ function solve(mme::MME,
 end
 
 """
-    runMCMC(mme,df;Pi=0.0,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="no markers",output_samples_frequency::Int64 = 0)
+    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
