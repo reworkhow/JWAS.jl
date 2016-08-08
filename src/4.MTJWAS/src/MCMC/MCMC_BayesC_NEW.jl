@@ -159,7 +159,7 @@ function MCMC_BayesC(nIter,mme,df;
         #####################################
         #println("1",mme.mmeLhs)
         #println("2",mme.mmeRhs)
-        println("3",sol)
+        #println("3",sol)
 
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
@@ -201,12 +201,9 @@ function MCMC_BayesC(nIter,mme,df;
         resVec = (mme.M==0?(mme.ySparse - mme.X*sol):ycorr)
         #here resVec is alias for ycor ***
 
-        println("4",resVec)
         if missing_phenotypes==true
           sampleMissingResiduals(mme,resVec)
         end
-        println("5",resVec)
-
 
         for traiti = 1:nTraits
             startPosi = (traiti-1)*nObs + 1
