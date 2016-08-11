@@ -124,17 +124,19 @@ function runMCMC(mme,df;
                 Pi                =0.0,
                 chain_length      =1000,
                 starting_value    =false,
-                printout_frequency=chain_length,
+                printout_frequency=chain_length+1,
                 estimatePi        =false,
                 methods           ="conventional (no markers)", #BayesC0,BayesC,BayesCπ,BayesB
                 output_marker_effects_frequency::Int64 = 0 # 0=>save samples to a file
                 )
   if mme.M ==0
-    res=MCMC_conventional(chain_length,mme,df,
+    #res=MCMC_conventional(chain_length,mme,df,
+    res=MCMC_BayesC(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency)
   elseif methods=="BayesC" || methods=="BayesC0"
-    res=MCMC_BayesC(chain_length,mme,df,Pi,
+    res=MCMC_BayesC(chain_length,mme,df,
+                    π      =Pi,
                     methods=methods,
                     estimatePi = estimatePi,
                     sol=starting_value,
