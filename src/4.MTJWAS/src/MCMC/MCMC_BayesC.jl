@@ -145,8 +145,10 @@ function MCMC_BayesC(nIter,mme,df;
         end
       end
     end
-
+    
+    #######################################################
     #MCMC
+    #######################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
         #####################################
         # 1.1. Non-Marker Location Parameters
@@ -159,7 +161,7 @@ function MCMC_BayesC(nIter,mme,df;
         #####################################
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
-          iR0,iGM = inv(mme.R),inv(mme.M.G)
+          iR0,iGM = inv(mme.R),inv(mme.M.G)qq
 
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
