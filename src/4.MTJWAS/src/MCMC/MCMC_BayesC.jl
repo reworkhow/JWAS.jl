@@ -161,7 +161,7 @@ function MCMC_BayesC(nIter,mme,df;
         #####################################
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
-          iR0,iGM = inv(mme.R),inv(mme.M.G)qq
+          iR0,iGM = inv(mme.R),inv(mme.M.G)
 
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
