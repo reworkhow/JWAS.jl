@@ -146,7 +146,7 @@ function runMCMC(mme,df;
   end
 
   if methods != "BayesB"
-    if methods != "BayesC0" && sum(values(Pi))!=1.0
+    if Pi != 0.0 && sum(values(Pi))!=1.0
       error("Summation of probabilities of Pi is not equal to one.")
     end
 
