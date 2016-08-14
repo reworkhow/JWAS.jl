@@ -142,10 +142,14 @@ function runMCMC(mme,df;
       error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
     end
     println("Marker effects covariance matrix is ")
-    println(round(mme.M.G,2),".\n\n")
+    println(round(mme.M.G,6),".\n\n")
   end
 
   if methods != "BayesB"
+    if methods != "BayesC0" && sum(values(Pi))!=1.0
+      error("Summation of probabilities of Pi is not equal to one.")
+    end
+
     res=MCMC_BayesC(chain_length,mme,df,
                      Pi = Pi,
                      sol=starting_value,

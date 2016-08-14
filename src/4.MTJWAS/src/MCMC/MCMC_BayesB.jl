@@ -76,7 +76,7 @@ function MCMC_BayesB(nIter,mme,df,Pi;
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
         #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
-        deltaArray[traiti]     = ones(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
+        deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
         meanDeltaArray[traiti] = zeros(nMarkers)
         uArray[traiti]         = zeros(nMarkers)
         meanuArray[traiti]     = zeros(nMarkers)
