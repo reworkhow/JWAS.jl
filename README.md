@@ -40,12 +40,12 @@ JWAS.jl
            ├── MT.solve
            └── MT.runMCMC
 
-├──────── QTL.jl
+├──────── misc.jl
            ├── get_breeding_values
            ├── get_additive_genetic_variances
            ├── get_heritability
-           ├── get_genetic_correlatiions
-           └── QTL.describe
+           ├── get_correlations
+           └── report
 
 
 ├──────── Datasets.jl

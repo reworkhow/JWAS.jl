@@ -1,4 +1,4 @@
-module QTL
+module misc
 
 using DataFrames
 using Distributions

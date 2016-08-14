@@ -1,8 +1,8 @@
 """
-    describe(X::Array{Array{Float64,2},1};index=false)
+    report(X::Array{Array{Float64,2},1};index=false)
 * show summary statistics for MCMC samples (matrices or index [i,j] of matrices)
 """
-function describe(X::Array{Array{Float64,2},1};index=false)
+function report(X::Array{Array{Float64,2},1};index=false)
   if index == false
     Xmean = mean(X)
     Xvar  = mean(X.^2)-Xmean.^2
@@ -23,7 +23,11 @@ function describe(X::Array{Array{Float64,2},1};index=false)
   end
 end
 
-function describe(X::Array{Array{Float64,1},1};index=false)
+"""
+    report(X::Array{Array{Float64,1},1};index=false)
+* show summary statistics for MCMC samples (vectors or index i of vectors)
+"""
+function report(X::Array{Array{Float64,1},1};index=false)
   if index==false
     println("Summary Stats:")
     println("Mean:\n",round(mean(X),6))
@@ -40,3 +44,5 @@ function describe(X::Array{Array{Float64,1},1};index=false)
     Plots.title!("Trait $index")
   end
 end
+
+export report
