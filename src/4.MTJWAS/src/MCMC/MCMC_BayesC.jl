@@ -292,14 +292,14 @@ function MCMC_BayesC(nIter,mme,df;
 
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
-            println("Residual covariance matrix: \n",round(R0Mean,3))
+            println("Residual covariance matrix: \n",round(R0Mean,6))
 
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,3))
+              println("Polygenic effects covariance matrix \n",round(G0Mean,6))
             end
 
             if mme.M != 0
-              println("Marker effects covariance matrix: \n",round(GMMean,3))
+              println("Marker effects covariance matrix: \n",round(GMMean,6))
               if methods=="BayesC" && estimatePi == true
                 println("π: \n",BigPiMean)
               elseif methods=="BayesCC" && estimatePi == true
