@@ -9,16 +9,6 @@ function mkDict(a)
     return d,names
 end
 
-function getNames(mme)
-    names = Array(AbstractString,0)
-    for trm in mme.modelTerms
-        for name in trm.names
-            push!(names,trm.trmStr*": "*name)
-        end
-    end
-    return names
-end
-
 function getTerm(trmStr)
     trm = ModelTerm(trmStr,0,[],[],[],0,0,spzeros(0,0),[])
     factorVec = split(trmStr,"*")
@@ -41,6 +31,12 @@ function initMME(modelEquation::AbstractString,R::Float64)
         dict[trm.trmStr] = modelTerms[i] #modelTermDict::Dict{AbstractString,ModelTerm}
     end
     return MME(modelEquation,modelTerms,dict,lhs,R)
+end
+
+function covList(mme::MME, covStr::AbstractString) #set variable as covariate
+    covVec = split(covStr," ",keep=false)
+    mme.covVec = [symbol(i) for i in covVec]
+    nothing
 end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME)  #ModelTerm("A*B")
@@ -84,15 +80,10 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME)  #ModelTerm("A*B")
     trm.val = val
 end
 
-function covList(mme::MME, covStr::AbstractString) #set variable as covariate
-    covVec = split(covStr," ",keep=false)
-    mme.covVec = [symbol(i) for i in covVec]
-    nothing
-end
 
 getFactor1(str) = [strip(i) for i in split(str,"x")][1] #using in may be better. maybe age*animal
 
-function getX(trm::ModelTerm,mme::MME) #make incidence matrix
+function getX(trm::ModelTerm,mme::MME) #make incidence matrix for one term
     pedSize = 0
     nObs  = size(trm.str,1)
     if trm.trmStr in mme.pedTrmVec
@@ -118,9 +109,11 @@ function getX(trm::ModelTerm,mme::MME) #make incidence matrix
     if mme.ped!=0
         pedSize = length(mme.ped.idMap)
         if trm.trmStr in mme.pedTrmVec
+            # This is to ensure the X matrix for
+            # additive effect has the correct number of columns
             # adding a zero to the last column in row 1
             ii = 1
-            jj = pedSize
+            jj = pedSize # the last column in row 1
             vv = [0.0]
             xi = [xi;ii]
             xj = [xj;jj]
@@ -146,6 +139,7 @@ function getMME(mme::MME, df::DataFrame)
         trm = mme.modelTerms[i]
         X = [X trm.X]
     end
+
     y    = df[mme.lhs]
     nObs = size(y,1)
     ii = 1:nObs
@@ -158,6 +152,7 @@ function getMME(mme::MME, df::DataFrame)
         vv = [vv,0.0]
     end
     ySparse = sparse(ii,jj,vv)
+
     mme.X = X
     mme.ySparse = ySparse
     mme.mmeLhs = X'X
@@ -216,4 +211,14 @@ function addLambdas(mme::MME) #for iid random effects
         mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
         mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*lambdaDiff
     end
+end
+
+function getNames(mme)
+    names = Array(AbstractString,0)
+    for trm in mme.modelTerms
+        for name in trm.names
+            push!(names,trm.trmStr*" : "*name)
+        end
+    end
+    return names
 end

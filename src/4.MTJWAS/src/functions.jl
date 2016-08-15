@@ -21,8 +21,7 @@ function initMME(models::AbstractString,R::Array{Float64,2})
     # returns an MME object for building the mme corresponding
     # to the input string
     if models==""
-        println("modelEquation is empty\n")
-        return
+        error("modelEquation is empty\n")
     end
     modelVec = split(models,[';','\n'],keep=false)
     nModels  = size(modelVec,1)
@@ -43,38 +42,49 @@ function initMME(models::AbstractString,R::Array{Float64,2})
     return MME(modelVec,modelTerms,dict,lhsVec,[],[],0,0,0,0,0,Array(Float64,1,1),R,0,1,0,0,0)
 end
 
-function getData(trm::ModelTerm,df::DataFrame,mme::MME)#same to single trait
+function covList(mme::MME, covStr::AbstractString)
+    covVec = split(covStr," ",keep=false)
+    mme.covVec = [symbol(i) for i in covVec]
+    nothing
+end
+
+function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("A*B")
     nObs = size(df,1)
     trm.str = Array(AbstractString,nObs)
     trm.val = Array(Float64,nObs)
 
-    if(trm.factors[1] == :intercept)
+    if trm.factors[1] == :intercept
         str = fill(string(trm.factors[1]),nObs)
         val = fill(1.0,nObs)
     else
-        myDf = df[trm.factors]
-        if trm.factors[1] in mme.covVec
-            str = fill(string(trm.factors[1]),nObs)
-            val = df[trm.factors[1]]
+        myDf = df[trm.factors] #:A,:B
+        if trm.factors[1] in mme.covVec   #for ModelTerm object such as "A" or "A*B"
+            str = fill(string(trm.factors[1]),nObs)      #["A","A",...]
+            val = df[trm.factors[1]]                    #df[:A]
         else
-            str = [string(i) for i in df[trm.factors[1]]]
+            #animal or maternal effects ID also come here
+            #trm.nFactors=1, factors
+            str = [string(i) for i in df[trm.factors[1]]] #["A1","A2","A1",...]
             val = fill(1.0,nObs)
         end
+
+        #for ModelTerm object such as "A*B" whose nFactors>1
         for i=2:trm.nFactors
             if trm.factors[i] in mme.covVec
-                str = str .* fill("*"*string(trm.factors[i]),nObs)
+                str = str .* fill("*"*string(trm.factors[i]),nObs)#["A x B","A x B",...]
                 val = val .* df[trm.factors[i]]
             else
                 str = str .* fill("*",nObs) .* [string(j) for j in df[trm.factors[i]]]
-                val = val .* fill(1.0,nObs)
+                val = val .* fill(1.0,nObs)  #["A1 X B1","A2 x B2",...]
             end
         end
     end
-    trm.str = str
+
+    trm.str = str #detailed example in types.jl
     trm.val = val
 end
 
-getFactor1(str) = [strip(i) for i in split(str,"*")][1]
+getFactor1(str) = [strip(i) for i in split(str,"*")][1] #using in may be better. maybe age*animal
 
 function getX(trm::ModelTerm,mme::MME) #make incidence matrix for one term
     pedSize = 0
@@ -151,23 +161,6 @@ function getMME(mme::MME, df::DataFrame)
     end
 end
 
-function getNames(mme)
-    names = Array(AbstractString,0)
-    for trm in mme.modelTerms
-        for name in trm.names
-            push!(names,trm.trmStr*": "*name)
-        end
-    end
-    return names
-end
-
-function covList(mme::MME, covStr::AbstractString)
-    covVec = split(covStr," ",keep=false)
-    mme.covVec = [symbol(i) for i in covVec]
-    nothing
-end
-
-
 function setAsRandom(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G::Array{Float64,2})
     pedTrmVec = split(randomStr," ",keep=false)
     res = []
@@ -200,4 +193,14 @@ function addA(mme::MME) #little different from single trait
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + mme.Ai*mme.Gi[i,j]
         end
     end
+end
+
+function getNames(mme)
+    names = Array(AbstractString,0)
+    for trm in mme.modelTerms
+        for name in trm.names
+            push!(names,trm.trmStr*": "*name)
+        end
+    end
+    return names
 end
