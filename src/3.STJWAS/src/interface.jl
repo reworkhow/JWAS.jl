@@ -90,11 +90,11 @@ end
     solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,niterations = 5000)
 
 * Solve the mixed model equations (no marker information) without estimating variance components.
-Available solvers includes `Jacobi`, `GaussSeidel`, `Gibbs sampler`.
+Available solvers includes `default`,`Jacobi`, `GaussSeidel`, `Gibbs sampler`.
 """
 function solve(mme::MME,
                 df::DataFrame;
-                solver="Jacobi",
+                solver="default",
                 printout_frequency=100,
                 tolerance = 0.000001,
                 niterations = 5000
@@ -109,6 +109,8 @@ function solve(mme::MME,
         return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,tolerance=tolerance,output=printout_frequency)]
     elseif solver=="Gibbs"
         return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,mme.RNew,niterations,outFreq=printout_frequency)]
+    elseif solver=="default"
+        return [getNames(mme) mme.mmeLhs\mme.mmeRhs]
     else
         error("No this solver\n")
     end
