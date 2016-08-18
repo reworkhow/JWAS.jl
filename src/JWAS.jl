@@ -7,5 +7,6 @@ include("3.STJWAS/src/STJWAS.jl")
 include("4.MTJWAS/src/MTJWAS.jl")
 include("1.misc/src/misc.jl")
 include("5.Datasets/src/Datasets.jl")
+include("6.SSBR/src/SSBR.jl")
 
 end

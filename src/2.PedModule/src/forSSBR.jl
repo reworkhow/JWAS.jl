@@ -22,7 +22,7 @@ function genoSet!(genoID_file::AbstractString,ped::Pedigree)
 	return (numberNonGeno)
 end
 
-function genoSet!(genoID::Array{ASCIIString,1},ped::Pedigree)
+function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
     for i in genoID
         push!(ped.setG,i)
     end
@@ -82,4 +82,4 @@ function genoSet!(genoID_file::AbstractString,genoCoreID_file::AbstractString,pe
 	numberNonGeno = length(ped.setNG)
 	numberGenoCore = length(ped.setG_core)
 	return (numberNonGeno,numberGenoCore)
-end	
+end

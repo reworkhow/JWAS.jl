@@ -129,7 +129,7 @@ type Output
 end
 
 export InputParameters
-export Output
-export GibbsMats
-export Current
+#export Output
+#export GibbsMats
+#export Current
 export MCMCinfo
