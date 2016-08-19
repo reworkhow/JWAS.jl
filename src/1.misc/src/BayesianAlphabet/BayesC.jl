@@ -48,4 +48,4 @@ function sampleEffectsBayesC!(mats::GibbsMats,current::Current,out::Output)
     out.modelFreq         +=  (δ - out.modelFreq)*iIter
 end
 
-export sampleEffectsBayesC!
+#export sampleEffectsBayesC!

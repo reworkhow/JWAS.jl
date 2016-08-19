@@ -6,7 +6,7 @@ end
 
 function make_fixed(file;ID_order=false) #maybe better to use number, factor
 
-    
+
     myfile = open(file)
     #set number of columns and column types
     row1   = split(readline(myfile))
@@ -14,7 +14,7 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
     ncol   = length(row1)
     etv    = Array(DataType,ncol)
     etv[1] = UTF8String  #type for 1st column: ID
-    
+
     for coli in 2:length(row1) #type for all variables(predictors)
        if row1[coli][end]=='#'
            etv[coli]=UTF8String
@@ -23,11 +23,11 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
        end
     end
     close(myfile)
-    
+
     #read genotypes
     df = readtable(file, eltypes=etv, separator = ' ',header=true)
-    
-    
+
+
     variables=Array{Any}(length(etv)-1)
     if etv[2]==Float64
         C = convert(Array,df[:,2])
@@ -35,7 +35,7 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
     else
         C,variables[1]=mkmat_incidence_factor(df[:,2])
     end
-    
+
     for i=3:length(etv)
       if etv[i]==Float64
           C = [C convert(Array,df[:,i])]
@@ -46,11 +46,11 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
       end
     end
 
-    
+
     if ID_order!= false
         ID_order=convert(DataFrame,reshape(ID_order,length(ID_order),1))#covert to dataframe for 2-diim
     end
-    
+
     C=convert(DataFrame,[Array(df[:,1]) C]);
 
     #reorder C to make it has the row order as y: phenotypes
@@ -61,9 +61,9 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
         Cnew[j,:]= convert(Array,C[index,:])
         j = j+1
     end
-    
+
     C=Cnew[:,2:end]
-    
+
     return FixedMatrix(C,variables)
 end
 
@@ -87,4 +87,4 @@ function mkmat_incidence_factor(b)
     return coMat,factor
 end
 
-export FixedMatrix
+#export FixedMatrix

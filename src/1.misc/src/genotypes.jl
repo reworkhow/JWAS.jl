@@ -1,5 +1,5 @@
 type Genotypes
-  obsID::Array{UTF8String,1}    #row ID of genotypes
+  obsID::Array{AbstractString,1}    #row ID of genotypes
   markerID
   nObs::Int64
   nMarkers::Int64
@@ -62,5 +62,5 @@ function make_genotypes(M::Array{Float64,2};header=false,center=true)
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
 
-export make_genotypes
-export Genotypes
+#export make_genotypes
+#export Genotypes
