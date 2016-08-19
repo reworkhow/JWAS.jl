@@ -1,33 +1,41 @@
-type MCMCsamples
-  samples4R::Array{Any,1} #residual variance
-  samples4G::Array{Any,1} #polygenic variance
-  sampleDict::Dict{ModelTerm,Array{Any,1}} #key: "ModelTerm(1:A*B)" value: samples
-end
+#define samples for WHICH location parameters to output
+function outputSamplesFor(mme::MME,trmStr::AbstractString)
+    #add model number => "1:age"
+    res = []
+    for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trm in strpVec
+            res = [res;string(m)*":"*trm]
+        end
+    end #"age"->"1:age","2:age"
 
-#function outputSamplesFor(mme::MME,trmStr::AbstractString)
-#    trm  = mme.modelTermDict[trmStr]
-#    samples = MCMCSamples(trm,Array(Float64,1,1))
-#    push!(mme.outputSamplesVec,samples)
-#end
+    for trmStr in res
+        trm     = mme.modelTermDict[trmStr]
+        samples = MCMCSamples(trm,Array(Float64,1,1))
+        push!(mme.outputSamplesVec,samples)
+    end
+end
 
 function init_sample_arrays(mme::MME,niter)
-    samples4R = Array(Any,niter)
-    samples4G  = []
+    mme.samples4R = zeros(mme.nModels^2,niter)
+
     if mme.ped != 0
-        samples4G = Array(Any,niter)
+        mme.samples4G = zeros(length(mme.pedTrmVec)^2,niter)
     end
-    MCMCsamples(samples4R,samples4G)
-    #for i in  mme.outputSamplesVec
-    #    trmi = i.term
-    #    i.sampleArray = zeros(niter,trmi.nLevels)
-    #end
-    #for i in  mme.rndTrmVec
-    #    trmi = i.term
-    #    i.sampleArray = zeros(niter)
-    #end
+
+    for i in  mme.outputSamplesVec #resize
+        trmi = i.term
+        i.sampleArray = zeros(trmi.nLevels,niter)
+    end
+
+    for i in  mme.rndTrmVec #resize
+        trmi = i.term
+        i.sampleArray = zeros(length(mme.rndTrmVec)^2,niter)#Bug maybe many diff
+    end
 end
 
-#output samples for location parameers
+#get samples for location parameters
 function outputSamples(mme::MME,sol,iter::Int64)
     for i in  mme.outputSamplesVec
         trmi = i.term
@@ -37,34 +45,12 @@ function outputSamples(mme::MME,sol,iter::Int64)
     end
 end
 
-function outputSamplesFor(mme::MME,trmStr::AbstractString)
-    trm  = mme.modelTermDict[trmStr]
-    samples = MCMCSamples(trm,Array(Float64,1,1))
-    push!(mme.outputSamplesVec,samples)
-end
-
-function initSampleArrays(mme::MME,niter)
-    mme.resVarSampleArray = zeros(niter)
-    if mme.ped != 0
-        n = size(mme.GiNew,1)^2
-        mme.genVarSampleArray = zeros(niter,n)
-    end
-    for i in  mme.outputSamplesVec
-        trmi = i.term
-        i.sampleArray = zeros(niter,trmi.nLevels)
-    end
-    for i in  mme.rndTrmVec
-        trmi = i.term
-        i.sampleArray = zeros(niter)
-    end
-end
-
 #output samples for location parameers
 function outputSamples(mme::MME,sol,iter::Int64)
     for i in  mme.outputSamplesVec
         trmi = i.term
         startPosi  = trmi.startPos
         endPosi    = startPosi + trmi.nLevels - 1
-        i.sampleArray[iter,:] = sol[startPosi:endPosi]
+        i.sampleArray[:,iter] = sol[startPosi:endPosi]
     end
 end

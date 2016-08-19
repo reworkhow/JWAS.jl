@@ -59,15 +59,25 @@ type MME
     ROld::Float64                           #residual variance (single-trait)
     RNew::Float64                           #for lambda MME
 
-    M::Genotypes
+    M                                       #Genotypes
 
     mmePos::Int64                           #temporary value to record term position
                                             #(starting from 1)
+
+    samples4R::Array{Float64,2}             #residual variance  (ndim^2 * niter)
+    samples4G::Array{Float64,2}             #polygenic variance (matrix -> vector)
+    outputSamplesVec::Array{MCMCSamples,1}  #location parameters
+
+    #rndTrmVec::Array{RandomEffect,1}
+    #outputSamplesVec::Array{MCMCSamples,1}
+    #genVarSampleArray::Array{Float64,2}
+    #resVarSampleArray::Array{Float64,1}
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R)
       if nModels==1 && typeof(R)==Float64 #single-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),0,0,0.0,R,0,1)
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),0,0,0.0,R,0,1,[],[],[])
     elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),R,0,0,0.0,0.0,0,1)
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),R,0,0,0.0,0.0,0,1,[],[],[])
     else
         error("Residual variance R should be a scalar for single-trait analyses and a matrix for multi-trait analyses.")
       end
@@ -84,11 +94,18 @@ end
 
 #general (iid) random effects
 #single-trait
+#multi-trait
 type RandomEffect
     term::ModelTerm
     vcOld::Float64
     vcNew::Float64
     df::Float64
     scale::Float64
-    sampleArray::Array{Float64,1}
+    sampleArray::Array{Float64,1} #for variance components
+end
+
+#MCMC samplers for location parameters
+type MCMCSamples
+    term::ModelTerm
+    sampleArray::Array{Float64,2}
 end

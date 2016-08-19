@@ -62,6 +62,15 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
 end
 
 """
+    set_random(mme::MME,randomStr::AbstractString,vc::Float64, df::Float64))
+
+set variables as iid random effects
+"""
+function set_random(mme::MME,randomStr::AbstractString, vc::Float64, df::Float64)
+    setAsRandom(mme,randomStr, vc, df)
+end
+
+"""
     get_pedigree(pedfile::AbstractString)
 * Get pedigree informtion from a pedigree file.
 * File format:
@@ -95,6 +104,16 @@ function add_markers(mme::MME,file,G::Array{Float64,2};separator=' ',header=true
     addMarkers(mme,file,G,separator=separator,header=header,G_is_marker_variance=G_is_marker_variance)
 end
 
+"""
+    outputMCMCsamples(mme::MME,trmStr::AbstractString...)
+
+Get samples for specific variables.
+"""
+function outputMCMCsamples(mme::MME,trmStr::AbstractString...)
+    for i in trmStr
+      outputSamplesFor(mme,i)
+    end
+end
 
 """
     solve(mme::MME,df::DataFrame;solver="default",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)
