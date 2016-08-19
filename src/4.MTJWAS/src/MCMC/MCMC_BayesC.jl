@@ -4,7 +4,7 @@ function MCMC_BayesC(nIter,mme,df;
                      sol       =false,
                      outFreq   =1000,
                      methods   ="conventional analyses",
-                     output_marker_effects_frequency =0)
+                     output_samples_frequency=0)
 
    #######################################################
    # Pre-Check
@@ -70,8 +70,6 @@ function MCMC_BayesC(nIter,mme,df;
       α           = zeros(nMarkers)#starting values for marker effeccts are zeros
       δ           = zeros(nMarkers)#inclusion indicator for marker effects (for BayesC)
       meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
-
-      pi          = zeros(nIter)#vector to save π (for BayesC)
       mean_pi     = 0.0
     end
 
@@ -85,16 +83,19 @@ function MCMC_BayesC(nIter,mme,df;
     #######################################################
     #  SET UP OUTPUT
     #######################################################
-    #initiate vectors to save samples of MCMC
-    initSampleArrays(mme,nIter)
+    if output_samples_frequency != 0
+      #initialize arrays to save MCMC samples
+      num_samples = Int(floor(nIter/output_samples_frequency))
+      init_sample_arrays(mme,num_samples)
 
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-      if mme.M != 0
+      if mme.M != 0 #write samples for marker effects to a txt file
         outfile   = open("MCMC samples for marker effects"*"_$(now()).txt","w")
         if mme.M.markerID[1]!="NA"
-          writedlm(outfile,mme.M.markerID')
+            writedlm(outfile,mme.M.markerID')
         end
+        pi = zeros(num_samples)#vector to save π (for BayesC)
       end
+      out_i = 1
     end
 
     #######################################################
@@ -128,7 +129,7 @@ function MCMC_BayesC(nIter,mme,df;
           #sample Pi
           if estimatePi == true
             π = samplePi(nLoci, nMarkers)
-            pi[iter] = π
+            pi[out_i] = π
             mean_pi += (π-mean_pi)/iter
           end
         end
@@ -157,7 +158,6 @@ function MCMC_BayesC(nIter,mme,df;
             mme.GiNew = inv(G0)
 
             G0Mean  += (G0  - G0Mean )/iter
-            mme.genVarSampleArray[iter,:] = vec(G0)
 
             addA(mme) #add Ainverse*lambda
         end
@@ -174,7 +174,6 @@ function MCMC_BayesC(nIter,mme,df;
         vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         mme.RNew = vRes
         meanVare += (vRes - meanVare)/iter
-        mme.resVarSampleArray[iter] = vRes
 
         ###############################################
         # 2.4 Marker Effects Variamce
@@ -184,24 +183,31 @@ function MCMC_BayesC(nIter,mme,df;
           meanVara += (vEff - meanVara)/iter
         end
 
-        #output samples for different effects
-        outputSamples(mme,sol,iter)
-        if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-          if mme.M != 0
-            if iter%output_marker_effects_frequency==0
-              writedlm(outfile,α')
+        ###############################################
+        # OUTPUT
+        ###############################################
+        if output_samples_frequency != 0
+          if iter%output_samples_frequency==0
+            outputSamples(mme,sol,out_i)
+            mme.samples4R[:,out_i]=vRes
+            if mme.ped != 0
+              mme.samples4G[:,out_i]=vec(G0)
             end
+            if mme.M != 0
+                writedlm(outfile,α')
+            end
+            out_i +=1
           end
         end
 
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round(meanVare,3))
+            println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0
               println("Polygenic effects covariance matrix \n",round(G0Mean,3))
             end
             if mme.M != 0
-              println("Marker effects variance: ",round(meanVara,3))
+              println("Marker effects variance: ",round(meanVara,6))
               if estimatePi == true
                 println("π: ", round(mean_pi,3))
               end
@@ -210,7 +216,7 @@ function MCMC_BayesC(nIter,mme,df;
     end
 
     #######################################################
-    # OUTPUT
+    # After MCMC
     #######################################################
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
       if mme.M !=0

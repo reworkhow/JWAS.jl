@@ -53,20 +53,24 @@ function MCMC_BayesB(nIter,mme,df,π;
     δ           = zeros(nMarkers)       # inclusion indicator for marker effects
     u           = zeros(nMarkers)       # inclusion indicator for marker effects
     meanu       = zeros(nMarkers)
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
+
+    #######################################################
+    #  SET UP OUTPUT
+    #######################################################
+    if output_samples_frequency != 0
+      num_samples = Int(floor(nIter/output_samples_frequency))
+      init_sample_arrays(mme,num_samples)
+
       outfile   = open("MCMC samples for marker effects"*"_$(now()).txt","w")
       if mme.M.markerID[1]!="NA"
         writedlm(outfile,mme.M.markerID')
       end
+      out_i = 1
     end
 
-    #initiate vectors to save samples of MCMC
-    initSampleArrays(mme,nIter)
     #variables to save variance for marker effects or residual
     meanVare    = 0.0
     meanVara    = 0.0
-    #vector to save π
-    pi          = zeros(nIter)
     #adjust y for strating values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)   #starting values for location parameters(no marker) are sol
 
@@ -131,32 +135,29 @@ function MCMC_BayesB(nIter,mme,df,π;
             locusEffectVar[j] = sample_variance(α[j],1,dfEffectVar, scaleVar)
         end
 
-        ##sample Pi
-        #if estimatePi == true
-        #  π = samplePi(nLoci, nMarkers)
-        #  pi[iter] = π
-        #end
-
-        #output samples for different effects
-        outputSamples(mme,sol,iter)
-        if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-          if iter%output_marker_effects_frequency==0
-            writedlm(outfile,u')
+        ###############################################
+        # OUTPUT
+        ###############################################
+        if output_samples_frequency != 0
+          if iter%output_samples_frequency==0
+            outputSamples(mme,sol,out_i)
+            mme.samples4R[:,out_i]=vRes
+            if mme.ped != 0
+              mme.samples4G[:,out_i]=vec(G0)
+            end
+            writedlm(outfile,α')
+            out_i +=1
           end
         end
 
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,3))
-            if estimatePi == true
-              println("π: ", round(mean_pi,3))
-            end
         end
-
     end
 
     #######################################################
-    # OUTPUT
+    # After MCMC
     #######################################################
     if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
       close(outfile)
