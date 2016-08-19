@@ -69,5 +69,5 @@ function ssBayesC0(matrices::HybridMatrices,
     IDs=PedModule.getIDs(ped);
     EBV=DataFrame(ID=IDs,EBV=vec(EBV))
 
-    return EBV
+    return Results(matrices,output,EBV)
 end
