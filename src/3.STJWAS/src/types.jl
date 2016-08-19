@@ -1,21 +1,3 @@
-type ModelTerm
-    trmStr::AbstractString         #"A" ; "A*B"
-    nFactors::Int64                # 1  ;  2
-    factors::Array{Symbol,1}       #:A  ; :A,:B
-
-    str::Array{AbstractString,1}   #covariate       : str-> ["A x B", "A X B", ...]; val -> df[:A].*df[:B]
-    val::Array{Float64,1}          #factor          : str->["A1 x B1", "A2 X B2", ...]; val -> [1.0,1.0,...]
-                                   #factor&covariate: str->["A x B1","A X B2", ...]; val->1.0.*df[:B]
-
-    startPos::Int64                #start postion for this term in incidence matrix
-    nLevels::Int64
-    X::SparseMatrixCSC{Float64,Int64}
-    names::Array{Any,1}            #names for this variable:
-                                   #covariate:     nLevels=1,       "A x B";
-                                   #factor:        nLevels=nLevels, "A1 x B1", "A2 X B2", ...;
-                                   #animal (ped) : nLevels=nAnimals
-end
-
 #general (iid) random effects; should also make a specific type for BV ped effects
 type RandomEffect
     term::ModelTerm

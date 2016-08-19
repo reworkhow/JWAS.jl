@@ -1,17 +1,23 @@
 """
-    build_model(model_equations::AbstractString,R::Array{Float64,2})
+    build_model(model_equations::AbstractString,R)
 
-* build models from **model equations** with a residual covaraince matrix **R**
+* build models from **model equations** with residual varainces **R**
 
 ```julia
+#single-trait
+model_equations = "BW = intercept + age + sex"
+R               = 6.72
+models          = build_model(model_equations,R);
+
+#multi-trait
 model_equations = "BW = intercept + age + sex;
                    CW = intercept + age + sex";
 R               = [6.72   24.84
                    24.84  708.41]
-models          = MT.build_model(model_equations,R);
+models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString,R::Array{Float64,2})
+function build_model(model_equations::AbstractString,R)
   initMME(model_equations,R)
 end
 
@@ -26,9 +32,9 @@ model_equations = "BW = intercept + age + sex;
                    CW = intercept + age + sex";
 R               = [6.72   24.84
                    24.84  708.41]
-models          = MT.build_model(model_equations,R)
+models          = build_model(model_equations,R)
 #set the variable age as covariates
-MT.set_covariate(models,"age")
+set_covariate(models,"age")
 ```
 """
 function set_covariate(mme::MME,covStr::AbstractString)
@@ -36,26 +42,36 @@ function set_covariate(mme::MME,covStr::AbstractString)
 end
 
 """
-    set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G::Array{Float64,2})
+    set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G)
 
-set variables as random polygenic effects
+* set variables as random polygenic effects
 
 ```julia
 model_equations = "BW = intercept + age + sex + Animal;
                    CW = intercept + age + sex + Animal";
-model           = MT.build_model(model_equations,R);
-ped             = MT.get_pedigree(pedfile);
+model           = build_model(model_equations,R);
+ped             = get_pedigree(pedfile);
+G               = [6.72   2.84
+                   2.84  8.41]
 
 setAsRandom(model,"Animal", ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G::Array{Float64,2})
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G)
     setAsRandom(mme,randomStr,ped, G)
 end
 
 """
     get_pedigree(pedfile::AbstractString)
-get pedigree informtion from a pedigree file
+* Get pedigree informtion from a pedigree file.
+* File format:
+
+```
+a 0 0
+b 0 0
+c a b
+d a c
+```
 """
 function get_pedigree(pedfile::AbstractString)
   PedModule.mkPed(pedfile)
@@ -80,18 +96,17 @@ end
 
 
 """
-    solve(mme::MME,df::DataFrame;solver="Jacobi",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)
+    solve(mme::MME,df::DataFrame;solver="default",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)
 
 * Solve the mixed model equations (no marker information) without estimating variance components.
-Available solvers includes `Jacobi`,`GaussSeidel`,`Gibbs sampler`.
+Available solvers includes `default`,`Jacobi`,`GaussSeidel`,`Gibbs sampler`.
 """
 function solve(mme::MME,
                 df::DataFrame;
-                solver="Jacobi",
+                solver="default",
                 printout_frequency=100,
                 tolerance = 0.000001,
-                maxiter = 5000
-                )
+                maxiter = 5000)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
@@ -102,9 +117,13 @@ function solve(mme::MME,
     elseif solver=="GaussSeidel"
         return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
                               tolerance=tolerance,outFreq=printout_frequency,maxiter=maxiter)]
-    elseif solver=="Gibbs"
+    elseif solver=="Gibbs" && mme.nModels !=1
         return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,maxiter,
                               outFreq=printout_frequency)]
+    elseif solver=="Gibbs" && mme.nModels==1
+        return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,mme.RNew,maxiter,outFreq=printout_frequency)]
+    elseif solver=="default"
+        return [getNames(mme) mme.mmeLhs\mme.mmeRhs]
     else
         error("No this solver\n")
     end
@@ -173,4 +192,16 @@ function runMCMC(mme,df;
     error("No methods options!!!")
   end
   res
+end
+
+"""
+    showMME(mme::MME,df::DataFrame)
+
+* Show left-hand side and right-hand side of mixed model equations (no markers).
+"""
+function showMME(mme::MME,df::DataFrame)
+   if size(mme.mmeRhs)==()
+     getMME(mme,df)
+   end
+    return mme.mmeLhs,mme.mmeRhs
 end

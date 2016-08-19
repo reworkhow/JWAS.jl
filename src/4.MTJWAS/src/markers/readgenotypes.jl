@@ -11,21 +11,18 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
       markerID= ["NA"]
     end
     #set types for each column and get number of markers
-    #=
     ncol= length(row1)
     etv = Array(DataType,ncol)
     fill!(etv,Float64)
-    etv[1]=AbstractString
-    =#
-    #dataframes not working with strings, confliction with newest julia
+    etv[1]=UTF8String
     close(myfile)
 
     #read genotypes
-    #df = readtable(file, eltypes=etv, separator = separator, header=header)
-    df = readtable(file, separator = separator, header=header)
+    df = readtable(file, eltypes=etv, separator = separator, header=header)
+    #df = readtable(file, separator = separator, header=header)
 
     obsID=convert(Array,df[:,1])
-    genotypes = map(Float64,convert(Array,df[:,2:end]))#now vannot ganruantt float64
+    genotypes = map(Float64,convert(Array,df[:,2:end]))
     nObs,nMarkers = size(genotypes)
 
     if center==true

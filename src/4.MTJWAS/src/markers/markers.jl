@@ -8,9 +8,9 @@ type Genotypes
   sum2pq::Float64
   centered::Bool
   genotypes::Array{Float64,2}
-  G::Array{Float64,2}
+  G  #ST->Float64;MT->Array{Float64,2}
   G_is_marker_variance::Bool
-  Genotypes(a,b,c,d,e,f,g,h)=new(a,b,c,d,e,f,g,h,zeros(2,2),false)
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,0.0,false)
 end
 
 function addMarkers(mme::MME,file,G::Array{Float64,2};
