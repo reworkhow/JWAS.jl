@@ -14,6 +14,9 @@ function genetic2marker(M::Genotypes,Pi::Dict)
   M.G_is_marker_variance = true
 end
 
+function genetic2marker(M::Genotypes,π::Float64)
+    mme.M.G=mme.M.G/((1-π)*mme.M.sum2pq)
+end
 
 function samplePi(deltaArray,BigPi,BigPiMean,iter)
   temp = deltaArray[1]

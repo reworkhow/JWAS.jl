@@ -27,13 +27,9 @@ function MCMC_BayesB(nIter,mme,df,π;
     mpm         = mGibbs.xpx
     M           = mGibbs.X
     dfEffectVar = 4.0
-    if mme.M.G_is_marker_variance == false
-      vEff = mme.M.G/((1-π)*mme.M.sum2pq)
-    else
-      vEff = mme.M.G
-    end
+    vEff        = mme.M.G
     locusEffectVar = fill(vEff,nMarkers)
-    scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
+    scaleVar       = vEff*(dfEffectVar-2)/dfEffectVar  #scale factor for locus effects
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
        ν = 4
