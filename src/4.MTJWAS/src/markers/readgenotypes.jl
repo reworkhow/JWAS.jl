@@ -70,5 +70,3 @@ function readgenotypes(M::Array{Float64,2};header=false,separator=' ',center=tru
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
-
-export readgenotypes

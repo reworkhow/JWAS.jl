@@ -1,4 +1,4 @@
-function MCMC_BayesC(nIter,mme,df;
+function MT_MCMC_BayesC(nIter,mme,df;
                       Pi      =0.0,
                       sol     =false,
                       outFreq =1000,
@@ -145,7 +145,7 @@ function MCMC_BayesC(nIter,mme,df;
         end
       end
     end
-    
+
     #######################################################
     #MCMC
     #######################################################

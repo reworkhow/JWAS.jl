@@ -1,4 +1,4 @@
-function MCMC_BayesB(nIter,mme,df,Pi;
+function MT_MCMC_BayesB(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
                       constraint=nothing,

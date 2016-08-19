@@ -1,13 +1,3 @@
-#general (iid) random effects; should also make a specific type for BV ped effects
-type RandomEffect
-    term::ModelTerm
-    vcOld::Float64
-    vcNew::Float64
-    df::Float64
-    scale::Float64
-    sampleArray::Array{Float64,1}
-end
-
 type MCMCSamples
     term::ModelTerm
     sampleArray::Array{Float64,2}

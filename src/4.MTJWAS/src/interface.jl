@@ -80,6 +80,7 @@ end
 """
     add_markers(mme::MME,file,G::Array{Float64,2});separator=' ',header=true,G_is_marker_variance=false)
 * Get marker informtion from a genotype file (same order as the phenotype file).
+* G is the additive genetic variance.
 * File format:
 
 ```
@@ -151,7 +152,7 @@ function runMCMC(mme,df;
                 missing_phenotypes= false,
                 constraint        = false,
                 estimatePi        = false,
-                methods           = "conventional (no markers)", #BayesC0,BayesC,BayesCC
+                methods           = "conventional (no markers)",
                 output_samples_frequency::Int64 = 0)
 
   if mme.M != 0 && mme.M.G_is_marker_variance==false
@@ -164,33 +165,54 @@ function runMCMC(mme,df;
     println(round(mme.M.G,6),".\n\n")
   end
 
-  if methods != "BayesB"
-    if Pi != 0.0 && sum(values(Pi))!=1.0
-      error("Summation of probabilities of Pi is not equal to one.")
+  if mme.nModels ==1
+      if methods in ["BayesC","BayesC0","conventional (no markers)"]
+          res=MCMC_BayesC(chain_length,mme,df,
+                          π          =Pi,
+                          methods    =methods,
+                          estimatePi =estimatePi,
+                          sol        =starting_value,
+                          outFreq    =printout_frequency,
+                          output_marker_effects_frequency =output_marker_effects_frequency)
+       elseif methods =="BayesB"
+           res=MCMC_BayesB(chain_length,mme,df,Pi,
+                            estimatePi =false,
+                            sol        =starting_value,
+                            outFreq    =printout_frequency,
+                            output_marker_effects_frequency =output_marker_effects_frequency)
+        else
+            error("No options!!!")
+        end
+    elseif mme.nModels > 1
+        if Pi != 0.0 && sum(values(Pi))!=1.0
+          error("Summation of probabilities of Pi is not equal to one.")
+        end
+        if methods in ["BayesC","BayesCC","BayesC0","conventional (no markers)"]
+          res=MT_MCMC_BayesC(chain_length,mme,df,
+                          Pi     = Pi,
+                          sol    = starting_value,
+                          outFreq= printout_frequency,
+                          missing_phenotypes=missing_phenotypes,
+                          constraint = constraint,
+                          estimatePi = estimatePi,
+                          methods    = methods,
+                          output_samples_frequency=output_samples_frequency)
+        elseif methods=="BayesB"
+            if Pi == 0.0
+                error("Pi is not provided!!")
+            end
+            res=MT_MCMC_BayesB(chain_length,mme,df,Pi,
+                            sol=starting_value,
+                            outFreq=printout_frequency,
+                            missing_phenotypes=missing_phenotypes,
+                            constraint=constraint,
+                            output_marker_effects_frequency=output_samples_frequency)
+        else
+            error("No methods options!!!")
+        end
+    else
+        error("No options!")
     end
-
-    res=MCMC_BayesC(chain_length,mme,df,
-                     Pi = Pi,
-                     sol=starting_value,
-                     outFreq=printout_frequency,
-                     missing_phenotypes=missing_phenotypes,
-                     constraint=constraint,
-                     estimatePi = estimatePi,
-                     methods = methods,
-                     output_samples_frequency=output_samples_frequency)
-  elseif methods=="BayesB"
-    if Pi == 0.0
-      error("Pi is not provided!!")
-    end
-    res=MCMC_BayesB(chain_length,mme,df,Pi,
-                     sol=starting_value,
-                     outFreq=printout_frequency,
-                     missing_phenotypes=missing_phenotypes,
-                     constraint=constraint,
-                     output_marker_effects_frequency=output_samples_frequency)
-  else
-    error("No methods options!!!")
-  end
   res
 end
 

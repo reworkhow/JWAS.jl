@@ -82,13 +82,8 @@ type ResVar
     RiDict::Dict{BitArray{1},Array{Float64,2}}
 end
 
-type MCMCsamples
-  samples4R::Array{Any,1} #residual variance
-  samples4G::Array{Any,1} #polygenic variance
-  sampleDict::Dict{ModelTerm,Array{Any,1}} #key: "ModelTerm(1:A*B)" value: samples
-end
-
-#general (iid) random effects; should also make a specific type for BV ped effects
+#general (iid) random effects
+#single-trait
 type RandomEffect
     term::ModelTerm
     vcOld::Float64
