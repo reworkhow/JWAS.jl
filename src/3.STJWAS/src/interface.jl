@@ -53,7 +53,6 @@ function runMCMC(mme,df;
                 output_marker_effects_frequency::Int64 = 0 # 0=>save samples to a file
                 )
   if mme.M ==0
-    #res=MCMC_conventional(chain_length,mme,df,
     res=MCMC_BayesC(chain_length,mme,df,
                           sol=starting_value,
                           outFreq=printout_frequency)

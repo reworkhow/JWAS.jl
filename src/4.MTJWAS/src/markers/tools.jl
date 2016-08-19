@@ -49,6 +49,7 @@ type GibbsMats
     end
 end
 
+#deprected
 function make_valpha(G,pi;option="theory") #from marker effect variance with π=0
     if option=="theory"
         offdiag(a,b)=a*b
