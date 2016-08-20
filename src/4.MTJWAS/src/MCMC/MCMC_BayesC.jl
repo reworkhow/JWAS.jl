@@ -230,9 +230,9 @@ function MCMC_BayesC(nIter,mme,df;
     end
     if mme.M != 0
         output["Posterior mean of marker effects"] = meanAlpha
-    end
-    if estimatePi == true
-        output["MCMC samples for: π"] = pi
+        if estimatePi == true
+            output["MCMC samples for: π"] = pi
+        end
     end
     for i in  mme.outputSamplesVec
         trmi   = i.term

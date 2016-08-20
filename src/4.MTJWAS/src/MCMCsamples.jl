@@ -5,8 +5,8 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
     for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
-        if trm in strpVec
-            res = [res;string(m)*":"*trm]
+        if trmStr in strpVec
+            res = [res;string(m)*":"*trmStr]
         end
     end #"age"->"1:age","2:age"
 
@@ -31,16 +31,6 @@ function init_sample_arrays(mme::MME,niter)
 
     for i in  mme.rndTrmVec #resize to be size of nTraits
         i.sampleArray = zeros(mme.nModels^2,niter)#Bug maybe many diff
-    end
-end
-
-#get samples for location parameters
-function outputSamples(mme::MME,sol,iter::Int64)
-    for i in  mme.outputSamplesVec
-        trmi = i.term
-        startPosi  = trmi.startPos
-        endPosi    = startPosi + trmi.nLevels - 1
-        i.sampleArray[iter,:] = sol[startPosi:endPosi]
     end
 end
 

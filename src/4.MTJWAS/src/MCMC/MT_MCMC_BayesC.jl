@@ -129,21 +129,19 @@ function MT_MCMC_BayesC(nIter,mme,df;
     #######################################################
     if output_samples_frequency != 0
       #initialize arrays to save MCMC samples
-      init_sample_arrays(mme,Int(floor(nIter/output_samples_frequency)))
-      out_i = 1
+      num_samples = Int(floor(nIter/output_samples_frequency))
+      init_sample_arrays(mme,num_samples)
 
       if mme.M != 0 #write samples for marker effects to a txt file
         outfile = Array{IOStream}(nTraits)
         for traiti in 1:nTraits
           outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
-        end
-
-        if mme.M.markerID[1]!="NA"
-          for traiti in 1:nTraits
-            writedlm(outfile[traiti],mme.M.markerID')
+          if mme.M.markerID[1]!="NA"
+              writedlm(outfile[traiti],mme.M.markerID')
           end
         end
       end
+      out_i = 1
     end
 
     #######################################################
@@ -289,6 +287,25 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ###############################################
         # OUTPUT
         ###############################################
+        if output_samples_frequency != 0
+          if iter%output_samples_frequency==0
+            outputSamples(mme,sol,out_i)
+            mme.samples4R[:,out_i]=vec(R0)
+            if mme.ped != 0
+              mme.samples4G[:,out_i]=vec(R0)
+            end
+            out_i +=1
+            if mme.M != 0
+              for traiti in 1:nTraits
+                if methods == "BayesC" || methods=="BayesCC"
+                  writedlm(outfile[traiti],uArray[traiti]')
+                elseif methods == "BayesC0"
+                  writedlm(outfile[traiti],alphaArray[traiti]')
+                end
+              end
+            end
+          end
+        end
 
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
@@ -308,25 +325,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
               end
             end
             println()
-        end
-
-        if output_samples_frequency != 0  #write samples for marker effects to a txt file
-          if iter%output_samples_frequency==0
-              mme.samples4R[:,out_i]=vec(R0)
-            if mme.ped != 0
-              mme.samples4G[:,out_i]=vec(R0)
-            end
-            out_i +=1
-            if mme.M != 0
-              for traiti in 1:nTraits
-                if methods == "BayesC" || methods=="BayesCC"
-                  writedlm(outfile[traiti],uArray[traiti]')
-                elseif methods == "BayesC0"
-                  writedlm(outfile[traiti],alphaArray[traiti]')
-                end
-              end
-            end
-          end
         end
     end
 
@@ -380,7 +378,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
       output["Posterior mean of marker effects"] = markerout
       output["Posterior mean of marker effects covariance matrix"] = GMMean
 
-
       if methods=="BayesC"||methods=="BayesCC"
         output["Model frequency"] = meanDeltaArray
       end
@@ -388,6 +385,17 @@ function MT_MCMC_BayesC(nIter,mme,df;
       if estimatePi == true
         output["Posterior mean of Pi"] = BigPiMean
       end
+    end
+
+    for i in  mme.outputSamplesVec
+        trmi   = i.term
+        trmStr = trmi.trmStr
+        output["MCMC samples for: "*trmStr] = i.sampleArray
+    end
+    for i in  mme.rndTrmVec
+        trmi   = i.term
+        trmStr = trmi.trmStr
+        output["MCMC samples for: variance of "*trmStr] = i.sampleArray
     end
 
     return output
