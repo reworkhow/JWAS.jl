@@ -129,7 +129,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     #######################################################
     if output_samples_frequency != 0
       #initialize arrays to save MCMC samples
-      array4samples = init_sample_arrays(mme,Int(floor(nIter/output_samples_frequency)))
+      init_sample_arrays(mme,Int(floor(nIter/output_samples_frequency)))
       out_i = 1
 
       if mme.M != 0 #write samples for marker effects to a txt file
@@ -312,9 +312,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
         if output_samples_frequency != 0  #write samples for marker effects to a txt file
           if iter%output_samples_frequency==0
-            array4samples.samples4R[out_i]=R0
+              mme.samples4R[:,out_i]=vec(R0)
             if mme.ped != 0
-              array4samples.samples4G[out_i]=G0
+              mme.samples4G[:,out_i]=vec(R0)
             end
             out_i +=1
             if mme.M != 0
@@ -339,14 +339,14 @@ function MT_MCMC_BayesC(nIter,mme,df;
     output["Posterior mean of location parameters"]    = [getNames(mme) solMean]
     output["Posterior mean of residual covariance matrix"]       = R0Mean
     if output_samples_frequency != 0  #write samples for marker effects to a txt file
-      output["MCMC samples for residual covariance matrix"]= array4samples.samples4R
+      output["MCMC samples for residual covariance matrix"]= mme.samples4R
     end
 
     #OUTPUT Polygetic Effects
     if mme.ped != 0
       output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
       if output_samples_frequency != 0
-        output["MCMC samples for polygenic effects covariance matrix"]  = array4samples.samples4G
+        output["MCMC samples for polygenic effects covariance matrix"] = mme.samples4G
       end
     end
 

@@ -218,20 +218,18 @@ function MCMC_BayesC(nIter,mme,df;
     #######################################################
     # After MCMC
     #######################################################
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-      if mme.M !=0
+    if output_samples_frequency != 0 && mme.M !=0
         close(outfile)
-      end
     end
 
     output = Dict()
-    output["Posterior Mean of Location Parameters"] = [getNames(mme) solMean]
-    output["MCMC samples for residual variance"]    = mme.resVarSampleArray
+    output["Posterior mean of location parameters"] = [getNames(mme) solMean]
+    output["MCMC samples for residual variance"]    = mme.samples4R
     if mme.ped != 0
-        output["MCMC samples for polygenic effects var-cov parameters"] = mme.genVarSampleArray
+        output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
     end
     if mme.M != 0
-        output["Posterior Mean of Marker Effects"] = meanAlpha
+        output["Posterior mean of marker effects"] = meanAlpha
     end
     if estimatePi == true
         output["MCMC samples for: π"] = pi

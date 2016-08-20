@@ -29,9 +29,8 @@ function init_sample_arrays(mme::MME,niter)
         i.sampleArray = zeros(trmi.nLevels,niter)
     end
 
-    for i in  mme.rndTrmVec #resize
-        trmi = i.term
-        i.sampleArray = zeros(length(mme.rndTrmVec)^2,niter)#Bug maybe many diff
+    for i in  mme.rndTrmVec #resize to be size of nTraits
+        i.sampleArray = zeros(mme.nModels^2,niter)#Bug maybe many diff
     end
 end
 

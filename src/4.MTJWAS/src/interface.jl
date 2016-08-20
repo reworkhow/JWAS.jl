@@ -192,13 +192,13 @@ function runMCMC(mme,df;
                           estimatePi =estimatePi,
                           sol        =starting_value,
                           outFreq    =printout_frequency,
-                          output_marker_effects_frequency =output_marker_effects_frequency)
+                          output_samples_frequency=output_samples_frequency)
        elseif methods =="BayesB"
            res=MCMC_BayesB(chain_length,mme,df,Pi,
                             estimatePi =false,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
-                            output_marker_effects_frequency =output_marker_effects_frequency)
+                            output_samples_frequency=output_samples_frequency)
         else
             error("No options!!!")
         end
@@ -225,7 +225,7 @@ function runMCMC(mme,df;
                             outFreq=printout_frequency,
                             missing_phenotypes=missing_phenotypes,
                             constraint=constraint,
-                            output_marker_effects_frequency=output_samples_frequency)
+                            output_samples_frequency=output_samples_frequency)
         else
             error("No methods options!!!")
         end

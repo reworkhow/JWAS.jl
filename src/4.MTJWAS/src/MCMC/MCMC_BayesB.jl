@@ -2,7 +2,7 @@ function MCMC_BayesB(nIter,mme,df,π;
                      estimatePi=false,
                      sol       =false,
                      outFreq   =100,
-                     output_marker_effects_frequency =0)
+                     output_samples_frequency =0)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end

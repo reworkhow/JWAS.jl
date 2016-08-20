@@ -40,7 +40,7 @@ function GaussSeidel(A,x,b;tolerance=0.000001,outFreq=10,maxiter=1000)
     return x
 end
 
-function Gibbs(A,x,b,varRes::Float64,nIter;outFreq=100) #Gibbs for \lambda version of MME
+function Gibbs(A,x,b,varRes::Float64,nIter::Int64;outFreq=100) #Gibbs for \lambda version of MME
     n = size(x,1)
     xMean = zeros(n)
     for iter = 1:nIter
@@ -57,7 +57,7 @@ function Gibbs(A,x,b,varRes::Float64,nIter;outFreq=100) #Gibbs for \lambda versi
     return xMean
 end
 
-function Gibbs(A,x,b,nIter;outFreq=100) #General Gibbs
+function Gibbs(A,x,b,nIter::Int64;outFreq=100) #General Gibbs
     n = size(x,1)
     xMean = zeros(n)
     for iter = 1:nIter
@@ -74,7 +74,18 @@ function Gibbs(A,x,b,nIter;outFreq=100) #General Gibbs
     return xMean
 end
 
-function Gibbs(A,x,b) #one iteration of General Gibbs (NOT \lambda version of MME)
+#one iteration of Gibbs for \lambda version of MME
+function Gibbs(A,x,b,varRes::Float64)
+    n = size(x,1)
+    for i=1:n
+        cVarInv = 1.0/A[i,i]
+        cMean   = cVarInv*(b[i] - A[:,i]'x)[1,1] + x[i]
+        x[i]    = randn()*sqrt(cVarInv*varRes) + cMean
+    end
+end
+
+#one iteration of Gibbs for general version of MME
+function Gibbs(A,x,b)
     n = size(x,1)
     for i=1:n
       if A[i,i] != 0 #better get rid of it #double-check

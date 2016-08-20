@@ -2,7 +2,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
                       sol=false,outFreq=100,
                       missing_phenotypes=false,
                       constraint=nothing,
-                      output_marker_effects_frequency=0)
+                      output_samples_frequency=0)
 
     #Pi is of length nTrait^2
 
@@ -97,7 +97,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
         BigPiMean[key]=0.0
     end
 
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
+    if output_samples_frequency != 0  #write samples for marker effects to a txt file
         outfile = Array{IOStream}(nTraits)
         for traiti in 1:nTraits
            outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")

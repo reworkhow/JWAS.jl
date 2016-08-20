@@ -28,6 +28,46 @@ type ModelTerm
     end
 end
 
+#using same incidence matrix for all traits
+#Modify Ri based on missing pattern (number of Ri= 2^nTrait-1)
+type ResVar
+    R0::Array{Float64,2}
+    RiDict::Dict{BitArray{1},Array{Float64,2}}
+end
+
+#general (iid) random effects
+#single-trait
+#multi-trait
+type RandomEffect
+    term::ModelTerm
+    vcOld::Float64
+    vcNew::Float64
+    df::Float64
+    scale::Float64
+    sampleArray::Array{Float64,1} #for variance components
+end
+
+#MCMC samplers for location parameters
+type MCMCSamples
+    term::ModelTerm
+    sampleArray::Array{Float64,2}
+end
+
+type Genotypes
+  obsID::Array{UTF8String,1}    #row ID of genotypes
+  #obsID  #now maybe string or int
+  markerID
+  nObs::Int64
+  nMarkers::Int64
+  alleleFreq::Array{Float64,2}
+  sum2pq::Float64
+  centered::Bool
+  genotypes::Array{Float64,2}
+  G  #ST->Float64;MT->Array{Float64,2}
+  G_is_marker_variance::Bool
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,0.0,false)
+end
+
 #type for MME
 #single-trait: lambda version of mixed model equations
 #multi-trait : formal version
@@ -75,37 +115,11 @@ type MME
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R)
       if nModels==1 && typeof(R)==Float64 #single-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),0,0,0.0,R,0,1,[],[],[])
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],zeros(1,1),0,0,0.0,R,0,1,zeros(1,1),zeros(1,1),[])
     elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),R,0,0,0.0,0.0,0,1,[],[],[])
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[])
     else
-        error("Residual variance R should be a scalar for single-trait analyses and a matrix for multi-trait analyses.")
+        error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end
     end
-end
-
-
-#using same incidence matrix for all traits
-#Modify Ri based on missing pattern (number of Ri= 2^nTrait-1)
-type ResVar
-    R0::Array{Float64,2}
-    RiDict::Dict{BitArray{1},Array{Float64,2}}
-end
-
-#general (iid) random effects
-#single-trait
-#multi-trait
-type RandomEffect
-    term::ModelTerm
-    vcOld::Float64
-    vcNew::Float64
-    df::Float64
-    scale::Float64
-    sampleArray::Array{Float64,1} #for variance components
-end
-
-#MCMC samplers for location parameters
-type MCMCSamples
-    term::ModelTerm
-    sampleArray::Array{Float64,2}
 end

@@ -5,8 +5,8 @@ using DataFrames
 using ..PedModule
 using ProgressMeter
 
-include("solver.jl")
 include("types.jl")
+include("solver.jl")
 include("functions.jl")
 include("residual.jl")
 include("MCMC/MCMC.jl")

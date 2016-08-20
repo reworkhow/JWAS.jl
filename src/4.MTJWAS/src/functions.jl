@@ -25,12 +25,14 @@ function initMME(model_equations::AbstractString,R)
     modelVec   = split(model_equations,[';','\n'],keep=false)
     nModels    = size(modelVec,1)
     lhsVec     = Symbol[] #:y
+    modelTerms = ModelTerm[] #initiate outside for loop
     dict       = Dict{AbstractString,ModelTerm}()
     for (m,model) = enumerate(modelVec)
         lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
         lhsVec = [lhsVec;symbol(strip(lhsRhs[1]))] #:y2
         rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
-        modelTerms  = [ModelTerm(trmStr,m) for trmStr in rhsVec] #vector of ModelTerm
+        mTrms  = [ModelTerm(trmStr,m) for trmStr in rhsVec]
+        modelTerms  = [modelTerms;mTrms] #vector of ModelTerm
         for (i,trm) = enumerate(modelTerms)
             dict[trm.trmStr] = modelTerms[i]
         end
@@ -158,21 +160,20 @@ function getMME(mme::MME, df::DataFrame)
     for i=2:size(mme.lhsVec,1)
         y    = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
     end
-    N  = size(y,1)
-    ii = 1:N
-    jj = fill(1,N)
-    vv = y
+    nInd  = size(y,1)
+    ii    = 1:nInd
+    jj    = fill(1,nInd)
+    vv    = y
     ySparse = sparse(ii,jj,vv)
 
     #make lhs and rhs for mixed model equations
-    nObs        = size(df,1)
-    Ri          = mkRi(mme,df)
     mme.X       = X
     mme.ySparse = ySparse
-    if length(mme.modelVec)!=1 #multi-trait
+    if mme.nModels>1 #multi-trait
+      Ri         = mkRi(mme,df)
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
-    else #single-trait (lambda version)
+    elseif mme.nModels==1 #single-trait (lambda version)
       mme.mmeLhs = X'X
       mme.mmeRhs = X'ySparse
     end
