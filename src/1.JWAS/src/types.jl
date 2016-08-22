@@ -44,7 +44,7 @@ type RandomEffect
     vcNew::Float64
     df::Float64
     scale::Float64
-    sampleArray::Array{Float64,1} #for variance components
+    sampleArray::Array{Float64,2} #for variance components
 end
 
 #MCMC samplers for location parameters
@@ -66,6 +66,13 @@ type Genotypes
   G  #ST->Float64;MT->Array{Float64,2}
   G_is_marker_variance::Bool
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,0.0,false)
+end
+
+type DF
+    residual::Float64
+    polygenic::Float64
+    marker::Float64
+    random::Float64
 end
 
 #type for MME
@@ -108,16 +115,13 @@ type MME
     samples4G::Array{Float64,2}             #polygenic variance (matrix -> vector)
     outputSamplesVec::Array{MCMCSamples,1}  #location parameters
 
-    #rndTrmVec::Array{RandomEffect,1}
-    #outputSamplesVec::Array{MCMCSamples,1}
-    #genVarSampleArray::Array{Float64,2}
-    #resVarSampleArray::Array{Float64,1}
+    df::DF
 
-    function MME(nModels,modelVec,modelTerms,dict,lhsVec,R)
+    function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64 #single-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],zeros(1,1),0,0,0.0,R,0,1,zeros(1,1),zeros(1,1),[])
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],zeros(1,1),0,0,0.0,R,0,1,zeros(1,1),zeros(1,1),[],DF(ν,ν,ν,ν))
     elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[])
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[],DF(ν,ν,ν,ν))
     else
         error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end

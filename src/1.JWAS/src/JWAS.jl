@@ -1,13 +1,13 @@
-module MT
-
 using Distributions
 using DataFrames
-using ..PedModule
 using ProgressMeter
+using .PedModule
 
 include("types.jl")
+include("input_parameters.jl")
 include("solver.jl")
-include("functions.jl")
+include("random_effects.jl")
+include("build_MME.jl")
 include("residual.jl")
 include("MCMC/MCMC.jl")
 include("markers/markers.jl")
@@ -16,8 +16,7 @@ include("MCMCsamples.jl")
 include("interface.jl")
 include("Pi.jl")
 
-export build_model,set_covariate,set_random,add_markers,get_pedigree
-export showMME
+export build_model,set_covariate,set_random
+export add_markers,get_pedigree
 export outputMCMCsamples,solve,runMCMC
-
-end
+export showMME

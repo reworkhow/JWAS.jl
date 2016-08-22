@@ -10,9 +10,26 @@ function mkDict(a)
 end
 
 """
-return a MME object from the input string
+    build_model(model_equations::AbstractString,R;df::Float64=4.0)
+
+* Build models from **model equations** with residual varainces **R** and degree
+of freedom for residual variance **df** defaults to 4.0.
+
+```julia
+#single-trait
+model_equations = "BW = intercept + age + sex"
+R               = 6.72
+models          = build_model(model_equations,R);
+
+#multi-trait
+model_equations = "BW = intercept + age + sex;
+                   CW = intercept + age + sex";
+R               = [6.72   24.84
+                   24.84  708.41]
+models          = build_model(model_equations,R);
+```
 """
-function initMME(model_equations::AbstractString,R)
+function build_model(model_equations::AbstractString,R;df=4)
     if !(typeof(model_equations)<:AbstractString) || model_equations==""
         error("Model equations are wrong.\n
         An example for single-trait analyses is
@@ -37,13 +54,29 @@ function initMME(model_equations::AbstractString,R)
             dict[trm.trmStr] = modelTerms[i]
         end
     end
-    return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R))
+    return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
 
-function covList(mme::MME, covStr::AbstractString) #Better with multi-arguments
-    covVec = split(covStr," ",keep=false)
-    mme.covVec = [symbol(i) for i in covVec]
-    nothing
+
+"""
+    set_covariate(mme::MME,covStr::AbstractString...)
+
+* set variables as covariates; covStr is a string of variables
+
+
+```julia
+#After running build_model, two ways to set the variable age and year as covariates are as follows.
+set_covariate(models,"age","year")
+set_covariate(models,"age year")
+```
+"""
+function set_covariate(mme::MME,covStr::AbstractString...)
+    covVec=[]
+    for i in covStr
+        covVec = [covVec;split(i," ",keep=false)]
+    end
+    mme.covVec = [mme.covVec;[symbol(i) for i in covVec]]
+    #@printf("Variables %-10s are set to be covariates.",mme.covVec)
 end
 
 #fill up str and val for each ModelTerm
@@ -188,109 +221,6 @@ function getMME(mme::MME, df::DataFrame)
     #iid random effects,NEED another addlambda for multi-trait
     if mme.nModels==1 #single-trait
       addLambdas(mme)
-    end
-end
-
-#set **specific ModelTerm** to random
-function setAsRandom(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G)
-    pedTrmVec = split(randomStr," ",keep=false)  # "animal" or "animal animal*age"
-
-    #add model number => "1:animal"
-    res = []
-    for trm in pedTrmVec #"animal","animal animal*age"
-        for (m,model) = enumerate(mme.modelVec)
-            strVec  = split(model,['=','+'])
-            strpVec = [strip(i) for i in strVec]
-            if trm in strpVec
-                res = [res;string(m)*":"*trm]
-            end
-        end
-    end #"1:animal","1:animal animal*age"
-    mme.pedTrmVec = res
-    mme.ped = ped
-
-    if mme.nModels!=1 #multi-trait
-      mme.Gi = inv(G)
-    else #single-trait
-      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
-          G=reshape([G],1,1)
-      end
-      mme.GiOld = zeros(G)
-      mme.GiNew = inv(G)
-    end
-    nothing
-end
-
-#May not proper, assume no covariance between traits for iid random #not require wishart distribution
-function setAsRandom(mme::MME,randomStr::AbstractString, vc::Float64, df::Float64)
-    randTrmVec = split(randomStr," ",keep=false)  # "herd"
-    res = []
-    for trm in randTrmVec #add model number => "1:animal"
-        for (m,model) = enumerate(mme.modelVec)
-            strVec  = split(model,['=','+'])
-            strpVec = [strip(i) for i in strVec]
-            if trm in strpVec
-                res = [res;string(m)*":"*trm]
-            end
-        end
-    end #"1:herd","2:herd"
-
-    for term_string in res
-      trm  = mme.modelTermDict[term_string]
-      scale = vc*(df-2)/df
-      randomEffect = RandomEffect(trm,1.0,vc,df,scale,Array(Float64,1))#ROld/vcOld=0
-      push!(mme.rndTrmVec,randomEffect)
-    end
-
-    nothing
-end
-
-function setAsRandom(mme::MME,randomStr::AbstractString, vc::Float64, df::Float64)
-    trm  = mme.modelTermDict[randomStr]
-    scale = vc*(df-2)/df
-    randomEffect = RandomEffect(trm,1.0,vc,df,scale,Array(Float64,1))#ROld/vcOld=0
-    push!(mme.rndTrmVec,randomEffect)
-end
-
-
-function addA(mme::MME)
-    pedTrmVec = mme.pedTrmVec
-    for (i,trmi) = enumerate(pedTrmVec)
-        pedTrmi  = mme.modelTermDict[trmi]
-        startPosi  = pedTrmi.startPos
-        endPosi    = startPosi + pedTrmi.nLevels - 1
-        for (j,trmj) = enumerate(pedTrmVec)
-            pedTrmj  = mme.modelTermDict[trmj]
-            startPosj= pedTrmj.startPos
-            endPosj  = startPosj + pedTrmj.nLevels - 1
-            #lamda version or not
-            myaddA=(mme.nModels!=1)?(mme.Ai*mme.Gi[i,j]):(mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddA
-        end
-    end
-end
-
-function setAsRandom(mme::MME,randomStr::AbstractString, vc::Float64, df::Float64)
-    trm  = mme.modelTermDict[randomStr]
-    scale = vc*(df-2)/df
-    randomEffect = RandomEffect(trm,1.0,vc,df,scale,Array(Float64,1))#ROld/vcOld=0
-    push!(mme.rndTrmVec,randomEffect)
-end
-
-function addLambdas(mme::MME) #for iid random effects
-    for effect in  mme.rndTrmVec
-        trmi       = effect.term
-        startPosi  = trmi.startPos
-        endPosi    = startPosi + trmi.nLevels - 1
-        if mme.nModels==1
-          lambdaDiff = mme.RNew/effect.vcNew - mme.ROld/effect.vcOld
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*lambdaDiff
-        else
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*(1/effect.vcNew)
-        end
     end
 end
 

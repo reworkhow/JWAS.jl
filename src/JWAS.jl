@@ -1,11 +1,13 @@
-__precompile__(false)
+__precompile__(true)
 
 module JWAS
 
+#SSBR is using misc,Pedmodule
+#JWAS is using PedModule
 include("2.PedModule/src/PedModule.jl")
-include("4.MTJWAS/src/MTJWAS.jl")
-include("1.misc/src/misc.jl")
+include("4.misc/src/misc.jl")
+include("1.JWAS/src/JWAS.jl")
+include("3.SSBR/src/SSBR.jl")
 include("5.Datasets/src/Datasets.jl")
-include("6.SSBR/src/SSBR.jl")
 
 end

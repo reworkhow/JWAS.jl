@@ -164,7 +164,7 @@ function MCMC_BayesC(nIter,mme,df;
         ##########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ##########################################################################
-        sampleVCs(mme,sol,iter)
+        sampleVCs(mme,sol)
         addLambdas(mme)
 
         ###############################################
