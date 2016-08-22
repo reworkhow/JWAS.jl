@@ -15,7 +15,7 @@ function genetic2marker(M::Genotypes,Pi::Dict)
 end
 
 function genetic2marker(M::Genotypes,π::Float64)
-    mme.M.G=mme.M.G/((1-π)*mme.M.sum2pq)
+    M.G=M.G/((1-π)*M.sum2pq)
 end
 
 function samplePi(deltaArray,BigPi,BigPiMean,iter)

@@ -1,3 +1,19 @@
+"""
+    get_pedigree(pedfile::AbstractString)
+* Get pedigree informtion from a pedigree file.
+* File format:
+
+```
+a 0 0
+b 0 0
+c a b
+d a c
+```
+"""
+function get_pedigree(pedfile::AbstractString)
+  PedModule.mkPed(pedfile)
+end
+
 #set **specific ModelTerm** to random
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)

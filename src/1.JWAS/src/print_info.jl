@@ -12,10 +12,22 @@ function MCMCinfo(methods,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20d\n","output sample frequency",output_samples_frequency)
     @printf("%-30s %20d\n","printout frequency",printout_frequency)
 
-    @printf("\n%-30s\n","Degree of freedom for hyper-parametes:")
+    @printf("\n%-30s\n","Degree of freedom for hyper-parameters:")
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
     @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
     @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
     @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
     @printf("\n\n\n")
+end
+
+"""
+    showMME(mme::MME,df::DataFrame)
+
+* Show left-hand side and right-hand side of mixed model equations (no markers).
+"""
+function showMME(mme::MME,df::DataFrame)
+   if size(mme.mmeRhs)==()
+     getMME(mme,df)
+   end
+    return mme.mmeLhs,mme.mmeRhs
 end

@@ -4,7 +4,7 @@ using ProgressMeter
 using .PedModule
 
 include("types.jl")
-include("input_parameters.jl")
+include("print_info.jl")
 include("solver.jl")
 include("random_effects.jl")
 include("build_MME.jl")
@@ -13,7 +13,6 @@ include("MCMC/MCMC.jl")
 include("markers/markers.jl")
 include("variance.jl")
 include("MCMCsamples.jl")
-include("interface.jl")
 include("Pi.jl")
 
 export build_model,set_covariate,set_random
