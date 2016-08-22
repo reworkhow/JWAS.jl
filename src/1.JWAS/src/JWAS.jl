@@ -4,7 +4,7 @@ using ProgressMeter
 using .PedModule
 
 include("types.jl")
-include("print_info.jl")
+include("print.jl")
 include("solver.jl")
 include("random_effects.jl")
 include("build_MME.jl")
