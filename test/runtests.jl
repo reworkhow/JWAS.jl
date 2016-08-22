@@ -6,5 +6,5 @@ model_equations = "BW = intercept + age + sex;
                    CW = intercept + age + sex";
 R               = [6.72   24.84
                    24.84  708.41]
-models          = JWAS.MT.build_model(model_equations,R);
-@test typeof(models)==JWAS.MT.MME
+models          = build_model(model_equations,R);
+@test typeof(models)==JWAS.MME
