@@ -17,28 +17,21 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 ```
 JWAS.jl
 
+├────── build_model
+├────── set_covariate
+├────── set_random
+├────── get_pedigree
+├────── add_markers
+├────── outputMCMCsamples
+├────── showMME
+├────── solve
+└────── runMCMC
+
 ├──────── PedModule.jl
 
-├──────── ST.jl
-           ├── build_model
-           ├── set_covariate
-           ├── set_random
-           ├── get_pedigree
-           ├── add_markers
-           ├── outputMCMCsamples
-           ├── showMME
-           ├── solve
-           └── runMCMC
+├──────── Datasets.jl
 
-├──────── MT.jl
-           ├── MT.build_model
-           ├── MT.set_covariate
-           ├── MT.set_random
-           ├── MT.get_pedigree
-           ├── MT.add_markers
-           ├── MT.showMME
-           ├── MT.solve
-           └── MT.runMCMC
+├──────── SSBR.jl
 
 ├──────── misc.jl
            ├── get_breeding_values
@@ -47,8 +40,6 @@ JWAS.jl
            ├── get_correlations
            └── report
 
-
-├──────── Datasets.jl
 
 ```
 
