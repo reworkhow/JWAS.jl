@@ -64,5 +64,8 @@ type HybridMatrices
   num::Numbers
 end
 
-
-
+type Results
+  mats::HybridMatrices
+  posMeans::misc.Output
+  ebv
+end
