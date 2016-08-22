@@ -223,13 +223,3 @@ function getMME(mme::MME, df::DataFrame)
       addLambdas(mme)
     end
 end
-
-function getNames(mme)
-    names = Array(AbstractString,0)
-    for trm in mme.modelTerms
-        for name in trm.names
-            push!(names,trm.trmStr*" : "*name)
-        end
-    end
-    return names
-end

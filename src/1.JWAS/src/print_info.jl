@@ -31,3 +31,13 @@ function showMME(mme::MME,df::DataFrame)
    end
     return mme.mmeLhs,mme.mmeRhs
 end
+
+function getNames(mme)
+    names = Array(AbstractString,0)
+    for trm in mme.modelTerms
+        for name in trm.names
+            push!(names,trm.trmStr*" : "*name)
+        end
+    end
+    return names
+end
