@@ -1,5 +1,5 @@
 function MCMCinfo(methods,chain_length,starting_value,printout_frequency,
-    output_samples_frequency,missing_phenotypes,constraint,estimatePi,mme)
+    output_samples_frequency,missing_phenotypes,constraint,estimatePi,update_priors_frequency,mme)
 
     println("MCMC Information:")
     @printf("%-30s %20s\n","methods",methods)
@@ -11,6 +11,7 @@ function MCMCinfo(methods,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20s\n","starting_value",starting_value)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
+    @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
 
     @printf("\n%-30s\n","Degree of freedom for hyper-parameters:")
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)

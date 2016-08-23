@@ -6,7 +6,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
                       missing_phenotypes =false,
                       constraint         =false,
                       methods            ="conventional analyses",
-                      output_samples_frequency=0)
+                      output_samples_frequency=0,
+                      update_priors_frequency=0)
 
     if size(mme.mmeRhs)==()
        getMME(mme,df)
@@ -20,7 +21,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     solMean = fill(0.0,size(mme.mmeLhs,1))
 
     #Priors for residual covariance matrix
-    ν       = 4
+    ν       = mme.df.residual
     nObs    = size(df,1)
     nTraits = size(mme.lhsVec,1)
     νR0     = ν + nTraits
@@ -32,7 +33,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
     #Priors for polygenic effect covariance matrix
     if mme.ped != 0
-      ν         = 4
+      ν         = mme.df.polygenic
       pedTrmVec = mme.pedTrmVec
       k         = size(pedTrmVec,1)
       νG0       = ν + k
@@ -42,7 +43,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
       G0Mean    = zeros(Float64,k,k)
     end
 
-
     #######################################################
     #   SET UP MARKER PART
     #
@@ -51,7 +51,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     if mme.M != 0
         #priors for marker covaraince matrix
         nObs,nMarkers  = size(mme.M.genotypes)
-        dfEffectVar    = 4.0
+        dfEffectVar    = mme.df.marker
         mGibbs         = GibbsMats(mme.M.genotypes)
         nObs           = mGibbs.nrows
         nMarkers       = mGibbs.ncols
@@ -284,6 +284,20 @@ function MT_MCMC_BayesC(nIter,mme,df;
           end
           mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
           GMMean  += (mme.M.G  - GMMean)/iter
+        end
+
+        ###############################################
+        # 2.4 Update priors using posteriors (empirical)
+        ###############################################
+        if update_priors_frequency !=0 && iter%update_priors_frequency==0
+            if mme.M!=0
+                PM = GMMean*(νGM - nTraits - 1)
+            end
+            if mme.ped != 0
+                P  = G0Mean*(νG0 - k - 1)
+            end
+            PRes    = R0Mean*(νR0 - nTraits - 1)
+            println("\n Update priors from posteriors.")
         end
 
         ###############################################

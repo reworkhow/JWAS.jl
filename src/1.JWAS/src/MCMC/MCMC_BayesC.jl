@@ -39,12 +39,12 @@ function MCMC_BayesC(nIter,mme,df;
     #######################################################
     #prior for residual variance
     vRes        = mme.RNew
-    nuRes       = 4
+    nuRes       = mme.df.residual
     scaleRes    = vRes*(nuRes-2)/nuRes
     meanVare    = 0.0
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
-       ν         =  4
+       ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
        k         = size(pedTrmVec,1)  #2
        νG0       = ν + k
@@ -61,7 +61,7 @@ function MCMC_BayesC(nIter,mme,df;
       mArray      = mGibbs.xArray
       mpm         = mGibbs.xpx
       M           = mGibbs.X
-      dfEffectVar = 4.0
+      dfEffectVar = mme.df.marker
       vEff        = mme.M.G
       scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
       meanVara    = 0.0

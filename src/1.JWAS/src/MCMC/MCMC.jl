@@ -25,7 +25,8 @@ function runMCMC(mme,df;
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
                 printout_frequency= chain_length+1,
-                output_samples_frequency::Int64 = 0)
+                output_samples_frequency::Int64 = 0,
+                update_priors_frequency::Int64=0)
 
   if mme.M != 0 && mme.M.G_is_marker_variance==false
     genetic2marker(mme.M,Pi)
@@ -38,7 +39,8 @@ function runMCMC(mme,df;
   end
 
   MCMCinfo(methods,chain_length,starting_value,printout_frequency,
-           output_samples_frequency,missing_phenotypes,constraint,estimatePi,mme)
+           output_samples_frequency,missing_phenotypes,constraint,estimatePi,
+           update_priors_frequency,mme)
 
   if mme.nModels ==1
       if methods in ["BayesC","BayesC0","conventional (no markers)"]
@@ -71,7 +73,8 @@ function runMCMC(mme,df;
                           constraint = constraint,
                           estimatePi = estimatePi,
                           methods    = methods,
-                          output_samples_frequency=output_samples_frequency)
+                          output_samples_frequency=output_samples_frequency,
+                          update_priors_frequency=update_priors_frequency)
         elseif methods=="BayesB"
             if Pi == 0.0
                 error("Pi is not provided!!")
