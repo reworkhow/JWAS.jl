@@ -59,7 +59,7 @@ function runMCMC(mme,df;
             error("No options!!!")
         end
     elseif mme.nModels > 1
-        if Pi != 0.0 && sum(values(Pi))!=1.0
+        if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
         if methods in ["BayesC","BayesCC","BayesC0","conventional (no markers)"]

@@ -31,13 +31,13 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true
     end
 
     num_samples = size(BV[1],2)
-    G = Array(Array{Float64,2},num_samples)
+    G = zeros(nTraits^2,num_samples)
     for i = 1:num_samples
         BVi = vec(BV[1][:,i])
         for j = 2:nTraits
             BVi = [BVi BV[j][:,i]]
         end
-        G[i] = cov(BVi)
+        G[:,i] = vec(cov(BVi))
     end
     return G
 end
@@ -76,23 +76,23 @@ end
 
 * Get MCMC samples for heritabilities.
 """
-function get_heritability(G::Array{Array{Float64,2},1},R::Array{Array{Float64,2},1})
-  if size(G,1)!=size(R,1)
-    error("Number of MCMC samples for genetic variances and residual vairances are not equal!")
+function get_heritability(G::Array{Float64,2},R::Array{Float64,2})
+  if size(G,2)!=size(R,2)
+    error("Number of MCMC samples for genetic variances and residual variances are not equal!")
   end
-  h2 = Array(Array{Float64,1},size(G,1))
-  for i in 1:size(G,1)
-    h2[i]=diag(G[i] ./ (G[i]+R[i]))
-  end
+
+  nTraits = Int(sqrt(size(G,1)))
+  var_index= collect(1:nTraits:size(G,1))
+
+  h2 = (G./ (G+R))[var_index,:]
   h2
 end
-
 """
-    get_genetic_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})
+    get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})
 
 * Get MCMC samples for genetic_correlations
 """
-function get_genetic_correlations(G::Array{Array{Float64,2},1})
+function get_correlations(G::Array{Array{Float64,2},1})
   gentic_correlation = Array(Array{Float64,2},size(G,1))
   for i in 1:size(G,1)
     varg=diag(G[i])
@@ -101,8 +101,18 @@ function get_genetic_correlations(G::Array{Array{Float64,2},1})
   gentic_correlation
 end
 
+function reformat(G::Array{Float64,2})
+    Gnew = Array(Array{Float64,2},size(G,2))
+    nrow=Int(sqrt(size(G,1)))
+    for i in 1:size(G,2)
+        Gnew[i]=reshape(G[:,i],nrow,nrow)
+    end
+    Gnew
+end
+
 
 export get_additive_genetic_variances
 export get_breeding_values
 export get_heritability
-export get_genetic_correlations
+export get_correlations
+export reformat

@@ -224,6 +224,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
           mme.R = R0
           R0    = mme.R
           Ri    = kron(inv(R0),speye(nObs))
+
+          RiNotUsing   = mkRi(mme,df) #double-check
         end
 
         if mme.M == 0
@@ -336,8 +338,19 @@ function MT_MCMC_BayesC(nIter,mme,df;
     #OUTPUT Conventional Effects
     output["Posterior mean of location parameters"]    = [getNames(mme) solMean]
     output["Posterior mean of residual covariance matrix"]       = R0Mean
-    if output_samples_frequency != 0  #write samples for marker effects to a txt file
+    if output_samples_frequency != 0
       output["MCMC samples for residual covariance matrix"]= mme.samples4R
+
+      for i in  mme.outputSamplesVec
+          trmi   = i.term
+          trmStr = trmi.trmStr
+          output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
+      end
+      for i in  mme.rndTrmVec
+          trmi   = i.term
+          trmStr = trmi.trmStr
+          output["MCMC samples for: variance of "*trmStr] = i.sampleArray
+      end
     end
 
     #OUTPUT Polygetic Effects
@@ -385,17 +398,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
       if estimatePi == true
         output["Posterior mean of Pi"] = BigPiMean
       end
-    end
-
-    for i in  mme.outputSamplesVec
-        trmi   = i.term
-        trmStr = trmi.trmStr
-        output["MCMC samples for: "*trmStr] = i.sampleArray
-    end
-    for i in  mme.rndTrmVec
-        trmi   = i.term
-        trmStr = trmi.trmStr
-        output["MCMC samples for: variance of "*trmStr] = i.sampleArray
     end
 
     return output

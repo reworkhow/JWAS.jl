@@ -129,7 +129,6 @@ function MCMC_BayesC(nIter,mme,df;
           #sample Pi
           if estimatePi == true
             π = samplePi(nLoci, nMarkers)
-            pi[out_i] = π
             mean_pi += (π-mean_pi)/iter
           end
         end
@@ -195,6 +194,7 @@ function MCMC_BayesC(nIter,mme,df;
             end
             if mme.M != 0
                 writedlm(outfile,α')
+                pi[out_i] = π
             end
             out_i +=1
           end
@@ -224,26 +224,37 @@ function MCMC_BayesC(nIter,mme,df;
 
     output = Dict()
     output["Posterior mean of location parameters"] = [getNames(mme) solMean]
-    output["MCMC samples for residual variance"]    = mme.samples4R
-    if mme.ped != 0
-        output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
-    end
-    if mme.M != 0
-        output["Posterior mean of marker effects"] = meanAlpha
-        if estimatePi == true
-            output["MCMC samples for: π"] = pi
+    if output_samples_frequency != 0
+        output["MCMC samples for residual variance"]    = mme.samples4R
+        if mme.ped != 0
+            output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
+        end
+        for i in  mme.outputSamplesVec
+            trmi   = i.term
+            trmStr = trmi.trmStr
+            output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
+        end
+        for i in  mme.rndTrmVec
+            trmi   = i.term
+            trmStr = trmi.trmStr
+            output["MCMC samples for: variance of "*trmStr] = i.sampleArray
         end
     end
-    for i in  mme.outputSamplesVec
-        trmi   = i.term
-        trmStr = trmi.trmStr
-        output["MCMC samples for: "*trmStr] = i.sampleArray
-    end
-    for i in  mme.rndTrmVec
-        trmi   = i.term
-        trmStr = trmi.trmStr
-        output["MCMC samples for: variance of "*trmStr] = i.sampleArray
-    end
 
+    if mme.M != 0
+        if mme.M.markerID[1]!="NA"
+            markerout=[mme.M.markerID meanAlpha]
+        else
+            markerout= meanAlpha
+        end
+
+        output["Posterior mean of marker effects"] = markerout
+        if estimatePi == true
+            output["Posterior mean of Pi"] = mean_pi
+            if  output_samples_frequency != 0
+                output["MCMC samples for: π"] = pi
+            end
+        end
+    end
     return output
 end
