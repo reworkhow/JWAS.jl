@@ -90,7 +90,7 @@ end
 """
     get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})
 
-* Get MCMC samples for genetic_correlations
+* Get MCMC samples for correlations
 """
 function get_correlations(G::Array{Array{Float64,2},1})
   gentic_correlation = Array(Array{Float64,2},size(G,1))
