@@ -89,7 +89,14 @@ function MCMC_BayesC(nIter,mme,df;
       init_sample_arrays(mme,num_samples)
 
       if mme.M != 0 #write samples for marker effects to a txt file
-        outfile   = open("MCMC samples for marker effects"*"_$(now()).txt","w")
+        file_count = 1
+        file_name="MCMC_samples_for_marker_effects.txt"
+        while isfile(file_name)
+          file_name="MCMC_samples_for_marker_effects"*"_$(file_count)"*".txt"
+          file_count += 1
+        end
+        outfile=open(file_name,"w")
+
         if mme.M.markerID[1]!="NA"
             writedlm(outfile,mme.M.markerID')
         end

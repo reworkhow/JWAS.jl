@@ -1,5 +1,5 @@
 function readgenotypes(file::AbstractString;separator=' ',header=false,center=true)
-    println("The delimiters in file $file is ",separator,"  .")
+    #println("The delimiters in file $file is ",separator,"  .")
 
     myfile = open(file)
     #get number of columns

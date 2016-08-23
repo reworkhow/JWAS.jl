@@ -9,6 +9,8 @@ function getRi(resVar::ResVar,sel::BitArray{1})
     return RZ
 end
 
+#make tricky Ri (big) allowing NA in phenotypes and fixed effects
+#make ResVar, dictionary for Rinv
 function mkRi(mme::MME,df::DataFrame)
     resVar = ResVar(mme.R,Dict())
     tstMsng = !isna(df[mme.lhsVec[1]])

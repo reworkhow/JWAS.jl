@@ -28,4 +28,6 @@ function add_markers(mme::MME,file,G;separator=' ',header=true,G_is_marker_varia
     mme.M.G = G
     mme.M.G_is_marker_variance = G_is_marker_variance
     mme.df.marker = Float64(df)
+
+    println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end

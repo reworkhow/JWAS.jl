@@ -135,7 +135,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
       if mme.M != 0 #write samples for marker effects to a txt file
         outfile = Array{IOStream}(nTraits)
         for traiti in 1:nTraits
-          outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
+          file_count = 1
+          file_name="MCMC_samples_for_marker_effects"*"_"*string(mme.lhsVec[traiti])*".txt"
+          while isfile(file_name)
+            file_name="MCMC_samples_for_marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(file_count)"*".txt"
+            file_count += 1
+          end
+          outfile[traiti]=open(file_name,"w")
           if mme.M.markerID[1]!="NA"
               writedlm(outfile[traiti],mme.M.markerID')
           end
@@ -225,13 +231,12 @@ function MT_MCMC_BayesC(nIter,mme,df;
           R0    = mme.R
           Ri    = kron(inv(R0),speye(nObs))
 
-          RiNotUsing   = mkRi(mme,df) #double-check
+          RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation 
         end
 
         if mme.M == 0
           mme.R = R0
-          RiNotUsing   = mkRi(mme,df) #for missing value;updata mme.ResVar
-          Ri = RiNotUsing
+          Ri  = mkRi(mme,df) #for missing value;updata mme.ResVar
         end
         R0Mean  += (R0  - R0Mean )/iter
 
