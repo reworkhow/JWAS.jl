@@ -73,20 +73,19 @@ end
 
 """
     get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_vairances::Array{Array{Float64,2},1}))
-
 * Get MCMC samples for heritabilities.
 """
-function get_heritability(G::Array{Float64,2},R::Array{Float64,2})
-  if size(G,2)!=size(R,2)
-    error("Number of MCMC samples for genetic variances and residual variances are not equal!")
+function get_heritability(G::Array{Array{Float64,2},1},R::Array{Array{Float64,2},1})
+  if size(G,1)!=size(R,1)
+    error("Number of MCMC samples for genetic variances and residual vairances are not equal!")
   end
-
-  nTraits = Int(sqrt(size(G,1)))
-  var_index= collect(1:nTraits:size(G,1))
-
-  h2 = (G./ (G+R))[var_index,:]
+  h2 = Array(Array{Float64,1},size(G,1))
+  for i in 1:size(G,1)
+    h2[i]=diag(G[i] ./ (G[i]+R[i]))
+  end
   h2
 end
+
 """
     get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})
 
