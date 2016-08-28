@@ -24,9 +24,10 @@ function checkFile(file)
   close(f)
 end
 
-function QC(infile,outfile;id4col=true,missing=9.0,MAF=0.1)
+function QC(infile,outfile;separator=' ',header=true,missing=false,MAF=0.1)
 
     myfile = open(infile)
+    id4row = true
 
     #set types for each column
     ncol= length(split(readline(myfile)))
@@ -38,17 +39,20 @@ function QC(infile,outfile;id4col=true,missing=9.0,MAF=0.1)
     close(myfile)
 
     #read genotypes
-    df = readtable(file, eltypes=etv, separator = ' ',header=id4col)
+    df = readtable(infile, eltypes=etv, separator = separator,header=header)
     #quality control
-    missing2mean(df,id4row=id4row,missing=missing)
-    deleteMAF!(df,id4row=id4row,MAF=MAF)
+    missing2mean!(df,id4row=id4row,missing=missing)
+    df=deleteMAF!(df,id4row=id4row,MAF=MAF)
 
     #write out the new file
-    writetable(outfile, df, separator=' ')
+    writetable(outfile, df, separator=separator)
 end
 
 
-function missing2mean!(X::DataFrames.DataFrame;id4row=false,missing=9)
+function missing2mean!(X::DataFrames.DataFrame;id4row=true,missing=9.0)
+    if missing == false
+        return
+    end
     nrow,ncol = size(X)
     start = 1
     if id4row==true
@@ -58,15 +62,11 @@ function missing2mean!(X::DataFrames.DataFrame;id4row=false,missing=9)
         index=find(x->x==missing,X[:,i])
         cols = collect(1:nrow)
         deleteat!(cols,index)
-        X[index,i]=int(mean(X[cols,i]))
-
-        if(i%3000==0)
-            println("This is line ",i)
-        end
+        X[index,i]=round(Int,mean(X[cols,i]))
     end
 end
 
-function deleteMAF!(X;id4row=false,MAF=0.1)
+function deleteMAF!(df;id4row=false,MAF=0.1)
     start = 1
     if id4row==true
       start+=1
