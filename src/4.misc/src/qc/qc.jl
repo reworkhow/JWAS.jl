@@ -28,10 +28,10 @@ end
     QC(infile,outfile;separator=' ',header=true,missing=false,MAF=0.1)
 * input file: genotype file **infile**; output file: **outfile**.
 * Quality control:
-  * Delete loci with minor allele frequency < **MAF**.
-  * **missing** genotypes are replaced by column means. 
-
+    * Delete loci with minor allele frequency < **MAF**.
+    * **missing** genotypes are replaced by column means. 
 * File format (header=true,separator=',',missing=9):
+
 ```
 Animal,marker1,marker2,marker3,marker4,marker5
 S1,1,0,1,1,1
