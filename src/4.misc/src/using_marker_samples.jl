@@ -109,6 +109,23 @@ function reformat(G::Array{Float64,2})
     Gnew
 end
 
+function reformat(G::Array{Array{Float64,2},1})
+    Gnew = zeros(length(G[1]),length(G))
+    for i in 1:length(G)
+        Gnew[:,i]=vec(G[i])
+    end
+    Gnew
+end
+
+function reformat(G::Array{Array{Float64,1},1})
+    Gnew = zeros(length(G[1]),length(G))
+    for i in 1:length(G)
+        Gnew[:,i]=vec(G[i])
+    end
+    Gnew
+end
+
+
 
 export get_additive_genetic_variances
 export get_breeding_values
