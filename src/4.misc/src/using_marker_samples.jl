@@ -100,13 +100,23 @@ function get_correlations(G::Array{Array{Float64,2},1})
   gentic_correlation
 end
 
-function reformat(G::Array{Float64,2})
-    Gnew = Array(Array{Float64,2},size(G,2))
-    nrow=Int(sqrt(size(G,1)))
-    for i in 1:size(G,2)
-        Gnew[i]=reshape(G[:,i],nrow,nrow)
+function reformat(G::Array{Float64,2},nrow=false)
+    if nrow==size(G,1)
+        Gnew = Array(Array{Float64,1},size(G,2))
+        for i in 1:size(G,2)
+            Gnew[i]=vec(G[:,i])
+        end
+        return Gnew
     end
-    Gnew
+    
+    if nrow==false || nrow==Int(sqrt(size(G,1)))
+        Gnew = Array(Array{Float64,2},size(G,2))
+        nrow=Int(sqrt(size(G,1)))
+        for i in 1:size(G,2)
+            Gnew[i]=reshape(G[:,i],nrow,nrow)
+        end
+        return Gnew
+    end
 end
 
 function reformat(G::Array{Array{Float64,2},1})
