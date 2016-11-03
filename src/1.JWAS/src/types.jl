@@ -22,7 +22,7 @@ type ModelTerm
         trmStr    = strip(trmStr)
         factorVec = split(trmStr,"*")
         nFactors  = length(factorVec)
-        factors   = [symbol(strip(f)) for f in factorVec]
+        factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = string(m)*":"*trmStr
         new(iModel,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
     end

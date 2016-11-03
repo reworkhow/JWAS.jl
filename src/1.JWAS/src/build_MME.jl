@@ -75,7 +75,7 @@ function set_covariate(mme::MME,covStr::AbstractString...)
     for i in covStr
         covVec = [covVec;split(i," ",keep=false)]
     end
-    mme.covVec = [mme.covVec;[symbol(i) for i in covVec]]
+    mme.covVec = [mme.covVec;[Symbol(i) for i in covVec]]
     #@printf("Variables %-10s are set to be covariates.",mme.covVec)
 end
 

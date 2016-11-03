@@ -5,7 +5,7 @@ using ProgressMeter
 
 type PedNode
     seqID::Int64
-    sire::ASCIIString
+    sire::AString
     dam::ASCIIString
     f::Float64
 end
