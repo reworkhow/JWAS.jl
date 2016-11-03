@@ -5,8 +5,8 @@ using ProgressMeter
 
 type PedNode
     seqID::Int64
-    sire::AString
-    dam::ASCIIString
+    sire::String
+    dam::String
     f::Float64
 end
 
@@ -164,7 +164,7 @@ function  mkPed(pedFile::AbstractString;header=false,separator=' ')
     #dataframes string conflits with AbstractString in julia(fixed)
     #df = readtable(pedFile,separator = ' ',header=false)
 
-    df  = readtable(pedFile,eltypes=[UTF8String,UTF8String,UTF8String],
+    df  = readtable(pedFile,eltypes=[String,String,String],
                             separator=separator,header=header)
     ped = Pedigree(1,Dict{AbstractString,PedNode}(),
                      Dict{Int64, Float64}(),

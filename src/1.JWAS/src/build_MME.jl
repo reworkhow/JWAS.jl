@@ -46,7 +46,7 @@ function build_model(model_equations::AbstractString,R;df=4)
     dict       = Dict{AbstractString,ModelTerm}()
     for (m,model) = enumerate(modelVec)
         lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-        lhsVec = [lhsVec;symbol(strip(lhsRhs[1]))] #:y2
+        lhsVec = [lhsVec;Symbol(strip(lhsRhs[1]))] #:y2
         rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
         mTrms  = [ModelTerm(trmStr,m) for trmStr in rhsVec]
         modelTerms  = [modelTerms;mTrms] #vector of ModelTerm

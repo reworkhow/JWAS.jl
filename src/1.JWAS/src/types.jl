@@ -54,7 +54,7 @@ type MCMCSamples
 end
 
 type Genotypes
-  obsID::Array{UTF8String,1}    #row ID of genotypes
+  obsID::Array{String,1}    #row ID of genotypes
   #obsID  #now maybe string or int
   markerID
   nObs::Int64

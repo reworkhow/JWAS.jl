@@ -1,3 +1,34 @@
+#deprected
+function make_valpha(G,pi;option="theory") #from marker effect variance with π=0
+    if option=="theory"
+        offdiag(a,b)=a*b
+    elseif option=="max_qtl" #guanrantee posdef
+        offdiag(a,b)=max(a,b)
+    elseif option=="min_qtl"
+        offdiag(a,b)=min(a,b)
+    elseif option=="sqrt"  #guarante posdef
+        offdiag(a,b)=sqrt(a*b)
+    elseif option=="zero" #make off-dignal of maker vaiance matrix zero
+        offdiag(a,b)= Inf
+    else
+        error("unknown option")
+    end
+
+    pi_c        = 1 - pi
+    mat_pi_c    = diagm(vec(pi_c))
+    for i=1:size(mat_pi_c,2)
+        for j=1:size(mat_pi_c,2)
+            if i!=j
+                mat_pi_c[i,j]=offdiag(mat_pi_c[i,i],mat_pi_c[j,j])
+            end
+        end
+    end
+    Valpha    = G./mat_pi_c
+    println("marker effect variance with π=$pi is positive definite??: ", isposdef(Valpha))
+    Valpha
+end
+
+
 ############################
 ##Bugs not found
 ##BayesC0
