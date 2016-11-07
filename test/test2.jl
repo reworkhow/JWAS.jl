@@ -1,34 +1,27 @@
 include("../src/JWAS.jl")
 using DataFrames,JWAS,JWAS.Datasets
 
-phenofile = Datasets.dataset("testMME","data.txt")
-data      = readtable(phenofile,separator = ',',header=true)
+using DataFrames,JWAS,JWAS.Datasets
+phenofile = Datasets.dataset("testMT","phenotype.txt")
+genofile  = Datasets.dataset("testMT","genotype.txt")
+pedfile   = Datasets.dataset("testMT","pedigree.txt");
 
-model_equation  = "nwn = intercept +parity + parity*site + yr + geneticCode + age"
+data = readtable(phenofile,separator = ',',header=true);
 
-residual_variance = 2.97
-model             = build_model(model_equation,residual_variance)
+R      = [10.0 2.0
+           2.0 1.0]
 
-set_covariate(model,"age")
+G      = [20.0 1.0
+           1.0 2.0]
 
-sow_variance      = 0.26
-set_random(model,"parity",sow_variance);
+model_equations = "BW = intercept + age + sex
+                   CW = intercept + age + sex";
 
-outputMCMCsamples(model,"parity","age");
-out=runMCMC(model,data,chain_length=50000,output_samples_frequency=100);
+model1 = build_model(model_equations,R)
 
-out
+set_covariate(model1,"age");
 
-
-pedfile   = Datasets.dataset("testMME","pedigree.txt")
-phenofile = Datasets.dataset("testMME","simple.txt");
-d1 = readtable(phenofile)
-ped = get_pedigree(pedfile);
-varRes=1.0
-model1 = build_model("y = intercept + Age + Animal",varRes)
-set_covariate(model1,"Age")
-G=2.5
-set_random(model1,"Animal",ped,G)
-
-out = solve(model1,d1,solver="GaussSeidel",printout_frequency=40)
-out = runMCMC(model1,d1,chain_length=1000);
+add_markers(model1,genofile,G,separator=',',header=true);
+Pi=Dict([1.0; 1.0]=>0.7,[1.0;0.0]=>0.1,[0.0,1.0]=>0.1,[0.0; 0.0]=>0.1)
+out = runMCMC(model1,data,Pi=Pi,chain_length=5000,methods="BayesC",
+              estimatePi=true,output_samples_frequency=5)
