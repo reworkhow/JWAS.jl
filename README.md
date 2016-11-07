@@ -4,9 +4,9 @@
 
 JWAS.jl is an open-source software tool written in Julia for Bayesian multiple regression methods applied to genome-wide association studies and genomic prediction.
 
-* **homepage**: [QTL.rocks](http://QTL.rocks)
+* **Homepage**: [QTL.rocks](http://QTL.rocks)
 * **Installation**: at the Julia REPL, `Pkg.add("JWAS")`
-* **Documentaion**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/index.ipynb)
+* **Documentation**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/index.ipynb)
 
 
 
