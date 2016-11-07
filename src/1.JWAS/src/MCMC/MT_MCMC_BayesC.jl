@@ -153,7 +153,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
     #######################################################
     #MCMC
     #######################################################
-    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    #@showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    for iter=1:nIter
         #####################################
         # 1.1. Non-Marker Location Parameters
         #####################################
