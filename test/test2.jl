@@ -23,5 +23,12 @@ set_covariate(model1,"age");
 
 add_markers(model1,genofile,G,separator=',',header=true);
 Pi=Dict([1.0; 1.0]=>0.7,[1.0;0.0]=>0.1,[0.0,1.0]=>0.1,[0.0; 0.0]=>0.1)
-out = runMCMC(model1,data,Pi=Pi,chain_length=5000,methods="BayesC",
+out = runMCMC(model1,data,Pi=Pi,chain_length=500,methods="BayesC",
               estimatePi=true,output_samples_frequency=5)
+
+out
+
+
+using JWAS.misc
+
+winVarProps=GWAS_window("MCMC_samples_for_marker_effects_CW.txt",model1,window_size=2)

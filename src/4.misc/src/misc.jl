@@ -15,5 +15,6 @@ include("BayesianAlphabet/BayesB.jl")
 include("BayesianAlphabet/BayesC.jl")
 include("using_marker_samples.jl")
 include("stat.jl")
+include("window.jl")
 
 end
