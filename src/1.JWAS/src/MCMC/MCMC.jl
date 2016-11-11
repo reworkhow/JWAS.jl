@@ -28,7 +28,7 @@ function runMCMC(mme,df;
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
-  if mme.M != 0 && mme.M.G_is_marker_variance==false
+  if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
     genetic2marker(mme.M,Pi)
     println("Priors for marker effects covariance matrix were calculated from genetic covariance matrix and π.")
     if !isposdef(mme.M.G) #also work for scalar
