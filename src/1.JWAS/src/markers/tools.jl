@@ -6,6 +6,7 @@ function get_column(X,j)
     indx = 1 + (j-1)*nrow
     ptr = pointer(X,indx)
     pointer_to_array(ptr,nrow)
+    #unsafe_wrap(onecolumn,ptr,nrow)
 end
 
 function get_column_ref(X)

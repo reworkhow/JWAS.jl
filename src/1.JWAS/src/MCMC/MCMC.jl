@@ -1,5 +1,6 @@
 include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
+include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesB.jl")
 include("MT_MCMC_BayesC.jl")
 
@@ -44,22 +45,27 @@ function runMCMC(mme,df;
 
   if mme.nModels ==1
       if methods in ["BayesC","BayesC0","conventional (no markers)"]
-          res=MCMC_BayesC(chain_length,mme,df,
+        res=MCMC_BayesC(chain_length,mme,df,
                           π          =Pi,
                           methods    =methods,
                           estimatePi =estimatePi,
                           sol        =starting_value,
                           outFreq    =printout_frequency,
                           output_samples_frequency=output_samples_frequency)
-       elseif methods =="BayesB"
-           res=MCMC_BayesB(chain_length,mme,df,Pi,
+      elseif methods =="BayesB"
+        res=MCMC_BayesB(chain_length,mme,df,Pi,
                             estimatePi =false,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
                             output_samples_frequency=output_samples_frequency)
-        else
-            error("No options!!!")
-        end
+      elseif methods =="GBLUP"
+          res=MCMC_GBLUP(chain_length,mme,df;
+                            sol        =starting_value,
+                            outFreq    =printout_frequency,
+                            output_samples_frequency=output_samples_frequency)
+      else
+        error("No options!!!")
+      end
     elseif mme.nModels > 1
         if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")

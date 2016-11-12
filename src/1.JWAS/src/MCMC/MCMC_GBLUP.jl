@@ -1,6 +1,6 @@
 #y = μ + a + e with var(a)=G
 #G = LDL'
-#y = μ + Lα +e with var(α)=D : L orthogonal
+#y = μ + Lα +e with var(α)=D*σ² : L orthogonal
 
 function MCMC_GBLUP(nIter,mme,df;
                      sol       =false,
@@ -55,9 +55,10 @@ function MCMC_GBLUP(nIter,mme,df;
     vEff        = mme.M.G
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     meanVara    = 0.0
+    meanVarg    = 0.0
 
-    α           = zeros(nMarkers)#starting values for marker effeccts are zeros
-    meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
+    α           = zeros(nObs)#starting values for marker effeccts are zeros
+    meanAlpha   = zeros(nObs)#vectors to save solutions for marker effects
 
     #####################################################
     #  WORKING VECTORS (ycor)
@@ -80,7 +81,7 @@ function MCMC_GBLUP(nIter,mme,df;
     #######################################################
     # MCMC
     #######################################################
-    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    @showprogress "running MCMC for GBLUP..." for iter=1:nIter
 
         #####################################
         # 1.1. Non-Marker Location Parameters
@@ -97,9 +98,9 @@ function MCMC_GBLUP(nIter,mme,df;
         # 1.2 genetic Effects G
         #####################################
         ycorr = ycorr + L*α
-        lhs   = 1 + vRes/(vEff*D)
-        mean  = L'ycorr/lhs
-        α     = mean + randn(n)*sqrt(vare/lhs)
+        lhs   = 1 + vRes./(vEff*D)
+        mean  = L'ycorr./lhs
+        α     = mean + randn(nObs).*sqrt(vRes./lhs)
         meanAlpha += (α - meanAlpha)/iter
         ycorr = ycorr - L*α
 
