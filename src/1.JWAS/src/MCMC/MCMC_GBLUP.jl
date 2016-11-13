@@ -100,7 +100,7 @@ function MCMC_GBLUP(nIter,mme,df;
         ycorr = ycorr + L*α
         lhs   = 1 + vRes./(vEff*D)
         mean  = L'ycorr./lhs
-        α     = mean + randn(nObs).*sqrt(abs(vRes./lhs))
+        α     = mean + randn(nObs).*sqrt(vRes./lhs)
         meanAlpha += (α - meanAlpha)/iter
         ycorr = ycorr - L*α
 

@@ -23,8 +23,8 @@ O1,1,2,0,1,0
 O3,0,0,2,1,1
 ```
 """
-function add_markers(mme::MME,file,G;separator=' ',header=true,G_is_marker_variance=false,df=4)
-    mme.M   = readgenotypes(file;separator=separator,header=header,center=true)
+function add_markers(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4)
+    mme.M   = readgenotypes(file;separator=separator,header=header,center=center)
     mme.M.G = G
     mme.M.G_is_marker_variance = G_is_marker_variance
     mme.df.marker = Float64(df)
