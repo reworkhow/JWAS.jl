@@ -138,7 +138,7 @@ function MCMC_GBLUP(nIter,mme,df;
         addLambdas(mme)
 
         ###############################################
-        # 2.3 Residual Variamce
+        # 2.3 Residual Variance
         ###############################################
         mme.ROld = mme.RNew
         vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
@@ -164,10 +164,6 @@ function MCMC_GBLUP(nIter,mme,df;
             if mme.ped != 0
               mme.samples4G[:,out_i]=vec(G0)
             end
-            if mme.M != 0
-                writedlm(outfile,α')
-                pi[out_i] = π
-            end
             out_i +=1
           end
         end
@@ -179,7 +175,8 @@ function MCMC_GBLUP(nIter,mme,df;
               println("Polygenic effects covariance matrix \n",round(G0Mean,3))
             end
             if mme.M != 0
-              println("Genetic variance: ",round(meanVarg,6))
+              println("Genetic variance (G matrix): ",round(meanVarg,6))
+              println("Genetic variance (GenSel): ",round(meanVarg,6))
             end
         end
     end
@@ -206,7 +203,8 @@ function MCMC_GBLUP(nIter,mme,df;
         end
     end
 
-    output["Posterior mean of genetic variance"]  = meanVarg
+    output["Posterior mean of genetic variance (G matrix)"]  = meanVara
+    output["Posterior mean of genetic variance (GenSel)"]  = meanVarg
     output["Posterior mean of residual variance"] = meanVare
 
     return output

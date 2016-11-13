@@ -17,4 +17,4 @@ set_covariate(model,"Age")
 set_random(model,"Animal",pedigree,genetic_variance_by_polygenic)
 add_markers(model,genofile,genetic_variance_by_marker,separator=',');
 
-output=runMCMC(model,phenotype,chain_length=5000,methods="GBLUP",Pi=0.9,estimatePi=true,output_samples_frequency=100);
+output=runMCMC(model,phenotype,chain_length=5000,methods="GBLUP",printout_frequency=100);
