@@ -175,7 +175,7 @@ function MCMC_GBLUP(nIter,mme,df;
               println("Polygenic effects covariance matrix \n",round(G0Mean,3))
             end
             if mme.M != 0
-              println("Genetic variance (G matrix): ",round(meanVarg,6))
+              println("Genetic variance (G matrix): ",round(meanVara,6))
               println("Genetic variance (GenSel): ",round(meanVarg,6))
             end
         end
