@@ -45,7 +45,7 @@ function MCMC_GBLUP(nIter,mme,df;
     mGibbs      = GibbsMats(mme.M.genotypes)
     nObs        = mGibbs.nrows
     nMarkers    = mGibbs.ncols
-    M           = mGibbs.X ./ (2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
+    M           = mGibbs.X ./ sqrt(2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
     G           = M*M'/nMarkers
     eigenG      = eig(G)
     L           = eigenG[2]#eigenvectros
