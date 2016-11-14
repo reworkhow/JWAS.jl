@@ -231,7 +231,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           R0    = mme.R
           Ri    = kron(inv(R0),speye(nObs))
 
-          RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation 
+          RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
         end
 
         if mme.M == 0
@@ -269,6 +269,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
             pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
             q = pedTrm1.nLevels
+            #println(P+S)
+            #println(νG0 + q)
+
             G0 = rand(InverseWishart(νG0 + q, P + S))
             mme.Gi = inv(G0)
             addA(mme)
