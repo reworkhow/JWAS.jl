@@ -194,10 +194,10 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
                  for i=1:size(marker_effects_matrix,2)]
 
         for markeri = 1:nMarkers
-          arrayG[markeri] = rand(InverseWishart(νGM + 1, PM + alpha2[markeri]))
+          arrayG[markeri] = rand(InverseWishart(νGM + 1, round(PM + alpha2[markeri],7)))
         end
 
-        R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
+        R0      = rand(InverseWishart(νR0 + nObs, round(PRes + SRes,7)))
 
         #for constraint R, chisq
         if constraint == true
@@ -238,7 +238,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
             end
             pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
             q = pedTrm1.nLevels
-            G0 = rand(InverseWishart(νG0 + q, P + S))
+            G0 = rand(InverseWishart(νG0 + q, round(P + S,7)))
             mme.Gi = inv(G0)
             addA(mme)
 

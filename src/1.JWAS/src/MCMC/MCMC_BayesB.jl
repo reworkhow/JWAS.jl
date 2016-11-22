@@ -108,7 +108,7 @@ function MCMC_BayesB(nIter,mme,df,π;
 
             pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
             q  = pedTrm1.nLevels
-            G0 = rand(InverseWishart(νG0 + q, P + S)) #ν+q?
+            G0 = rand(InverseWishart(νG0 + q, round(P + S,7))) #ν+q?
 
             mme.GiOld = copy(mme.GiNew)
             mme.GiNew = inv(G0)

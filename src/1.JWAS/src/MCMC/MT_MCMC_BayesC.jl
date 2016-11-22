@@ -216,7 +216,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
 
-        R0      = rand(InverseWishart(νR0 + nObs, PRes + SRes))
+        R0      = rand(InverseWishart(νR0 + nObs, round(PRes + SRes,7)))
 
         #for constraint R, chisq
         if constraint == true
@@ -272,7 +272,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             #println(P+S)
             #println(νG0 + q)
 
-            G0 = rand(InverseWishart(νG0 + q, P + S))
+            G0 = rand(InverseWishart(νG0 + q, round(P + S,7)))
             mme.Gi = inv(G0)
             addA(mme)
 
@@ -290,7 +290,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                   SM[traitj,traiti]   = SM[traiti,traitj]
               end
           end
-          mme.M.G = rand(InverseWishart(νGM + nMarkers, PM + SM))
+          mme.M.G = rand(InverseWishart(νGM + nMarkers, round(PM + SM,7)))
           GMMean  += (mme.M.G  - GMMean)/iter
         end
 
