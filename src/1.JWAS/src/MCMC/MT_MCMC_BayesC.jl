@@ -316,7 +316,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             outputSamples(mme,sol,out_i)
             mme.samples4R[:,out_i]=vec(R0)
             if mme.ped != 0
-              mme.samples4G[:,out_i]=vec(R0)
+              mme.samples4G[:,out_i]=vec(G0)
             end
             out_i +=1
             if mme.M != 0
