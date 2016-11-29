@@ -148,12 +148,12 @@ function MCMC_GBLUP(nIter,mme,df;
         meanVare += (vRes - meanVare)/iter
 
         ###############################################
-        # 2.4 Marker Effects Variamce (modified new alpha)
+        # 2.4 Marker Effects Variance (modified new alpha)
         ###############################################
         vEff  = sample_variance(α./sqrt(D), nObs, dfEffectVar, scaleVar)
         meanVara += (vEff - meanVara)/iter
 
-        varg     = var(L*α)
+        varg     = var(L*α,corrected=false)
         meanVarg += (varg - meanVarg)/iter
 
         ###############################################
