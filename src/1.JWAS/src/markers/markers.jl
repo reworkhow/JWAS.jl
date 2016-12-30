@@ -1,4 +1,4 @@
-include("tools.jl")
+include("tools4genotypes.jl")
 include("readgenotypes.jl")
 include("BayesianAlphabet/BayesC0.jl")
 include("BayesianAlphabet/BayesC.jl")

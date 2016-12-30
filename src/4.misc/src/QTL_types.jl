@@ -35,7 +35,7 @@ function MCMCinfo(input::InputParameters)
     @printf("%-20s %10s\n","centering",input.centering)
 end
 
-type GibbsMats
+type GibbsMats #in src/1.JWAS/markers/tools
     X::Array{Float64,2}
     nrows::Int64
     ncols::Int64

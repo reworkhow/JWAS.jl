@@ -11,7 +11,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 
 * available **methods** include "conventional (no markers)", "BayesC0", "BayesC", "BayesCC","BayesB".
 * **missing_phenotypes**
-* **Pi** is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
+* **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
 * save MCMC samples every **output_samples_frequency** iterations
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**

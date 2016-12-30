@@ -6,11 +6,11 @@ function MCMC_BayesC(nIter,mme,df;
                      methods   ="conventional analyses",
                      output_samples_frequency=0)
 
-    #######################################################
+    ############################################################################
     # Pre-Check
-    #######################################################
+    ############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,π,sol)
+    sol,solMean = pre_check(mme,sol)
 
     if π==0.0
       methods="BayesC0"
@@ -21,9 +21,9 @@ function MCMC_BayesC(nIter,mme,df;
     if methods=="BayesC0" && estimatePi == true
       error("BayesC0 runs with estimatePi = false.")
     end
-    #######################################################
+    ############################################################################
     # PRIORS
-    #######################################################
+    ############################################################################
     #prior for residual variance
     vRes        = mme.RNew
     nuRes       = mme.df.residual
@@ -54,27 +54,27 @@ function MCMC_BayesC(nIter,mme,df;
        S         = zeros(Float64,k,k)
        G0Mean    = zeros(Float64,k,k)
     end
-    #####################################################
+    ############################################################################
     #  WORKING VECTORS (ycor)
-    #####################################################
+    ############################################################################
     #adjust y for starting values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)
 
-    #######################################################
+    ############################################################################
     #  SET UP OUTPUT MCMC samples
-    #######################################################
+    ############################################################################
     if output_samples_frequency != 0
       out_i,outfile,pi=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
     end
 
-    #######################################################
+    ############################################################################
     # MCMC
-    #######################################################
+    ############################################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
 
-        #####################################
+        ########################################################################
         # 1.1. Non-Marker Location Parameters
-        #####################################
+        ########################################################################
         ycorr = ycorr + mme.X*sol
         rhs = mme.X'ycorr
 
@@ -83,9 +83,9 @@ function MCMC_BayesC(nIter,mme,df;
         ycorr = ycorr - mme.X*sol
         solMean += (sol - solMean)/iter
 
-        #####################################
+        ########################################################################
         # 1.2 Marker Effects
-        #####################################
+        ########################################################################
         if methods=="BayesC"
           nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
         elseif methods=="BayesC0"
@@ -131,7 +131,7 @@ function MCMC_BayesC(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_freqcy != 0 && iter%output_samples_frequency==0
-            out_i=output_MCMC_samples(mme,out_i,pi,sol,α,outfile)
+            out_i=output_MCMC_samples(mme,out_i,pi,sol,α,vRes,G0,outfile,estimatePi)
         end
         ########################################################################
         # 3.2 Printout
