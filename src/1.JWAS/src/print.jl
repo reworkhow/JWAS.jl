@@ -8,7 +8,7 @@ function MCMCinfo(methods,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
     @printf("%-30s %20s\n","constraint",constraint?"true":"false")
     @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
-    @printf("%-30s %20s\n","starting_value",starting_value)
+#    @printf("%-30s %20s\n","starting_value",starting_value)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
     @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
