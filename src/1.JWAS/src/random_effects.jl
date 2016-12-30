@@ -70,7 +70,8 @@ end
 
 set variables as iid random effects
 """
-function set_random(mme::MME,randomStr::AbstractString, vc::Float64; df=4)
+function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
+    vc = Float64(variance)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
     res = []
     for trm in randTrmVec #add model number => "1:herd"

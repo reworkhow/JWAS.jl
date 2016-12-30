@@ -24,3 +24,5 @@ set_random(model,"animal dam", ped, G)
 #writedlm("startingValues.sol", starting)
 
 @time outMCMC=runMCMC(model, dat, chain_length=2, printout_frequency=1) #, starting_value=starting);
+
+@profile outMCMC=runMCMC(model, dat, chain_length=2, printout_frequency=1)
