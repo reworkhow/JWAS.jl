@@ -31,3 +31,12 @@ function add_markers(mme::MME,file,G;separator=' ',header=true,center=true,G_is_
 
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
+
+function get_genotypes(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4)
+    M   = readgenotypes(file;separator=separator,header=header,center=center)
+    M.G = G
+    M.G_is_marker_variance = G_is_marker_variance
+    mme.df.marker = Float64(df)
+
+    println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
+end
