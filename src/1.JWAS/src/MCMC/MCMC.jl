@@ -38,8 +38,14 @@ function runMCMC(mme,df;
     println("Marker effects covariance matrix is ")
     println(round(mme.M.G,6),".\n\n")
   end
+    
+  have_starting_value=false
+  if starting_value != false
+    starting_value=vec(starting_value)
+    have_starting_value=true
+  end
 
-  MCMCinfo(methods,chain_length,starting_value,printout_frequency,
+  MCMCinfo(methods,chain_length,have_starting_value,printout_frequency,
            output_samples_frequency,missing_phenotypes,constraint,estimatePi,
            update_priors_frequency,mme)
 
