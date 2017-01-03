@@ -1,8 +1,11 @@
+include("MCMC_Bayes.jl")
 include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesB.jl")
 include("MT_MCMC_BayesC.jl")
+include("outputMCMCsamples.jl")
+include("DRY.jl")
 
 """
     runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
@@ -18,7 +21,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * **constraint**=true if constrain residual covariances between traits to be zero.
 """
 function runMCMC(mme,df;
-                Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
+                Pi                = 0.95,   #Dict{Array{Float64,1},Float64}()
                 chain_length      = 100,
                 starting_value    = false,
                 missing_phenotypes= false,
@@ -38,19 +41,24 @@ function runMCMC(mme,df;
     println("Marker effects covariance matrix is ")
     println(round(mme.M.G,6),".\n\n")
   end
-    
+
   have_starting_value=false
   if starting_value != false
     starting_value=vec(starting_value)
     have_starting_value=true
   end
 
-  MCMCinfo(methods,chain_length,have_starting_value,printout_frequency,
+  MCMCinfo(methods,Pi,chain_length,have_starting_value,printout_frequency,
            output_samples_frequency,missing_phenotypes,constraint,estimatePi,
            update_priors_frequency,mme)
 
   if mme.nModels ==1
-      if methods in ["BayesC","BayesC0","conventional (no markers)"]
+      if methods =="conventional (no markers)"
+        res=MCMC_Bayes(chain_length,mme,df,
+                          sol        =starting_value,
+                          outFreq    =printout_frequency,
+                          output_samples_frequency=output_samples_frequency)
+      elseif methods in ["BayesC","BayesC0"]
         res=MCMC_BayesC(chain_length,mme,df,
                           π          =Pi,
                           methods    =methods,
@@ -104,4 +112,35 @@ function runMCMC(mme,df;
         error("No options!")
     end
   res
+end
+
+################################################################################
+#Print out MCMC information
+################################################################################
+function MCMCinfo(methods,Pi,chain_length,starting_value,printout_frequency,
+                  output_samples_frequency,missing_phenotypes,constraint,
+                  estimatePi,update_priors_frequency,mme)
+
+    println("MCMC Information:\n")
+    @printf("%-30s %20s\n","methods",methods)
+#    @printf("%-20s %10s\n","seed",seed)
+    @printf("%-30s %20s\n","chain_length",chain_length)
+    @printf("%-30s %20s\n","starting_value",starting_value?"true":"false")
+    @printf("%-30s %20d\n","printout_frequency",printout_frequency)
+    @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
+
+    @printf("%-30s %20s\n","constraint",constraint?"true":"false")
+    @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
+    @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
+
+    @printf("\n%-30s\n","Information for hyper-parameter: π (Π)")
+    @printf("%-30s %20s\n","π",Pi)
+    @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
+
+    @printf("\n%-30s\n","Degree of freedom for hyper-parameters:")
+    @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
+    @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
+    @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
+    @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
+    @printf("\n\n\n")
 end

@@ -3,14 +3,14 @@ function MCMC_BayesC(nIter,mme,df;
                      estimatePi=false,
                      sol       =false,
                      outFreq   =1000,
-                     methods   ="conventional analyses",
+                     methods   ="BayesC",
                      output_samples_frequency=0)
 
     ############################################################################
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,sol)
+    sol,solMean = pre_check(mme,df,sol)
 
     if π==0.0
       methods="BayesC0"
@@ -65,6 +65,8 @@ function MCMC_BayesC(nIter,mme,df;
     ############################################################################
     if output_samples_frequency != 0
       out_i,outfile,pi=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
+    else     #used only to remove error from output_result()
+      pi = π #sample4π is not used in MME type since π is BayesC-specific
     end
 
     ############################################################################
@@ -130,7 +132,7 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_freqcy != 0 && iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0
             out_i=output_MCMC_samples(mme,out_i,pi,sol,α,vRes,G0,outfile,estimatePi)
         end
         ########################################################################
@@ -156,6 +158,6 @@ function MCMC_BayesC(nIter,mme,df;
         close(outfile)
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,estimatePi)
+    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,pi)
     return output
 end

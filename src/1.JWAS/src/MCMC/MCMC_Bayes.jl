@@ -8,7 +8,7 @@ function MCMC_Bayes(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,sol)
+    sol,solMean = pre_check(mme,df,sol)
 
     ############################################################################
     # PRIORS
@@ -40,7 +40,7 @@ function MCMC_Bayes(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i =output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=false)
+      out_i =output_MCMC_samples_setup(mme,nIter,output_samples_frequency,false)
     end
 
     ############################################################################
@@ -82,7 +82,7 @@ function MCMC_Bayes(nIter,mme,df;
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_freqcy != 0 && iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0
             out_i=output_MCMC_samples(mme,out_i,sol,vRes,G0)
         end
         ########################################################################
@@ -100,10 +100,6 @@ function MCMC_Bayes(nIter,mme,df;
     #######################################################
     # After MCMC
     #######################################################
-    if output_samples_frequency != 0
-        close(outfile)
-    end
-
-    output=output_result(mme,solMean,output_samples_frequency,false)
+    output=output_result(mme,solMean,output_samples_frequency)
     return output
 end

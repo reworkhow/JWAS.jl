@@ -33,37 +33,6 @@ function center2(X) #without 2 here, not use center! and center togehter, maybe 
 end
 
 #borrow from julia class
-
-function mkmat_incidence_factor(b)
-    factor=unique(b)
-    coMat= spzeros(length(b),length(factor))
-
-    dictFactor = Dict()
-    index=1
-    for i in factor
-        dictFactor[i]=index
-        index+=1
-    end
-
-    nrow=1
-    for i in b
-        myindex=dictFactor[i]
-        coMat[nrow,myindex]=1
-        nrow=nrow+1
-    end
-    return full(coMat),factor
-end
-
-function get_column(X,j)
-  nrow,ncol = size(X)
-  if j>ncol||j<0
-      error("column number is wrong!")
-  end
-  indx = 1 + (j-1)*nrow
-  ptr = pointer(X,indx)
-  pointer_to_array(ptr,nrow)
-end
-
 function mkmat_incidence_factor(b)
     factor=unique(b)
     coMat= spzeros(length(b),length(factor))
@@ -143,5 +112,3 @@ function getXpRinvX(X)
     XpRinvX = [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
-
-

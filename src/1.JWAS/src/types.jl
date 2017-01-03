@@ -114,6 +114,7 @@ type MME
     samples4R::Array{Float64,2}             #residual variance  (ndim^2 * niter)
     samples4G::Array{Float64,2}             #polygenic variance (matrix -> vector)
     outputSamplesVec::Array{MCMCSamples,1}  #location parameters
+    #samples4π                              #samples4π is not used in MME type since π is BayesC-specific
 
     df::DF
 

@@ -2,7 +2,7 @@
 #######################################################
 # Pre-Check
 #######################################################
-function pre_check(mme,sol)
+function pre_check(mme,df,sol)
   if size(mme.mmeRhs)==()
       getMME(mme,df)
   end
@@ -16,64 +16,11 @@ function pre_check(mme,sol)
   return sol,solMean
 end
 
-
-#######################################################
-#MCMC Samples OUTPUT
-#######################################################
-function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=true)
-  #initialize arrays to save MCMC samples
-  num_samples = Int(floor(nIter/output_samples_frequency))
-  init_sample_arrays(mme,num_samples)
-  out_i = 1
-
-  if ismarker=true #write samples for marker effects to a txt file
-    file_count = 1
-    file_name="MCMC_samples_for_marker_effects.txt"
-    while isfile(file_name)
-      file_name="MCMC_samples_for_marker_effects"*"_$(file_count)"*".txt"
-      file_count += 1
-    end
-    outfile=open(file_name,"w")
-
-    if mme.M.markerID[1]!="NA"
-        writedlm(outfile,mme.M.markerID')
-    end
-    pi = zeros(num_samples)#vector to save π (for BayesC)
-    return out_i,outfile,pi
-  else
-    return out_i
-  end
-end
-
-function output_MCMC_samples(mme,out_i,pi,sol,α,vRes,G0,outfile,estimatePi)
-  outputSamples(mme,sol,out_i)
-  mme.samples4R[:,out_i]=vRes
-  if mme.ped != 0
-    mme.samples4G[:,out_i]=vec(G0)
-  end
-  writedlm(outfile,α')
-  if estimatePi==true
-    pi[out_i] = π
-  end
-  out_i +=1
-  return out_i
-end
-
-function output_MCMC_samples(mme,out_i,sol,vRes,G0)
-  outputSamples(mme,sol,out_i)
-  mme.samples4R[:,out_i]=vRes
-  if mme.ped != 0
-    mme.samples4G[:,out_i]=vec(G0)
-  end
-  out_i +=1
-  return out_i
-end
-
-
 #######################################################
 # Return Output Results (Dictionary)
 #######################################################
-function output_result(mme,solMean,output_samples_frequency,estimatePi)
+function output_result(mme,solMean,output_samples_frequency,
+                       meanAlpha=false,estimatePi=false,pi=false)
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
   if output_samples_frequency != 0
@@ -93,7 +40,7 @@ function output_result(mme,solMean,output_samples_frequency,estimatePi)
       end
   end
 
-  if mme.M != 0
+  if mme.M != 0 && meanAlpha != false
     if mme.M.markerID[1]!="NA"
         markerout=[mme.M.markerID meanAlpha]
     else
@@ -108,6 +55,6 @@ function output_result(mme,solMean,output_samples_frequency,estimatePi)
         end
     end
   end
-  
+
   return output
 end

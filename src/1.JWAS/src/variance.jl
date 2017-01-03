@@ -1,9 +1,13 @@
-#sample vairance of marker effects or residual
+################################################################################
+#sample variance of Marker or Residual effects
+################################################################################
 function sample_variance(x, n, df, scale)
     return (dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
 
-#sample variance for other iid random effects
+################################################################################
+#sample variances for iid Random Location effects
+################################################################################
 function sampleVCs(mme::MME,sol::Array{Float64,1})
     for effect in  mme.rndTrmVec
         trmi       = effect.term
@@ -15,10 +19,10 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
     end
 end
 
-##########################################################################
-# Genetic Covariance Matrix (Polygenic Effects)
-##########################################################################
-function sample_variance_pedigree(mme,pedTrmVec,sol,P,νG0)
+################################################################################
+# sample Genetic Covariance Matrix (Polygenic Effects)
+################################################################################
+function sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
     for (i,trmi) = enumerate(pedTrmVec)
         pedTrmi   = mme.modelTermDict[trmi]
         startPosi = pedTrmi.startPos
@@ -33,16 +37,11 @@ function sample_variance_pedigree(mme,pedTrmVec,sol,P,νG0)
 
     pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
     q  = pedTrm1.nLevels
-    G0 = rand(InverseWishart(νG0 + q, round(P + S,7))) #ν+q?
+    G0 = rand(InverseWishart(νG0 + q, round(P + S,7))) #rounding error without roud(,7)
 
     mme.GiOld = copy(mme.GiNew)
     mme.GiNew = inv(G0)
     addA(mme) #add Ainverse*lambda
 
     return G0
-end
-
-#sampel Pi
-function samplePi(nEffects, nTotal)
-    return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end
