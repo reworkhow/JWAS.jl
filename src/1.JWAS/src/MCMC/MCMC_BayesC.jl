@@ -124,16 +124,14 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
-        if mme.M!=0
-          vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
-          meanVara += (vEff - meanVara)/iter
-        end
+        vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
+        meanVara += (vEff - meanVara)/iter
 
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0
-            out_i=output_MCMC_samples(mme,out_i,pi,sol,α,vRes,G0,outfile,estimatePi)
+            out_i=output_MCMC_samples(mme,out_i,sol,vRes,G0,α,pi,outfile,estimatePi)
         end
         ########################################################################
         # 3.2 Printout
@@ -151,9 +149,9 @@ function MCMC_BayesC(nIter,mme,df;
         end
     end
 
-    #######################################################
+    ############################################################################
     # After MCMC
-    #######################################################
+    ############################################################################
     if output_samples_frequency != 0
         close(outfile)
     end

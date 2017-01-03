@@ -31,7 +31,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
     outfile=open(file_name,"w")
 
     if mme.M.markerID[1]!="NA"
-        writedlm(outfile,mme.M.markerID')
+        writedlm(outfile,transpose(mme.M.markerID))
     end
     pi = zeros(num_samples)#vector to save π (for BayesC)
     return out_i,outfile,pi
@@ -40,32 +40,22 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
   end
 end
 
-#for BayesC,BayesB
-function output_MCMC_samples(mme,out_i,pi,sol,α,vRes,G0,outfile,estimatePi)
+function output_MCMC_samples(mme,out_i,sol,vRes,G0,
+                             α=false,pi=false,outfile=false,estimatePi=false)
   outputSamples(mme,sol,out_i)
   mme.samples4R[:,out_i]=vRes
   if mme.ped != 0
     mme.samples4G[:,out_i]=vec(G0)
   end
-  writedlm(outfile,α')
-  if estimatePi==true
-    pi[out_i] = π
+  if α != false
+    writedlm(outfile,α')
+    if estimatePi==true
+      pi[out_i] = π
+    end
   end
-  out_i +=1
+    out_i +=1
   return out_i
 end
-
-#for conventional analyses (no markers)
-function output_MCMC_samples(mme,out_i,sol,vRes,G0)
-  outputSamples(mme,sol,out_i)
-  mme.samples4R[:,out_i]=vRes
-  if mme.ped != 0
-    mme.samples4G[:,out_i]=vec(G0)
-  end
-  out_i +=1
-  return out_i
-end
-
 ################################################################################
 #function blocks
 ################################################################################
@@ -122,4 +112,14 @@ function outputSamples(mme::MME,sol,iter::Int64)
     for effect in  mme.rndTrmVec
         effect.sampleArray[iter] = effect.vcNew
     end
+end
+
+#function to replace Array{SubString{String}' for issue 8
+function transpose(vec::Array{SubString{String},1})
+    lvec=length(vec)
+    res =Array(String,1,lvec)
+    for i in 1:lvec
+        res[1,i]=vec[i]
+    end
+    return res
 end

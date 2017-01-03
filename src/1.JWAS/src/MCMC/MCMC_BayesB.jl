@@ -1,18 +1,17 @@
 function MCMC_BayesB(nIter,mme,df,π;
-                     estimatePi=false,
                      sol       =false,
                      outFreq   =100,
                      output_samples_frequency =0)
 
-    #######################################################
+    ############################################################################
     # Pre-Check
-    #######################################################
+    ############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,π,sol)
+    sol,solMean = pre_check(mme,df,sol)
 
-    #######################################################
+    ############################################################################
     # PRIORS
-    #######################################################
+    ############################################################################
     #prior for residual variance
     vRes        = mme.RNew
     nuRes       = mme.df.residual
@@ -45,17 +44,19 @@ function MCMC_BayesB(nIter,mme,df,π;
        G0Mean    = zeros(Float64,k,k)
     end
 
-    #####################################################
+    ############################################################################
     # WORKING VECTORS (ycor, saving values)
-    #####################################################
+    ############################################################################
     #adjust y for starting values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)
 
-    #######################################################
+    ############################################################################
     #  SET UP OUTPUT MCMC samples
-    #######################################################
+    ############################################################################
     if output_samples_frequency != 0
       out_i,outfile,pi=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
+    else     #used only to remove error from output_result()
+      pi = π #sample4π is not used in MME type since π is BayesC-specific
     end
 
     #######################################################
@@ -63,9 +64,9 @@ function MCMC_BayesB(nIter,mme,df,π;
     #######################################################
     @showprogress "running MCMC for BayesB ..." for iter=1:nIter
 
-        #####################################
+        ########################################################################
         # 1.1. Non-Marker Location Parameters
-        #####################################
+        ########################################################################
         ycorr = ycorr + mme.X*sol
         rhs = mme.X'ycorr
 
@@ -74,32 +75,31 @@ function MCMC_BayesB(nIter,mme,df,π;
         ycorr = ycorr - mme.X*sol
         solMean += (sol - solMean)/iter
 
-        #####################################
+        ########################################################################
         # 1.2 Marker Effects
-        #####################################
+        ########################################################################
         nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,u,α,δ,vRes,locusEffectVar,π)
         meanu += (u - meanu)/iter
 
-        ##########################################################################
+        ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
-        ##########################################################################
+        ########################################################################
         if mme.ped != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
           G0Mean  += (G0  - G0Mean )/iter
         end
-        ##########################################################################
+        ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
-        ##########################################################################
-        sampleVCs(mme,sol,iter)
+        ########################################################################
+        sampleVCs(mme,sol)
         addLambdas(mme)
-        ###############################################
+        ########################################################################
         # 2.3 Residual Variance
-        ###############################################
+        ########################################################################
         mme.ROld = mme.RNew
         vRes     = sample_variance(ycorr, nObs, nuRes, scaleRes)
         mme.RNew = vRes
         meanVare += (vRes - meanVare)/iter
-        mme.resVarSampleArray[iter] = vRes
         ###############################################
         # 2.4 Marker Effects Variance
         ###############################################
@@ -111,7 +111,7 @@ function MCMC_BayesB(nIter,mme,df,π;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0
-            out_i=output_MCMC_samples(mme,out_i,pi,sol,α,outfile)
+          out_i=output_MCMC_samples(mme,out_i,sol,vRes,G0,u,false,outfile,false)
         end
         ########################################################################
         # 3.2 Printout
@@ -122,17 +122,16 @@ function MCMC_BayesB(nIter,mme,df,π;
             if mme.ped !=0
               println("Polygenic effects covariance matrix \n",round(G0Mean,3))
             end
-            println("Marker effects variance: ",round(meanVara,6))
         end
     end
 
-    #######################################################
+    ############################################################################
     # After MCMC
-    #######################################################
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
+    ############################################################################
+    if output_samples_frequency != 0
       close(outfile)
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,false)
+    output=output_result(mme,solMean,output_samples_frequency,meanu,false,false)
     return output
 end

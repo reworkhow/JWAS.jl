@@ -68,7 +68,6 @@ function runMCMC(mme,df;
                           output_samples_frequency=output_samples_frequency)
       elseif methods =="BayesB"
         res=MCMC_BayesB(chain_length,mme,df,Pi,
-                            estimatePi =false,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
                             output_samples_frequency=output_samples_frequency)
@@ -133,9 +132,11 @@ function MCMCinfo(methods,Pi,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
     @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
 
-    @printf("\n%-30s\n","Information for hyper-parameter: π (Π)")
-    @printf("%-30s %20s\n","π",Pi)
-    @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
+    if methods != "conventional (no markers)"
+      @printf("\n%-30s\n","Information for hyper-parameter: π (Π)")
+      @printf("%-30s %20s\n","π",Pi)
+      @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
+    end
 
     @printf("\n%-30s\n","Degree of freedom for hyper-parameters:")
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
