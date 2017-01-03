@@ -83,7 +83,7 @@ function MCMC_Bayes(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0
-            out_i=output_MCMC_samples(mme,out_i,sol,vRes,G0)
+            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false))
         end
         ########################################################################
         # 3.2 Printout

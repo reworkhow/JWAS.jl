@@ -53,7 +53,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
       pi[out_i] = π
     end
   end
-    out_i +=1
+  out_i +=1
   return out_i
 end
 ################################################################################
