@@ -132,7 +132,7 @@ function MCMCinfo(methods,Pi,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
     @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
 
-    if methods != "conventional (no markers)"
+    if !(methods in ["conventional (no markers)", "GBLUP"])
       @printf("\n%-30s\n","Information for hyper-parameter: π (Π)")
       @printf("%-30s %20s\n","π",Pi)
       @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
