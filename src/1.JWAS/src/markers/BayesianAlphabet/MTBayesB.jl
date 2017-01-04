@@ -34,7 +34,7 @@ function sampleMarkerEffectsBayesB!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
             #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
 
             invLhs0  = 1/Ginv11
-            rhs0     = - Ginv12*α[nok]
+            rhs0     = - Ginv12'α[nok]
             gHat0    = (rhs0*invLhs0)[1,1]
 
             invLhs1  = 1/C11

@@ -1,11 +1,11 @@
+include("outputMCMCsamples.jl")
+include("DRY.jl")
 include("MCMC_Bayes.jl")
 include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesB.jl")
 include("MT_MCMC_BayesC.jl")
-include("outputMCMCsamples.jl")
-include("DRY.jl")
 
 """
     runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
@@ -21,7 +21,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * **constraint**=true if constrain residual covariances between traits to be zero.
 """
 function runMCMC(mme,df;
-                Pi                = 0.95,   #Dict{Array{Float64,1},Float64}()
+                Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
                 chain_length      = 100,
                 starting_value    = false,
                 missing_phenotypes= false,

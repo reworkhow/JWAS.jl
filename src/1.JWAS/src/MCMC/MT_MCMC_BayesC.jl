@@ -112,8 +112,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
-            wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
-                                                            #wArray is list version reference of ycor
+            #wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
+            wArray[traiti]         = unsafe_wrap(Array,ptr,nObs) #wArray is list version reference of ycor
+
             alphaArray[traiti]     = zeros(nMarkers)
             meanAlphaArray[traiti] = zeros(nMarkers)
             deltaArray[traiti]     = zeros(nMarkers)
@@ -143,7 +144,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           end
           outfile[traiti]=open(file_name,"w")
           if mme.M.markerID[1]!="NA"
-              writedlm(outfile[traiti],mme.M.markerID')
+              writedlm(outfile[traiti],transpose(mme.M.markerID))
           end
         end
       end

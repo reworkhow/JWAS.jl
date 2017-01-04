@@ -71,8 +71,9 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
     for traiti = 1:nTraits
         startPosi              = (traiti-1)*nObs  + 1
         ptr                    = pointer(ycorr,startPosi)
-        wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
-                                                            #wArray is list version reference of ycor
+        #wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
+        wArray[traiti]         = unsafe_wrap(Array,ptr,nObs) #wArray is list version reference of ycor
+
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
         #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
@@ -105,7 +106,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
 
         if mme.M.markerID[1]!="NA"
            for traiti in 1:nTraits
-              writedlm(outfile[traiti],mme.M.markerID')
+              writedlm(outfile[traiti],transpose(mme.M.markerID))
            end
         end
      end
@@ -256,8 +257,8 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
             println(BigPi)
         end
 
-        if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
-          if iter%output_marker_effects_frequency==0
+        if output_samples_frequency != 0  #write samples for marker effects to a txt file
+          if iter%output_samples_frequency==0
             for traiti in 1:nTraits
               writedlm(outfile[traiti],uArray[traiti]')
             end
@@ -265,7 +266,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
         end
     end
 
-    if output_marker_effects_frequency != 0  #write samples for marker effects to a txt file
+    if output_samples_frequency != 0  #write samples for marker effects to a txt file
         for traiti in 1:nTraits
            close(outfile[traiti])
         end
