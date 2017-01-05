@@ -43,7 +43,7 @@ function MCMC_BayesC(nIter,mme,df;
     meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
     mean_pi     = 0.0
 
-    #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
+    #priors for polygenic effects (A) e.g Animal+ Maternal
     if mme.ped != 0
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec

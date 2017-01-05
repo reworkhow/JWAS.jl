@@ -1,23 +1,3 @@
-#Convert Genetic variance to marker effect variance based on Pi
-function genetic2marker(M::Genotypes,Pi::Dict)
-  G=M.G #genetic variance
-  nTraits = size(G,1)
-  denom   = zeros(nTraits,nTraits)
-  for i in 1:nTraits
-    for j in i:nTraits
-      pi_selected = filter((k,v)->k[i]==1.0 && k[j]==1.0,Pi)
-      denom[i,j] = M.sum2pq*sum(values(pi_selected))
-      denom[j,i] = denom[i,j]
-    end
-  end
-  M.G = M.G ./ denom
-  M.G_is_marker_variance = true
-end
-
-function genetic2marker(M::Genotypes,π::Float64)
-    M.G=M.G/((1-π)*M.sum2pq)
-end
-
 function samplePi(deltaArray,BigPi,BigPiMean,iter)
   temp = deltaArray[1]
   nTraits = size(deltaArray,1)

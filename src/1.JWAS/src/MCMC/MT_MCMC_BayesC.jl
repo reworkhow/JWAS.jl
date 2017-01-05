@@ -9,17 +9,48 @@ function MT_MCMC_BayesC(nIter,mme,df;
                       output_samples_frequency=0,
                       update_priors_frequency=0)
 
-    if size(mme.mmeRhs)==()
-       getMME(mme,df)
+    ############################################################################
+    # Pre-Check
+    ############################################################################
+    #starting values for location parameters(no marker) are sol
+    sol,solMean = pre_check(mme,df,sol)
+    if mme.M !=0
+      if methods == "BayesC"
+        if Pi == 0.0
+          error("Pi (Π) is not provided!!")
+          #println("Same values are used for Πi.")
+        end
+        BigPi = copy(Pi)
+        BigPiMean = copy(Pi)
+        for key in keys(BigPiMean)
+          BigPiMean[key]=0.0
+        end
+      elseif methods == "BayesCC"
+        if Pi == 0.0
+          error("Pi is not provided!!")
+          #println("Same values are used for Πi.")
+        end
+        #label with the index of Array
+        #labels[1]=[0.0,0.0],labels[2]=[1.0,1.0]
+        #BigPi[1]=0.3,BigPi[2]=0.7
+        nlabels= length(Pi)
+        labels = Array(Array{Float64,1},nlabels)
+        BigPi  = Array(Float64,nlabels)
+        whichlabel=1
+        for pair in sort(collect(Pi), by=x->x[2],rev=true)
+          key=pair[1]
+          labels[whichlabel]=copy(key)
+          BigPi[whichlabel]=copy(pair[2])
+          whichlabel = whichlabel+1
+        end
+        BigPiMean = zeros(BigPi)
+      elseif methods == "BayesC0" && estimatePi==true
+        error("Estimating π is not allowed in BayesC0")
+      end
     end
-
-    if sol == false #no starting values
-       sol = zeros(size(mme.mmeLhs,1))
-    else #besure type is Float64
-       sol = map(Float64,sol)
-    end
-    solMean = fill(0.0,size(mme.mmeLhs,1))
-
+    ############################################################################
+    # PRIORS
+    ############################################################################
     #Priors for residual covariance matrix
     ν       = mme.df.residual
     nObs    = size(df,1)
@@ -29,7 +60,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     PRes    = R0*(νR0 - nTraits - 1)
     SRes    = zeros(Float64,nTraits,nTraits)
     R0Mean  = zeros(Float64,nTraits,nTraits)
-    scaleRes= diag(mme.R)*(ν-2)/ν #for chisq for constraint diagonal R
+    scaleRes= diag(mme.R)*(ν-2)/ν #only for chisq for constraint diagonal R
 
     #Priors for polygenic effect covariance matrix
     if mme.ped != 0
@@ -43,67 +74,30 @@ function MT_MCMC_BayesC(nIter,mme,df;
       G0Mean    = zeros(Float64,k,k)
     end
 
-    #######################################################
-    #   SET UP MARKER PART
-    #
-    #######################################################
-
+    ##SET UP MARKER PART
     if mme.M != 0
-        #priors for marker covaraince matrix
-        nObs,nMarkers  = size(mme.M.genotypes)
-        dfEffectVar    = mme.df.marker
-        mGibbs         = GibbsMats(mme.M.genotypes)
-        nObs           = mGibbs.nrows
-        nMarkers       = mGibbs.ncols
-        mArray         = mGibbs.xArray
-        mpm            = mGibbs.xpx
-        M              = mGibbs.X
-        vEff           = mme.M.G
-        νGM            = dfEffectVar + nTraits
-        PM             = vEff*(νGM - nTraits - 1)
-        SM             = zeros(Float64,nTraits,nTraits)
-        GMMean         = zeros(Float64,nTraits,nTraits)
-
-        #priors for π
-        if methods == "BayesC"
-          if Pi == 0.0
-            error("Pi is not provided!!")
-          end
-          BigPi = copy(Pi)
-          BigPiMean = copy(Pi)
-          for key in keys(BigPiMean)
-            BigPiMean[key]=0.0
-          end
-        elseif methods == "BayesCC"
-          if Pi == 0.0
-            error("Pi is not provided!!")
-          end
-          #label with the index of Array
-          #labels[1]=[0.0,0.0],labels[2]=[1.0,1.0]
-          #BigPi[1]=0.3,BigPi[2]=0.7
-          nlabels= length(Pi)
-          labels = Array(Array{Float64,1},nlabels)
-          BigPi  = Array(Float64,nlabels)
-          whichlabel=1
-          for pair in sort(collect(Pi), by=x->x[2],rev=true)
-            key=pair[1]
-            labels[whichlabel]=copy(key)
-            BigPi[whichlabel]=copy(pair[2])
-            whichlabel = whichlabel+1
-          end
-          BigPiMean = zeros(BigPi)
-        elseif methods == "BayesC0"
-          if estimatePi==true
-            error("Estimating π is not allowed in BayesC0")
-          end
-        end
-
-        #starting values for marker effects are all zeros
-        #starting values for other location parameters are sol
-        ycorr          = vec(full(mme.ySparse))
-        wArray         = Array(Array{Float64,1},nTraits)
-        alphaArray     = Array(Array{Float64,1},nTraits)
-        meanAlphaArray = Array(Array{Float64,1},nTraits)
+        ########################################################################
+        #Priors for marker covaraince matrix
+        ########################################################################
+        mGibbs      = GibbsMats(mme.M.genotypes)
+        nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+        dfEffectVar = mme.df.marker
+        vEff        = mme.M.G
+        νGM         = dfEffectVar + nTraits
+        PM          = vEff*(νGM - nTraits - 1)
+        SM          = zeros(Float64,nTraits,nTraits)
+        GMMean      = zeros(Float64,nTraits,nTraits)
+        ########################################################################
+        ##WORKING VECTORS
+        ########################################################################
+        ycorr          = vec(full(mme.ySparse)) #ycorr for different traits
+        wArray         = Array(Array{Float64,1},nTraits)#wArray is list reference of ycor
+        ########################################################################
+        #Arrays to save solutions for marker effects
+        ########################################################################
+        #starting values for marker effects(zeros) and location parameters (sol)
+        alphaArray     = Array(Array{Float64,1},nTraits) #BayesC,BayesC0
+        meanAlphaArray = Array(Array{Float64,1},nTraits) #BayesC,BayesC0
         deltaArray     = Array(Array{Float64,1},nTraits) #BayesC
         meanDeltaArray = Array(Array{Float64,1},nTraits) #BayesC
         uArray         = Array(Array{Float64,1},nTraits) #BayesC
@@ -112,8 +106,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
-            #wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
-            wArray[traiti]         = unsafe_wrap(Array,ptr,nObs) #wArray is list version reference of ycor
+            #wArray[traiti]         = pointer_to_array(ptr,nObs)
+            wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
 
             alphaArray[traiti]     = zeros(nMarkers)
             meanAlphaArray[traiti] = zeros(nMarkers)
@@ -125,9 +119,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
     end
 
 
-    #######################################################
-    #   SET UP OUTPUT
-    #######################################################
+    ############################################################################
+    # SET UP OUTPUT
+    ############################################################################
     if output_samples_frequency != 0
       #initialize arrays to save MCMC samples
       num_samples = Int(floor(nIter/output_samples_frequency))
@@ -151,19 +145,19 @@ function MT_MCMC_BayesC(nIter,mme,df;
       out_i = 1
     end
 
-    #######################################################
+    ############################################################################
     #MCMC
-    #######################################################
+    ############################################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
-        #####################################
+        ########################################################################
         # 1.1. Non-Marker Location Parameters
-        #####################################
+        ########################################################################
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
         solMean += (sol - solMean)/iter
 
-        #####################################
+        ########################################################################
         # 1.2 Marker Effects
-        #####################################
+        ########################################################################
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
           iR0,iGM = inv(mme.R),inv(mme.M.G)
@@ -195,9 +189,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
 
-        ###############################################
+        ########################################################################
         # 2.1 Residual Covariance Matrix
-        ###############################################
+        ########################################################################
         resVec = (mme.M==0?(mme.ySparse - mme.X*sol):ycorr)
         #here resVec is alias for ycor ***
 
@@ -241,10 +235,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
         R0Mean  += (R0  - R0Mean )/iter
 
-        ###############################################
+        ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
-        ###############################################
+        ########################################################################
         X          = mme.X
         mme.mmeLhs = X'Ri*X
         if mme.M != 0
@@ -253,9 +247,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
         mme.mmeRhs = (mme.M == 0?(X'Ri*mme.ySparse):(X'Ri*ycorr))
 
-        ##########################################################################
+        ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
-        ##########################################################################
+        ########################################################################
         if mme.ped != 0  #optimize taking advantage of symmetry
             for (i,trmi) = enumerate(pedTrmVec)
                 pedTrmi   = mme.modelTermDict[trmi]
@@ -280,9 +274,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
             G0Mean  += (G0  - G0Mean )/iter
         end
 
-        ###############################################
+        ########################################################################
         # 2.3 Marker Covariance Matrix
-        ###############################################
+        ########################################################################
 
         if mme.M != 0
           for traiti = 1:nTraits
@@ -295,9 +289,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
           GMMean  += (mme.M.G  - GMMean)/iter
         end
 
-        ###############################################
+        ########################################################################
         # 2.4 Update priors using posteriors (empirical)
-        ###############################################
+        ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0
                 PM = GMMean*(νGM - nTraits - 1)
@@ -309,9 +303,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
             println("\n Update priors from posteriors.")
         end
 
-        ###############################################
+        ########################################################################
         # OUTPUT
-        ###############################################
+        ########################################################################
         if output_samples_frequency != 0
           if iter%output_samples_frequency==0
             outputSamples(mme,sol,out_i)
@@ -353,9 +347,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
     end
 
-    ###############################################
+    ############################################################################
     # After MCMC
-    ###############################################
+    ############################################################################
     output = Dict()
 
     #OUTPUT Conventional Effects

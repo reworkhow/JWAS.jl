@@ -29,7 +29,7 @@ function sampleMarkerEffects!(xArray,xpx,wArray,alphaArray,meanAlpha,invR0,invG0
         for trait = 1:nTraits
             lhs  = Lhs[trait,trait]
             ilhs = 1/lhs
-            rhs  = (Rhs[trait] - Lhs[trait,:]*β)[1,1]
+            rhs  = Rhs[trait] - (Lhs[trait,:]'β)[1]
             mu   = ilhs*rhs + β[trait]
             alphaArray[trait][j] = mu + randn()*sqrt(ilhs)
             β[trait] = alphaArray[trait][j]
