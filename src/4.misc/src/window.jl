@@ -26,5 +26,4 @@ function GWAS_window(marker_file,mme;header=true,window_size=100)
     winVarProps
 end
 
-
 export GWAS_window
