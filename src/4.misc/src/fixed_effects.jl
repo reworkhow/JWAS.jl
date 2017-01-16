@@ -54,7 +54,7 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
     C=convert(DataFrame,[Array(df[:,1]) C]);
 
     #reorder C to make it has the row order as y: phenotypes
-    Cnew=Array{Any}(size(ID_order,1),size(C,2)
+    Cnew=Array{Any}(size(ID_order,1),size(C,2))
     j=1
     for i in ID_order[:x1]
         index = find(C[:x1].==i)
