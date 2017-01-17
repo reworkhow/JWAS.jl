@@ -18,8 +18,8 @@ function report(X::Array{Array{Float64,2},1};index=false)
     end
     println(DataFrames.describe(xArray))
     #plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
-    Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
-    Plots.title!("Trait $(index[1]) and Trait $(index[2])")
+    #Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
+    #Plots.title!("Trait $(index[1]) and Trait $(index[2])")
   end
 end
 
@@ -40,8 +40,8 @@ function report(X::Array{Array{Float64,1},1};index=false)
     end
     println(DataFrames.describe(xArray))
     #plt[:hist](xArray,normed=true,bins=round(Int,length(xArray)/20));
-    Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
-    Plots.title!("Trait $index")
+    #Plots.histogram(xArray,nbins=round(Int,length(xArray)/20),normalize=true)
+    #Plots.title!("Trait $index")
   end
 end
 
