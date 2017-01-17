@@ -2,7 +2,7 @@ module misc
 
 using DataFrames
 using Distributions
-using Plots
+#using Plots
 
 include("genotypes.jl")
 include("fixed_effects.jl")
