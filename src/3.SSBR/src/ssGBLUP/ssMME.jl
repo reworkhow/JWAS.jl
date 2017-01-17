@@ -48,7 +48,7 @@ end
 
 
 
-# df = readtable("bv.txt", eltypes =[UTF8String, Float64], separator = ' ',header=false)
+# df = readtable("bv.txt", eltypes =[String, Float64], separator = ' ',header=false)
 # a  = Array(Float64,num_ped)
 # for (i,ID) in enumerate(df[:,1])
 #      j = ped.idMap[ID].seqID

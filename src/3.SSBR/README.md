@@ -47,7 +47,7 @@ out=runSSBR(input,pedigree=pedfile,genotype=genofile,phenotype=phenofile,fixedfi
 
 #check accuracy
 using DataFrames
-df = readtable(Validation, eltypes =[UTF8String, Float64], separator = ' ',header=false,names=[:ID,:EBV]);
+df = readtable(Validation, eltypes =[String, Float64], separator = ' ',header=false,names=[:ID,:EBV]);
 comp=join(out,df,on=:ID);
 cor(comp[:EBV],comp[:EBV_1])
 ```

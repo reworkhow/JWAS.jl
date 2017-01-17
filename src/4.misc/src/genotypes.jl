@@ -23,7 +23,7 @@ function make_genotypes(file;header=false,center=true)
     ncol= length(row1)
     etv = Array(DataType,ncol)
     fill!(etv,Float64)
-    etv[1]=UTF8String
+    etv[1]=String
     close(myfile)
 
     #read genotypes

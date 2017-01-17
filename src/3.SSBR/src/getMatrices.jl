@@ -37,7 +37,7 @@ function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedMod
 end
 
 function make_yVecs(file,ped::PedModule.Pedigree,num::Numbers;header=false)
-    df = readtable(file, eltypes=[UTF8String, Float64], separator = ' ',header=header)
+    df = readtable(file, eltypes=[String, Float64], separator = ' ',header=header)
     num.y = size(df,1)
 
     y   = fill(-9999.0,num.ped)

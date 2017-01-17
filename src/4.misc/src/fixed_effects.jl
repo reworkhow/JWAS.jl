@@ -13,11 +13,11 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
 
     ncol   = length(row1)
     etv    = Array(DataType,ncol)
-    etv[1] = UTF8String  #type for 1st column: ID
+    etv[1] = String  #type for 1st column: ID
 
     for coli in 2:length(row1) #type for all variables(predictors)
        if row1[coli][end]=='#'
-           etv[coli]=UTF8String
+           etv[coli]=String
        else
            etv[coli]=Float64
        end
@@ -61,7 +61,7 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
         Cnew[j,:]= convert(Array,C[index,:])
         j = j+1
     end
-    
+
     C=Cnew[:,2:end]
 
     return FixedMatrix(C,variables)

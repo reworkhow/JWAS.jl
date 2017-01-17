@@ -1,3 +1,4 @@
+#the function below using pointers is deprecated
 function get_column(X,j)
     nrow,ncol = size(X)
     if j>ncol||j<0
@@ -5,8 +6,10 @@ function get_column(X,j)
     end
     indx = 1 + (j-1)*nrow
     ptr = pointer(X,indx)
-    pointer_to_array(ptr,nrow)
+    #pointer_to_array(ptr,nrow) #deprected in Julia 0.5
+    unsafe_wrap(Array,ptr,nrow)
 end
+
 
 function get_column_ref(X)
     ncol = size(X)[2]

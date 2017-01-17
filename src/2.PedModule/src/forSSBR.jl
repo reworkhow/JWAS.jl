@@ -1,6 +1,6 @@
 
 function genoSet!(genoID_file::AbstractString,ped::Pedigree)
-    df = readtable(genoID_file, eltypes=[UTF8String], separator = ' ',header=false)
+    df = readtable(genoID_file, eltypes=[String], separator = ' ',header=false)
     for i in df[:,1]
         push!(ped.setG,i)
 	end
@@ -45,12 +45,12 @@ function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
 end
 
 function genoSet!(genoID_file::AbstractString,genoCoreID_file::AbstractString,ped::Pedigree)
-    df1 = readtable(genoID_file, eltypes=[UTF8String], separator = ' ',header=false)
+    df1 = readtable(genoID_file, eltypes=[String], separator = ' ',header=false)
     for i in df1[:,1]
         push!(ped.setG,i)
 	end
 
-    df2 = readtable(genoCoreID_file, eltypes=[UTF8String], separator = ' ',header=false)
+    df2 = readtable(genoCoreID_file, eltypes=[String], separator = ' ',header=false)
     for i in df2[:,1]
         push!(ped.setG_core,i)
 	end

@@ -28,7 +28,7 @@ end
     QC(infile,outfile;separator=' ',header=true,missing=false,MAF=0.1)
 * Quality control for input file **infile**, then write out to output file: **outfile**.
   * Delete loci with minor allele frequency < **MAF**.
-  * **missing** genotypes are replaced by column means. 
+  * **missing** genotypes are replaced by column means.
 * File format (header=true,separator=',',missing=9):
 
 ```
@@ -50,7 +50,7 @@ function QC(infile,outfile;separator=' ',header=true,missing=false,MAF=0.1)
     etv = Array(DataType,ncol)
     fill!(etv,Float64)
     if id4row == true
-      etv[1]=UTF8String
+      etv[1]=String
     end
     close(myfile)
 
