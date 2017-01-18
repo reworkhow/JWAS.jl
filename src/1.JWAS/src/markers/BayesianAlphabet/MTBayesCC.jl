@@ -49,7 +49,7 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray
             #lhsC      = cholfact(lhs)            #if lhs pd
             #lhsC      = chol(lhs)            #if lhs pd
             invLhs    = inv(lhs)                #nTrait X nTrait
-            invLhsC   = chol(Hermitian(A))
+            invLhsC   = chol(Hermitian(invLhs))
             #gHat     = lhsC\rhs' #nTrait X 1
             gHat      = invLhs*rhs'
             #probDelta[label]= sqrt(1.0/det(lhsC))*exp(0.5*(rhs*gHat)[1,1])+BigPi[label]
