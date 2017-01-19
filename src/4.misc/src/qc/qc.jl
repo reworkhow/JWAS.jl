@@ -78,7 +78,8 @@ function missing2mean!(X::DataFrames.DataFrame;id4row=true,missing=9.0)
         index=find(x->x==missing,X[:,i])
         cols = collect(1:nrow)
         deleteat!(cols,index)
-        X[index,i]=round(Int,mean(X[cols,i]))
+        #X[index,i]=round(Int,mean(X[cols,i]))
+        X[index,i]=mean(X[cols,i])
     end
 end
 
