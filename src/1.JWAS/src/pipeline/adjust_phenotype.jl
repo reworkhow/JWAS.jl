@@ -1,5 +1,5 @@
-function adjust_phenotypes(model,phenotype)
-  output=runMCMC(model,phenotype,chain_length=50000,printout_frequency=10000);
+function adjust_phenotypes(model,phenotype;chain_length=50000,printout_frequency=10000)
+  output=runMCMC(model,phenotype,chain_length=chain_length,printout_frequency=printout_frequency);
   animals_count= model.modelTermDict["1:Animal"].nLevels
   fixed_index  = 1:size(model.X,2)-animals_count
   fixed_X      = model.X[:,fixed_index]

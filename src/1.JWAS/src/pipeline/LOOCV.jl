@@ -1,15 +1,17 @@
-function LOOCV(model,adjusted_phenotypes)
+function LOOCV(model,adjusted_phenotype,vara,vare)
   X = model.
   X = model.M.genotypes
   y = Array(adjusted_phenotype[:adjusted_phenotype])
-  vara,vare=1.0,1.0
+  vara,vare=vara,vare
 
   nind,nmarker=size(model.M.genotypes)
   if nind > nmarker
-    eMEM(X,y,vara,vare)
+    res=eMEM(X,y,vara,vare)
+  else
+    res=eBV(X,y,vara,vare)
   end
+  return res
 end
-
 
 #PRESS p<<n
 function eMEM(X,y,vara,vare)
@@ -23,7 +25,9 @@ function eMEM(X,y,vara,vare)
     β =H0*X'y
     H_array=[(X[i,:]'H0*X[i,:])[1]::Float64 for i=1:nInd]
     e = (y - X*β)./(1-H_array)
-    SSE = e'e
+    println("mean square of error is ",(e'e/nInd)[1])
+    println("prediction accuracy is ",cor(y,y+e))
+    return e
 end
 
 #PRESS p>>n
@@ -39,9 +43,11 @@ function eBV(X,y,vara,vare)
     H0 = inv([nInd ones(nInd)'
              ones(nInd) Hsub])
     β =H0*Z'y
-    H_array=[(Z[i,:]*H0*Z[i,:]')[1]::Float64 for i=1:nInd]
+    H_array=[(Z[i,:]'H0*Z[i,:])[1]::Float64 for i=1:nInd]
     e = (y - Z*β)./(1-H_array)
-    SSE = e'e
+    println("mean square of error is ",(e'e/nInd)[1])
+    println("prediction accuracy is ",cor(y,y+e))
+    return e
 end
 
 function QInv(X,y,vara,vare)

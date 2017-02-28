@@ -19,10 +19,4 @@ d1 = adjust_phenotypes(model,phenotype)
 
 add_markers(model,genofile,genetic_variance,separator=',',center=false);
 
-
-Array(d1[:adjusted_phenotype])
-
-
-@time LOOCV.eMEM(model.M.genotypes,adjusted_phenotype,vara,vare)
-
-model
+pe=LOOCV(model,d1,genetic_variance,residual_variance)
