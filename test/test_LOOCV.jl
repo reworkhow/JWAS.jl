@@ -1,4 +1,4 @@
-include("../src/JWAS.jl")
+#include("../src/JWAS.jl")
 
 using DataFrames,JWAS,JWAS.Datasets
 
