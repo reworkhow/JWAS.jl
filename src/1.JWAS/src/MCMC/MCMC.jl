@@ -29,6 +29,7 @@ function runMCMC(mme,df;
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
                 printout_frequency= chain_length+1,
+                printout_MCMCinfo = true,
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
@@ -48,9 +49,11 @@ function runMCMC(mme,df;
     have_starting_value=true
   end
 
-  MCMCinfo(methods,Pi,chain_length,have_starting_value,printout_frequency,
-           output_samples_frequency,missing_phenotypes,constraint,estimatePi,
-           update_priors_frequency,mme)
+  if printout_MCMCinfo == true
+    MCMCinfo(methods,Pi,chain_length,have_starting_value,printout_frequency,
+             output_samples_frequency,missing_phenotypes,constraint,estimatePi,
+             update_priors_frequency,mme)
+  end
 
   if mme.nModels ==1
       if methods =="conventional (no markers)"
