@@ -19,7 +19,7 @@ end
 # Return Output Results (Dictionary)
 ################################################################################
 function output_result(mme,solMean,output_samples_frequency,
-                       meanAlpha=false,estimatePi=false,pi=false)
+                       meanAlpha=false,estimatePi=false,pi=false,mean_pi=false)
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
   if output_samples_frequency != 0
