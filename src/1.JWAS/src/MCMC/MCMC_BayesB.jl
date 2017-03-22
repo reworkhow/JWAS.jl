@@ -54,7 +54,7 @@ function MCMC_BayesB(nIter,mme,df,π;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,pi=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
+      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
     end #sample4π is not used in MME type since π is BayesC-specific
 
     #######################################################
@@ -109,7 +109,7 @@ function MCMC_BayesB(nIter,mme,df,π;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0
-          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),u,false,outfile,false)
+          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0.0,u,false,outfile,false)
         end
         ########################################################################
         # 3.2 Printout
