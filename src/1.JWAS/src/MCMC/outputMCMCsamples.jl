@@ -40,8 +40,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
   end
 end
 
+out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,α,pi,outfile,estimatePi)
+
+
 function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
-                             α=false,pi=false,outfile=false,estimatePi=false)
+                             α=false,sample4π=false,outfile=false,estimatePi=false)
   outputSamples(mme,sol,out_i)
   mme.samples4R[:,out_i]=vRes
   if mme.ped != 0
@@ -50,7 +53,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
   if α != false
     writedlm(outfile,α')
     if estimatePi==true
-      pi[out_i] = π
+      sample4π[out_i] = π
     end
   end
   out_i +=1
