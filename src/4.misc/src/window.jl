@@ -24,7 +24,7 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
         end
     end
     #winVarProps
-    mean(winVarProps .> threshold,1)
+    vec(mean(winVarProps .> threshold,1))
 end
 
 export GWAS
