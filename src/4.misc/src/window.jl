@@ -1,4 +1,4 @@
-function GWAS_window(marker_file,mme;header=true,window_size=100)
+function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
     if header==true
         output=readdlm(marker_file,header=true)[1]
     else
@@ -23,7 +23,8 @@ function GWAS_window(marker_file,mme;header=true,window_size=100)
           winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
         end
     end
-    winVarProps
+    #winVarProps
+    mean(winVarProps .> threshold,1)
 end
 
-export GWAS_window
+export GWAS
