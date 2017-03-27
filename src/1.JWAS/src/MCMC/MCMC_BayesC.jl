@@ -4,7 +4,8 @@ function MCMC_BayesC(nIter,mme,df;
                      sol       =false,
                      outFreq   =1000,
                      methods   ="BayesC",
-                     output_samples_frequency=0)
+                     output_samples_frequency=0,
+                     MCMC_marker_effects_file=MCMC_marker_effects_file)
 
     ############################################################################
     # Pre-Check
@@ -64,7 +65,7 @@ function MCMC_BayesC(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
+      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
     end
 
     ############################################################################

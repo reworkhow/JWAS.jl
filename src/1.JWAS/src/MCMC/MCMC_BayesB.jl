@@ -1,7 +1,8 @@
 function MCMC_BayesB(nIter,mme,df,π;
                      sol       =false,
                      outFreq   =100,
-                     output_samples_frequency =0)
+                     output_samples_frequency =0,
+                     MCMC_marker_effects_file=MCMC_marker_effects_file)
 
     ############################################################################
     # Pre-Check
@@ -54,7 +55,7 @@ function MCMC_BayesB(nIter,mme,df,π;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency)
+      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
     end #sample4π is not used in MME type since π is BayesC-specific
 
     #######################################################

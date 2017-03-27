@@ -28,6 +28,7 @@ function runMCMC(mme,df;
                 constraint        = false,
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
+                MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt",
                 printout_frequency= chain_length+1,
                 printout_MCMCinfo = true,
                 output_samples_frequency::Int64 = 0,
@@ -68,17 +69,20 @@ function runMCMC(mme,df;
                           estimatePi =estimatePi,
                           sol        =starting_value,
                           outFreq    =printout_frequency,
-                          output_samples_frequency=output_samples_frequency)
+                          output_samples_frequency=output_samples_frequency,
+                          MCMC_marker_effects_file=MCMC_marker_effects_file)
       elseif methods =="BayesB"
         res=MCMC_BayesB(chain_length,mme,df,Pi,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
-                            output_samples_frequency=output_samples_frequency)
+                            output_samples_frequency=output_samples_frequency,
+                            MCMC_marker_effects_file=MCMC_marker_effects_file)
       elseif methods =="GBLUP"
           res=MCMC_GBLUP(chain_length,mme,df;
                             sol        =starting_value,
                             outFreq    =printout_frequency,
-                            output_samples_frequency=output_samples_frequency)
+                            output_samples_frequency=output_samples_frequency,
+                            MCMC_marker_effects_file=MCMC_marker_effects_file)
       else
         error("No options!!!")
       end
@@ -96,6 +100,7 @@ function runMCMC(mme,df;
                           estimatePi = estimatePi,
                           methods    = methods,
                           output_samples_frequency=output_samples_frequency,
+                          MCMC_marker_effects_file=MCMC_marker_effects_file,
                           update_priors_frequency=update_priors_frequency)
         elseif methods=="BayesB"
             if Pi == 0.0
@@ -106,7 +111,8 @@ function runMCMC(mme,df;
                             outFreq=printout_frequency,
                             missing_phenotypes=missing_phenotypes,
                             constraint=constraint,
-                            output_samples_frequency=output_samples_frequency)
+                            output_samples_frequency=output_samples_frequency,
+                            MCMC_marker_effects_file=MCMC_marker_effects_file)
         else
             error("No methods options!!!")
         end

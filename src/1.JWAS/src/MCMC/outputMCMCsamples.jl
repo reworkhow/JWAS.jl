@@ -15,18 +15,19 @@ end
 ################################################################################
 #Wraps for Output MCMC Samples
 ################################################################################
-function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=true)
+function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=true;
+                    MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
   #initialize arrays to save MCMC samples
   num_samples = Int(floor(nIter/output_samples_frequency))
   init_sample_arrays(mme,num_samples)
   out_i = 1
 
   if ismarker==true #write samples for marker effects to a txt file
-    file_count = 1
-    file_name="MCMC_samples_for_marker_effects.txt"
-    while isfile(file_name)
-      file_name="MCMC_samples_for_marker_effects"*"_$(file_count)"*".txt"
-      file_count += 1
+    file_name  = MCMC_marker_effects_file
+    if isfile(file_name)
+      println("The file "*MCMC_marker_effects_file*" already exists!!! It was overwritten by the new output.")
+    else
+      println("The file "*MCMC_marker_effects_file*" was created to save MCMC samples for marker effects.")
     end
     outfile=open(file_name,"w")
 
