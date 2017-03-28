@@ -3,7 +3,8 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
                       estimatePi        =false,
                       missing_phenotypes=false,
                       constraint=nothing,
-                      output_samples_frequency=0)
+                      output_samples_frequency=0,
+                      CMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
 
     #Pi is of length nTrait^2
 
