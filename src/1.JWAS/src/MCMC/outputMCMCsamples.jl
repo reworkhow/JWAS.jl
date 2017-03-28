@@ -25,9 +25,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
   if ismarker==true #write samples for marker effects to a txt file
     file_name  = MCMC_marker_effects_file
     if isfile(file_name)
-      println("The file "*MCMC_marker_effects_file*" already exists!!! It was overwritten by the new output.")
+      warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
     else
-      println("The file "*MCMC_marker_effects_file*" was created to save MCMC samples for marker effects.")
+      info("The file "*file_name*" was created to save MCMC samples for marker effects.")
     end
     outfile=open(file_name,"w")
 
