@@ -111,6 +111,7 @@ function runMCMC(mme,df;
                             sol=starting_value,
                             outFreq=printout_frequency,
                             missing_phenotypes=missing_phenotypes,
+                            estimatePi = estimatePi,
                             constraint=constraint,
                             output_samples_frequency=output_samples_frequency,
                             MCMC_marker_effects_file=MCMC_marker_effects_file)
