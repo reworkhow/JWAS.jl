@@ -100,9 +100,13 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
     end
 
     if output_samples_frequency != 0  #write samples for marker effects to a txt file
-        outfile = Array{IOStream}(nTraits)
-        for traiti in 1:nTraits
-           outfile[traiti]=open("marker_effects"*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
+
+        file_name=MCMC_marker_effects_file*"_"*string(mme.lhsVec[traiti])*".txt"
+
+        if isfile(file_name)
+            println("The file "*file_name*" already exists!!! It was overwritten by the new output.")
+        else
+            println("The file "*file_name*" was created to save MCMC samples for marker effects.")
         end
 
         if mme.M.markerID[1]!="NA"

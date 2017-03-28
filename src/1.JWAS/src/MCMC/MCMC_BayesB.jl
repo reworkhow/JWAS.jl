@@ -2,7 +2,7 @@ function MCMC_BayesB(nIter,mme,df,π;
                      sol       =false,
                      outFreq   =100,
                      output_samples_frequency =0,
-                     MCMC_marker_effects_file=MCMC_marker_effects_file)
+                     MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
 
     ############################################################################
     # Pre-Check
