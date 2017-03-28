@@ -8,7 +8,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                       methods            ="conventional analyses",
                       output_samples_frequency=0,
                       update_priors_frequency=0,
-                      CMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
+                      MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
 
     ############################################################################
     # Pre-Check
