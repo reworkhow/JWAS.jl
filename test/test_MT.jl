@@ -21,10 +21,10 @@ model1 = build_model(model_equations,R)
 
 set_covariate(model1,"age");
 
-add_markers(model1,genofile,G,separator=',',header=true);
-Pi=Dict([1.0; 1.0]=>0.7,[1.0;0.0]=>0.1,[0.0,1.0]=>0.1,[0.0; 0.0]=>0.1)
-out = runMCMC(model1,data,Pi=Pi,chain_length=500,methods="BayesC",
-              estimatePi=true,output_samples_frequency=5)
+add_markers(model1,genofile,G,separator=',',header=true,);
+Pi=Dict([1.0; 1.0]=>1.0,[1.0;0.0]=>0.0,[0.0,1.0]=>0.0,[0.0; 0.0]=>0.0)
+out = runMCMC(model1,data,Pi=Pi,chain_length=500,methods="BayesB",
+              estimatePi=false,output_samples_frequency=5)
 
 out
 

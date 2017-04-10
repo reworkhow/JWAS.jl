@@ -79,7 +79,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
         alphaArray[traiti]     = zeros(nMarkers)
         meanAlphaArray[traiti] = zeros(nMarkers)
         #deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
-        deltaArray[traiti]     = zeros(nMarkers) #starting values for deltaArray should follow staring vlaus for pi
+        deltaArray[traiti]     = ones(nMarkers) #using all zeros, it won't work for MTBayesA using MTBAYSB with [1.0 1.0]=1.0.
         meanDeltaArray[traiti] = zeros(nMarkers)
         uArray[traiti]         = zeros(nMarkers)
         meanuArray[traiti]     = zeros(nMarkers)
@@ -115,9 +115,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
 
             outfile[traiti]=open(file_name,"w")
             if mme.M.markerID[1]!="NA"
-                for traiti in 1:nTraits
-                    writedlm(outfile[traiti],transpose(mme.M.markerID))
-                end
+              writedlm(outfile[traiti],transpose(mme.M.markerID))
             end
         end
     end
