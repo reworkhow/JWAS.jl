@@ -23,10 +23,10 @@ type AiMats
 end
 
 type YVecs
-  full::Array{Float64,1}   #y
-  n::Array{Float64,1}      #yn
-  g::Array{Float64,1}      #yg  #order of ids is same to order of y
-  ids::Array{String,1} #order of ids is nongeno then geno
+  full #::Array{Float64,1}   #y
+  n    #::Array{Float64,1}      #yn
+  g    #::Array{Float64,1}      #yg  #order of ids is same to order of y
+  ids  #::Array{String,1} #order of ids is nongeno then geno
 end
 
 type MMats
