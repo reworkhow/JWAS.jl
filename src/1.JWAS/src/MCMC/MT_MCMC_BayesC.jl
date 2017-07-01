@@ -142,7 +142,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
           outfile[traiti]=open(file_name,"w")
           if mme.M.markerID[1]!="NA"
-              writedlm(outfile[traiti],transpose(mme.M.markerID))
+              writedlm(outfile[traiti],transubstrarr(mme.M.markerID))
           end
         end
       end
