@@ -13,7 +13,8 @@ end
 
 function get_column_ref(X)
     ncol = size(X)[2]
-    xArray = Array(Array{Float64,1},ncol)
+    #xArray = Array(Array{Float64,1},ncol)
+    xArray = Array{Array{Float64,1}}(ncol)
     for i=1:ncol
         xArray[i] = get_column(X,i)
     end
@@ -118,7 +119,7 @@ end
 
 
 ####calculate accuracies
-#deal with the problem that some fixed effects are not estimated from ssBayes. 
+#deal with the problem that some fixed effects are not estimated from ssBayes.
 #Because some fixed effects only appeared for observations without phenotypes.
 
 #function get_correlation(file) #ID, fiexed, phenotype, ebv
@@ -133,5 +134,3 @@ end
 #    cor=varcov[1,2]/sqrt(varcov[1,1]*varcov[2,2])
 #    return cor,betaHat
 #end
-
-
