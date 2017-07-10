@@ -23,7 +23,9 @@ function calc_Ai(pedfile,geno::misc.Genotypes,num::Numbers)
 end
 
 function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedModule.Pedigree)
-    Mg = Array(Float64,geno.nObs,geno.nMarkers)
+    #Mg = Array(Float64,geno.nObs,geno.nMarkers)
+     Mg = Array{Float64}(geno.nObs,geno.nMarkers)
+
     num.markers  = geno.nMarkers
     #reorder genotypes to get Mg with same order as Ai_gg
     for i in 1:geno.nObs
@@ -36,30 +38,46 @@ function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedMod
     return MMats(M,Mn,Mg)
 end
 
+#allow replicated ID
 function make_yVecs(file,ped::PedModule.Pedigree,num::Numbers;header=false)
-    df = readtable(file, eltypes=[String, Float64], separator = ' ',header=header)
-    num.y = size(df,1)
+    myfile = open(file)
+    #get number of columns
+    row1   = split(readline(myfile))
+    ncol   = length(row1)
+    etv    = Array{DataType}(ncol)
+    fill!(etv,Float64)
+    etv[1]=String
+    close(myfile)
 
-    y   = fill(-9999.0,num.ped)
-    ids = fill(".",num.ped)
-    for i=1:num.y
-      j = ped.idMap[df[i,1]].seqID
-      y[j]   = df[i,2]
-      ids[j] = df[i,1]
+    df = readtable(file, eltypes=etv, separator = ' ',header=header)
+
+    nob   = size(df,1)
+    ntrait= size(df,2)-1
+
+    IDs       = convert(Array,df[:,1])
+    isnongeno = [ID in ped.setNG for ID in IDs] #true/false
+
+    dfn =  df[isnongeno,:]
+    dfg =  df[.!isnongeno,:]
+
+    yn    = convert(Array,dfn[:,2],0.0) #convert only work with dataarray no dataframe
+    yg    = convert(Array,dfg[:,2],0.0) #replace NA with 0.0
+    for i = 3:(ntrait+1)
+        yn = [yn convert(Array,dfn[:,i],0.0)]
+        yg = [yg convert(Array,dfg[:,i],0.0)]
     end
 
-    yn = y[1:num.pedn]
-    yg = y[(num.pedn+1):num.ped]
-    yn = yn[yn.!=-9999]
-    yg = yg[yg.!=-9999]
-    ids= ids[ids.!="."] #order of ids is nongeno then geno
-    y  = [yn;yg]        #order of ids is same to order of y
+    y          = [yn;yg]          #order of y is nongeno then gen
+    ids        = [IDs[isnongeno];
+                  IDs[.!isnongeno]] #order of ids is same to order of y
 
-    num.yn= length(yn)
-    num.yg= length(yg)
+    num.y, num.yn, num.yg = size(df,1), size(yn,1), size(yg,1)
 
     return YVecs(y,yn,yg,ids)
 end
+
+
+
 
 function make_JVecs(num::Numbers,a_mats::AiMats)
     Jg = -ones(num.pedg,1)
