@@ -32,7 +32,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
     outfile=open(file_name,"w")
 
     if mme.M.markerID[1]!="NA"
-        writedlm(outfile,transpose(mme.M.markerID))
+        writedlm(outfile,transubstrarr(mme.M.markerID))
     end
     pi = zeros(num_samples)#vector to save π (for BayesC)
     return out_i,outfile,pi
@@ -116,7 +116,7 @@ function outputSamples(mme::MME,sol,iter::Int64)
 end
 
 #function to replace Array{SubString{String}' for issue 8
-function transpose(vec::Array{SubString{String},1})
+function transubstrarr(vec::Array{SubString{String},1})
     lvec=length(vec)
     res =Array(String,1,lvec)
     for i in 1:lvec
