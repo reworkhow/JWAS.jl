@@ -12,7 +12,7 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
     row1   = split(readline(myfile))
 
     ncol   = length(row1)
-    etv    = Array(DataType,ncol)
+    etv    = Array{DataType}(ncol)
     etv[1] = String  #type for 1st column: ID
 
     for coli in 2:length(row1) #type for all variables(predictors)

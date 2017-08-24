@@ -33,8 +33,13 @@ function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedMod
       row = ped.idMap[id].seqID - num.pedn
       Mg[row,:] = geno.genotypes[i,:]
     end
-    Mn = a_mats.nn\(-a_mats.ng*Mg)
-    M  = [Mn;Mg];
+    #Mn = a_mats.nn\(-a_mats.ng*Mg)
+    #M  = [Mn;Mg];
+    M  = [a_mats.nn\(-a_mats.ng*Mg);Mg];#do not store Mn
+    Mn = Array{Float64,2}(0,0)
+    Mg = Array{Float64,2}(0,0)
+    gc()
+
     return MMats(M,Mn,Mg)
 end
 
@@ -109,9 +114,14 @@ function make_XWMats(jvecs,zmats,mmats,num::Numbers)#now fixed effects: μ
     X   =[Xn;
           Xg]
 
-    Wn = zmats.n*mmats.n
-    Wg = zmats.g*mmats.g
-    W  = [Wn;Wg];
+    #Wn = zmats.n*mmats.n
+    #Wg = zmats.g*mmats.g
+    #W  = [Wn;Wg];
+
+    W  = zmats.full*mmats.full
+    Wn = Array{Float64,2}(0,0)
+    Wg = Array{Float64,2}(0,0)
+
     return XMats(X,Xn,Xg),WMats(W,Wn,Wg)
 end
 

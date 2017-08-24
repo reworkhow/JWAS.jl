@@ -12,7 +12,7 @@ end
 
 function get_column_ref(X)
     ncol = size(X)[2]
-    xArray = Array(Array{Float64,1},ncol)
+    xArray = Array{Array{Float64,1}}(ncol)
     for i=1:ncol
         xArray[i] = get_column(X,i)
     end

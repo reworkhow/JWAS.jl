@@ -4,10 +4,6 @@ function runSSBR(input;pedigree="pedfile",genotype="genofile",phenotype="phenofi
 
       ped,geno,hmats =make_matrices_hybrid(pedigree,genotype,phenotype,center=input.centering);
 
-      hmats.M.g=zeros(1,1) #move inside later
-      hmats.M.n=zeros(1,1)
-      gc()
-
       fixed= misc.make_fixed(fixedfile,ID_order=hmats.y.ids)
 
        Xn  = hcat(fixed.C[1:hmats.num.yn,:], hmats.Z.n*hmats.J.n)#intercept, fixed efeectsJ
