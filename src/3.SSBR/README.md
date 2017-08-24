@@ -3,7 +3,7 @@
 SSBR is a tool for single step Bayesian regression analyses.
 
 
-####Quick-start
+#### Quick-start
 
 ```Julia
 using JWAS: Datasets,SSBR,misc
@@ -43,17 +43,17 @@ MCMCinfo(input)
 
 
 #run it
-out=runSSBR(input,pedigree=pedfile,genotype=genofile,phenotype=phenofile,fixedfile=fixedfile);
+out=runSSBR(input,pedigree=pedfile,genotype=genofile,phenotype=phenofile,fixedfile=fixedfile); #return matrices, marker effects and ebv
 
 #check accuracy
 using DataFrames
 df = readtable(Validation, eltypes =[String, Float64], separator = ' ',header=false,names=[:ID,:EBV]);
-comp=join(out,df,on=:ID);
+comp=join(out.ebv,df,on=:ID);
 cor(comp[:EBV],comp[:EBV_1])
 ```
 
-####More
+#### More
 
 * **homepage**: [QTL.rocks](http://QTL.rocks)
 * **Documentation**: [available here](https://github.com/QTL-rocks/SSBR.jl/wiki)
-* **Authors**: [Hao Cheng](http://reworkhow.github.io),[Rohan Fernando](http://www.ans.iastate.edu/faculty/index.php?id=rohan)
+* **Authors**: [Hao Cheng](http://QTL.rocks), [Rohan Fernando](http://www.ans.iastate.edu/faculty/index.php?id=rohan)
