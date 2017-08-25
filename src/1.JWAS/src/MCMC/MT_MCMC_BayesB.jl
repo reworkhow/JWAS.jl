@@ -182,10 +182,10 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
                  for i=1:size(marker_effects_matrix,2)]
 
         for markeri = 1:nMarkers
-          arrayG[markeri] = rand(InverseWishart(νGM + 1, round(PM + alpha2[markeri],7)))
+          arrayG[markeri] = rand(InverseWishart(νGM + 1, Symmetric(PM + alpha2[markeri])))
         end
 
-        R0      = rand(InverseWishart(νR0 + nObs, round(PRes + SRes,7)))
+        R0      = rand(InverseWishart(νR0 + nObs, Symmetric(PRes + SRes)))
 
         #for constraint R, chisq
         if constraint == true

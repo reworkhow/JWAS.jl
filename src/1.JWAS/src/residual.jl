@@ -13,17 +13,20 @@ end
 #make ResVar, dictionary for Rinv
 function mkRi(mme::MME,df::DataFrame)
     resVar = ResVar(mme.R,Dict())
-    tstMsng = !isna(df[mme.lhsVec[1]])
+    missing =  isna.(df[mme.lhsVec[1]])
+    tstMsng = .!missing
     #find all missing patterns in data
     for i=2:size(mme.lhsVec,1)
-        tstMsng = [tstMsng !isna(df[mme.lhsVec[i]])]
+      df[mme.lhsVec[i]]
+        missing =  isna.(df[mme.lhsVec[i]])
+        tstMsng = [tstMsng .!missing]
     end
     mme.missingPattern = tstMsng
     n    = size(tstMsng,2)
     nObs = size(tstMsng,1)
-    ii = Array(Int64,nObs*n^2)
-    jj = Array(Int64,nObs*n^2)
-    vv = Array(Float64,nObs*n^2)
+    ii = Array{Int64}(nObs*n^2)
+    jj = Array{Int64}(nObs*n^2)
+    vv = Array{Float64}(nObs*n^2)
     pos = 1
     for i=1:size(tstMsng,1)
         sel = reshape(tstMsng[i,:],n)

@@ -215,7 +215,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
 
-        R0      = rand(InverseWishart(νR0 + nObs, round(PRes + SRes,7)))
+        R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
 
         #for constraint R, chisq
         if constraint == true
@@ -271,7 +271,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             #println(P+S)
             #println(νG0 + q)
 
-            G0 = rand(InverseWishart(νG0 + q, round(P + S,7)))
+            G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
             mme.Gi = inv(G0)
             addA(mme)
 
@@ -289,7 +289,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                   SM[traitj,traiti]   = SM[traiti,traitj]
               end
           end
-          mme.M.G = rand(InverseWishart(νGM + nMarkers, round(PM + SM,7)))
+          mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
           GMMean  += (mme.M.G  - GMMean)/iter
         end
 
@@ -332,19 +332,19 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
-            println("Residual covariance matrix: \n",round(R0Mean,6))
+            println("Residual covariance matrix: \n",round.(R0Mean,6))
 
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,6))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,6))
             end
 
             if mme.M != 0
-              println("Marker effects covariance matrix: \n",round(GMMean,6))
+              println("Marker effects covariance matrix: \n",round.(GMMean,6))
               if methods=="BayesC" && estimatePi == true
                 println("π: \n",BigPiMean)
               elseif methods=="BayesCC" && estimatePi == true
                 println("π for ", labels)
-                println(round(BigPiMean,3))
+                println(round.(BigPiMean,3))
               end
             end
             println()

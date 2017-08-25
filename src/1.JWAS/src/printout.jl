@@ -2,7 +2,7 @@
 #Get names for variables in order
 ################################################################################
 function getNames(mme::MME)
-    names = Array(AbstractString,0)
+    names = Array{AbstractString}(0)
     for trm in mme.modelTerms
         for name in trm.names
             push!(names,trm.trmStr*" : "*name)

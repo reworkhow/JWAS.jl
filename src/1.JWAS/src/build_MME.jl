@@ -1,7 +1,7 @@
 function mkDict(a)
     aUnique = unique(a)
     d = Dict()
-    names = Array(Any,size(aUnique,1))
+    names = Array{Any}(size(aUnique,1))
     for (i,s) in enumerate(aUnique)
         names[i] = s
         d[s] = i
@@ -82,8 +82,8 @@ end
 #fill up str and val for each ModelTerm
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     nObs    = size(df,1)
-    trm.str = Array(AbstractString,nObs)
-    trm.val = Array(Float64,nObs)
+    trm.str = Array{AbstractString}(nObs)
+    trm.val = Array{Float64}(nObs)
 
     if trm.factors[1] == :intercept
         str = fill("intercept",nObs)
@@ -123,11 +123,11 @@ function getX(trm::ModelTerm,mme::MME)
     if trm.trmStr in mme.pedTrmVec #random variables(pedigree),e.g."Animal","Animal*age"
         trm.names   = PedModule.getIDs(mme.ped)
         trm.nLevels = length(mme.ped.idMap)
-        xj          = round(Int64,[mme.ped.idMap[getFactor1(i)].seqID for i in trm.str[trm.str .!= "0"]])#remove founder(fit maternal effects)
+        xj          = round.(Int64,[mme.ped.idMap[getFactor1(i)].seqID for i in trm.str[trm.str .!= "0"]])#remove founder(fit maternal effects)
     else
         dict,trm.names  = mkDict(trm.str)
         trm.nLevels     = length(dict)
-        xj              = round(Int64,[dict[i] for i in trm.str]) #column index
+        xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
     end
     xi    = (trm.iModel-1)*nObs + collect(1:nObs)  #row index
     xv    = trm.val                                #value
