@@ -13,7 +13,9 @@ end
     build_model(model_equations::AbstractString,R;df::Float64=4.0)
 
 * Build models from **model equations** with residual varainces **R** and degree
-of freedom for residual variance **df** defaults to 4.0.
+  of freedom for residual variance **df** defaulting to 4.0.
+* By default, all variabels in model_equations are fixed and factors. Set variables
+  to be covariates or random using functions `set_covariate()` or `set_random()`.
 
 ```julia
 #single-trait
@@ -23,7 +25,7 @@ models          = build_model(model_equations,R);
 
 #multi-trait
 model_equations = "BW = intercept + age + sex;
-                   CW = intercept + age + sex";
+                   CW = intercept + litter";
 R               = [6.72   24.84
                    24.84  708.41]
 models          = build_model(model_equations,R);
@@ -32,41 +34,36 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString,R;df=4)
     if !(typeof(model_equations)<:AbstractString) || model_equations==""
         error("Model equations are wrong.\n
-        An example for single-trait analyses is
-        \"bw = age + herd\"\n
-        An example for multi-trait analyses is
-        \"bw = age + herd;
-         cw = age + herd\" \n")
+        To find an example, type ?build_model and press enter.\n")
     end
 
     modelVec   = split(model_equations,[';','\n'],keep=false)
     nModels    = size(modelVec,1)
-    lhsVec     = Symbol[] #:y
-    modelTerms = ModelTerm[] #initiate outside for loop
+    lhsVec     = Symbol[]    #:y, phenotypes
+    modelTerms = ModelTerm[] #initialization outside for loop
     dict       = Dict{AbstractString,ModelTerm}()
     for (m,model) = enumerate(modelVec)
-        lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-        lhsVec = [lhsVec;Symbol(strip(lhsRhs[1]))] #:y2
-        rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
-        mTrms  = [ModelTerm(trmStr,m) for trmStr in rhsVec]
-        modelTerms  = [modelTerms;mTrms] #vector of ModelTerm
-        for (i,trm) = enumerate(modelTerms)
-            dict[trm.trmStr] = modelTerms[i]
-        end
+      lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
+      lhsVec = [lhsVec;Symbol(strip(lhsRhs[1]))] #:y2
+      rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
+      mTrms  = [ModelTerm(strip(trmStr),m) for trmStr in rhsVec]
+      modelTerms  = [modelTerms;mTrms]           #vector of ModelTerm
+    end
+    for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
+      dict[trm.trmStr] = modelTerms[i]
     end
     return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
 
-
 """
-    set_covariate(mme::MME,covStr::AbstractString...)
+    set_covariate(mme::MME,variables::AbstractString...)
 
-* set variables as covariates; covStr is a string of variables
-
+* set **variables** as covariates; **mme** is the output of function `build_model()`.
 
 ```julia
-#After running build_model, two ways to set the variable age and year as covariates are as follows.
+#After running build_model, variabels age and year can be set to be covariates as
 set_covariate(models,"age","year")
+#or
 set_covariate(models,"age year")
 ```
 """
@@ -76,7 +73,6 @@ function set_covariate(mme::MME,covStr::AbstractString...)
         covVec = [covVec;split(i," ",keep=false)]
     end
     mme.covVec = [mme.covVec;[Symbol(i) for i in covVec]]
-    #@printf("Variables %-10s are set to be covariates.",mme.covVec)
 end
 
 #fill up str and val for each ModelTerm
@@ -222,4 +218,5 @@ function getMME(mme::MME, df::DataFrame)
     if mme.nModels==1 #single-trait
       addLambdas(mme)
     end
+    #    #@printf("Variables %-10s are set to be covariates.",mme.covVec)
 end

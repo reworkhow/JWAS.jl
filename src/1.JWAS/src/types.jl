@@ -1,10 +1,19 @@
-#Type for one term in model equations, e.g. age or comtempary group
-type ModelTerm
-    iModel::Int64                  # 1st, 2nd model...
 
-    trmStr::AbstractString         #"1:A"  ;   1; :A
-    nFactors::Int64                #"1:A*B";   2; :A,:B
-    factors::Array{Symbol,1}       #:2:A   ;   1; :A
+################################################################################
+# model__equations = "y1 = A + B
+#                     y2 = A + B + A*B"
+#
+# the class ModelTrem is shown below for one term in model_equations, such as
+# terms: 1:A,1:B,2:A,2:B,2:A*B
+#
+type ModelTerm
+    iModel::Int64                  # 1st or 2nd model_equation
+
+                                   # | trmStr | nFactors | factors |
+                                   # |--------|----------|---------|
+    trmStr::AbstractString         # | "1:A"  |    1     | :A      |
+    nFactors::Int64                # | "1:A*B"|    2     | :A,:B   |
+    factors::Array{Symbol,1}       # | "2:A"  |    1     | :A      |
 
     str::Array{AbstractString,1}   #covariate       : str->["A x B", "A X B", ...];     val -> df[:A].*df[:B]
     val::Array{Float64,1}          #factor          : str->["A1 x B1", "A2 X B2", ...]; val -> [1.0,1.0,...]
@@ -75,9 +84,12 @@ type DF
     random::Float64
 end
 
-#type for MME
-#single-trait: lambda version of mixed model equations
-#multi-trait : formal version
+################################################################################
+# the class MME is shown below with members for models, mixed model equations...
+#
+# single-trait analyses: lambda version of MME
+#  multi-trait analysis: formal version of MME
+################################################################################
 type MME
     nModels::Int64
     modelVec::Array{AbstractString,1}             #vector of model equations
