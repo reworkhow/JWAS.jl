@@ -6,22 +6,27 @@
 # the class ModelTrem is shown below for one term in model_equations, such as
 # terms: 1:A,1:B,2:A,2:B,2:A*B
 #
+################################################################################
 type ModelTerm
     iModel::Int64                  # 1st or 2nd model_equation
 
                                    # | trmStr | nFactors | factors |
                                    # |--------|----------|---------|
     trmStr::AbstractString         # | "1:A"  |    1     | :A      |
-    nFactors::Int64                # | "1:A*B"|    2     | :A,:B   |
-    factors::Array{Symbol,1}       # | "2:A"  |    1     | :A      |
+    nFactors::Int64                # | "2:A"  |    1     | :A      |
+    factors::Array{Symbol,1}       # | "1:A*B"|    2     | :A,:B   |
 
-    str::Array{AbstractString,1}   #covariate       : str->["A x B", "A X B", ...];     val -> df[:A].*df[:B]
-    val::Array{Float64,1}          #factor          : str->["A1 x B1", "A2 X B2", ...]; val -> [1.0,1.0,...]
-                                   #factor&covariate: str->["A x B1","A X B2", ...];    val -> 1.0.*df[:B]
+                                   #DATA             |          str               |     val       |
+                                   #                :|----------------------------|---------------|
+    str::Array{AbstractString,1}   #covariate^2     :|["A x B", "A X B", ...]     | df[:A].*df[:B]|
+    val::Array{Float64,1}          #factor^2        :|["A1 x B1", "A2 X B2", ...] | [1.0,1.0,...] |
+                                   #factor*covariate:|["A1 x B","A2 X B", ...]    | 1.0.*df[:B]   |
 
-    nLevels::Int64                 #covariate   : nLevels ->1;       names -> "A x B";
-    names::Array{Any,1}            #factor      : nLevels ->nLevels; names -> "A1 x B1", "A2 X B2", ...;
-                                   #animal (ped): nLevels ->nAnimals;names -> ids
+                                   #OUTPUT        | nLevels |     names      |
+                                   #              |---------|----------------|
+    nLevels::Int64                 #covariate   : | 1       | "A"            |
+    names::Array{Any,1}#for OUTPUT #factor      : | nLevels | "A1", "A2", ...|
+                                   #animal (ped): | nAnimals| ids            |
 
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
@@ -91,51 +96,54 @@ end
 #  multi-trait analysis: formal version of MME
 ################################################################################
 type MME
-    nModels::Int64
-    modelVec::Array{AbstractString,1}             #vector of model equations
-    modelTerms::Array{ModelTerm,1}                #"1:intercept","1:A","2:intercept","2:A","2:A*B"...;
-    modelTermDict::Dict{AbstractString,ModelTerm} #key: "1:A*B" value: ModelTerm
-    lhsVec::Array{Symbol,1}                       #[:y1; :y2; ...]
+    nModels::Int64                                #number of model equations
+    modelVec::Array{AbstractString,1}             #["y1 = A + B","y2 = A + B + A*B"]
+    modelTerms::Array{ModelTerm,1}                #ModelTerms for "1:intercept","1:A","2:intercept","2:A","2:A*B"...;
+    modelTermDict::Dict{AbstractString,ModelTerm} #key: "1:A*B" value: ModelTerm; convert modelTerms above to dictionary
+    lhsVec::Array{Symbol,1}                       #phenotypes: [:y1,:y2]
     covVec::Array{Symbol,1}                       #variables those are covariates
 
-    X                                             #Mixed Model Equations
-    ySparse
-    mmeLhs
-    mmeRhs
+                                                  #MIXED MODEL EQUATIONS
+    X                                             #incidence matrix
+    ySparse                                       #phenotypes
+    mmeLhs                                        #Lhs of Mixed Model Equations
+    mmeRhs                                        #Rhs of Mixed Model Equations
 
-    pedTrmVec::Array{AbstractString,1}      #random variables(pedigree);"1:Animal","1:Mat","2:Animal"
-    ped                                     #PedModule.Pedigree
-    Ai                                      #inv of numerator relationship matrix
-    Gi::Array{Float64,2}                    #inv of genetic covariance matrix for pedTrmVec (multi-trait)
-    GiOld::Array{Float64,2}                 #single-trait
-    GiNew::Array{Float64,2}                 #(specific for lambda version of MME)
+                                                  #RANDOM EFFCTS
+    pedTrmVec::Array{AbstractString,1}            #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
+    ped                                           #PedModule.Pedigree
+    Ai                                            #inverse of numerator relationship matrix
+    Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
+    GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+    GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
 
-    rndTrmVec::Array{RandomEffect,1}        #iid random effects
+    rndTrmVec::Array{RandomEffect,1}              #iid random effects
 
-    R::Array{Float64,2}                     #residual covariance matrix (multi-trait)
-    missingPattern
-    resVar
-    ROld::Float64                           #residual variance (single-trait)
-    RNew::Float64                           #for lambda MME
+                                                  #RESIDUAL EFFECTS
+    R::Array{Float64,2}                           #residual covariance matrix (multi-trait)
+    missingPattern                                #for impuation of missing residual
+    resVar                                        #for impuation of missing residual
+    ROld::Float64                                 #residual variance (single-trait)
+    RNew::Float64                                 #for lambda version of MME (single-trait)
 
-    M                                       #Genotypes
+    M                                             #GENOTYPES
 
-    mmePos::Int64                           #temporary value to record term position
-                                            #(starting from 1)
+    mmePos::Int64                                 #temporary value to record term position (start from 1)
 
-    samples4R::Array{Float64,2}             #residual variance  (ndim^2 * niter)
-    samples4G::Array{Float64,2}             #polygenic variance (matrix -> vector)
-    outputSamplesVec::Array{MCMCSamples,1}  #location parameters
-    #samples4π                              #samples4π is not used in MME type since π is BayesC-specific
+                                                  #MCMC SAMPLES
+    samples4R::Array{Float64,2}                   #residual variance  (ndim^2 * niter)
+    samples4G::Array{Float64,2}                   #polygenic variance (matrix -> vector)
+    outputSamplesVec::Array{MCMCSamples,1}        #location parameters
+    #samples4π                                    #samples4π is not used in MME type since π is BayesC-specific
 
-    df::DF
+    df::DF                                        #prior degree of freedom
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
-      if nModels==1 && typeof(R)==Float64 #single-trait
+      if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],zeros(1,1),0,0,0.0,R,0,1,zeros(1,1),zeros(1,1),[],DF(ν,4,4,4))
-    elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
+      elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[],DF(ν,4,4,4))
-    else
+      else
         error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end
     end
