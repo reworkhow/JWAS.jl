@@ -37,7 +37,7 @@ function sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
 
     pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
     q  = pedTrm1.nLevels
-    G0 = rand(InverseWishart(νG0 + q, round(P + S,7))) #rounding error without roud(,7)
+    G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S)))) #better invchi when ST-PBLUP
 
     mme.GiOld = copy(mme.GiNew)
     mme.GiNew = inv(G0)

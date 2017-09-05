@@ -14,15 +14,34 @@ function get_pedigree(pedfile::AbstractString)
   PedModule.mkPed(pedfile)
 end
 
-#set **specific ModelTerm** to random
+################################################################################
+#set specific ModelTerm to random
+#e.g. Animal, Animal*Age, Maternal
+################################################################################
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)
 
 * set variables as random polygenic effects with pedigree information **ped**, variances **G** whose degree of freedom **df** defaults to 4.0.
 
 ```julia
-model_equations = "BW = intercept + age + sex + Animal;
-                   CW = intercept + age + sex + Animal";
+#single-trait (example 1)
+model_equation  = "y = intercept + Age + Animal"
+model           = build_model(model_equation,R)
+ped             = get_pedigree(pedfile)
+G               = 1.6
+set_random(model,"Animal Animal*Age", ped,G)
+
+#single-trait (example 2)
+model_equation  = "y = intercept + Age + Animal + Animal*Age"
+model           = build_model(model_equation,R)
+ped             = get_pedigree(pedfile)
+G               = [1.6   0.2
+                   0.2  1.0]
+set_random(model,"Animal Animal*Age", ped,G)
+
+#multi-trait
+model_equations = "BW = intercept + age + sex + Animal
+                   CW = intercept + age + sex + Animal"
 model           = build_model(model_equations,R);
 ped             = get_pedigree(pedfile);
 G               = [6.72   2.84
@@ -31,35 +50,36 @@ set_random(model,"Animal", ped,G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
-    pedTrmVec = split(randomStr," ",keep=false)  # "animal" or "animal animal*age"
+    pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
 
-    #add model number => "1:animal"
+    #add model equation number; "animal" => "1:animal"
     res = []
-    for trm in pedTrmVec #"animal","animal animal*age"
-        for (m,model) = enumerate(mme.modelVec)
-            strVec  = split(model,['=','+'])
-            strpVec = [strip(i) for i in strVec]
-            if trm in strpVec
-                res = [res;string(m)*":"*trm]
-            end
+    for trm in pedTrmVec
+      for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trm in strpVec
+          res = [res;string(m)*":"*trm]
+        else
+          error(trm," is not found in model equations.")
         end
-    end #"1:animal","1:animal animal*age"
+      end
+    end #"1:animal","1:animal*age"
     if length(res) != size(G,1)
-        error("Dimensions must match. G should be a ",length(res)," x ",length(res)," matrix.\n")
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
     mme.pedTrmVec = res
     mme.ped = ped
 
     if mme.nModels!=1 #multi-trait
       mme.Gi = inv(G)
-    else #single-trait
+    else              #single-trait
       if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
-          G=reshape([G],1,1)
+        G=reshape([G],1,1)
       end
       mme.GiOld = zeros(G)
       mme.GiNew = inv(G)
     end
-
     mme.df.polygenic=Float64(df)
     nothing
 end

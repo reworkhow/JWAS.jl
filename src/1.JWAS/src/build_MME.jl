@@ -39,7 +39,7 @@ function build_model(model_equations::AbstractString,R;df=4)
       To find an example, type ?build_model and press enter.\n")
   end
 
-  modelVec   = split(model_equations,[';','\n'],keep=false)
+  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keep=false)]
   nModels    = size(modelVec,1)
   lhsVec     = Symbol[]    #:y, phenotypes
   modelTerms = ModelTerm[] #initialization outside for loop
@@ -96,7 +96,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
       val = df[trm.factors[1]]                      #df[:A]
     else                                            #if A is a factor (animal or maternal effects)
-      str = [string(i) for i in df[trm.factors[1]]] #["A1","A2","A1",...]
+      str = [string(i) for i in df[trm.factors[1]]] #["A1","A3","A2","A3",...]
       val = fill(1.0,nObs)
     end
 
@@ -117,53 +117,59 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   trm.val = val
 end
 
-getFactor1(str) = [strip(i) for i in split(str,"*")][1] #using in may be better. maybe age*animal
-                                                        #Bug: can only use animal*age, not age*animal
+#getFactor1(str) = [strip(i) for i in split(str,"*")][1] #Bug:only for animal*age, not age*animal
+getFactor(str) = [strip(i) for i in split(str,"*")]
 
 ################################################################################
 # make incidence matrix for each ModelTerm
 #
 ################################################################################
 function getX(trm::ModelTerm,mme::MME)
-    pedSize = 0
-    nObs  = size(trm.str,1)
-    if trm.trmStr in mme.pedTrmVec #random polygenic effects,e.g."Animal","Animal*age" ??????????
-                                   #column index needs to compromise numerator relationship matrix
-      trm.names   = PedModule.getIDs(mme.ped)
-      trm.nLevels = length(mme.ped.idMap)
-      xj          = round.(Int64,[mme.ped.idMap[getFactor1(i)].seqID for i in trm.str[trm.str .!= "0"]])#remove founder(fit maternal effects)
-    else                           #other effects
-      dict,trm.names  = mkDict(trm.str) #key: levels of variable; value: column index
-      trm.nLevels     = length(dict)
-      xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
-    end
-    xi    = (trm.iModel-1)*nObs + collect(1:nObs)                #row index
-    xv    = trm.val                                              #value
+    #Row Index
+    nObs  = length(trm.str)
+    xi    = (trm.iModel-1)*nObs + collect(1:nObs)
+    #Value
+    xv    = trm.val
+    #Column Index
+    if trm.trmStr in mme.pedTrmVec
+       #########################################################################
+       #random polygenic effects,e.g."Animal","Animal*age"
+       #column index needs to compromise numerator relationship matrix
+       #########################################################################
+       trm.names   = PedModule.getIDs(mme.ped)
+       trm.nLevels = length(mme.ped.idMap)
+       whichobs    = 1
 
-    #remove "0",introducing by maternal effects
-    xv    = xv[trm.str .!= "0"]
-    xi    = xi[trm.str .!= "0"]
+       xj          = []
+       for i in trm.str
+         for animalstr in getFactor(i) #two ways:animal*age;age*animal
+           if haskey(mme.ped.idMap, animalstr)   #"animal" ID not "age"
+             xj = [xj; mme.ped.idMap[animalstr].seqID]
+           elseif animalstr=="0" #founders "0" are not effects (fitting maternal effects)
+                                 #all non-founder animals in pedigree are effects
+             xj = [xj; 1]        #put 1<=any interger<=nAnimal is okay)
+             xv[whichobs]=0      #thus add one row of zeros in X
+           end
+           whichobs    += 1
+         end
+       end
+       xj        = round.(Int64,xj)
 
-    #some animal ID may be missing in data (df),
-    #below to ensure number of columns for BV = number of animals
-    if mme.ped!=0
-        pedSize = length(mme.ped.idMap)
-        if trm.trmStr in mme.pedTrmVec
-            # This is to ensure the X matrix for
-            # additive effect has the correct number of columns
-            ii = 1         # adding a zero to
-            jj = pedSize   # the last column in row 1
-            vv = [0.0]
-            xi = [xi;ii]
-            xj = [xj;jj]
-            xv = [xv;vv]
-        end
+       #some animal IDs in pedigree may be missing in data (df),ensure #columns = #animals in
+       #pedigree by adding a column of zeros
+       pedSize = length(mme.ped.idMap)
+       xi      = [xi;1]          # adding a zero to
+       xj      = [xj;pedSize]    # the last column in row 1
+       xv      = [xv;0.0]
+    else
+       #########################################################################
+       #other fixed or random effects
+       #########################################################################
+       dict,trm.names  = mkDict(trm.str) #key: levels of variable; value: column index
+       trm.nLevels     = length(dict)
+       xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
     end
-    #ensure X has nObs*nModels rows
-    nModels = size(mme.lhsVec,1)
-    xi = [xi;1;nObs*nModels] #if (1,1) and (nObs*nModels,1) already exist
-    xj = [xj;1;1]            # add 0 to X
-    xv = [xv;0;0]
+
     trm.X = sparse(xi,xj,xv)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
@@ -182,53 +188,68 @@ function getMME(mme::MME, df::DataFrame)
       error("Please build your model again using the function build_model().")
     end
 
-    #make incidence matrices for each term
+    #Make incidence matrices X for each term
     for trm in mme.modelTerms
       getData(trm,df,mme)
       getX(trm,mme)
     end
-    n   = size(mme.modelTerms,1)
-    trm = mme.modelTerms[1]
-    X   = trm.X
-    #concat incidence matrix for each term
-    for i=2:n
-        trm = mme.modelTerms[i]
-        X = [X trm.X]
+    #concatenate all terms
+    X   = mme.modelTerms[1].X
+    for i=2:length(mme.modelTerms)
+       X = [X mme.modelTerms[i].X]
     end
 
-    #make response vector
-    y = convert(Array,df[mme.lhsVec[1]],0.0) #NA to zero
+    #Make response vector (y)
+    y = convert(Array,df[mme.lhsVec[1]],0.0) #convert NA to zero
     for i=2:size(mme.lhsVec,1)
-        y    = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
+      y   = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
     end
-    nInd  = size(y,1)
-    ii    = 1:nInd
-    jj    = fill(1,nInd)
+    ii    = 1:length(y)
+    jj    = ones(ii)
     vv    = y
     ySparse = sparse(ii,jj,vv)
 
-    #make lhs and rhs for mixed model equations
+    #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
-    if mme.nModels>1 #multi-trait
-      Ri         = mkRi(mme,df)
-      mme.mmeLhs = X'Ri*X
-      mme.mmeRhs = X'Ri*ySparse
-    elseif mme.nModels==1 #single-trait (lambda version)
+
+    if mme.nModels==1     #single-trait (lambda version)
       mme.mmeLhs = X'X
       mme.mmeRhs = X'ySparse
+    elseif mme.nModels>1  #multi-trait
+      Ri         = mkRi(mme,df) #handle missing phenotypes with ResVar
+                                #make MME without variance estimation (constant)
+                                #and residual imputation
+      mme.mmeLhs = X'Ri*X
+      mme.mmeRhs = X'Ri*ySparse
     end
 
+    #Random effects parts in MME
+    #Pedigree
     if mme.ped != 0
-        ii,jj,vv = PedModule.HAi(mme.ped)
-        HAi = sparse(ii,jj,vv)
-        mme.Ai = HAi'HAi
-        addA(mme::MME)
+      ii,jj,vv = PedModule.HAi(mme.ped)
+      HAi = sparse(ii,jj,vv)
+      mme.Ai = HAi'HAi
+      addA(mme::MME)
     end
 
     #iid random effects,NEED another addlambda for multi-trait
     if mme.nModels==1 #single-trait
       addLambdas(mme)
     end
-    #    #@printf("Variables %-10s are set to be covariates.",mme.covVec)
+end
+
+#more details later
+function getinfo(model)
+  println("A Mixed Effects Model was build with")
+  println("Model equations:")
+  for i in models.modelVec
+    println(i)
+  end
+  println("Term","\t\t","Covariate","\t\t","Factor","\t","Fixed","\t","Random")
+  for i in models.modelTerms
+    println(i.trmStr,"\t\t",10,"\t\t",10)
+  end
+  #incidence matrix , #elements non-zero elements
+  #"incomplete or complete",genomic data
 end

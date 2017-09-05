@@ -22,11 +22,13 @@ type ModelTerm
     val::Array{Float64,1}          #factor^2        :|["A1 x B1", "A2 X B2", ...] | [1.0,1.0,...] |
                                    #factor*covariate:|["A1 x B","A2 X B", ...]    | 1.0.*df[:B]   |
 
-                                   #OUTPUT        | nLevels |     names      |
-                                   #              |---------|----------------|
-    nLevels::Int64                 #covariate   : | 1       | "A"            |
-    names::Array{Any,1}#for OUTPUT #factor      : | nLevels | "A1", "A2", ...|
-                                   #animal (ped): | nAnimals| ids            |
+                                   #OUTPUT           | nLevels |     names        |
+                                   #                 |---------|------------------|
+    nLevels::Int64                 #covariate   :    | 1       | "A"              |
+    names::Array{Any,1}#for OUTPUT #factor      :    | nLevels | "A1", "A2", ...  |
+                                   #animal (ped):    | nAnimals| ids              |
+                                   #animal(ped)*age: | nAnimals| "A1*age","A2*age"|
+                                   #factor*covariate:| nLevels | "A1*age","A2*age"|
 
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
@@ -40,18 +42,26 @@ type ModelTerm
         trmStr    = string(m)*":"*trmStr
         new(iModel,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
     end
+    #e.g. animal*age, nLevels
 end
 
-#using same incidence matrix for all traits
-#Modify Ri based on missing pattern (number of Ri= 2^nTrait-1)
+################################################################################
+#A class for residual covariance matrix for all observations of size (nob*nModel)
+#where Ri is modified based on missing pattern (number of Ri= 2^nTrait-1)
+#It allows using the same incidence matrix X for all traits in multi-trait analyses
+#In JWAS, ONLY used when residual variance is constant
+#or missing phenotypes are not imputed at each step of MCMC (no marker effects).
+################################################################################
 type ResVar
     R0::Array{Float64,2}
     RiDict::Dict{BitArray{1},Array{Float64,2}}
 end
 
-#general (iid) random effects
+################################################################################
+#General (iid) random effects
 #single-trait
 #multi-trait
+################################################################################
 type RandomEffect
     term::ModelTerm
     vcOld::Float64
