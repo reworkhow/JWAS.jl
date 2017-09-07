@@ -13,7 +13,7 @@ end
 
 function calc_Ai(pedfile,geno::misc.Genotypes,num::Numbers)
     ped         = PedModule.mkPed(pedfile)
-    num.pedn    = PedModule.genoSet!(geno.obsID,ped)
+    num.pedn    = PedModule.genoSet!(geno.obsID,ped) #set order in A as geno id then non-geno id
     Ai          = PedModule.AInverse(ped)
     num.ped     = size(Ai,2)   #num.ped=num.pedn+num.pedg
     num.pedg    = num.ped-num.pedn
@@ -22,6 +22,7 @@ function calc_Ai(pedfile,geno::misc.Genotypes,num::Numbers)
     return ped,AiMats(Ai,Ai_nn,Ai_ng)
 end
 
+#reorder M to be order of A
 function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedModule.Pedigree)
     #Mg = Array(Float64,geno.nObs,geno.nMarkers)
      Mg = Array{Float64}(geno.nObs,geno.nMarkers)

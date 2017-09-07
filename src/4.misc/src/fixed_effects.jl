@@ -4,8 +4,7 @@ type FixedMatrix
 end
 
 
-function make_fixed(file;ID_order=false) #maybe better to use number, factor
-
+function make_fixed(file;ID_order=false) #ID_order deprecated, not useful when multi-obs on same ind
 
     myfile = open(file)
     #set number of columns and column types
@@ -27,7 +26,6 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
     #read genotypes
     df = readtable(file, eltypes=etv, separator = ' ',header=true)
 
-
     variables=Array{Any}(length(etv)-1)
     if etv[2]==Float64
         C = convert(Array,df[:,2])
@@ -46,23 +44,21 @@ function make_fixed(file;ID_order=false) #maybe better to use number, factor
       end
     end
 
-
-    if ID_order!= false
-        ID_order=convert(DataFrame,reshape(ID_order,length(ID_order),1))#covert to dataframe for 2-diim
-    end
-
-    C=convert(DataFrame,[Array(df[:,1]) C]);
-
+    #useful trick below anyway
+    #if ID_order!= false
+    #    ID_order=convert(DataFrame,reshape(ID_order,length(ID_order),1))#covert to dataframe for 2-diim
+    #end
+    #C=convert(DataFrame,[Array(df[:,1]) C]);
     #reorder C to make it has the row order as y: phenotypes
-    Cnew=Array{Any}(size(ID_order,1),size(C,2))
-    j=1
-    for i in ID_order[:x1]
-        index = find(C[:x1].==i)
-        Cnew[j,:]= convert(Array,C[index,:])
-        j = j+1
-    end
-
-    C=Cnew[:,2:end]
+    #Cnew=Array{Any}(size(ID_order,1),size(C,2))
+    #j=1
+    #for i in ID_order[:x1]
+    #    index = find(C[:x1].==i)
+    #    Cnew[j,:]= convert(Array,C[index,:])
+    #    j = j+1
+    #end
+    #
+    #C=Cnew[:,2:end]
 
     return FixedMatrix(C,variables)
 end

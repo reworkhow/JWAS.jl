@@ -34,9 +34,9 @@ function make_genotypes(file;header=false,center=true)
     nObs,nMarkers = size(genotypes)
 
     if center==true
-        markerMeans = center!(genotypes) #centering
+      markerMeans = center!(genotypes) #centering
     else
-        markerMeans = center!(copy(genotypes))  #get marker means
+      markerMeans = center!(copy(genotypes))  #get marker means
     end
     p             = markerMeans/2.0
     sum2pq        = (2*p*(1-p)')[1,1]

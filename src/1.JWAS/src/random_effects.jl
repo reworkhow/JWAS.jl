@@ -84,25 +84,57 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
     nothing
 end
 
-#May not proper, assume no covariance between traits for iid random #not require wishart distribution
 """
-    set_random(mme::MME,randomStr::AbstractString,vc::Float64; df::Float64))
+    set_random(mme::MME,randomStr::AbstractString,G;df=4)
 
-set variables as iid random effects
+* set variables as i.i.d random effects with variances **G** whose degree of freedom **df** defaults to 4.0.
+
+```julia
+#single-trait (example 1)
+model_equation  = "y = intercept + litter + sex"
+model           = build_model(model_equation,R)
+G               = 0.6
+set_random(model,"litter",G)
+
+#multi-trait
+model_equations = "BW = intercept + litter + sex
+                   CW = intercept + litter + sex"
+model           = build_model(model_equations,R);
+G               = [3.72  1.84
+                   1.84  3.41]
+set_random(model,"litter",G)
+```
 """
+
 function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
     vc = Float64(variance)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
     res = []
     for trm in randTrmVec #add model number => "1:herd"
-        for (m,model) = enumerate(mme.modelVec)
-            strVec  = split(model,['=','+'])
-            strpVec = [strip(i) for i in strVec]
-            if trm in strpVec
-                res = [res;string(m)*":"*trm]
-            end
+      for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trm in strpVec
+          res = [res;string(m)*":"*trm]
+        else
+          error(trm," is not found in model equations.")
         end
+      end
     end #"1:herd","2:herd"
+    if length(res) != size(G,1)
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+    end
+
+    if mme.nModels!=1 #multi-trait
+      mme.Gi = inv(G)
+    else              #single-trait
+      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
+        G=reshape([G],1,1)
+      end
+      mme.GiOld = zeros(G)
+      mme.GiNew = inv(G)
+    end
+
 
     for term_string in res
       trm  = mme.modelTermDict[term_string]
@@ -115,25 +147,61 @@ function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
     nothing
 end
 
-function addA(mme::MME)
+
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
+    pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
+
+    mme.pedTrmVec = res
+    mme.ped = ped
+
+    if mme.nModels!=1 #multi-trait
+      mme.Gi = inv(G)
+    else              #single-trait
+      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
+        G=reshape([G],1,1)
+      end
+      mme.GiOld = zeros(G)
+      mme.GiNew = inv(G)
+    end
+    mme.df.polygenic=Float64(df)
+    nothing
+end
+
+################################################################################
+#*******************************************************************************
+#following facts that scalar Inverse-Wishart(ν,S) = Inverse-Gamma(ν/2,S/2)=    *
+#scale-inv-chi2(ν,S/ν), variances for random effects(non-marker) will be be    *
+#sampled from Inverse-Wishart for coding simplicity thus prior for scalar      *
+#variance is treated as a 1x1 matrix.                                          *
+#*******************************************************************************
+################################################################################
+
+
+#construct MME for pedigree-based random effects part
+function addA(mme::MME) #two terms,e.g.,"animal" and "maternal" may not near in MME
     pedTrmVec = mme.pedTrmVec
     for (i,trmi) = enumerate(pedTrmVec)
         pedTrmi  = mme.modelTermDict[trmi]
         startPosi  = pedTrmi.startPos
         endPosi    = startPosi + pedTrmi.nLevels - 1
-        for (j,trmj) = enumerate(pedTrmVec)
+        for (j,trmj) in enumerate(pedTrmVec)
             pedTrmj  = mme.modelTermDict[trmj]
             startPosj= pedTrmj.startPos
             endPosj  = startPosj + pedTrmj.nLevels - 1
-            #lamda version or not
-            myaddA=(mme.nModels!=1)?(mme.Ai*mme.Gi[i,j]):(mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
+            #lamda version (single trait) or not (multi-trait)
+            myaddA   = (mme.nModels!=1)?(mme.Ai*mme.Gi[i,j]):(mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddA
         end
     end
 end
 
-function addLambdas(mme::MME) #for iid random effects
+################################################################################
+#construct MME for iid random effects part
+#single-trait: lamda version, assume effects are independent, e.g., litter and groups
+#multi-trait: same effects in 2 traits are correlated,e.g., 1:litter, 2:litter
+################################################################################
+function addLambdas(mme::MME)
     for effect in  mme.rndTrmVec
         trmi       = effect.term
         startPosi  = trmi.startPos
@@ -142,9 +210,9 @@ function addLambdas(mme::MME) #for iid random effects
           lambdaDiff = mme.RNew/effect.vcNew - mme.ROld/effect.vcOld
           mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
           mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*lambdaDiff
-        else
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*(1/effect.vcNew)
+        #else
+        #  mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
+        #    mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*(1/effect.vcNew)
         end
     end
 end
