@@ -105,7 +105,6 @@ G               = [3.72  1.84
 set_random(model,"litter",G)
 ```
 """
-
 function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
     vc = Float64(variance)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
@@ -146,27 +145,6 @@ function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
     mme.df.random=Float64(df)
     nothing
 end
-
-
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
-    pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
-
-    mme.pedTrmVec = res
-    mme.ped = ped
-
-    if mme.nModels!=1 #multi-trait
-      mme.Gi = inv(G)
-    else              #single-trait
-      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
-        G=reshape([G],1,1)
-      end
-      mme.GiOld = zeros(G)
-      mme.GiNew = inv(G)
-    end
-    mme.df.polygenic=Float64(df)
-    nothing
-end
-
 ################################################################################
 #*******************************************************************************
 #following facts that scalar Inverse-Wishart(ν,S) = Inverse-Gamma(ν/2,S/2)=    *

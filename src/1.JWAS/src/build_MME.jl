@@ -170,6 +170,13 @@ function getX(trm::ModelTerm,mme::MME)
        xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
     end
 
+    #ensure X has nObs*nModels rows
+    nModels = size(mme.lhsVec,1)
+    xi = [xi;nObs*nModels] #if (1,1) and (nObs*nModels,1) already exist
+    xj = [xj;1]            # add 0 to X
+    xv = [xv;0]
+
+    #create X
     trm.X = sparse(xi,xj,xv)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
