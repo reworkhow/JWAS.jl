@@ -44,6 +44,31 @@ function make_MMats(geno::misc.Genotypes,num::Numbers,a_mats::AiMats,ped::PedMod
     return MMats(M,Mn,Mg)
 end
 
+# function make_yVecs(file,ped::JWAS.PedModule.Pedigree,num::JWAS.SSBR.Numbers;header=false)
+#     df = readtable(file, eltypes=[String, Float64], separator = ' ',header=header)
+#     num.y = size(df,1)
+#
+#     y   = fill(-9999.0,num.ped)
+#     ids = fill(".",num.ped)
+#     for i=1:num.y
+#       j = ped.idMap[df[i,1]].seqID
+#       y[j]   = df[i,2]
+#       ids[j] = df[i,1]
+#     end
+#
+#     yn = y[1:num.pedn]
+#     yg = y[(num.pedn+1):num.ped]
+#     yn = yn[yn.!=-9999]
+#     yg = yg[yg.!=-9999]
+#     ids= ids[ids.!="."] #order of ids is nongeno then geno
+#     y  = [yn;yg]        #order of ids is same to order of y
+#
+#     num.yn= length(yn)
+#     num.yg= length(yg)
+#
+#     return JWAS.SSBR.YVecs(y,yn,yg,ids)
+# end
+
 #allow replicated ID
 function make_yVecs(file,ped::PedModule.Pedigree,num::Numbers;header=false)
     myfile = open(file)
