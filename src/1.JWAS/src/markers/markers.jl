@@ -10,9 +10,9 @@ include("BayesianAlphabet/MTBayesB.jl")
 
 
 """
-    add_markers(mme::MME,file,G;separator=' ',header=true,G_is_marker_variance=false,df=4)
+    add_markers(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4)
 * Get marker informtion from a genotype file (same order as the phenotype file).
-* **G** defaults to the marker effect  variance with degree of freedom **df**=4.0.
+* **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 * File format:
 
 ```
