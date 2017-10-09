@@ -43,8 +43,11 @@ function runMCMC(mme,df;
       end
       println("Marker effects covariance matrix is ")
     else
-      println("The prior for marker effect variance was calculated from genetic varaince and π.")
-      println("Marker effect variance is ")
+      println("The prior for marker effects variance was calculated from genetic varaince and π.")
+      if !isposdef(mme.M.G) #positive scalar (>0)
+        error("Marker effects variance is negative!")
+      end      
+      println("Marker effects variance is ")
     end
     println(round(mme.M.G,6),".\n\n")
   end
