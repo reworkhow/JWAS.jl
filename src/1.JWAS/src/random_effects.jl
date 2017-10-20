@@ -105,8 +105,8 @@ G               = [3.72  1.84
 set_random(model,"litter",G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString, variance; df=4)
-    vc = Float64(variance)
+function set_random(mme::MME,randomStr::AbstractString, G; df=4)
+    G = map(Float64,G)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
     res = []
     for trm in randTrmVec #add model number => "1:herd"
