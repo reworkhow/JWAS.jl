@@ -279,6 +279,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
         ########################################################################
+        # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
+        ########################################################################
+        sampleVCs(mme,sol)
+        addLambdas(mme)
+
+
+        ########################################################################
         # 2.3 Marker Covariance Matrix
         ########################################################################
 
@@ -368,7 +375,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
       end
       for i in  mme.rndTrmVec
-          trmi   = i.term
+          trmi   = i.term_array[1]
           trmStr = trmi.trmStr
           output["MCMC samples for: variance of "*trmStr] = i.sampleArray
       end

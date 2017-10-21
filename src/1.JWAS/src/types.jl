@@ -59,15 +59,18 @@ end
 
 ################################################################################
 #General (iid) random effects
-#single-trait
-#multi-trait
+#single-trait e.g. termarray: [ModelTerm(1:A)]
+#multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
 type RandomEffect
-    term::ModelTerm
-    vcOld::Float64
-    vcNew::Float64
+    term_array::Array{ModelTerm,1}
+    G::Array{Float64,2}      #covariance matrix (multi-trait)
+    GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
+    GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
+    #vcOld #::Array{Float64,2}
+    #vcNew #::Array{Float64,2}
     df::Float64
-    scale::Float64
+    scale #::Array{Float64,2}
     sampleArray::Array{Float64,2} #for variance components
 end
 
@@ -128,7 +131,7 @@ type MME
     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
 
     rndTrmVec::Array{RandomEffect,1}              #iid random effects
-
+    #should have one for pedigree randomEffect
                                                   #RESIDUAL EFFECTS
     R::Array{Float64,2}                           #residual covariance matrix (multi-trait)
     missingPattern                                #for impuation of missing residual

@@ -12,7 +12,7 @@ function getNames(mme::MME)
 end
 
 function getNames(trm::ModelTerm)
-    names = Array(AbstractString,0)
+    names = Array{AbstractString}(0)
     for name in trm.names
         push!(names,trm.trmStr*" : "*name)
     end

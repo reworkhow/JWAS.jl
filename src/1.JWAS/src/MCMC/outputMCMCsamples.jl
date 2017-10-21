@@ -75,7 +75,7 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
 
     for trmStr in res
         trm     = mme.modelTermDict[trmStr]
-        samples = MCMCSamples(trm,Array(Float64,1,1))
+        samples = MCMCSamples(trm,Array{Float64}(1,1))
         push!(mme.outputSamplesVec,samples)
     end
 end
@@ -98,7 +98,7 @@ function init_sample_arrays(mme::MME,niter)
 
     #variance components for iid random effects
     for i in  mme.rndTrmVec #resize to be size of nTraits
-        i.sampleArray = zeros(mme.nModels^2,niter)#Bug maybe many diff
+        i.sampleArray = zeros(length(i.term_array)^2,niter)
     end
 end
 
@@ -110,8 +110,8 @@ function outputSamples(mme::MME,sol,iter::Int64)
         endPosi    = startPosi + trmi.nLevels - 1
         i.sampleArray[:,iter] = sol[startPosi:endPosi]
     end
-    for effect in  mme.rndTrmVec
-        effect.sampleArray[iter] = effect.vcNew
+    for effect in  mme.rndTrmVec #variance components
+        effect.sampleArray[:,iter] = vec(effect.G)
     end
 end
 

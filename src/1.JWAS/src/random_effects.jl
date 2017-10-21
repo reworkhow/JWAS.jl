@@ -107,42 +107,37 @@ set_random(model,"litter",G)
 """
 function set_random(mme::MME,randomStr::AbstractString, G; df=4)
     G = map(Float64,G)
+    df= Float64(df)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
-    res = []
-    for trm in randTrmVec #add model number => "1:herd"
+    for trm in randTrmVec
+      res = []
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
-          res = [res;string(m)*":"*trm]
+          res = [res;string(m)*":"*trm] #add model number => "1:herd"
         else
           error(trm," is not found in model equations.")
         end
       end
-    end #"1:herd","2:herd"
-    if length(res) != size(G,1)
-      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
-    end
-
-    if mme.nModels!=1 #multi-trait
-      mme.Gi = inv(G)
-    else              #single-trait
+      if length(res) != size(G,1)
+        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+      end
       if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
         G=reshape([G],1,1)
       end
-      mme.GiOld = zeros(G)
-      mme.GiNew = inv(G)
-    end
+      Gi = inv(G)
 
-
-    for term_string in res
-      trm  = mme.modelTermDict[term_string]
-      scale = vc*(df-2)/df
-      randomEffect = RandomEffect(trm,1.0,vc,df,scale,zeros(1,1))#ROld/vcOld=0
+      term_string1 = res[1]
+      term_array    = [mme.modelTermDict[term_string1]]
+      for term_string in res[2:end]
+        term_array  = [term_array;mme.modelTermDict[term_string]]
+      end
+      df           = df+length(term_array)
+      scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+      randomEffect = RandomEffect(term_array,G,zeros(Gi),Gi,df,scale,zeros(1,1))
       push!(mme.rndTrmVec,randomEffect)
     end
-
-    mme.df.random=Float64(df)
     nothing
 end
 ################################################################################
@@ -154,6 +149,10 @@ end
 #*******************************************************************************
 ################################################################################
 
+################################################################################
+#duplicated code in addA and sample_variance_pedigree
+#Need to be merged #MAY NOT
+################################################################################
 
 #construct MME for pedigree-based random effects part
 function addA(mme::MME) #two terms,e.g.,"animal" and "maternal" may not near in MME
@@ -177,20 +176,22 @@ end
 ################################################################################
 #construct MME for iid random effects part
 #single-trait: lamda version, assume effects are independent, e.g., litter and groups
-#multi-trait: same effects in 2 traits are correlated,e.g., 1:litter, 2:litter
+#multi-trait: same effects in 2 traits are NOT correlated,e.g., 1:litter, 2:litter
 ################################################################################
 function addLambdas(mme::MME)
-    for effect in  mme.rndTrmVec
-        trmi       = effect.term
-        startPosi  = trmi.startPos
-        endPosi    = startPosi + trmi.nLevels - 1
-        if mme.nModels==1
-          lambdaDiff = mme.RNew/effect.vcNew - mme.ROld/effect.vcOld
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
-          mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*lambdaDiff
-        #else
-        #  mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
-        #    mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + speye(trmi.nLevels)*(1/effect.vcNew)
-        end
+    for random_term in mme.rndTrmVec
+      term_array = random_term.term_array
+      for (i,termi) = enumerate(term_array)
+          startPosi  = termi.startPos
+          endPosi    = startPosi + termi.nLevels - 1
+          for (j,termi) in enumerate(term_array)
+            startPosj   = termi.startPos
+            endPosj     = startPosj + termi.nLevels - 1
+            myeye       = speye(termi.nLevels)
+            myaddLambda = (mme.nModels!=1)?(myeye*random_term.GiNew[i,j]):(myeye*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
+            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
+            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddLambda
+          end
+      end
     end
 end
