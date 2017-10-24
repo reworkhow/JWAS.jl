@@ -19,7 +19,7 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray
       nlable    = length(labels)
       probDelta = Array(Float64,nlable)
       logDelta = Array(Float64,nlable)
-      αlpha     = Array(Array{Float64,2},nlable)
+      αlpha     = Array(Array{Float64,1},nlable)
       RinvLhs   = Array(Array{Float64,2},nlable)
       RinvRhs   = Array(Array{Float64,2},nlable)
 
