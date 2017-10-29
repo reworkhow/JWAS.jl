@@ -65,6 +65,7 @@ function sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
     mme.GiOld = copy(mme.GiNew)
     mme.GiNew = copy(inv(G0))
     mme.Gi    = copy(inv(G0))
+
     addA(mme)
 
     return G0

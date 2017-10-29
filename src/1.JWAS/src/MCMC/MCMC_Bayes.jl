@@ -44,7 +44,7 @@ function MCMC_Bayes(nIter,mme,df;
     end
 
     ############################################################################
-    # MCMC
+    # MCMC (starting values for sol (zeros);  vRes; G0 are used)
     ############################################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
 
@@ -60,10 +60,18 @@ function MCMC_Bayes(nIter,mme,df;
         solMean += (sol - solMean)/iter
 
         ########################################################################
+        # 2.3 Residual Variance
+        ########################################################################
+        mme.ROld = mme.RNew
+        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
+        mme.RNew = vRes
+        meanVare += (vRes - meanVare)/iter
+
+        ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
-          G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
+          G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0) #better add A outside
           G0Mean  += (G0  - G0Mean )/iter
         end
         ########################################################################
@@ -71,13 +79,6 @@ function MCMC_Bayes(nIter,mme,df;
         ########################################################################
         sampleVCs(mme,sol)
         addLambdas(mme)
-        ########################################################################
-        # 2.3 Residual Variance
-        ########################################################################
-        mme.ROld = mme.RNew
-        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
-        mme.RNew = vRes
-        meanVare += (vRes - meanVare)/iter
 
         ########################################################################
         # 3.1 Save MCMC samples
@@ -90,9 +91,9 @@ function MCMC_Bayes(nIter,mme,df;
         ########################################################################
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round(meanVare,6))
+            println("Residual variance: ",round.(meanVare,6))
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,3))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
         end
     end
