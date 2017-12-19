@@ -83,7 +83,6 @@ function runMCMC(mme,df;
         res=MCMC_BayesB(chain_length,mme,df,Pi,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
-                            estimatePi =estimatePi,
                             output_samples_frequency=output_samples_frequency,
                             MCMC_marker_effects_file=MCMC_marker_effects_file)
       elseif methods =="GBLUP"
