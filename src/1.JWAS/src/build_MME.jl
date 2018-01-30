@@ -207,7 +207,8 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    y = convert(Array,df[mme.lhsVec[1]],0.0) #convert NA to zero
+    #y = convert(Array,df[mme.lhsVec[1]],0.0) #convert NA to zero #DEPRECATED
+    y = recode(df[mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
     end

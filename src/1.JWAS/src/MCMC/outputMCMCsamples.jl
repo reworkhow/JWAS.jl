@@ -16,7 +16,7 @@ end
 #Wraps for Output MCMC Samples
 ################################################################################
 function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=true;
-                    MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
+                    MCMC_marker_effects_file="MCMC_samples_for_marker_effects")
   #initialize arrays to save MCMC samples
   num_samples = Int(floor(nIter/output_samples_frequency))
   init_sample_arrays(mme,num_samples)
@@ -24,15 +24,18 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
 
   if ismarker==true #write samples for marker effects to a txt file
     file_name  = MCMC_marker_effects_file
-    if isfile(file_name)
+    if isfile(file_name*".txt")
       warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
     else
       info("The file "*file_name*" was created to save MCMC samples for marker effects.")
     end
-    outfile=open(file_name,"w")
 
+    outfile = Array{IOStream}(2)                     #better to use dictionary later
+    outfile[1]=open(file_name*".txt","w")            #marker effects
+    outfile[2]=open(file_name*"_variance.txt","w")   #marker effect variance
     if mme.M.markerID[1]!="NA"
-        writedlm(outfile,transubstrarr(mme.M.markerID))
+        writedlm(outfile[1],transubstrarr(mme.M.markerID))
+        writedlm(outfile[2],transubstrarr(mme.M.markerID))
     end
     pi = zeros(num_samples)#vector to save π (for BayesC)
     return out_i,outfile,pi
@@ -42,15 +45,16 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
 end
 
 function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
-                             α=false,sample4π=false,outfile=false,estimatePi=false)
+                             α=false,locusEffectVar=false,sample4π=false,outfile=false,estimatePi=false)
   outputSamples(mme,sol,out_i)
   mme.samples4R[:,out_i]=vRes
   if mme.ped != 0
     mme.samples4G[:,out_i]=vec(G0)
   end
-  if α != false
-    writedlm(outfile,α')
-    if estimatePi==true
+  if α != false && outfile != false
+    writedlm(outfile[1],α')
+    writedlm(outfile[2],locusEffectVar')
+    if estimatePi==true && sample4π==true
       sample4π[out_i] = π
     end
   end
@@ -118,7 +122,7 @@ end
 #function to replace Array{SubString{String}' for issue 8
 function transubstrarr(vec::Array{SubString{String},1})
     lvec=length(vec)
-    res =Array(String,1,lvec)
+    res =Array{String}(1,lvec)
     for i in 1:lvec
         res[1,i]=vec[i]
     end

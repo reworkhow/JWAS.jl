@@ -110,7 +110,7 @@ function MCMC_BayesB(nIter,mme,df,π;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0
-          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0.0,u,false,outfile,false)
+          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0.0,u,locusEffectVar,false,outfile,false)
         end
         ########################################################################
         # 3.2 Printout
@@ -128,7 +128,9 @@ function MCMC_BayesB(nIter,mme,df,π;
     # After MCMC
     ############################################################################
     if output_samples_frequency != 0
-      close(outfile)
+      for outfilei in outfile
+        close(outfilei)
+      end
     end
 
     output=output_result(mme,solMean,output_samples_frequency,meanu)

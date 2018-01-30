@@ -13,7 +13,7 @@ function sampleEffectsBayesB!(xArray,
     logDelta0         = logPi
     invVarRes         = 1.0/vare
     invlocusEffectVar = 1.0./locusEffectVar
-    loglocusEffectVar = log(locusEffectVar)
+    loglocusEffectVar = log.(locusEffectVar)
     nLoci             = 0
 
     nMarkers      = length(α)

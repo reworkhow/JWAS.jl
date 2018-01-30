@@ -28,7 +28,7 @@ function runMCMC(mme,df;
                 constraint        = false,
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
-                MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt",
+                MCMC_marker_effects_file="MCMC_samples_for_marker_effects",
                 printout_frequency= chain_length+1,
                 printout_MCMCinfo = true,
                 output_samples_frequency::Int64 = 0,
@@ -46,7 +46,7 @@ function runMCMC(mme,df;
       println("The prior for marker effects variance was calculated from genetic varaince and π.")
       if !isposdef(mme.M.G) #positive scalar (>0)
         error("Marker effects variance is negative!")
-      end      
+      end
       println("Marker effects variance is ")
     end
     println(round(mme.M.G,6),".\n\n")

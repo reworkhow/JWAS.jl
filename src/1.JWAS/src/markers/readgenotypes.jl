@@ -12,7 +12,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
     end
     #set types for each column and get number of markers
     ncol= length(row1)
-    etv = Array(DataType,ncol)
+    etv = Array{DataType}(ncol)
     fill!(etv,Float64)
     etv[1]=String
     close(myfile)
