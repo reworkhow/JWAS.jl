@@ -18,8 +18,8 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
     close(myfile)
 
     #read genotypes
-    df = readtable(file, eltypes=etv, separator = separator, header=header)
-    #df = readtable(file, separator = separator, header=header)
+    df = CSV.read(file, types=etv, delim = separator, header=header)
+
 
     obsID=convert(Array,df[:,1])
     genotypes = map(Float64,convert(Array,df[:,2:end]))
