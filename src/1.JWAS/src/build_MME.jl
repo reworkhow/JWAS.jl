@@ -210,7 +210,7 @@ function getMME(mme::MME, df::DataFrame)
     #y = convert(Array,df[mme.lhsVec[1]],0.0) #convert NA to zero #DEPRECATED
     y = recode(df[mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
-      y   = [y; convert(Array,df[mme.lhsVec[i]],0.0)]
+      y   = [y; recode(df[mme.lhsVec[i]],missing=>0.0)]
     end
     ii    = 1:length(y)
     jj    = ones(ii)
