@@ -12,14 +12,14 @@ end
 #make tricky Ri (big) allowing NA in phenotypes and fixed effects
 #make ResVar, dictionary for Rinv
 function mkRi(mme::MME,df::DataFrame)
-    resVar = ResVar(mme.R,Dict())
-    missing =  isna.(df[mme.lhsVec[1]])
-    tstMsng = .!missing
+    resVar     = ResVar(mme.R,Dict())
+    missingobs =  ismissing.(df[mme.lhsVec[1]])
+    tstMsng    = .!missingobs
     #find all missing patterns in data
     for i=2:size(mme.lhsVec,1)
       df[mme.lhsVec[i]]
-        missing =  isna.(df[mme.lhsVec[i]])
-        tstMsng = [tstMsng .!missing]
+        missingobs =  ismissing.(df[mme.lhsVec[i]])
+        tstMsng    = [tstMsng .!missingobs]
     end
     mme.missingPattern = tstMsng
     n    = size(tstMsng,2)

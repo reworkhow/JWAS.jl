@@ -49,7 +49,7 @@ function runMCMC(mme,df;
       end
       println("Marker effects variance is ")
     end
-    println(round(mme.M.G,6),".\n\n")
+    println(round.(mme.M.G,6),".\n\n")
   end
 
   have_starting_value=false

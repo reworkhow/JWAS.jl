@@ -61,7 +61,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         if trm in strpVec
           res = [res;string(m)*":"*trm]
         else
-          error(trm," is not found in model equations.")
+          info(trm," is not found in model equation ",string(m),".")
         end
       end
     end #"1:animal","1:animal*age"

@@ -92,17 +92,17 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ##WORKING VECTORS
         ########################################################################
         ycorr          = vec(full(mme.ySparse)) #ycorr for different traits
-        wArray         = Array(Array{Float64,1},nTraits)#wArray is list reference of ycor
+        wArray         = Array{Array{Float64,1}}(nTraits)#wArray is list reference of ycor
         ########################################################################
         #Arrays to save solutions for marker effects
         ########################################################################
         #starting values for marker effects(zeros) and location parameters (sol)
-        alphaArray     = Array(Array{Float64,1},nTraits) #BayesC,BayesC0
-        meanAlphaArray = Array(Array{Float64,1},nTraits) #BayesC,BayesC0
-        deltaArray     = Array(Array{Float64,1},nTraits) #BayesC
-        meanDeltaArray = Array(Array{Float64,1},nTraits) #BayesC
-        uArray         = Array(Array{Float64,1},nTraits) #BayesC
-        meanuArray     = Array(Array{Float64,1},nTraits) #BayesC
+        alphaArray     = Array{Array{Float64,1}}(nTraits) #BayesC,BayesC0
+        meanAlphaArray = Array{Array{Float64,1}}(nTraits) #BayesC,BayesC0
+        deltaArray     = Array{Array{Float64,1}}(nTraits) #BayesC
+        meanDeltaArray = Array{Array{Float64,1}}(nTraits) #BayesC
+        uArray         = Array{Array{Float64,1}}(nTraits) #BayesC
+        meanuArray     = Array{Array{Float64,1}}(nTraits) #BayesC
 
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1

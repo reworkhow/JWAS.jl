@@ -18,7 +18,7 @@ include("pipeline/LOOCV.jl")
 include("pipeline/adjust_phenotype.jl")
 
 export build_model,set_covariate,set_random
-export add_markers,get_pedigree
+export add_genotypes,add_markers,get_pedigree
 export outputMCMCsamples,solve,runMCMC
 export showMME
 

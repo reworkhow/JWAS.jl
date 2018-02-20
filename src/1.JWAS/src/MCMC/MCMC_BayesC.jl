@@ -139,7 +139,7 @@ function MCMC_BayesC(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,3))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
             println("Marker effects variance: ",round(meanVara,6))
             if estimatePi == true

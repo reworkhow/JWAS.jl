@@ -22,7 +22,7 @@ JWAS.jl
 ├────── set_covariate
 ├────── set_random
 ├────── get_pedigree
-├────── add_markers
+├────── add_genotypes
 ├────── outputMCMCsamples
 ├────── showMME
 ├────── solve
