@@ -157,6 +157,6 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,isdefined(:sample4π)?sample4π:false,estimatePi?mean_pi:false)
+    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?sample4π:false,estimatePi?mean_pi:false)
     return output
 end

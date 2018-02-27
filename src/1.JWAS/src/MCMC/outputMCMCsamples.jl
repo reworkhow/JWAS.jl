@@ -54,7 +54,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
   if α != false && outfile != false
     writedlm(outfile[1],α')
     writedlm(outfile[2],locusEffectVar')
-    if estimatePi==true && sample4π==true
+    if estimatePi==true && sample4π!=false
       sample4π[out_i] = π
     end
   end
