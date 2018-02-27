@@ -34,6 +34,18 @@ function runMCMC(mme,df;
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
+  if mme.M != 0 && mme.nModels !=1 && Pi==0.0
+      warn("Pi (Π) is not provided!!","\n")
+      warn("Pi was generated assuming all markers have effects on all traits","\n")
+      mykey=Array{Float64}(0)
+      ntraits=mme.nModels
+      Pi=Dict{Array{Float64,1},Float64}()
+      for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ]
+          Pi[float(split(i,""))]=0.0
+      end
+      Pi[ones(ntraits)]=1.0
+  end
+
   if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
     genetic2marker(mme.M,Pi)
     if mme.nModels != 1
