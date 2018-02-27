@@ -129,20 +129,23 @@ function MT_MCMC_BayesC(nIter,mme,df;
       init_sample_arrays(mme,num_samples)
 
       if mme.M != 0 #write samples for marker effects to a txt file
-        outfile = Array{IOStream}(nTraits)
+        outfile = Array{Array{IOStream,1}}(nTraits)
         for traiti in 1:nTraits
 
-          file_name=MCMC_marker_effects_file*"_"*string(mme.lhsVec[traiti])*".txt"
+          file_name=MCMC_marker_effects_file*"_"*string(mme.lhsVec[traiti])
 
-          if isfile(file_name)
+          if isfile(file_name*".txt")
             warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
           else
-            info("The file "*file_name*" was created to save MCMC samples for marker effects.")
+            info("The file "*file_name*" (_variance) was created to save MCMC samples for marker effects (variances).")
           end
 
-          outfile[traiti]=open(file_name,"w")
+          outfile[traiti]   =Array{IOStream}(2)
+          outfile[traiti][1]=open(file_name*".txt","w")
+          outfile[traiti][2]=open(file_name*"_variance.txt","w")
           if mme.M.markerID[1]!="NA"
-              writedlm(outfile[traiti],transubstrarr(mme.M.markerID))
+              writedlm(outfile[traiti][1],transubstrarr(mme.M.markerID))
+              #writedlm(outfile[traiti][2],transubstrarr(mme.M.markerID)) #common variances in MT-Bayesc
           end
         end
       end
@@ -328,9 +331,11 @@ function MT_MCMC_BayesC(nIter,mme,df;
             if mme.M != 0
               for traiti in 1:nTraits
                 if methods == "BayesC" || methods=="BayesCC"
-                  writedlm(outfile[traiti],uArray[traiti]')
+                  writedlm(outfile[traiti][1],uArray[traiti]')
+                  writedlm(outfile[traiti][2],vec(mme.M.G)')
                 elseif methods == "BayesC0"
-                  writedlm(outfile[traiti],alphaArray[traiti]')
+                  writedlm(outfile[traiti][1],alphaArray[traiti]')
+                  writedlm(outfile[traiti][2],vec(mme.M.G)')
                 end
               end
             end
@@ -393,7 +398,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
     if mme.M != 0
       if output_samples_frequency != 0  #write samples for marker effects to a txt file
         for traiti in 1:nTraits
-          close(outfile[traiti])
+          close(outfile[traiti][1])
+          close(outfile[traiti][2])
         end
       end
 
