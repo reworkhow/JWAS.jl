@@ -139,7 +139,7 @@ function MCMC_BayesC(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,3))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
             println("Marker effects variance: ",round(meanVara,6))
             if estimatePi == true
@@ -157,6 +157,6 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,isdefined(:sample4π)?sample4π:false,estimatePi?mean_pi:false)
+    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?sample4π:false,estimatePi?mean_pi:false)
     return output
 end

@@ -14,7 +14,8 @@ Run MCMC (marker information included or not) with sampling of variance componen
 
 * available **methods** include "conventional (no markers)", "BayesC0", "BayesC", "BayesCC","BayesB".
 * **missing_phenotypes**
-* **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`
+* **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
+    * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
 * save MCMC samples every **output_samples_frequency** iterations
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
@@ -34,6 +35,18 @@ function runMCMC(mme,df;
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
+  if mme.M != 0 && mme.nModels !=1 && Pi==0.0
+      warn("Pi (Π) is not provided!!","\n")
+      warn("Pi was generated assuming all markers have effects on all traits","\n")
+      mykey=Array{Float64}(0)
+      ntraits=mme.nModels
+      Pi=Dict{Array{Float64,1},Float64}()
+      for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ]
+          Pi[float(split(i,""))]=0.0
+      end
+      Pi[ones(ntraits)]=1.0
+  end
+
   if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
     genetic2marker(mme.M,Pi)
     if mme.nModels != 1
@@ -49,7 +62,7 @@ function runMCMC(mme,df;
       end
       println("Marker effects variance is ")
     end
-    println(round(mme.M.G,6),".\n\n")
+    println(round.(mme.M.G,6),".\n\n")
   end
 
   have_starting_value=false

@@ -9,10 +9,10 @@ end
 
 function get_breeding_values(M::Array{Float64,2},files...;header=true)
     nTraits = length(files)
-    BV  = Array(Array{Float64,2},nTraits)
+    BV  = Array{Array{Float64,2}}(nTraits)
     traiti=1
 
-    EBV = Array(Any,nTraits)
+    EBV = Array{Any}(nTraits)
     for i in files
         BV[traiti] = get_BV_samples(M,i,header=header)
         EBV[traiti]= DataFrame(EBV=vec(mean(BV[traiti],2)),PEV=vec(var(BV[traiti],2)))
@@ -23,7 +23,7 @@ end
 
 function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true)
     nTraits = length(files)
-    BV  = Array(Array{Float64,2},nTraits)
+    BV  = Array{Array{Float64,2}}(nTraits)
     traiti=1
     for i in files
         BV[traiti] = get_BV_samples(M,i,header=header)
@@ -79,7 +79,7 @@ function get_heritability(G::Array{Array{Float64,2},1},R::Array{Array{Float64,2}
   if size(G,1)!=size(R,1)
     error("Number of MCMC samples for genetic variances and residual vairances are not equal!")
   end
-  h2 = Array(Array{Float64,1},size(G,1))
+  h2 = Array{Array{Float64,1}}(size(G,1))
   for i in 1:size(G,1)
     h2[i]=diag(G[i] ./ (G[i]+R[i]))
   end
@@ -92,25 +92,25 @@ end
 * Get MCMC samples for correlations
 """
 function get_correlations(G::Array{Array{Float64,2},1})
-  gentic_correlation = Array(Array{Float64,2},size(G,1))
+  gentic_correlation = Array{Array{Float64,2}}(size(G,1))
   for i in 1:size(G,1)
     varg=diag(G[i])
-    gentic_correlation[i]=G[i]./sqrt(varg*varg')
+    gentic_correlation[i]=G[i]./sqrt.(varg*varg')
   end
   gentic_correlation
 end
 
 function reformat(G::Array{Float64,2},nrow=false)
     if nrow==size(G,1)
-        Gnew = Array(Array{Float64,1},size(G,2))
+        Gnew = Array{Array{Float64,1}}(size(G,2))
         for i in 1:size(G,2)
             Gnew[i]=vec(G[:,i])
         end
         return Gnew
     end
-    
+
     if nrow==false || nrow==Int(sqrt(size(G,1)))
-        Gnew = Array(Array{Float64,2},size(G,2))
+        Gnew = Array{Array{Float64,2}}(size(G,2))
         nrow=Int(sqrt(size(G,1)))
         for i in 1:size(G,2)
             Gnew[i]=reshape(G[:,i],nrow,nrow)

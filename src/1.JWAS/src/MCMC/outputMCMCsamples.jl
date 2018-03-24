@@ -27,7 +27,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=t
     if isfile(file_name*".txt")
       warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
     else
-      info("The file "*file_name*" was created to save MCMC samples for marker effects.")
+      info("The file "*file_name*" (_variance) was created to save MCMC samples for marker effects (variances).")
     end
 
     outfile = Array{IOStream}(2)                     #better to use dictionary later
@@ -54,7 +54,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
   if α != false && outfile != false
     writedlm(outfile[1],α')
     writedlm(outfile[2],locusEffectVar')
-    if estimatePi==true && sample4π==true
+    if estimatePi==true && sample4π!=false
       sample4π[out_i] = π
     end
   end
