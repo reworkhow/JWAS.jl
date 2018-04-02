@@ -62,13 +62,13 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
     #starting values for other location parameters are sol
 
     ycorr          = vec(full(mme.ySparse))
-    wArray         = Array(Array{Float64,1},nTraits)
-    alphaArray     = Array(Array{Float64,1},nTraits)
-    meanAlphaArray = Array(Array{Float64,1},nTraits)
-    deltaArray     = Array(Array{Float64,1},nTraits)
-    meanDeltaArray = Array(Array{Float64,1},nTraits)
-    uArray         = Array(Array{Float64,1},nTraits)
-    meanuArray     = Array(Array{Float64,1},nTraits)
+    wArray         = Array{Array{Float64,1}}(nTraits)
+    alphaArray     = Array{Array{Float64,1}}(nTraits)
+    meanAlphaArray = Array{Array{Float64,1}}(nTraits)
+    deltaArray     = Array{Array{Float64,1}}(nTraits)
+    meanDeltaArray = Array{Array{Float64,1}}(nTraits)
+    uArray         = Array{Array{Float64,1}}(nTraits)
+    meanuArray     = Array{Array{Float64,1}}(nTraits)
 
     for traiti = 1:nTraits
         startPosi              = (traiti-1)*nObs  + 1
@@ -87,7 +87,7 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
 
 
     #for locus specific covaraince matrix
-    arrayG  = Array(Array{Float64,2},nMarkers)
+    arrayG  = Array{Array{Float64,2}}(nMarkers)
     for markeri = 1:nMarkers
       arrayG[markeri]= vEff
     end
@@ -182,10 +182,10 @@ function MT_MCMC_BayesB(nIter,mme,df,Pi;
                  for i=1:size(marker_effects_matrix,2)]
 
         for markeri = 1:nMarkers
-          arrayG[markeri] = rand(InverseWishart(νGM + 1, Symmetric(PM + alpha2[markeri])))
+          arrayG[markeri] = rand(InverseWishart(νGM + 1, convert(Array,Symmetric(PM + alpha2[markeri]))))
         end
 
-        R0      = rand(InverseWishart(νR0 + nObs, Symmetric(PRes + SRes)))
+        R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
 
         #for constraint R, chisq
         if constraint == true
