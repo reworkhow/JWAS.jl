@@ -91,12 +91,22 @@ function make_yVecs(file,ped::PedModule.Pedigree,num::Numbers;header=false)
     dfn =  df[isnongeno,:]
     dfg =  df[.!isnongeno,:]
 
-    yn    = convert(Array,dfn[:,2],0.0) #convert only work with dataarray no dataframe
-    yg    = convert(Array,dfg[:,2],0.0) #replace NA with 0.0
-    for i = 3:(ntrait+1)
-        yn = [yn convert(Array,dfn[:,i],0.0)]
-        yg = [yg convert(Array,dfg[:,i],0.0)]
+
+    yn = recode(dfn[:,2], missing => 0.0)
+    yg = recode(dfg[:,2], missing => 0.0)
+    for i=3:(ntrait+1)
+      yn = [yn recode(dfn[:,i],missing=>0.0)]
+      yg = [yg recode(dfg[:,i],missing=>0.0)]
     end
+
+    #deprecated in CSV
+    #yn    = convert(Array,dfn[:,2],0.0) #convert only work with dataarray no dataframe
+    #yg    = convert(Array,dfg[:,2],0.0) #replace NA with 0.0
+    #
+    #for i = 3:(ntrait+1)
+    #    yn = [yn convert(Array,dfn[:,i],0.0)]
+    #    yg = [yg convert(Array,dfg[:,i],0.0)]
+    #end
 
     y          = [yn;yg]          #order of y is nongeno then gen
     ids        = [IDs[isnongeno];
