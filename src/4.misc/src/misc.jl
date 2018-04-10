@@ -2,6 +2,7 @@ module misc
 
 using DataFrames
 using Distributions
+using ProgressMeter
 #using Plots
 
 include("genotypes.jl")

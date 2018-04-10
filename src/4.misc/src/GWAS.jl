@@ -1,4 +1,3 @@
-
 #return model frequencies
 function GWAS(marker_effects_file;header=true)
     file = marker_effects_file
@@ -22,6 +21,8 @@ end
 #an array of number of SNPs in each window
 
 function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
+    println("Compute posterior probability that window explains more than ",threshold," of genetic variance")
+
     if header==true
         output=readdlm(marker_file,header=true)[1]
     else
@@ -39,7 +40,7 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
     winVarProps = zeros(nsamples,nWindows)
     X           = mme.M.genotypes
 
-    for i=1:nsamples
+    @showprogress for i=1:nsamples
         α = output[i,:]
         genVar = var(X*α)
 
@@ -54,7 +55,8 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
           windowi +=1
         end
     end
-    return(vec(mean(winVarProps .> threshold,1)), mean(winVarProps,1))
+    #return(vec(mean(winVarProps .> threshold,1)), mean(winVarProps,1))
+    return vec(mean(winVarProps .> threshold,1))
 end
 
 
@@ -71,9 +73,8 @@ end
 #using the procedure described by Dehman et al. (2015).
 
 function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",threshold=0.001)
-    println("Compute posterior probability that window explains more than 1/numberWindows proportion of genetic variance")
 
-    if window_size="1 Mb"
+    if window_size=="1 Mb"
         window_size_Mb = 1_000_000
     else
         window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
@@ -83,7 +84,7 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
     chr     = map(Int64,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
 
-    windows = Array{Int64,1}() #save number of markers in ith window for all windows
+    window_size = Array{Int64,1}() #save number of markers in ith window for all windows
     for i in 1:maximum(chr)
       pos_on_chri     = pos[chr.==i]
       nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
@@ -92,7 +93,7 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
         push!(window_size,sum(window_size_Mb*(j-1) .< pos_on_chri .< window_size_Mb*j))
       end
     end
-    reutrn GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    return GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
 end
 
 
