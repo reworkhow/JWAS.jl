@@ -17,27 +17,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Get-Started:-1",
-    "page": "Home",
-    "title": "Get Started:",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "index.html#Standalone-application-1",
-    "page": "Home",
-    "title": "Standalone application",
-    "category": "section",
-    "text": "A fully self-contained application for JWAS (no installation required) will come out this year."
-},
-
-{
     "location": "index.html#Installation-1",
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "To install julia, please go to the offical Julia website. Please see platform specific instructions if you have trouble installing Julia.To install the package, use the following command inside the Julia REPL (or IJulia Notebook):Pkg.add(\"JWAS\")To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):using JWASThe command Pkg.add(\"JWAS\") will add the registered official JWAS.jl and dependencies.To use the latest/beta features under development, run Pkg.checkout(\"JWAS\") to get the newest unofficial JWAS. Run Pkg.free(\"JWAS\") to go back to the offical one.If you prefer “reproducible research”, an interactive Jupyter notebook interface is available for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating and sharing documents that contain live code, equations, visualizations and explanatory text. To install IJulia, please go to IJulia."
+    "text": "To install julia, please go to the offical Julia website. Please see platform specific instructions if you have trouble installing Julia.To install the package, use the following command inside the Julia REPL (or IJulia Notebook):Pkg.add(\"JWAS\")To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):using JWASThe command Pkg.add(\"JWAS\") will add the registered official JWAS.jl and dependencies.To use the latest/beta features under development, run Pkg.checkout(\"JWAS\") to get the newest unofficial JWAS. Run Pkg.free(\"JWAS\") to go back to the offical one.** IJulia notebook **If you prefer “reproducible research”, an interactive Jupyter notebook interface is available for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating and sharing documents that contain live code, equations, visualizations and explanatory text. To install IJulia, please go to IJulia.** Standalone application **A fully self-contained application for JWAS (no installation required) will come out this year."
+},
+
+{
+    "location": "index.html#Access-documentation-1",
+    "page": "Home",
+    "title": "Access documentation",
+    "category": "section",
+    "text": "To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter (Please load the JWAS package at first).For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook (Please load the JWAS package at first).The full documentation is available here."
 },
 
 {
@@ -45,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "the trouble, the error and the new feature",
     "category": "section",
-    "text": "If you have trouble using JWAS, want new featuers or find errors in JWAS, please open an issue or contact <qtlcheng@ucdavis.edu>."
+    "text": "If you have trouble using JWAS, want new features or find errors in JWAS, please open an issue or qtlcheng@ucdavis.edu."
 },
 
 {
