@@ -7,18 +7,21 @@ routine single-trait and multi-trait genomic prediction and genome-wide associat
 genomic data ("single-step" methods). Currently, JWAS provides broad scope of analyses, e.g., a wide collection of Bayesian
 methods for whole-genome analyses, including shrinkage estimation and variable selection methods. The features of JWAS include:
 
+* Univariate (single-trait) analysis
+* Multivariate (multi-trait) analysis  
 * No limitations on fixed effects (e.g. herd-year, age, sex)                                                                    
 * Random effects other than markers (e.g. litter, pen)                                  
-* Random effects using pedigree information                                                                                
+* Random effects using pedigree information
+  - Additive genetic effects
+  - Maternal effects
 * Random permanent environmental effects  
-* Single-trait analyses                                            
-* Multi-trait analyses  
 * Correlated residuals		
 * Correlated random effects
+* Unknown (or known) variance components
 * Correlated marker effects                                                                
 * Use of genomic information                                                                                
-* Complete genomic data                                      		
-* Incomplete genomic data
+  - Complete genomic data                                      		
+  - Incomplete genomic data (singe-step)
 
 
 ## Supporting and Citing
