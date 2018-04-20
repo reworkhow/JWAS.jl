@@ -5,7 +5,47 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Home",
     "category": "page",
-    "text": "(Image: JWAS)JWAS is a well-documented software platform based on Julia and an interactive Jupyter notebook for analyses of general univariate and multivariate Bayesian mixed effects models.  These models are especially useful for, but not limited to, routine single-trait and multi-trait genomic prediction and genome-wide association studies using either complete or incomplete genomic data (\"single-step\" methods). Currently, JWAS provides broad scope of analyses, e.g., a wide collection of Bayesian methods for whole-genome analyses, including shrinkage estimation and variable selection methods. The features of JWAS include:No limitations on fixed effects (e.g. herd-year, age, sex)                                                                    \nRandom effects other than markers (e.g. litter, pen)                                  \nRandom effects using pedigree information                                                                                \nRandom permanent environmental effects  \nSingle-trait analyses                                            \nMulti-trait analyses                                                                  \nUse of genomic information                                                                                \nComplete genomic data                                      		\nIncomplete genomic data\nCorrelated residuals		"
+    "text": "(Image: JWAS)JWAS is a well-documented software platform based on Julia and an interactive Jupyter notebook for analyses of general univariate and multivariate Bayesian mixed effects models.  These models are especially useful for, but not limited to, routine single-trait and multi-trait genomic prediction and genome-wide association studies using either complete or incomplete genomic data (\"single-step\" methods). Currently, JWAS provides broad scope of analyses, e.g., a wide collection of Bayesian methods for whole-genome analyses, including shrinkage estimation and variable selection methods. The features of JWAS include:No limitations on fixed effects (e.g. herd-year, age, sex)                                                                    \nRandom effects other than markers (e.g. litter, pen)                                  \nRandom effects using pedigree information                                                                                \nRandom permanent environmental effects  \nSingle-trait analyses                                            \nMulti-trait analyses  \nCorrelated residuals		\nCorrelated random effects\nCorrelated marker effects                                                                \nUse of genomic information                                                                                \nComplete genomic data                                      		\nIncomplete genomic data"
+},
+
+{
+    "location": "index.html#Supporting-and-Citing-1",
+    "page": "Home",
+    "title": "Supporting and Citing",
+    "category": "section",
+    "text": "We hope the friendly user interface and fast computing speed of JWAS will provide power and convenience for users in both industry and academia to analyze large datasets. Further, as an <!–- well-documented–> open-source software tool, we hope JWAS will also be used by a group of active community members, who will contribute to the source code and help maintain the project. Junior scientists can understand and learn the methodologies for whole-genome analyses by using JWAS and reading the tutorials and source code.If you would like to help support JWAS, please star the repository on the upper right corner here as such statistic will help to demonstrate the active involvement of the community. If you use JWAS for your research, teaching, or other activities, we would be grateful if you could cite our work following this citation guideline."
+},
+
+{
+    "location": "index.html#Get-Started:-1",
+    "page": "Home",
+    "title": "Get Started:",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "index.html#Standalone-application-1",
+    "page": "Home",
+    "title": "Standalone application",
+    "category": "section",
+    "text": "A fully self-contained application for JWAS (no installation required) will come out this year."
+},
+
+{
+    "location": "index.html#Installation-1",
+    "page": "Home",
+    "title": "Installation",
+    "category": "section",
+    "text": "To install julia, please go to the offical Julia website. Please see platform specific instructions if you have trouble installing Julia.To install the package, use the following command inside the Julia REPL (or IJulia Notebook):Pkg.add(\"JWAS\")To load the package, use the following command inside the Julia REPL (or IJulia Notebook):using JWASThe command Pkg.add(\"JWAS\") will add the registered official JWAS.jl and dependencies.To use the latest/beta features under development, run Pkg.checkout(\"JWAS\") to get the newest unofficial JWAS. Run Pkg.free(\"JWAS\") to go back to the offical one.If you prefer “reproducible research”, an interactive Jupyter notebook interface is available for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating and sharing documents that contain live code, equations, visualizations and explanatory text. To install IJulia, please go to IJulia."
+},
+
+{
+    "location": "index.html#the-trouble,-the-error-and-the-new-feature-1",
+    "page": "Home",
+    "title": "the trouble, the error and the new feature",
+    "category": "section",
+    "text": "If you have trouble using JWAS, want new featuers or find errors in JWAS, please open an issue or contact <qtlcheng@ucdavis.edu>."
 },
 
 {
@@ -253,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Univariate Linear Mixed Model (conventional)",
     "category": "section",
-    "text": ""
+    "text": "using DataFrames,CSV,JWAS,JWAS.Datasets;phenofile = Datasets.dataset(\"testMME\",\"data.txt\");\ndata      = CSV.read(phenofile,delim = \',\',header=true);\nhead(data)\n\n# 10×9 DataFrames.DataFrame\n# │ Row │ sow       │ site │ yr   │ age │ geneticCode │ parity │ nwn │ SYS           │ bw   │\n# ├─────┼───────────┼──────┼──────┼─────┼─────────────┼────────┼─────┼───────────────┼──────┤\n# │ 1   │ 100-113   │ 113  │ 2005 │ 18  │ P1          │ 1      │ 8   │ 113_2005_WNTR │ 9.0  │\n# │ 2   │ 100-113   │ 113  │ 2006 │ 18  │ P1          │ 2      │ 12  │ 113_2006_SPNG │ 8.0  │\n# │ 3   │ 100-5     │ 5    │ 2008 │ 15  │ P2          │ 1      │ 10  │ 5_2008_ATMN   │ 7.5  │\n# │ 4   │ 1000-5    │ 5    │ 2009 │ 17  │ P2          │ 1      │ 10  │ 5_2009_SPNG   │ 8.3  │\n# │ 5   │ 10000-131 │ 13   │ 2004 │ 16  │ Commercial  │ 1      │ 9   │ 13_2004_WNTR  │ 4.3  │\n# │ 6   │ 10000-131 │ 13   │ 2004 │ 18  │ Commercial  │ 2      │ 10  │ 13_2004_SMMR  │ 2.8  │model_equation    = \"nwn = intercept +parity + parity*site + yr + geneticCode + age\"\n\nresidual_variance = 2.97;\nmodel             = build_model(model_equation,residual_variance)\n\nset_covariate(model,\"age\");\n\ngeneticCode_variance = 0.26;\nset_random(model,\"geneticCode\",geneticCode_variance);outputMCMCsamples(model,\"parity\",\"age\");out=runMCMC(data,model,chain_length=50000,output_samples_frequency=100);"
 },
 
 {
@@ -337,11 +377,163 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "lib/public.html#Some-Theory-in-JWAS-1",
+    "location": "lib/public.html#JWAS.add_genotypes-Tuple{JWAS.MME,Any,Any}",
     "page": "Public",
-    "title": "Some Theory in JWAS",
+    "title": "JWAS.add_genotypes",
+    "category": "method",
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file (same order as the phenotype file).\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.add_markers-Tuple{JWAS.MME,Any,Any}",
+    "page": "Public",
+    "title": "JWAS.add_markers",
+    "category": "method",
+    "text": "same to add_genotypes\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.build_model-Tuple{AbstractString,Any}",
+    "page": "Public",
+    "title": "JWAS.build_model",
+    "category": "method",
+    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in model_equations are fixed and factors. Set variables to be covariates or random using functions set_covariate() or set_random().\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex;\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.get_pedigree-Tuple{AbstractString}",
+    "page": "Public",
+    "title": "JWAS.get_pedigree",
+    "category": "method",
+    "text": "get_pedigree(pedfile::AbstractString)\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.outputMCMCsamples-Tuple{JWAS.MME,Vararg{AbstractString,N} where N}",
+    "page": "Public",
+    "title": "JWAS.outputMCMCsamples",
+    "category": "method",
+    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet samples for specific variables.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.runMCMC-Tuple{Any,Any}",
+    "page": "Public",
+    "title": "JWAS.runMCMC",
+    "category": "method",
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"BayesC0\", \"BayesC\", \"BayesCC\",\"BayesB\".\nmissing_phenotypes\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nsave MCMC samples every output_samples_frequency iterations\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zero.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.set_covariate-Tuple{JWAS.MME,Vararg{AbstractString,N} where N}",
+    "page": "Public",
+    "title": "JWAS.set_covariate",
+    "category": "method",
+    "text": "set_covariate(mme::MME,variables::AbstractString...)\n\nset variables as covariates; mme is the output of function build_model().\n\n#After running build_model, variabels age and year can be set to be covariates as\nset_covariate(models,\"age\",\"year\")\n#or\nset_covariate(models,\"age year\")\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.set_random-Tuple{JWAS.MME,AbstractString,Any}",
+    "page": "Public",
+    "title": "JWAS.set_random",
+    "category": "method",
+    "text": "set_random(mme::MME,randomStr::AbstractString,G;df=4)\n\nset variables as i.i.d random effects with variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nG               = 0.6\nset_random(model,\"litter\",G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + litter + sex\n                   CW = intercept + litter + sex\"\nmodel           = build_model(model_equations,R);\nG               = [3.72  1.84\n                   1.84  3.41]\nset_random(model,\"litter\",G)\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.set_random-Tuple{JWAS.MME,AbstractString,JWAS.PedModule.Pedigree,Any}",
+    "page": "Public",
+    "title": "JWAS.set_random",
+    "category": "method",
+    "text": "set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)\n\nset variables as random polygenic effects with pedigree information ped, variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + Age + Animal\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = 1.6\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#single-trait (example 2)\nmodel_equation  = \"y = intercept + Age + Animal + Animal*Age\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = [1.6   0.2\n                   0.2  1.0]\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex + Animal\n                   CW = intercept + age + sex + Animal\"\nmodel           = build_model(model_equations,R);\nped             = get_pedigree(pedfile);\nG               = [6.72   2.84\n                   2.84  8.41]\nset_random(model,\"Animal\", ped,G)\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.showMME-Tuple{JWAS.MME,DataFrames.DataFrame}",
+    "page": "Public",
+    "title": "JWAS.showMME",
+    "category": "method",
+    "text": "showMME(mme::MME,df::DataFrame)\n\nShow left-hand side and right-hand side of mixed model equations (no markers).\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.solve-Tuple{JWAS.MME,DataFrames.DataFrame}",
+    "page": "Public",
+    "title": "JWAS.solve",
+    "category": "method",
+    "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers includes default,Jacobi,GaussSeidel,Gibbs sampler.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.getMME-Tuple{JWAS.MME,DataFrames.DataFrame}",
+    "page": "Public",
+    "title": "JWAS.getMME",
+    "category": "method",
+    "text": "Construct mixed model equations with\n\nincidence matrix: X      ; response        : ySparse; left-hand side  : mmeLhs ; right-hand side : mmeLhs ;\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.QC-Tuple{Any,Any}",
+    "page": "Public",
+    "title": "JWAS.misc.QC",
+    "category": "method",
+    "text": "QC(infile,outfile;separator=\' \',header=true,missing=false,MAF=0.1)\n\nQuality control for input file infile, then write out to output file: outfile.\nDelete loci with minor allele frequency < MAF.\nmissing genotypes are replaced by column means.\nFile format (header=true,separator=\',\',missing=9):\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,9,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.get_additive_genetic_variances-Tuple{Any,Vararg{Any,N} where N}",
+    "page": "Public",
+    "title": "JWAS.misc.get_additive_genetic_variances",
+    "category": "method",
+    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples of marker effects stored in files.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.get_breeding_values-Tuple{Any,Vararg{Any,N} where N}",
+    "page": "Public",
+    "title": "JWAS.misc.get_breeding_values",
+    "category": "method",
+    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.get_correlations-Tuple{Array{Array{Float64,2},1}}",
+    "page": "Public",
+    "title": "JWAS.misc.get_correlations",
+    "category": "method",
+    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.get_heritability-Tuple{Array{Array{Float64,2},1},Array{Array{Float64,2},1}}",
+    "page": "Public",
+    "title": "JWAS.misc.get_heritability",
+    "category": "method",
+    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_vairances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities.\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.report-Tuple{Array{Array{Float64,1},1}}",
+    "page": "Public",
+    "title": "JWAS.misc.report",
+    "category": "method",
+    "text": "report(X::Array{Array{Float64,1},1};index=false)\n\nshow summary statistics for MCMC samples (vectors or index i of vectors)\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#JWAS.misc.report-Tuple{Array{Array{Float64,2},1}}",
+    "page": "Public",
+    "title": "JWAS.misc.report",
+    "category": "method",
+    "text": "report(X::Array{Array{Float64,2},1};index=false)\n\nshow summary statistics for MCMC samples (matrices or index [i,j] of matrices)\n\n\n\n"
+},
+
+{
+    "location": "lib/public.html#Public-functions-1",
+    "page": "Public",
+    "title": "Public functions",
     "category": "section",
-    "text": ""
+    "text": "Documentation for JWAS.jl\'s public interface.See Internal Documentation for internal (private) functions.Modules = [JWAS, JWAS.misc]\nOrder   = [:function, :type]"
 },
 
 {
@@ -353,11 +545,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "lib/internals.html#internals-1",
+    "location": "lib/internals.html#Internal-functions-1",
     "page": "Internals",
-    "title": "internals",
+    "title": "Internal functions",
     "category": "section",
-    "text": ""
+    "text": "Documentation for JWAS.jl\'s internal interface.See Public Documentation for public functions."
 },
 
 ]}
