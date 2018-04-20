@@ -24,7 +24,7 @@ methods for whole-genome analyses, including shrinkage estimation and variable s
 ## Supporting and Citing
 
 We hope the friendly user interface and fast computing speed of JWAS will provide power and convenience for users in both industry
-and academia to analyze large datasets. Further, as an <!--- well-documented--> open-source software tool, we hope JWAS will also be used by a
+and academia to analyze large datasets. Further, as a well-documented open-source software tool, we hope JWAS will also be used by a
 group of active community members, who will contribute to the source code and help maintain the project. Junior scientists can
 understand and learn the methodologies for whole-genome analyses by using JWAS and reading the tutorials and source code.
 
@@ -51,7 +51,7 @@ To install the package, use the following command inside the Julia REPL (or IJul
 Pkg.add("JWAS")
 ```
 
-To load the package, use the following command inside the Julia REPL (or IJulia Notebook):
+To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):
 
 ```julia
 using JWAS
