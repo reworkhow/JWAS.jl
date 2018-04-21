@@ -1,0 +1,50 @@
+# Get Started
+
+## Installation
+
+To install julia, please go to the [offical Julia website](https://julialang.org/downloads/).
+Please see [platform specific instructions](https://julialang.org/downloads/platform.html)
+if you have trouble installing Julia.
+
+To install the package, use the following command inside the Julia REPL (or IJulia Notebook):
+```julia
+Pkg.add("JWAS")
+```
+
+To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):
+
+```julia
+using JWAS
+```
+
+The command `Pkg.add("JWAS")` will add the registered official `JWAS.jl` and dependencies.
+
+To use the latest/beta features under development, run `Pkg.checkout("JWAS")` to get the
+newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
+
+###### IJulia notebook
+
+If you prefer “reproducible research”, an interactive Jupyter notebook interface is available
+for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating
+and sharing documents that contain live code, equations, visualizations and explanatory text.
+To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
+
+###### Standalone application
+
+A fully self-contained application for JWAS (no installation required) will come out this year.
+
+
+
+## Access documentation
+
+To show the basic information (README file) of JWAS in REPL or IJulia notebook using `?JWAS`
+and press enter (Please load the JWAS package at first).
+
+For help on a specific function, type ? followed by its name, e.g. `?runMCMC` and press enter
+in REPL or IJulia notebook (Please load the JWAS package at first).
+
+The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/latest/index.html).
+
+## run your analysis
+
+There are several ways to run you analysis.

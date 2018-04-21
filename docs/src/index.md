@@ -37,51 +37,37 @@ active involvement of the community. If you use JWAS for your research, teaching
 we would be grateful if you could cite our work following [this citation guideline](https://github.com/reworkhow/JWAS.jl).
 
 
-## Installation
+## The trouble, the error and the new feature
 
-To install julia, please go to the [offical Julia website](https://julialang.org/downloads/).
-Please see [platform specific instructions](https://julialang.org/downloads/platform.html)
-if you have trouble installing Julia.
+If you have trouble using JWAS, want new features or find errors in JWAS, please [open an issue](https://github.com/reworkhow/JWAS.jl/issues) or contact <qtlcheng@ucdavis.edu>.
 
-To install the package, use the following command inside the Julia REPL (or IJulia Notebook):
-```julia
-Pkg.add("JWAS")
+## Tutorials
+
+### Theory
+```@contents
+Pages = [
+  "theory/theory.md"
+]
+Depth = 4
 ```
 
-To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):
-
-```julia
-using JWAS
+### Manual
+```@contents
+Pages = [
+  "manual/getstarted.md",
+  "manual/workflow.md",
+  "manual/public.md",
+  "manual/internals.md",
+]
+Depth = 3
 ```
 
-The command `Pkg.add("JWAS")` will add the registered official `JWAS.jl` and dependencies.
-
-To use the latest/beta features under development, run `Pkg.checkout("JWAS")` to get the
-newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
-
-** IJulia notebook **
-
-If you prefer “reproducible research”, an interactive Jupyter notebook interface is available
-for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating
-and sharing documents that contain live code, equations, visualizations and explanatory text.
-To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
-
-** Standalone application **
-
-A fully self-contained application for JWAS (no installation required) will come out this year.
-
-
-
-## Access documentation
-
-To show the basic information (README file) of JWAS in REPL or IJulia notebook using `?JWAS`
-and press enter (Please load the JWAS package at first).
-
-For help on a specific function, type ? followed by its name, e.g. `?runMCMC` and press enter
-in REPL or IJulia notebook (Please load the JWAS package at first).
-
-The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/latest/index.html).
-
-## the trouble, the error and the new feature
-
-If you have trouble using JWAS, want new features or find errors in JWAS, please [open an issue](https://github.com/reworkhow/JWAS.jl/issues) or [qtlcheng@ucdavis.edu](mailto:qtlcheng@ucdavis.edu).
+### Examples
+```@contents
+Pages = [
+  "examples/conventionalBLMM.md"
+  "examples/genomicBLMM.md"
+  "examples/LinearAdditiveGeneticModel.md"
+]
+Depth = 4
+```

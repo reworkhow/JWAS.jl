@@ -1,7 +1,7 @@
 using Documenter, JWAS
 
 makedocs(
-#    modules = [Documenter],
+    modules = [JWAS,JWAS.misc,JWAS.Datasets,JWAS.PedModule],
     doctest=false,
     clean  =true,
     format = :html,
@@ -12,27 +12,17 @@ makedocs(
         "Home" => "index.md",
         "Some Theory" => "theory/theory.md",
         "Manual" => Any[
-            "Guide" => "man/guide.md",
-            "man/examples.md",
-            "Contributing" => "examples/genomicBLMM.md",
+            "Get Started" => "manual/getstarted.md",
+            "Workflow" => "manual/workflow.md",
+            "Public" => "manual/public.md",
+            "Internals" => "manual/internals.md",
             ],
         "Examples" => Any[
             "Linear Mixed Model (conventional)" => "examples/conventionalBLMM.md",
             "Linear Additive Genetic Model" => "examples/LinearAdditiveGeneticModel.md",
             "Linear Mixed Model (Genomic data)" => "examples/genomicBLMM.md",
         ],
-        "Library" => Any[
-            "Public" => "lib/public.md",
-            "Internals" => "lib/internals.md",
-            # hide("Internals" => "lib/internals.md", Any[
-            #     "lib/internals/anchors.md",
-            #     "lib/internals/builder.md",
-            #])
-        ]
     ],
-    # Use clean URLs, unless built as a "local" build
-    #html_prettyurls = !("local" in ARGS),
-    #html_canonical = "https://juliadocs.github.io/Documenter.jl/stable/",
 )
 
 deploydocs(

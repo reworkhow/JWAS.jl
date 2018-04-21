@@ -45,4 +45,11 @@ outputMCMCsamples(model,"parity","age");
 out=runMCMC(data,model,chain_length=50000,output_samples_frequency=100);
 ```
 
+```@example
+a = 1
+b = 2
+a + b
+```
+
+
 ## Multivariate Linear Mixed Model (conventional)
