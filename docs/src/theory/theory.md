@@ -80,7 +80,7 @@ prior with scale parameter $S^2_{\alpha}$ and $\nu_{\alpha}$ degrees
 of freedom. In addition to the above assumptions, in BayesC $\pi$, $\pi$ is treated
 as unknown with a uniform prior.
 
-##### multiple-trait BayesABC
+##### multiple-trait Bayesian Alphabet
 
 In multi-trait BayesC$\Pi$, the prior for $\alpha_{lk}$, the marker effect of trait $k$ for locus $l$, is a mixture with a point mass at zero and a
 univariate normal distribution conditional on $\sigma_{k}^{2}$:
