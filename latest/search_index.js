@@ -153,9 +153,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "theory/theory.html#multiple-trait-BayesABC-1",
+    "location": "theory/theory.html#multiple-trait-Bayesian-Alphabet-1",
     "page": "Some Theory",
-    "title": "multiple-trait BayesABC",
+    "title": "multiple-trait Bayesian Alphabet",
     "category": "section",
     "text": "In multi-trait BayesCPi, the prior for alpha_lk, the marker effect of trait k for locus l, is a mixture with a point mass at zero and a univariate normal distribution conditional on sigma_k^2:beginalign*\nalpha_lkmidpi_ksigma_k^2  begincases\nsim Nleft(0sigma_k^2right)  probability(1-pi_k)\n0  probabilitypi_k\nendcases\nendalign*and the covariance between effects for traits k and k at the same locus, i.e., alpha_lk and alpha_lk^ isbeginalign*\ncovleft(alpha_lkalpha_lk^midsigma_kk^right)=begincases\nsigma_kk^  ifbothalpha_lkneq0andalpha_lk^neq0\n0  otherwise\nendcases\nendalign*The vector of marker effects at a particular locus boldsymbolalpha_l is written as boldsymbolalpha_l=boldsymbolD_lboldsymbolbeta_l, where boldsymbolD_l is a diagonal matrix with elements diagleft(boldsymbolD_lright)=boldsymboldelta_l=left(delta_l1delta_l2delta_l3ldotsdelta_ltright), where delta_lk is an indicator variable indicating whether the marker effect of locus l for trait k is zero or non-zero, and the vector boldsymbolbeta_l follows a multivariate normal distribution with null mean and covariance matrix boldsymbolG. The covariance matrix boldsymbolG is a priori assumed to follow an inverse Wishart distribution, W_t^-1left(mathbfS_betanu_betaright).In the most general case, any marker effect might be zero for any possible combination of t traits resulting in 2^t possible combinations of boldsymboldelta_l. For example, in a t=2 trait model, there are 2^t=4 combinations for  boldsymboldelta_l: (00), (01), (10), (11). Suppose in general we use numerical labels \"1\", \"2\",ldots, \"l\" for the 2^t possible outcomes for  boldsymboldelta_l, then the prior for  boldsymboldelta_l is a categorical distributionbeginalign*\n  pleft(boldsymboldelta_l=iright)\n=  Pi_1Ileft(boldsymboldelta_l=1right)+Pi_2Ileft(boldsymboldelta_l=2right)++Pi_lIleft(boldsymboldelta_l=lright)\nendalign*where sum_i=1^lPi_i=1 with Pi_i being the prior probability that the vector boldsymboldelta_l corresponds to the vector labelled i. A Dirichlet distribution with all parameters equal to one, i.e., a uniform distribution, can be used for the prior for boldsymbolPi=left(Pi_1Pi_2Pi_lright).   The differences in multi-trait BayesB method is that the prior for boldsymbolbeta_l is a multivariate t distribution, rather than a multivariate normal distribution. This is equivalent to assuming boldsymbolbeta_l has a multivariate normal distribution with null mean and locus-specific covariance matrix boldsymbolG_l, which is assigned an inverse Wishart prior, W_t^-1left(mathbfS_betanu_betaright). Multi-trait BayesA method is a special case of multi-trait BayesB method where boldsymboldelta_l is always a vector of ones.referencesMeuwissen T, Hayes B, Goddard M. Prediction of total genetic value using genome-wide dense marker maps. Genetics, 157:1819–1829, 2001.\nFernando R, Garrick D. Bayesian methods applied to GWAS. Methods Mol Biol. 2013;1019:237–274.\nCheng H, Garrick D, Fernando R. A fast and efficient Gibbs sampler for BayesB in whole- genome analyses. Genet Sel Evol, 2015, 47:80.\nFernando R, Dekkers J,Garrick D. A class of Bayesian methods to combine large numbers of genotyped and non-genotyped animals for whole-genome analyses. Genetics Selection Evolution, 2015 46(1), 50.\nCheng H, Kizilkaya K, Zeng J, Garrick D, Fernando R. Genomic Prediction from Multiple-trait Bayesian Regression Methods using Mixture Priors. Genetics. 2018"
 },
@@ -233,11 +233,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/workflow.html#Check-Julia-version-1",
+    "location": "manual/workflow.html#Data-format-1",
     "page": "Workflow",
-    "title": "Check Julia version",
+    "title": "Data format",
     "category": "section",
-    "text": ""
+    "text": "#data.txt\nid,y1,y2,y3,x1,x2,x3,x4,dam\n\n#pedigree\nid,sire,dam\n\n#genotype\nid,m1,m2,m3,m4,m5\n"
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Build Model Equations",
     "category": "section",
-    "text": "model=build_model(\"y=x1+x2+x3+x4\")link to build_model"
+    "text": "model_equation = \"y1 = x1 + x2 + x3 + x4;\n                  y2 = x1 + x2 + x3*x4\"\nmodel=build_model(model_equation)link to build_model"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Set Factors or Covariate",
     "category": "section",
-    "text": "model=build_model(\"y=x1+x2+x3+x4\")link to build_model"
+    "text": "set_covariate(\"x1\")link to set_covariate"
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Set Random or Fixed Effects",
     "category": "section",
-    "text": "model=build_model(\"y=x1+x2+x3+x4\")link to build_model"
+    "text": "set_random(\"x2\",)link to set_random"
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Use Pedigree Information",
     "category": "section",
-    "text": "model=build_model(\"y=x1+x2+x3+x4\")link to build_model"
+    "text": "ped=get_pedigree(\"pedigree.txt\")link to get_pedigree"
 },
 
 {
@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Use Genomic Information",
     "category": "section",
-    "text": "model=build_model(\"y=x1+x2+x3+x4\")link to build_modellink to Workflow"
+    "text": "add_genotypes(model,\"genotypes.txt\")link to add_genotypeslink to Workflow"
 },
 
 {
