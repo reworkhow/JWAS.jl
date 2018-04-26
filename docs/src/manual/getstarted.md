@@ -46,37 +46,36 @@ The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/la
 
 ## Run your analysis
 
-There are several ways to run you analysis.
+There are several ways to run your analysis.
 
-1. The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia
+(1) The easiest way to run analysis in Julia is by starting **an interactive session (REPL)** by double-clicking the Julia
 executable or running julia from the command line (e.g., terminal) as
 
-  ```julia
-  julia> 1+2
-  3
+```julia
+julia> 1+2
+3
 
-  julia> 3*4
-  12
-  ```
+julia> 3*4
+12
+```
 
-  To evaluate code written in a file *script.jl* in REPL, write and run
+To evaluate code written in a file *script.jl* in REPL, write and run
 
-  ```julia
-  julia> include("script.jl").
-  ```
-  To exit the interactive session, type ^D – the control key together with the d key or type quit().
+```julia
+julia> include("script.jl").
+```
+To exit the interactive session, type ^D – the control key together with the d key or type quit().
 
-2. To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:
+(2) To run code in a file non-interactively from **the command line** (e.g.,termial), you can give it as the first argument to the julia command:
 
-  ```bash
-  julia script.jl
-  ```
+```bash
+julia script.jl
+```
 
-  If you want to pass arguments to your script, run it as
-  ```bash
-  julia script.jl arg1 arg2
-  ```
-  where arguments *arg1* and *arg2* are passed to your script as *ARGS[1]* and *ARGS[2]* of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/)
-for more options.
+If you want to pass arguments to your script, run it as
+```bash
+julia script.jl arg1 arg2
+```
+where arguments *arg1* and *arg2* are passed to your script as *ARGS[1]* and *ARGS[2]* of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/) for more options.
 
-3. To run code in IJulia notebook, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
+(3) To run code in **IJulia notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
