@@ -17,7 +17,7 @@ To load the JWAS package, use the following command inside the Julia REPL (or IJ
 using JWAS
 ```
 
-The command `Pkg.add("JWAS")` will add the registered official `JWAS.jl` and dependencies.
+The command `Pkg.add("JWAS")` will add the registered official JWAS package and dependencies.
 
 To use the latest/beta features under development, run `Pkg.checkout("JWAS")` to get the
 newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
@@ -37,10 +37,10 @@ A fully self-contained application for JWAS (no installation required) will come
 ## Access documentation
 
 To show the basic information (README file) of JWAS in REPL or IJulia notebook using `?JWAS`
-and press enter (Please load the JWAS package at first).
+and press enter. *Please load the JWAS package at first.*
 
 For help on a specific function, type ? followed by its name, e.g. `?runMCMC` and press enter
-in REPL or IJulia notebook (Please load the JWAS package at first).
+in REPL or IJulia notebook. *Please load the JWAS package at first.*
 
 The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/latest/index.html).
 
@@ -59,14 +59,14 @@ julia> 3*4
 12
 ```
 
-To evaluate code written in a file *script.jl* in REPL, write and run
+To evaluate code written in a file `script.jl` in REPL, write and run
 
 ```julia
 julia> include("script.jl").
 ```
-To exit the interactive session, type ^D – the control key together with the d key or type quit().
+To exit the interactive session, type `^D` – the control key together with the d key or type `quit()`.
 
-(2) To run code in a file non-interactively from **the command line** (e.g.,termial), you can give it as the first argument to the julia command:
+(2) To run code in a file non-interactively from **the command line** (e.g.,termial), you can give it as the first argument to the `julia` command:
 
 ```bash
 julia script.jl
@@ -76,6 +76,6 @@ If you want to pass arguments to your script, run it as
 ```bash
 julia script.jl arg1 arg2
 ```
-where arguments *arg1* and *arg2* are passed to your script as *ARGS[1]* and *ARGS[2]* of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/) for more options.
+where arguments `arg1` and `arg2` are passed to your script as `ARGS[1]` and `ARGS[2]` of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/) for more options.
 
 (3) To run code in **IJulia notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).

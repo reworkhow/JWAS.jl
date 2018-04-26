@@ -1,7 +1,20 @@
 # Workflow
 
-A step by step workflow for how to run JWAS is shown in this section. Given the data and model equations, different types of models
-as shown in the table below can be  used. The "X" denotes the type of available data. The "A <= B" denotes that A individuals is a subset of B individuals.  
+A step by step workflow for how to run JWAS is shown in this section.
+
+## Index
+```@contents
+Pages = [
+  "workflow.md"
+]
+Depth = 2
+```
+
+
+## Available Models
+
+Given the data and model equations, several different types of models are fitted in JWAS, as shown below. In the table below, "X"
+denotes the type of available data, and "A <= B" denotes that A individuals is a subset of B individuals.  
 
 
 | Linear Mixed Models (LMM) |    phenotypes | pedigree  | genotypes | notes                  |
@@ -12,7 +25,7 @@ as shown in the table below can be  used. The "X" denotes the type of available 
 | Incomplete Genomic LMM    |              X|         X |          X| phenotypes <= pedigree and genotypes <= pedigree|
 
 
-* **Incomplete Genoimc LMM** is also called "single-step" methods in animal breeding.
+* **Incomplete Genomic LMM** is also called "single-step" methods in animal breeding.
 
 * Pedigree information may be used in **Complete Genomic LMM** as a seperate polygenic term to account for genetic variance not explained by the genomic information (e.g., SNPs).
 
@@ -21,7 +34,7 @@ as shown in the table below can be  used. The "X" denotes the type of available 
 
 ## Get Data Ready
 
-By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by **commas**. Other field separators such as space (' ') or tab ('\t') can also be used if you supply the keyword argument, e.g, **CSV.read(...,delim='\t')** or **add_genotypes(...,separator='\t')**
+By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by **commas**. Other field separators such as space (' ') or tab ('\t') can be used if you supply the keyword argument, e.g, `CSV.read(...,delim='\t')` or `add_genotypes(...,separator='\t')`
 
 Click on the buttons inside the tabbed menu to see the data:
 
@@ -140,7 +153,7 @@ function openCity(evt, cityName) {
 
 ## Load packages
 ```julia
-using JWAS, CSV, DataFrames
+using JWAS,CSV,DataFrames
 ```
 
 
