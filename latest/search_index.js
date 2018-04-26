@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Installation",
     "category": "section",
-    "text": "To install julia, please go to the offical Julia website. Please see platform specific instructions if you have trouble installing Julia.To install the package, use the following command inside the Julia REPL (or IJulia Notebook):Pkg.add(\"JWAS\")To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):using JWASThe command Pkg.add(\"JWAS\") will add the registered official JWAS.jl and dependencies.To use the latest/beta features under development, run Pkg.checkout(\"JWAS\") to get the newest unofficial JWAS. Run Pkg.free(\"JWAS\") to go back to the offical one."
+    "text": "To install julia, please go to the offical Julia website. Please see platform specific instructions if you have trouble installing Julia.To install the package, use the following command inside the Julia REPL (or IJulia Notebook):Pkg.add(\"JWAS\")To load the JWAS package, use the following command inside the Julia REPL (or IJulia Notebook):using JWASThe command Pkg.add(\"JWAS\") will add the registered official JWAS package and dependencies.To use the latest/beta features under development, run Pkg.checkout(\"JWAS\") to get the newest unofficial JWAS. Run Pkg.free(\"JWAS\") to go back to the offical one."
 },
 
 {
@@ -205,7 +205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Access documentation",
     "category": "section",
-    "text": "To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter (Please load the JWAS package at first).For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook (Please load the JWAS package at first).The full documentation is available here."
+    "text": "To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter. Please load the JWAS package at first.For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook. Please load the JWAS package at first.The full documentation is available here."
 },
 
 {
@@ -229,7 +229,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Workflow",
     "category": "section",
-    "text": "A step by step workflow for how to run JWAS is shown in this section. Given the data and model equations, different types of models as shown in the table below can be  used. The \"X\" denotes the type of available data. The \"A <= B\" denotes that A individuals is a subset of B individuals.  Linear Mixed Models (LMM) phenotypes pedigree genotypes notes\nConventional LMM X   \nPedigree-based LMM X X  phenotypes <= pedigree\nComplete Genomic LMM X maybe X phenotypes <= genotypes\nIncomplete Genomic LMM X X X phenotypes <= pedigree and genotypes <= pedigreeIncomplete Genoimc LMM is also called \"single-step\" methods in animal breeding.\nPedigree information may be used in Complete Genomic LMM as a seperate polygenic term to account for genetic variance not explained by the genomic information (e.g., SNPs).\nNote that Pedigree-based LMM and Complete Genomic LMM are special cases of Incomplete Genomic LMM."
+    "text": "A step by step workflow for how to run JWAS is shown in this section."
+},
+
+{
+    "location": "manual/workflow.html#Index-1",
+    "page": "Workflow",
+    "title": "Index",
+    "category": "section",
+    "text": "Pages = [\n  \"workflow.md\"\n]\nDepth = 2"
+},
+
+{
+    "location": "manual/workflow.html#Available-Models-1",
+    "page": "Workflow",
+    "title": "Available Models",
+    "category": "section",
+    "text": "Given the data and model equations, several different types of models are fitted in JWAS, as shown below. In the table below, \"X\" denotes the type of available data, and \"A <= B\" denotes that A individuals is a subset of B individuals.  Linear Mixed Models (LMM) phenotypes pedigree genotypes notes\nConventional LMM X   \nPedigree-based LMM X X  phenotypes <= pedigree\nComplete Genomic LMM X maybe X phenotypes <= genotypes\nIncomplete Genomic LMM X X X phenotypes <= pedigree and genotypes <= pedigreeIncomplete Genomic LMM is also called \"single-step\" methods in animal breeding.\nPedigree information may be used in Complete Genomic LMM as a seperate polygenic term to account for genetic variance not explained by the genomic information (e.g., SNPs).\nNote that Pedigree-based LMM and Complete Genomic LMM are special cases of Incomplete Genomic LMM."
 },
 
 {
@@ -237,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Get Data Ready",
     "category": "section",
-    "text": "By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by commas. Other field separators such as space (\' \') or tab (\'\\t\') can also be used if you supply the keyword argument, e.g, CSV.read(...,delim=\'\\t\') or add_genotypes(...,separator=\'\\t\')Click on the buttons inside the tabbed menu to see the data:<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<style>\nbody {font-family: Arial;}\n\n/* Style the tab */\n.tab {\n    overflow: hidden;\n    border: 1px solid #ccc;\n    background-color: #f1f1f1;\n}\n\n/* Style the buttons inside the tab */\n.tab button {\n    background-color: inherit;\n    float: left;\n    border: none;\n    outline: none;\n    cursor: pointer;\n    padding: 14px 16px;\n    transition: 0.3s;\n    font-size: 17px;\n}\n\n/* Change background color of buttons on hover */\n.tab button:hover {\n    background-color: #ddd;\n}\n\n/* Create an active/current tablink class */\n.tab button.active {\n    background-color: #ccc;\n}\n\n/* Style the tab content */\n.tabcontent {\n    display: none;\n    padding: 6px 12px;\n    border: 1px solid #ccc;\n    border-top: none;\n}\n</style>\n</head>\n<body>\n\n<div class=\"tab\">\n  <button class=\"tablinks\" onclick=\"openCity(event, \'phenotypes\')\">phenotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'pedigree\')\">pedigree.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'genotypes\')\">genotypes.txt</button>\n</div>\n\n<div id=\"phenotypes\" class=\"tabcontent\">\n<p>ID,y1,y2,y3,x1,x2,x3,dam</p>\n<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>\n<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>\n<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>\n<p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>\n<p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>\n<p>a6,0.93,4.87,-0.01,05,2,f,a3</p>\n<p>a7,-0.69,3.1,-1.47,0.5,2,f,a3</p>\n<p>a8,-4.69,7.31,-1.09,0.3,2,m,a6</p>\n<p>a9,-2.81,7.18,0.76,0.4,2,m,a6</p>\n<p>a10,1.92,1.78,-0.88,0.2,1,m,a7</p>\n</div>\n\n<div id=\"pedigree\" class=\"tabcontent\">\n<p>ID,Sire,Dam</p>\n<p>a1,0,0</p>\n<p>a2,0,0</p>\n<p>a3,0,0</p>\n<p>a4,a1,a2</p>\n<p>a5,a1,a2</p>\n<p>a6,a1,a3</p>\n<p>a7,a1,a3</p>\n<p>a8,a4,a6</p>\n<p>a9,a4,a6</p>\n<p>a10,a5,a7</p>\n</div>\n\n<div id=\"genotypes\" class=\"tabcontent\">\n<p>ID,m1,m2,m3,m4,m5</p>\n<p>a1,1,2,1,1,0</p>\n<p>a2,2,1,1,1,1</p>\n<p>a3,1,1,0,1,1</p>\n<p>a4,2,2,0,1,0</p>\n<p>a5,1,1,2,1,1</p>\n<p>a6,2,1,0,0,0</p>\n<p>a7,0,2,1,2,1</p>\n<p>a8,2,2,0,0,0</p>\n<p>a9,2,1,0,1,0</p>\n<p>a10,0,2,2,2,1</p>\n</div>\n\n<script>\nfunction openCity(evt, cityName) {\n    var i, tabcontent, tablinks;\n    tabcontent = document.getElementsByClassName(\"tabcontent\");\n    for (i = 0; i < tabcontent.length; i++) {\n        tabcontent[i].style.display = \"none\";\n    }\n    tablinks = document.getElementsByClassName(\"tablinks\");\n    for (i = 0; i < tablinks.length; i++) {\n        tablinks[i].className = tablinks[i].className.replace(\" active\", \"\");\n    }\n    document.getElementById(cityName).style.display = \"block\";\n    evt.currentTarget.className += \" active\";\n}\n</script>\n</body>"
+    "text": "By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by commas. Other field separators such as space (\' \') or tab (\'\\t\') can be used if you supply the keyword argument, e.g, CSV.read(...,delim=\'\\t\') or add_genotypes(...,separator=\'\\t\')Click on the buttons inside the tabbed menu to see the data:<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<style>\nbody {font-family: Arial;}\n\n/* Style the tab */\n.tab {\n    overflow: hidden;\n    border: 1px solid #ccc;\n    background-color: #f1f1f1;\n}\n\n/* Style the buttons inside the tab */\n.tab button {\n    background-color: inherit;\n    float: left;\n    border: none;\n    outline: none;\n    cursor: pointer;\n    padding: 14px 16px;\n    transition: 0.3s;\n    font-size: 17px;\n}\n\n/* Change background color of buttons on hover */\n.tab button:hover {\n    background-color: #ddd;\n}\n\n/* Create an active/current tablink class */\n.tab button.active {\n    background-color: #ccc;\n}\n\n/* Style the tab content */\n.tabcontent {\n    display: none;\n    padding: 6px 12px;\n    border: 1px solid #ccc;\n    border-top: none;\n}\n</style>\n</head>\n<body>\n\n<div class=\"tab\">\n  <button class=\"tablinks\" onclick=\"openCity(event, \'phenotypes\')\">phenotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'pedigree\')\">pedigree.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'genotypes\')\">genotypes.txt</button>\n</div>\n\n<div id=\"phenotypes\" class=\"tabcontent\">\n<p>ID,y1,y2,y3,x1,x2,x3,dam</p>\n<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>\n<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>\n<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>\n<p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>\n<p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>\n<p>a6,0.93,4.87,-0.01,05,2,f,a3</p>\n<p>a7,-0.69,3.1,-1.47,0.5,2,f,a3</p>\n<p>a8,-4.69,7.31,-1.09,0.3,2,m,a6</p>\n<p>a9,-2.81,7.18,0.76,0.4,2,m,a6</p>\n<p>a10,1.92,1.78,-0.88,0.2,1,m,a7</p>\n</div>\n\n<div id=\"pedigree\" class=\"tabcontent\">\n<p>ID,Sire,Dam</p>\n<p>a1,0,0</p>\n<p>a2,0,0</p>\n<p>a3,0,0</p>\n<p>a4,a1,a2</p>\n<p>a5,a1,a2</p>\n<p>a6,a1,a3</p>\n<p>a7,a1,a3</p>\n<p>a8,a4,a6</p>\n<p>a9,a4,a6</p>\n<p>a10,a5,a7</p>\n</div>\n\n<div id=\"genotypes\" class=\"tabcontent\">\n<p>ID,m1,m2,m3,m4,m5</p>\n<p>a1,1,2,1,1,0</p>\n<p>a2,2,1,1,1,1</p>\n<p>a3,1,1,0,1,1</p>\n<p>a4,2,2,0,1,0</p>\n<p>a5,1,1,2,1,1</p>\n<p>a6,2,1,0,0,0</p>\n<p>a7,0,2,1,2,1</p>\n<p>a8,2,2,0,0,0</p>\n<p>a9,2,1,0,1,0</p>\n<p>a10,0,2,2,2,1</p>\n</div>\n\n<script>\nfunction openCity(evt, cityName) {\n    var i, tabcontent, tablinks;\n    tabcontent = document.getElementsByClassName(\"tabcontent\");\n    for (i = 0; i < tabcontent.length; i++) {\n        tabcontent[i].style.display = \"none\";\n    }\n    tablinks = document.getElementsByClassName(\"tablinks\");\n    for (i = 0; i < tablinks.length; i++) {\n        tablinks[i].className = tablinks[i].className.replace(\" active\", \"\");\n    }\n    document.getElementById(cityName).style.display = \"block\";\n    evt.currentTarget.className += \" active\";\n}\n</script>\n</body>"
 },
 
 {
@@ -245,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Load packages",
     "category": "section",
-    "text": "using JWAS, CSV, DataFrames"
+    "text": "using JWAS,CSV,DataFrames"
 },
 
 {
@@ -309,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "Public functions",
     "category": "section",
-    "text": "Documentation for JWAS.jl\'s public interface, which are available to general users."
+    "text": "Documentation for JWAS.jl\'s public interface. Below are functions available to general users. "
 },
 
 {
