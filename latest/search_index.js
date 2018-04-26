@@ -209,11 +209,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/getstarted.html#run-your-analysis-1",
+    "location": "manual/getstarted.html#Run-your-analysis-1",
     "page": "Get Started",
-    "title": "run your analysis",
+    "title": "Run your analysis",
     "category": "section",
-    "text": "There are several ways to run you analysis."
+    "text": "There are several ways to run you analysis.The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Juliaexecutable or running julia from the command line (e.g., terminal) as```julia   julia> 1+2   3julia> 3*4   12   ```To evaluate code written in a file script.jl in REPL, write and runjulia   julia> include(\"script.jl\").   To exit the interactive session, type ^D – the control key together with the d key or type quit().To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:bash   julia script.jlIf you want to pass arguments to your script, run it as   bash   julia script.jl arg1 arg2   where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.To run code in IJulia notebook, please see IJulia."
 },
 
 {
