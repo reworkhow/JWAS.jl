@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Workflow · JWAS.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../index.html"><img class="logo" src="../assets/logo.png" alt="JWAS.jl logo"/></a><h1>JWAS.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../index.html">Home</a></li><li><a class="toctext" href="../theory/theory.html">Some Theory</a></li><li><span class="toctext">Manual</span><ul><li><a class="toctext" href="getstarted.html">Get Started</a></li><li class="current"><a class="toctext" href="workflow.html">Workflow</a><ul class="internal"><li><a class="toctext" href="#Get-Data-Ready-1">Get Data Ready</a></li><li><a class="toctext" href="#Read-data-1">Read data</a></li><li><a class="toctext" href="#Build-Model-Equations-1">Build Model Equations</a></li><li><a class="toctext" href="#Set-Factors-or-Covariate-1">Set Factors or Covariate</a></li><li><a class="toctext" href="#Set-Random-or-Fixed-Effects-1">Set Random or Fixed Effects</a></li><li><a class="toctext" href="#Use-Pedigree-Information-1">Use Pedigree Information</a></li><li><a class="toctext" href="#Use-Genomic-Information-1">Use Genomic Information</a></li></ul></li><li><a class="toctext" href="public.html">Public</a></li><li><a class="toctext" href="internals.html">Internals</a></li></ul></li><li><span class="toctext">Examples</span><ul><li><a class="toctext" href="../examples/conventionalBLMM.html">Linear Mixed Model (conventional)</a></li><li><a class="toctext" href="../examples/LinearAdditiveGeneticModel.html">Linear Additive Genetic Model</a></li><li><a class="toctext" href="../examples/genomicBLMM.html">Linear Mixed Model (Genomic data)</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li>Manual</li><li><a href="workflow.html">Workflow</a></li></ul><a class="edit-page" href="https://github.com/reworkhow/JWAS.jl/blob/master/docs/src/manual/workflow.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Workflow</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Workflow-1" href="#Workflow-1">Workflow</a></h1><p>A step by step workflow for how to run JWAS is shown in this section. Given the data and model equations, different types of models as shown in the table below can be  used. The &quot;X&quot; denotes the type of available data. The &quot;A &lt;= B&quot; denotes that A individuals is a subset of B individuals.  </p><table><tr><th>Linear Mixed Models (LMM)</th><th>phenotypes</th><th>pedigree</th><th>genotypes</th><th>notes</th></tr><tr><td>conventional LMM</td><td>X</td><td></td><td></td><td></td></tr><tr><td>pedigree-based LMM</td><td>X</td><td>X</td><td></td><td>phenotypes &lt;= pedigree</td></tr><tr><td>complete genomic LMM</td><td>X</td><td>maybe</td><td>X</td><td>phenotypes &lt;= genotypes</td></tr><tr><td>incomplete genomic LMM</td><td>X</td><td>X</td><td>X</td><td>phenotypes &lt;= pedigree and genotypes &lt;= pedigree</td></tr></table><ul><li><p>Pedigree information may be fitted in complete genomic LMM as a seperate polygenic term to account for genetic variance not</p></li></ul><p>explained by the genomic data. pedigree-based LMM  and complete genomic LMM are sepcial cases of incomplete genomic LMM.</p><ul><li><p>Note that pedigree-based LMM  and complete genomic LMM are sepcial cases of incomplete genomic LMM.</p></li></ul><h2><a class="nav-anchor" id="Get-Data-Ready-1" href="#Get-Data-Ready-1">Get Data Ready</a></h2><head>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Workflow · JWAS.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../index.html"><img class="logo" src="../assets/logo.png" alt="JWAS.jl logo"/></a><h1>JWAS.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search.html"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../index.html">Home</a></li><li><a class="toctext" href="../theory/theory.html">Some Theory</a></li><li><span class="toctext">Manual</span><ul><li><a class="toctext" href="getstarted.html">Get Started</a></li><li class="current"><a class="toctext" href="workflow.html">Workflow</a><ul class="internal"><li><a class="toctext" href="#Get-Data-Ready-1">Get Data Ready</a></li><li><a class="toctext" href="#Load-packages-1">Load packages</a></li><li><a class="toctext" href="#Read-data-1">Read data</a></li><li><a class="toctext" href="#Build-Model-Equations-1">Build Model Equations</a></li><li><a class="toctext" href="#Set-Factors-or-Covariate-1">Set Factors or Covariate</a></li><li><a class="toctext" href="#Set-Random-or-Fixed-Effects-1">Set Random or Fixed Effects</a></li><li><a class="toctext" href="#Use-Pedigree-Information-1">Use Pedigree Information</a></li><li><a class="toctext" href="#Use-Genomic-Information-1">Use Genomic Information</a></li></ul></li><li><a class="toctext" href="public.html">Public</a></li><li><a class="toctext" href="internals.html">Internals</a></li></ul></li><li><span class="toctext">Examples</span><ul><li><a class="toctext" href="../examples/conventionalBLMM.html">Linear Mixed Model (conventional)</a></li><li><a class="toctext" href="../examples/LinearAdditiveGeneticModel.html">Linear Additive Genetic Model</a></li><li><a class="toctext" href="../examples/genomicBLMM.html">Linear Mixed Model (Genomic data)</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li>Manual</li><li><a href="workflow.html">Workflow</a></li></ul><a class="edit-page" href="https://github.com/reworkhow/JWAS.jl/blob/master/docs/src/manual/workflow.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Workflow</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Workflow-1" href="#Workflow-1">Workflow</a></h1><p>A step by step workflow for how to run JWAS is shown in this section. Given the data and model equations, different types of models as shown in the table below can be  used. The &quot;X&quot; denotes the type of available data. The &quot;A &lt;= B&quot; denotes that A individuals is a subset of B individuals.  </p><table><tr><th>Linear Mixed Models (LMM)</th><th>phenotypes</th><th>pedigree</th><th>genotypes</th><th>notes</th></tr><tr><td>Conventional LMM</td><td>X</td><td></td><td></td><td></td></tr><tr><td>Pedigree-based LMM</td><td>X</td><td>X</td><td></td><td>phenotypes &lt;= pedigree</td></tr><tr><td>Complete Genomic LMM</td><td>X</td><td>maybe</td><td>X</td><td>phenotypes &lt;= genotypes</td></tr><tr><td>Incomplete Genomic LMM</td><td>X</td><td>X</td><td>X</td><td>phenotypes &lt;= pedigree and genotypes &lt;= pedigree</td></tr></table><ul><li><p><strong>Incomplete Genoimc LMM</strong> is also called &quot;single-step&quot; methods in animal breeding.</p></li><li><p>Pedigree information may be used in <strong>Complete Genomic LMM</strong> as a seperate polygenic term to account for genetic variance not explained by the genomic information (e.g., SNPs).</p></li><li><p>Note that <strong>Pedigree-based LMM</strong> and <strong>Complete Genomic LMM</strong> are special cases of <strong>Incomplete Genomic LMM</strong>.</p></li></ul><h2><a class="nav-anchor" id="Get-Data-Ready-1" href="#Get-Data-Ready-1">Get Data Ready</a></h2><p>By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by <strong>commas</strong>. Other field separators such as space (&#39; &#39;) or tab (&#39;\t&#39;) can also be used if you supply the keyword argument, e.g, <strong>CSV.read(...,delim=&#39;\t&#39;)</strong> or <strong>add_genotypes(...,separator=&#39;\t&#39;)</strong></p><p>Click on the buttons inside the tabbed menu to see the data:</p><head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {font-family: Arial;}
@@ -44,8 +44,6 @@ body {font-family: Arial;}
 </head>
 <body>
 
-<p>Click on the buttons inside the tabbed menu to see the data format:</p>
-
 <div class="tab">
   <button class="tablinks" onclick="openCity(event, 'phenotypes')">phenotypes.txt</button>
   <button class="tablinks" onclick="openCity(event, 'pedigree')">pedigree.txt</button>
@@ -53,22 +51,21 @@ body {font-family: Arial;}
 </div>
 
 <div id="phenotypes" class="tabcontent">
-  <p>id,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a1,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a2,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a3,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a4,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a5,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a6,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a7,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a10,y1,y2,y3,x1,x2,x3,x4,dam<br />
-     a,y1,y2,y3,x1,x2,x3,x4,dam<br />
-
-  </p>
+<p>ID,y1,y2,y3,x1,x2,x3,dam</p>
+<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>
+<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>
+<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>
+<p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>
+<p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>
+<p>a6,0.93,4.87,-0.01,05,2,f,a3</p>
+<p>a7,-0.69,3.1,-1.47,0.5,2,f,a3</p>
+<p>a8,-4.69,7.31,-1.09,0.3,2,m,a6</p>
+<p>a9,-2.81,7.18,0.76,0.4,2,m,a6</p>
+<p>a10,1.92,1.78,-0.88,0.2,1,m,a7</p>
 </div>
 
 <div id="pedigree" class="tabcontent">
-<p>id,sire,dam</p>
+<p>ID,Sire,Dam</p>
 <p>a1,0,0</p>
 <p>a2,0,0</p>
 <p>a3,0,0</p>
@@ -82,17 +79,17 @@ body {font-family: Arial;}
 </div>
 
 <div id="genotypes" class="tabcontent">
-<p>id,m1,m2,m3,m4,m5</p>
+<p>ID,m1,m2,m3,m4,m5</p>
 <p>a1,1,2,1,1,0</p>
 <p>a2,2,1,1,1,1</p>
 <p>a3,1,1,0,1,1</p>
-<p>a4,0,1,2,1,0</p>
-<p>a5,0,1,1,1,1</p>
-<p>a6,1,2,0,0,0</p>
-<p>a7,2,1,1,1,1</p>
-<p>a8,1,2,1,0,1</p>
-<p>a9,1,2,2,0,0</p>
-<p>a10,1,2,1,1,1</p>
+<p>a4,2,2,0,1,0</p>
+<p>a5,1,1,2,1,1</p>
+<p>a6,2,1,0,0,0</p>
+<p>a7,0,2,1,2,1</p>
+<p>a8,2,2,0,0,0</p>
+<p>a9,2,1,0,1,0</p>
+<p>a10,0,2,2,2,1</p>
 </div>
 
 <script>
@@ -110,6 +107,16 @@ function openCity(evt, cityName) {
     evt.currentTarget.className += " active";
 }
 </script>
-</body><h2><a class="nav-anchor" id="Read-data-1" href="#Read-data-1">Read data</a></h2><pre><code class="language-julia">data = CSV.read(&quot;data.txt&quot;)</code></pre><h2><a class="nav-anchor" id="Build-Model-Equations-1" href="#Build-Model-Equations-1">Build Model Equations</a></h2><pre><code class="language-julia">model_equation = &quot;y1 = x1 + x2 + x3 + x4;
-                  y2 = x1 + x2 + x3*x4&quot;
-model=build_model(model_equation)</code></pre><ul><li><p>link to <a href="public.html#JWAS.build_model"><code>build_model</code></a></p></li></ul><h2><a class="nav-anchor" id="Set-Factors-or-Covariate-1" href="#Set-Factors-or-Covariate-1">Set Factors or Covariate</a></h2><pre><code class="language-julia">set_covariate(&quot;x1&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.set_covariate"><code>set_covariate</code></a></p></li></ul><h2><a class="nav-anchor" id="Set-Random-or-Fixed-Effects-1" href="#Set-Random-or-Fixed-Effects-1">Set Random or Fixed Effects</a></h2><pre><code class="language-julia">set_random(&quot;x2&quot;,)</code></pre><ul><li><p>link to <a href="public.html#JWAS.set_random"><code>set_random</code></a></p></li></ul><h2><a class="nav-anchor" id="Use-Pedigree-Information-1" href="#Use-Pedigree-Information-1">Use Pedigree Information</a></h2><pre><code class="language-julia">ped=get_pedigree(&quot;pedigree.txt&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.get_pedigree"><code>get_pedigree</code></a></p></li></ul><h2><a class="nav-anchor" id="Use-Genomic-Information-1" href="#Use-Genomic-Information-1">Use Genomic Information</a></h2><pre><code class="language-julia">add_genotypes(model,&quot;genotypes.txt&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.add_genotypes"><code>add_genotypes</code></a></p></li></ul><ul><li><p>link to <a href="workflow.html#Workflow-1">Workflow</a></p></li></ul><footer><hr/><a class="previous" href="getstarted.html"><span class="direction">Previous</span><span class="title">Get Started</span></a><a class="next" href="public.html"><span class="direction">Next</span><span class="title">Public</span></a></footer></article></body></html>
+</body><h2><a class="nav-anchor" id="Load-packages-1" href="#Load-packages-1">Load packages</a></h2><pre><code class="language-julia">using JWAS, CSV, DataFrames</code></pre><h2><a class="nav-anchor" id="Read-data-1" href="#Read-data-1">Read data</a></h2><pre><code class="language-julia">data = CSV.read(&quot;data.txt&quot;)
+head(data)</code></pre><p>output:</p><pre><code class="language-julia">6×8 DataFrames.DataFrame
+│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │
+├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤
+│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │
+│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │
+│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │
+│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │
+│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │
+│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │</code></pre><h2><a class="nav-anchor" id="Build-Model-Equations-1" href="#Build-Model-Equations-1">Build Model Equations</a></h2><pre><code class="language-julia">model_equation = &quot;y1 = x1 + x3;
+                  y2 = x1 + x2 +x3;  
+                  y2 = x1 + x1*x3 + x2&quot;
+model=build_model(model_equation)</code></pre><ul><li><p>link to <a href="public.html#JWAS.build_model"><code>build_model</code></a></p></li></ul><h2><a class="nav-anchor" id="Set-Factors-or-Covariate-1" href="#Set-Factors-or-Covariate-1">Set Factors or Covariate</a></h2><pre><code class="language-julia">set_covariate(&quot;x1&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.set_covariate"><code>set_covariate</code></a></p></li></ul><h2><a class="nav-anchor" id="Set-Random-or-Fixed-Effects-1" href="#Set-Random-or-Fixed-Effects-1">Set Random or Fixed Effects</a></h2><pre><code class="language-julia">set_random(&quot;x2&quot;,0.1)</code></pre><ul><li><p>link to <a href="public.html#JWAS.set_random"><code>set_random</code></a></p></li></ul><h2><a class="nav-anchor" id="Use-Pedigree-Information-1" href="#Use-Pedigree-Information-1">Use Pedigree Information</a></h2><pre><code class="language-julia">ped=get_pedigree(&quot;pedigree.txt&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.get_pedigree"><code>get_pedigree</code></a></p></li></ul><h2><a class="nav-anchor" id="Use-Genomic-Information-1" href="#Use-Genomic-Information-1">Use Genomic Information</a></h2><pre><code class="language-julia">add_genotypes(model,&quot;genotypes.txt&quot;)</code></pre><ul><li><p>link to <a href="public.html#JWAS.add_genotypes"><code>add_genotypes</code></a></p></li></ul><ul><li><p>link to <a href="workflow.html#Workflow-1">Workflow</a></p></li></ul><footer><hr/><a class="previous" href="getstarted.html"><span class="direction">Previous</span><span class="title">Get Started</span></a><a class="next" href="public.html"><span class="direction">Next</span><span class="title">Public</span></a></footer></article></body></html>
