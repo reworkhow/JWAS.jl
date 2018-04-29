@@ -1,4 +1,5 @@
 function MCMC_BayesB(nIter,mme,df,π;
+                     burnin    =0,
                      sol       =false,
                      outFreq   =100,
                      output_samples_frequency =0,
@@ -55,7 +56,7 @@ function MCMC_BayesB(nIter,mme,df,π;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
+      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
     end #sample4π is not used in MME type since π is BayesC-specific
 
     #######################################################
@@ -72,20 +73,24 @@ function MCMC_BayesB(nIter,mme,df,π;
         Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
         ycorr = ycorr - mme.X*sol
-        solMean += (sol - solMean)/iter
-
+        if iter > burnin
+            solMean += (sol - solMean)/(iter-burnin)
+        end
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
         nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,u,α,δ,vRes,locusEffectVar,π)
-        meanu += (u - meanu)/iter
-
+        if iter > burnin
+            meanu += (u - meanu)/(iter-burnin)
+        end
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
-          G0Mean  += (G0  - G0Mean )/iter
+          if iter > burnin
+              G0Mean  += (G0  - G0Mean )/(iter-burnin)
+          end
         end
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
@@ -98,7 +103,9 @@ function MCMC_BayesB(nIter,mme,df,π;
         mme.ROld = mme.RNew
         vRes     = sample_variance(ycorr, nObs, nuRes, scaleRes)
         mme.RNew = vRes
-        meanVare += (vRes - meanVare)/iter
+        if iter > burnin
+            meanVare += (vRes - meanVare)/(iter-burnin)
+        end
         ###############################################
         # 2.4 Marker Effects Variance
         ###############################################
@@ -109,13 +116,13 @@ function MCMC_BayesB(nIter,mme,df,π;
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_frequency != 0 && iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
           out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0.0,u,locusEffectVar,false,outfile,false)
         end
         ########################################################################
         # 3.2 Printout
         ########################################################################
-        if iter%outFreq==0
+        if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0

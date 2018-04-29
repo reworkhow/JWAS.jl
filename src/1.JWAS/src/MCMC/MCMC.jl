@@ -23,6 +23,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 """
 function runMCMC(mme,df;
                 Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
+                burnin            = 0,
                 chain_length      = 100,
                 starting_value    = false,
                 missing_phenotypes= false,
@@ -72,7 +73,7 @@ function runMCMC(mme,df;
   end
 
   if printout_MCMCinfo == true
-    MCMCinfo(methods,Pi,chain_length,have_starting_value,printout_frequency,
+    MCMCinfo(methods,Pi,chain_length,burnin,have_starting_value,printout_frequency,
              output_samples_frequency,missing_phenotypes,constraint,estimatePi,
              update_priors_frequency,mme)
   end
@@ -85,6 +86,7 @@ function runMCMC(mme,df;
                           output_samples_frequency=output_samples_frequency)
       elseif methods in ["BayesC","BayesC0"]
         res=MCMC_BayesC(chain_length,mme,df,
+                          burnin     = burnin,
                           π          =Pi,
                           methods    =methods,
                           estimatePi =estimatePi,
@@ -94,6 +96,7 @@ function runMCMC(mme,df;
                           MCMC_marker_effects_file=MCMC_marker_effects_file)
       elseif methods =="BayesB"
         res=MCMC_BayesB(chain_length,mme,df,Pi,
+                            burnin     = burnin,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
                             output_samples_frequency=output_samples_frequency,
@@ -147,7 +150,7 @@ end
 ################################################################################
 #Print out MCMC information
 ################################################################################
-function MCMCinfo(methods,Pi,chain_length,starting_value,printout_frequency,
+function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
                   output_samples_frequency,missing_phenotypes,constraint,
                   estimatePi,update_priors_frequency,mme)
 
@@ -155,6 +158,7 @@ function MCMCinfo(methods,Pi,chain_length,starting_value,printout_frequency,
     @printf("%-30s %20s\n","methods",methods)
 #    @printf("%-20s %10s\n","seed",seed)
     @printf("%-30s %20s\n","chain_length",chain_length)
+    @printf("%-30s %20s\n","burnin",burnin)
     @printf("%-30s %20s\n","starting_value",starting_value?"true":"false")
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)

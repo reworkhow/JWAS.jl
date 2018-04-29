@@ -1,4 +1,5 @@
 function MCMC_BayesC(nIter,mme,df;
+                     burnin    =0,
                      π         =0.0,
                      estimatePi=false,
                      sol       =false,
@@ -65,7 +66,7 @@ function MCMC_BayesC(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
+      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
     end
 
     ############################################################################
@@ -82,8 +83,9 @@ function MCMC_BayesC(nIter,mme,df;
         Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
         ycorr = ycorr - mme.X*sol
-        solMean += (sol - solMean)/iter
-
+        if iter > burnin
+            solMean += (sol - solMean)/(iter-burnin)
+        end
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
@@ -93,12 +95,16 @@ function MCMC_BayesC(nIter,mme,df;
           sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
           nLoci = nMarkers
         end
-        meanAlpha += (α - meanAlpha)/iter
+        if iter > burnin
+            meanAlpha += (α - meanAlpha)/(iter-burnin)
+        end
 
         #sample Pi
         if estimatePi == true
           π = samplePi(nLoci, nMarkers)
-          mean_pi += (π-mean_pi)/iter
+          if iter > burnin
+              mean_pi += (π-mean_pi)/(iter-burnin)
+          end
         end
 
         ########################################################################
@@ -106,7 +112,9 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if mme.ped != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
-          G0Mean  += (G0  - G0Mean )/iter
+          if iter > burnin
+              G0Mean  += (G0  - G0Mean )/(iter-burnin)
+          end
         end
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
@@ -119,23 +127,27 @@ function MCMC_BayesC(nIter,mme,df;
         mme.ROld = mme.RNew
         vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         mme.RNew = vRes
-        meanVare += (vRes - meanVare)/iter
+        if iter > burnin
+            meanVare += (vRes - meanVare)/(iter-burnin)
+        end
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
         vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
-        meanVara += (vEff - meanVara)/iter
+        if iter > burnin
+            meanVara += (vEff - meanVara)/(iter-burnin)
+        end
 
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_frequency != 0 && iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
             out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,α,vEff,sample4π,outfile,estimatePi)
         end
         ########################################################################
         # 3.2 Printout
         ########################################################################
-        if iter%outFreq==0
+        if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0
