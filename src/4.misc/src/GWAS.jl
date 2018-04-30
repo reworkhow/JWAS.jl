@@ -72,7 +72,7 @@ end
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
 
-function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",threshold=0.001)
+function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001)
 
     if window_size=="1 Mb"
         window_size_Mb = 1_000_000
@@ -85,17 +85,24 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
     pos     = map(Int64,mapfile[:,3])
 
     window_size = Array{Int64,1}() #save number of markers in ith window for all windows
+    window_chr  = Array{Int64,1}()
+    window_pos_start = Array{Int64,1}()
+    window_pos_end   = Array{Int64,1}()
     for i in 1:maximum(chr)
       pos_on_chri     = pos[chr.==i]
       nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
 
       for j in 1: nwindow_on_chri
+        push!(window_chr,i)
+        push!(window_pos_start,window_size_Mb*(j-1))
+        push!(window_pos_end,window_size_Mb*j)
         push!(window_size,sum(window_size_Mb*(j-1) .< pos_on_chri .< window_size_Mb*j))
       end
     end
-    return GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    WPPA = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["WPPA";window_pos_end WPPA]]
+    return out
 end
-
 
 
 export GWAS

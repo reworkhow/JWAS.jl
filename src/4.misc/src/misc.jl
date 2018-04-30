@@ -1,6 +1,6 @@
 module misc
 
-using DataFrames
+using DataFrames,CSV
 using Distributions
 using ProgressMeter
 #using Plots
