@@ -71,7 +71,14 @@ end
 #with nonoverlapping windows. Fi- nally, adaptive window sizes based on clustering SNP
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
+"""
+    GWAS(marker_effects_file,map_file,model;header=false,window_size="1 Mb",threshold=0.001)
 
+Compute the posterior probability that window explains more than **threshold** of genetic variance
+
+* **marker_effects_file** is created by runMCMC(**model**,...) to save MCMC samples for marker effects
+* **map_file** has the marker position information
+"""
 function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001)
 
     if window_size=="1 Mb"
@@ -100,7 +107,10 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
       end
     end
     WPPA = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
-    out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["WPPA";window_pos_end WPPA]]
+    #bug in Julia, vcat too long
+    #out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]["WPPA"; WPPA]]
+    out  = [["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]]
+    out  = [["window";1:length(WPPA)] out ["WPPA"; WPPA]]
     return out
 end
 
