@@ -31,7 +31,9 @@ To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl)
 
 ###### Standalone application
 
-A fully self-contained application for JWAS (no installation required) will come out this year.
+!!! note "standalone application (no installation required)"
+
+    A fully self-contained application for JWAS (no installation required) will come out this year.
 
 
 ## Access documentation
