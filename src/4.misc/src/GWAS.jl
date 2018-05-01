@@ -56,7 +56,7 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
         end
     end
     #return(vec(mean(winVarProps .> threshold,1)), mean(winVarProps,1))
-    return vec(mean(winVarProps .> threshold,1))
+    return vec(mean(winVarProps .> threshold,1)), vec(mean(winVarProps,1))
 end
 
 
@@ -95,22 +95,39 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
     window_chr  = Array{Int64,1}()
     window_pos_start = Array{Int64,1}()
     window_pos_end   = Array{Int64,1}()
+    window_snp_start = Array{Int64,1}()
+    window_snp_end   = Array{Int64,1}()
+
     for i in 1:maximum(chr)
       pos_on_chri     = pos[chr.==i]
       nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
 
       for j in 1: nwindow_on_chri
+        thisstart= window_size_Mb*(j-1)
+        thisend  = window_size_Mb*j
         push!(window_chr,i)
-        push!(window_pos_start,window_size_Mb*(j-1))
-        push!(window_pos_end,window_size_Mb*j)
-        push!(window_size,sum(window_size_Mb*(j-1) .< pos_on_chri .< window_size_Mb*j))
+        push!(window_pos_start,thisstart)
+        push!(window_pos_end,thisend)
+        snps_window = thisstart .< pos_on_chri .<= thisend
+        push!(window_size,sum(snps_window))
+        if sum(snps_window)!=0
+            push!(window_snp_start,pos_on_chri[findfirst(snps_window)])
+            push!(window_snp_end,pos_on_chri[findlast(snps_window)])
+        else
+            push!(window_snp_start,0)
+            push!(window_snp_end,0)
+        end
       end
     end
-    WPPA = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    WPPA, prop_genvar = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    prop_genvar = round.(prop_genvar*100,2)
     #bug in Julia, vcat too long
     #out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]["WPPA"; WPPA]]
-    out  = [["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]]
-    out  = [["window";1:length(WPPA)] out ["WPPA"; WPPA]]
+    out1 = [["window";1:length(WPPA)] ["chr"; window_chr]]
+    out2 = [["start"; window_pos_start] ["end"; window_pos_end]]
+    out3 = [["start_SNP"; window_snp_start] ["end_SNP"; window_snp_end] ["#SNPS"; window_size]]
+    out4 = [["%genetic variance";prop_genvar] ["WPPA"; WPPA]]
+    out  = [out1 out2 out3 out4]
     return out
 end
 
