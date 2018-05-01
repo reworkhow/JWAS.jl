@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Standalone application",
     "category": "section",
-    "text": "A fully self-contained application for JWAS (no installation required) will come out this year."
+    "text": "note: standalone application (no installation required)\nA fully self-contained application for JWAS (no installation required) will come out this year."
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Get Data Ready",
     "category": "section",
-    "text": "By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by commas. Other field separators such as space (\' \') or tab (\'\\t\') can be used if you supply the keyword argument, e.g, CSV.read(...,delim=\'\\t\') or add_genotypes(...,separator=\'\\t\')Click on the buttons inside the tabbed menu to see the data:<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<style>\nbody {font-family: Arial;}\n\n/* Style the tab */\n.tab {\n    overflow: hidden;\n    border: 1px solid #ccc;\n    background-color: #f1f1f1;\n}\n\n/* Style the buttons inside the tab */\n.tab button {\n    background-color: inherit;\n    float: left;\n    border: none;\n    outline: none;\n    cursor: pointer;\n    padding: 14px 16px;\n    transition: 0.3s;\n    font-size: 17px;\n}\n\n/* Change background color of buttons on hover */\n.tab button:hover {\n    background-color: #ddd;\n}\n\n/* Create an active/current tablink class */\n.tab button.active {\n    background-color: #ccc;\n}\n\n/* Style the tab content */\n.tabcontent {\n    display: none;\n    padding: 6px 12px;\n    border: 1px solid #ccc;\n    border-top: none;\n}\n</style>\n</head>\n<body>\n\n<div class=\"tab\">\n  <button class=\"tablinks\" onclick=\"openCity(event, \'phenotypes\')\">phenotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'pedigree\')\">pedigree.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'genotypes\')\">genotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'map file\')\">map.txt</button>\n</div>\n\n<div id=\"phenotypes\" class=\"tabcontent\">\n<p>ID,y1,y2,y3,x1,x2,x3,dam</p>\n<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>\n<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>\n<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>\n<p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>\n<p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>\n<p>a6,0.93,4.87,-0.01,05,2,f,a3</p>\n<p>a7,-0.69,3.1,-1.47,0.5,2,f,a3</p>\n<p>a8,-4.69,7.31,-1.09,0.3,2,m,a6</p>\n<p>a9,-2.81,7.18,0.76,0.4,2,m,a6</p>\n<p>a10,1.92,1.78,-0.88,0.2,1,m,a7</p>\n</div>\n\n<div id=\"pedigree\" class=\"tabcontent\">\n<p>ID,Sire,Dam</p>\n<p>a1,0,0</p>\n<p>a2,0,0</p>\n<p>a3,0,0</p>\n<p>a4,a1,a2</p>\n<p>a5,a1,a2</p>\n<p>a6,a1,a3</p>\n<p>a7,a1,a3</p>\n<p>a8,a4,a6</p>\n<p>a9,a4,a6</p>\n<p>a10,a5,a7</p>\n</div>\n\n<div id=\"genotypes\" class=\"tabcontent\">\n<p>ID,m1,m2,m3,m4,m5</p>\n<p>a1,1,2,1,1,0</p>\n<p>a2,2,1,1,1,1</p>\n<p>a3,1,1,0,1,1</p>\n<p>a4,2,2,0,1,0</p>\n<p>a5,1,1,2,1,1</p>\n<p>a6,2,1,0,0,0</p>\n<p>a7,0,2,1,2,1</p>\n<p>a8,2,2,0,0,0</p>\n<p>a9,2,1,0,1,0</p>\n<p>a10,0,2,2,2,1</p>\n</div>\n\n<div id=\"map file\" class=\"tabcontent\">\n<p>markerID,chromosome,position</p>\n<p>m1,1,16977</p>\n<p>m2,1,434311</p>\n<p>m3,1,1025513</p>\n<p>m4,2,70350</p>\n<p>m5,2,101135</p>\n</div>\n\n\n<script>\nfunction openCity(evt, cityName) {\n    var i, tabcontent, tablinks;\n    tabcontent = document.getElementsByClassName(\"tabcontent\");\n    for (i = 0; i < tabcontent.length; i++) {\n        tabcontent[i].style.display = \"none\";\n    }\n    tablinks = document.getElementsByClassName(\"tablinks\");\n    for (i = 0; i < tablinks.length; i++) {\n        tablinks[i].className = tablinks[i].className.replace(\" active\", \"\");\n    }\n    document.getElementById(cityName).style.display = \"block\";\n    evt.currentTarget.className += \" active\";\n}\n</script>\n</body>In figure 2, in cell 3,  In cell 4,     "
+    "text": "By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by commas. Other field separators such as space (\' \') or tab (\'\\t\') can be used if you supply the keyword argument, e.g, CSV.read(...,delim=\'\\t\') or add_genotypes(...,separator=\'\\t\')Click on the buttons inside the tabbed menu to see the data:<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<style>\nbody {font-family: Arial;}\n\n/* Style the tab */\n.tab {\n    overflow: hidden;\n    border: 1px solid #ccc;\n    background-color: #f1f1f1;\n}\n\n/* Style the buttons inside the tab */\n.tab button {\n    background-color: inherit;\n    float: left;\n    border: none;\n    outline: none;\n    cursor: pointer;\n    padding: 14px 16px;\n    transition: 0.3s;\n    font-size: 17px;\n}\n\n/* Change background color of buttons on hover */\n.tab button:hover {\n    background-color: #ddd;\n}\n\n/* Create an active/current tablink class */\n.tab button.active {\n    background-color: #ccc;\n}\n\n/* Style the tab content */\n.tabcontent {\n    display: none;\n    padding: 6px 12px;\n    border: 1px solid #ccc;\n    border-top: none;\n}\n</style>\n</head>\n<body>\n\n<div class=\"tab\">\n  <button class=\"tablinks\" onclick=\"openCity(event, \'phenotypes\')\">phenotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'pedigree\')\">pedigree.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'genotypes\')\">genotypes.txt</button>\n  <button class=\"tablinks\" onclick=\"openCity(event, \'map file\')\">map.txt</button>\n</div>\n\n<div id=\"phenotypes\" class=\"tabcontent\">\n<p>ID,y1,y2,y3,x1,x2,x3,dam</p>\n<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>\n<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>\n<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>\n<p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>\n<p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>\n<p>a6,0.93,4.87,-0.01,05,2,f,a3</p>\n<p>a7,-0.69,3.1,-1.47,0.5,2,f,a3</p>\n<p>a8,-4.69,7.31,-1.09,0.3,2,m,a6</p>\n<p>a9,-2.81,7.18,0.76,0.4,2,m,a6</p>\n<p>a10,1.92,1.78,-0.88,0.2,1,m,a7</p>\n</div>\n\n<div id=\"pedigree\" class=\"tabcontent\">\n<p>ID,Sire,Dam</p>\n<p>a1,0,0</p>\n<p>a2,0,0</p>\n<p>a3,0,0</p>\n<p>a4,a1,a2</p>\n<p>a5,a1,a2</p>\n<p>a6,a1,a3</p>\n<p>a7,a1,a3</p>\n<p>a8,a4,a6</p>\n<p>a9,a4,a6</p>\n<p>a10,a5,a7</p>\n</div>\n\n<div id=\"genotypes\" class=\"tabcontent\">\n<p>ID,m1,m2,m3,m4,m5</p>\n<p>a1,1,2,1,1,0</p>\n<p>a2,2,1,1,1,1</p>\n<p>a3,1,1,0,1,1</p>\n<p>a4,2,2,0,1,0</p>\n<p>a5,1,1,2,1,1</p>\n<p>a6,2,1,0,0,0</p>\n<p>a7,0,2,1,2,1</p>\n<p>a8,2,2,0,0,0</p>\n<p>a9,2,1,0,1,0</p>\n<p>a10,0,2,2,2,1</p>\n</div>\n\n<div id=\"map file\" class=\"tabcontent\">\n<p>markerID,chromosome,position</p>\n<p>m1,1,16977</p>\n<p>m2,1,434311</p>\n<p>m3,1,1025513</p>\n<p>m4,2,70350</p>\n<p>m5,2,101135</p>\n</div>\n\n\n<script>\nfunction openCity(evt, cityName) {\n    var i, tabcontent, tablinks;\n    tabcontent = document.getElementsByClassName(\"tabcontent\");\n    for (i = 0; i < tabcontent.length; i++) {\n        tabcontent[i].style.display = \"none\";\n    }\n    tablinks = document.getElementsByClassName(\"tablinks\");\n    for (i = 0; i < tablinks.length; i++) {\n        tablinks[i].className = tablinks[i].className.replace(\" active\", \"\");\n    }\n    document.getElementById(cityName).style.display = \"block\";\n    evt.currentTarget.className += \" active\";\n}\n</script>\n</body>"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 1: Load Packages",
     "category": "section",
-    "text": "The JWAS package is loaded, as well as the CSV and DataFrame packages for reading text files.using JWAS,CSV,DataFrameshaha: Haha\nNever git commit the contents of build (or any other content generated by Documenter) to your repository\'s master branch. Always commit generated files to the gh-pages branch of your repository. This helps to avoid including unnecessary changes for anyone reviewing commits that happen to include documentation changes.See the Hosting Documentation section for details regarding how you should go about setting this up correctly."
+    "text": "using JWAS,CSV,DataFramesThe JWAS package is loaded, as well as the CSV and DataFrame packages for reading text files."
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 2: Read data",
     "category": "section",
-    "text": "phenotypes = CSV.read(\"phenotypes.txt\")\npedigree   = get_pedigree(\"pedigree.txt\")\nhead(data)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │warning: Warning\nThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
+    "text": "phenotypes = CSV.read(\"phenotypes.txt\")\npedigree   = get_pedigree(\"pedigree.txt\")\nhead(data)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │link to get_pedigreeThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 3: Build Model Equations",
     "category": "section",
-    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam;\n                  y2 = intercept + x1 + x2 + x3 + ID;  \n                  y2 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation)link to build_modelwarning: Warning\nThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait 1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait 2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait 3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation. By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
+    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam;\n                  y2 = intercept + x1 + x2 + x3 + ID;  \n                  y2 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation)link to build_modelThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait 1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait 2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait 3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation. By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
 },
 
 {
@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\")link to set_covariatewarning: Warning\nOn line 1, the effect x1 is defined to be a covariate rather than class effect."
+    "text": "set_covariate(\"x1\")link to set_covariateOn line 1, the effect x1 is defined to be a covariate rather than class effect."
 },
 
 {
@@ -293,31 +293,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 5: Set Random or Fixed Effects",
     "category": "section",
-    "text": "set_random(\"x2\",0.1)link to set_randomwarning: Warning\nOn line 1, the x2 class effect is defined as random."
+    "text": "set_random(model,\"x2\",0.1)\nset_random(model,\"ID dam\",pedigree,G)link to set_randomnote: Note\nOn line 1, the x2 class effect is defined as random. On line 2, direct genetic effects and maternal genetic effects are fitted as ID and dam using the inverse of the numerator relationship matrix defined from pedigree."
 },
 
 {
-    "location": "manual/workflow.html#Step-6:-Use-Pedigree-Information-1",
+    "location": "manual/workflow.html#Step-6:-Use-Genomic-Information-1",
     "page": "Workflow",
-    "title": "Step 6: Use Pedigree Information",
+    "title": "Step 6: Use Genomic Information",
     "category": "section",
-    "text": "set_random(model,\"ID dam\",pedigree,G)link to get_pedigreewarning: Warning\nOn line 1, direct genetic effects and maternal genetic effects are fitted as ID and dam using the inverse of the numerator relationship matrix defined from pedigree."
+    "text": "add_genotypes(model,\"genotypes.txt\",G3)link to add_genotypesOn line 1, the genomic part of the model is defined with the genotype file."
 },
 
 {
-    "location": "manual/workflow.html#Step-7:-Use-Genomic-Information-1",
+    "location": "manual/workflow.html#Step-7:-Run-Bayesian-Analysis-1",
     "page": "Workflow",
-    "title": "Step 7: Use Genomic Information",
+    "title": "Step 7: Run Bayesian Analysis",
     "category": "section",
-    "text": "add_genotypes(model,\"genotypes.txt\",G3)link to add_genotypesnotes: Notes\nOn line 1, the genomic part of the model is defined with the genotype file."
-},
-
-{
-    "location": "manual/workflow.html#Step-8:-Run-Bayesian-Analysis-1",
-    "page": "Workflow",
-    "title": "Step 8: Run Bayesian Analysis",
-    "category": "section",
-    "text": "runMCMC(model,phenotypes,methods=\"BayesC\")link to runMCMCwarning: Warning\nOn line 1, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-7.link to Workflow"
+    "text": "runMCMC(model,phenotypes,methods=\"BayesC\")link to runMCMCnote: Note\nOn line 1, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-7.link to Workflow"
 },
 
 {
