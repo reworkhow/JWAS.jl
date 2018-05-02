@@ -39,10 +39,15 @@ To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl)
 ## Access documentation
 
 To show the basic information (README file) of JWAS in REPL or IJulia notebook using `?JWAS`
-and press enter. *Please load the JWAS package at first.*
+and press enter.
 
 For help on a specific function, type ? followed by its name, e.g. `?runMCMC` and press enter
-in REPL or IJulia notebook. *Please load the JWAS package at first.*
+in REPL or IJulia notebook.
+
+!!! warning
+
+    Please load the JWAS package at first.
+
 
 The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/latest/index.html).
 

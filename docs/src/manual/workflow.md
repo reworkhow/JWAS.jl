@@ -5,7 +5,6 @@ is used to demonstrate a three-trait Bayesian linear mixed model fitting fixed e
 random effects (x2), direct genetic effects (ID), maternal genetic effects (dam) and
 genomic information.
 
-## Index
 ```@contents
 Pages = [
   "workflow.md"
@@ -16,28 +15,31 @@ Depth = 2
 
 ## Available Models
 
-Given the data and model equations, several different types of models are fitted in JWAS, as shown below. In the table below, "X"
-denotes the type of available data, and "A <= B" denotes that A individuals is a subset of B individuals.  
+Given the data and model equations, several different types of models are available in JWAS as shown below. In the table below, "X"
+denotes the type of available data, and "Y<=A" denotes that Y individuals is a subset of A individuals.  
 
 
-| Linear Mixed Models (LMM) |    phenotypes | pedigree  | genotypes | notes                  |
-| ------------------------- |:-------------:|:---------:|:---------:|:----------------------:|
-| Conventional LMM          |              X|           |           |                        |
-| Pedigree-based LMM        |              X|         X |           | phenotypes <= pedigree |
-| Complete Genomic LMM      |              X|     maybe |          X| phenotypes <= genotypes|
-| Incomplete Genomic LMM    |              X|         X |          X| phenotypes <= pedigree and genotypes <= pedigree|
+| Linear Mixed Models (LMM) | phenotypes (Y)| pedigree (A)| genotypes (G)| notes     |
+| :-----------------------: |:-------------:|:-----------:|:------------:|:---------:|
+| Conventional LMM          |              X|             |              |           |
+| Pedigree-based LMM        |              X|         X   |              | Y<=A      |
+| Complete Genomic LMM      |              X|     maybe   |             X| Y<=G      |
+| Incomplete Genomic LMM    |              X|         X   |             X| Y<=A,G<=A |
 
 
-* **Incomplete Genomic LMM** is also called "single-step" methods in animal breeding.
+!!! note
 
-* Pedigree information may be used in **Complete Genomic LMM** as a seperate polygenic term to account for genetic variance not explained by the genomic information (e.g., SNPs).
+    - **Incomplete Genomic LMM** is also called "single-step" methods in animal breeding.
 
-* Note that **Pedigree-based LMM** and **Complete Genomic LMM** are special cases of **Incomplete Genomic LMM**.
+    - Pedigree information may be used in **Complete Genomic LMM** for extra polygenic effects to account for genetic variance not explained by the genomic data (e.g., SNPs).
+
+    - **Pedigree-based LMM** (none of the individuals in the pedigree are genotyped) and **Complete Genomic LMM** (all individuals in the pedigree are genotyped) are
+      special cases of **Incomplete Genomic LMM** (part of the individuals in the pedigree are genotyped).
 
 
 ## Get Data Ready
 
-By default, input data files are comma-separated values (CSV) files, where each line of the file is a data record, and each record consists of one or more fields, separated by **commas**. Other field separators such as space (' ') or tab ('\t') can be used if you supply the keyword argument, e.g, `CSV.read(...,delim='\t')` or `add_genotypes(...,separator='\t')`
+By default, input data files are comma-separated values (CSV) files, where each line of the file consists of one or more fields, separated by **commas**. Other field separators such as space (' ') or tab ('\t') can be used if you supply the keyword argument, e.g, `CSV.read(...,delim='\t')` or `add_genotypes(...,separator='\t')`
 
 Click on the buttons inside the tabbed menu to see the data:
 
@@ -195,7 +197,7 @@ output:
 │ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │
 ```
 
-- link to [`get_pedigree`](@ref)
+- link to documentation for [`get_pedigree`](@ref)
 
 ---
 The **phenotypic data** is read on line 1, and the **pedigree data** is read on line 2. On line 3, the first several rows of data are shown.
@@ -206,10 +208,10 @@ The **phenotypic data** is read on line 1, and the **pedigree data** is read on 
 model_equation = "y1 = intercept + x1 + x3 + ID + dam;
                   y2 = intercept + x1 + x2 + x3 + ID;  
                   y2 = intercept + x1 + x1*x3 + x2 + ID"
-model=build_model(model_equation)
+model=build_model(model_equation, R)
 ```
 
-- link to [`build_model`](@ref)
+- link to documentation for [`build_model`](@ref)
 
 ---
 The non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.
@@ -217,7 +219,8 @@ The non-genomic part of the model equation for a 3-trait analysis is defined on 
 * The effects fitted in the model for trait 2 are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
 * The effects fitted in the model for trait 3 are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
 
-On the last line, the model is built given the model equation. By default, all effects are treated as fixed and classed as factors (categorical variables)
+On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix).
+By default, all effects are treated as fixed and classed as factors (categorical variables)
 rather than covariates (quantitative variables).
 
 ## Step 4: Set Factors or Covariate
@@ -225,43 +228,43 @@ rather than covariates (quantitative variables).
 set_covariate("x1")
 ```
 
-- link to [`set_covariate`](@ref)
+- link to documentation for [`set_covariate`](@ref)
 
 ---
 On line 1, the effect `x1` is defined to be a covariate rather than class effect.
 
 ## Step 5: Set Random or Fixed Effects
 ```julia
-set_random(model,"x2",0.1)
-set_random(model,"ID dam",pedigree,G)
+set_random(model,"x2",G1)
+set_random(model,"ID dam",pedigree,G2)
 ```
-- link to [`set_random`](@ref)
+- link to documentation for [`set_random`](@ref)
 
-!!! note
-
-    On line 1, the `x2` class effect is defined as random. On line 2, direct genetic effects and
-    maternal genetic effects are fitted as `ID` and `dam` using the inverse of the numerator relationship matrix defined from pedigree.
+---
+On line 1, the `x2` class effect is defined as random with variance `G1`(a 2x2 matrix). On line 2, direct genetic effects and
+maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree.
 
 ## Step 6: Use Genomic Information
 ```julia
 add_genotypes(model,"genotypes.txt",G3)
 ```
 
-- link to [`add_genotypes`](@ref)
+- link to documentation for [`add_genotypes`](@ref)
 
 ---
-On line 1, the genomic part of the model is defined with the genotype file.
+On line 1, the genomic part of the model is defined with the genotype file and variance `G3` (a 3x3 matrix).
 
 ## Step 7: Run Bayesian Analysis
 ```julia
 runMCMC(model,phenotypes,methods="BayesC")
 ```
 
-- link to [`runMCMC`](@ref)
+- link to documentation for [`runMCMC`](@ref)
 
-!!! note
 ---
-On line 1, a multi-trait BayesC analysis is performed with `model` and `phenotypes` as had been defined in step 1-7.
+On line 1, a multi-trait BayesC analysis is performed with `model` and `phenotypes` as had been defined in step 1-6.
 
-
-- link to [Workflow](@ref)
+---
+Several steps above can be skipped if no related information is available, e.g., step 6 is skipped
+for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link
+to documentation for all [Public functions](@ref).
