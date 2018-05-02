@@ -29,6 +29,28 @@ for Julia (and therefore JWAS). The Jupyter notebook is an open-source web appli
 and sharing documents that contain live code, equations, visualizations and explanatory text.
 To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
 
+###### Jupyter-IJulia notebooks via Docker
+
+Docker provides a very straighforward way to install Jupyter-IJulia notebooks with JWAS. 
+
+- Install Docker from [here](https://docs.docker.com/install/) for your platform.
+
+- From a terminal (on Mac or Linux), run the command: "docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker:stable" 
+
+This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication 
+token. The directories and files created within the Docker container will be lost when the container is stopped. To save your work on he host machine, a directory on the host machine can be mounted as a folder in the container with the command:
+
+- docker run -it --rm -p 8888:8888 -v pathToFolderOnHost:/home/jovyan/folderInContainer qtlrocks/jwas-docker
+
+where "pathToFolderOnHost" is the path to the folder that you want to have access to from within the container, and  
+"folderInContainer" is the name of the folder in the container. For example, the Docker command
+
+ docker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-docker
+ 
+ creates a Docker container with the folder "rohan" with the contents of "/Users/rohan" of the host machine. Files and directories that are in the folder "/home/jovyan/rohan" will not be lost when the container is stopped.  
+ 
+ 
+
 ###### Standalone application
 
 !!! note "standalone application (no installation required)"
