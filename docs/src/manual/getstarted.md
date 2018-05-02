@@ -38,7 +38,9 @@ Docker provides a straighforward way to install Jupyter-IJulia notebooks with JW
 - From a terminal (on Mac or Linux), run the command: "docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker:stable" 
 
 This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication 
-token. The directories and files created within the Docker container will be lost when the container is stopped. To save your work on he host machine, a directory on the host machine can be mounted as a folder in the container with the command:
+token. Documentation for JWAS can be accessed from the notebook: "JWAS_notebooks/index.ipynb".
+
+The directories and files created within the Docker container will be lost when the container is stopped. To save your work on he host machine, a directory on the host machine can be mounted as a folder in the container with the command:
 
 - docker run -it --rm -p 8888:8888 -v pathToFolderOnHost:/home/jovyan/folderInContainer qtlrocks/jwas-docker
 
