@@ -31,7 +31,7 @@ To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl)
 
 ###### Jupyter-IJulia notebooks via Docker
 
-Docker provides a very straighforward way to install Jupyter-IJulia notebooks with JWAS. 
+Docker provides a straighforward way to install Jupyter-IJulia notebooks with JWAS. 
 
 - Install Docker from [here](https://docs.docker.com/install/) for your platform.
 
