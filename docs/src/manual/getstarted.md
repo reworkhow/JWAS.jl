@@ -31,20 +31,20 @@ To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl)
 
 ###### Jupyter-IJulia notebooks via Docker
 
-Docker provides a straighforward way to install Jupyter-IJulia notebooks with JWAS. 
+Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.
 
 - Install Docker from [here](https://docs.docker.com/install/) for your platform.
 
-- From a terminal (on Mac or Linux), run the command: 
+- From a terminal (on Mac or Linux), run the command:
 
 ```bash
 docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker
 ```
 
-This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication 
+This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication
 token. Documentation for JWAS can be accessed from the notebook: "JWAS_notebooks/index.ipynb".
 
-The directories and files created within the Docker container will be lost when the container is stopped. To save your work 
+The directories and files created within the Docker container will be lost when the container is stopped. To save your work
 on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:
 
 ```bash
@@ -58,10 +58,10 @@ where `path_to_folder_on_host` is the path to the folder that you want to have a
 docker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-docker
 ```
 
-creates a Docker container with the folder `rohan` with the contents of `/Users/rohan` of the host machine. Files and 
+creates a Docker container with the folder `rohan` with the contents of `/Users/rohan` of the host machine. Files and
 directories that are in the folder `/home/jovyan/rohan` will not be lost when the container is stopped.  
- 
- 
+
+
 
 ###### Standalone application
 
