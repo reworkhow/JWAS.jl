@@ -6,6 +6,10 @@
 using JWAS,JWAS.Datasets,CSV,DataFrames
 ```
 
+```julia
+using JWAS,JWAS.Datasets,CSV,DataFrames
+```
+
 ### Step 2: Read data
 
 ```julia
@@ -17,6 +21,7 @@ pedigree   = get_pedigree(pedfile,separator=",",header=true)
 
 head(phenotypes)
 ```
+
 
 output:
 ```julia
