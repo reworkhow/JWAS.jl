@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Examples",
     "category": "section",
-    "text": "Pages = [\n  \"examples/conventionalBLMM.md\"\n  \"examples/genomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 4"
+    "text": "Pages = [\n  \"examples/BLMM.md\"\n  \"examples/GenomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 4"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Jupyter-IJulia notebooks via Docker",
     "category": "section",
-    "text": "Docker provides a straighforward way to install Jupyter-IJulia notebooks with JWAS. Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command: \"docker run -it –rm -p 8888:8888 qtlrocks/jwas-docker:stable\" This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication  token. Documentation for JWAS can be accessed from the notebook: \"JWAS_notebooks/index.ipynb\".The directories and files created within the Docker container will be lost when the container is stopped. To save your work on he host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it –rm -p 8888:8888 -v pathToFolderOnHost:/home/jovyan/folderInContainer qtlrocks/jwas-dockerwhere \"pathToFolderOnHost\" is the path to the folder that you want to have access to from within the container, and   \"folderInContainer\" is the name of the folder in the container. For example, the Docker commanddocker run -it –rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder \"rohan\" with the contents of \"/Users/rohan\" of the host machine. Files and directories that are in the folder \"/home/jovyan/rohan\" will not be lost when the container is stopped.  "
+    "text": "Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Documentation for JWAS can be accessed from the notebook: \"JWAS_notebooks/index.ipynb\".The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 3: Build Model Equations",
     "category": "section",
-    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam;\n                  y2 = intercept + x1 + x2 + x3 + ID;  \n                  y2 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation, R)link to documentation for build_modelThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait 1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait 2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait 3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation and residual variance R (a 3x3 matrix). By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
+    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam\n                  y2 = intercept + x1 + x2 + x3 + ID  \n                  y3 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation, R)link to documentation for build_modelThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait 1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait 2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait 3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation and residual variance R (a 3x3 matrix). By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
 },
 
 {
@@ -341,7 +341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.build_model",
     "category": "function",
-    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in model_equations are fixed and factors. Set variables to be covariates or random using functions set_covariate() or set_random().\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex;\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n"
+    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in model_equations are fixed and factors. Set variables to be covariates or random using functions set_covariate() or set_random().\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n"
 },
 
 {
@@ -365,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.get_pedigree",
     "category": "function",
-    "text": "get_pedigree(pedfile::AbstractString)\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
 },
 
 {
@@ -517,7 +517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.build_model",
     "category": "method",
-    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in model_equations are fixed and factors. Set variables to be covariates or random using functions set_covariate() or set_random().\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex;\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n"
+    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in model_equations are fixed and factors. Set variables to be covariates or random using functions set_covariate() or set_random().\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n"
 },
 
 {
@@ -525,7 +525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.get_pedigree",
     "category": "method",
-    "text": "get_pedigree(pedfile::AbstractString)\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
 },
 
 {
@@ -601,7 +601,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/conventionalBLMM.html#",
+    "location": "examples/BLMM.html#",
     "page": "Linear Mixed Model (conventional)",
     "title": "Linear Mixed Model (conventional)",
     "category": "page",
@@ -609,27 +609,107 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/conventionalBLMM.html#Bayesian-Linear-Mixed-Models-1",
+    "location": "examples/BLMM.html#Bayesian-Linear-Mixed-Models-(conventional)-1",
     "page": "Linear Mixed Model (conventional)",
-    "title": "Bayesian Linear Mixed Models",
+    "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
     "text": ""
 },
 
 {
-    "location": "examples/conventionalBLMM.html#Univariate-Linear-Mixed-Model-(conventional)-1",
+    "location": "examples/BLMM.html#Step-1:-Load-Packages-1",
     "page": "Linear Mixed Model (conventional)",
-    "title": "Univariate Linear Mixed Model (conventional)",
+    "title": "Step 1: Load Packages",
     "category": "section",
-    "text": "using DataFrames,CSV,JWAS,JWAS.Datasets;phenofile = Datasets.dataset(\"testMME\",\"data.txt\");\ndata      = CSV.read(phenofile,delim = \',\',header=true);\nhead(data)\n\n# 10×9 DataFrames.DataFrame\n# │ Row │ sow       │ site │ yr   │ age │ geneticCode │ parity │ nwn │ SYS           │ bw   │\n# ├─────┼───────────┼──────┼──────┼─────┼─────────────┼────────┼─────┼───────────────┼──────┤\n# │ 1   │ 100-113   │ 113  │ 2005 │ 18  │ P1          │ 1      │ 8   │ 113_2005_WNTR │ 9.0  │\n# │ 2   │ 100-113   │ 113  │ 2006 │ 18  │ P1          │ 2      │ 12  │ 113_2006_SPNG │ 8.0  │\n# │ 3   │ 100-5     │ 5    │ 2008 │ 15  │ P2          │ 1      │ 10  │ 5_2008_ATMN   │ 7.5  │\n# │ 4   │ 1000-5    │ 5    │ 2009 │ 17  │ P2          │ 1      │ 10  │ 5_2009_SPNG   │ 8.3  │\n# │ 5   │ 10000-131 │ 13   │ 2004 │ 16  │ Commercial  │ 1      │ 9   │ 13_2004_WNTR  │ 4.3  │\n# │ 6   │ 10000-131 │ 13   │ 2004 │ 18  │ Commercial  │ 2      │ 10  │ 13_2004_SMMR  │ 2.8  │model_equation    = \"nwn = intercept +parity + parity*site + yr + geneticCode + age\"\n\nresidual_variance = 2.97;\nmodel             = build_model(model_equation,residual_variance)\n\nset_covariate(model,\"age\");\n\ngeneticCode_variance = 0.26;\nset_random(model,\"geneticCode\",geneticCode_variance);outputMCMCsamples(model,\"parity\",\"age\");out=runMCMC(data,model,chain_length=50000,output_samples_frequency=100);a = 1\nb = 2\na + b"
+    "text": "using JWAS,JWAS.Datasets,CSV,DataFrames"
 },
 
 {
-    "location": "examples/conventionalBLMM.html#Multivariate-Linear-Mixed-Model-(conventional)-1",
+    "location": "examples/BLMM.html#Step-2:-Read-data-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 2: Read data",
+    "category": "section",
+    "text": "phenofile  = Datasets.dataset(\"example\",\"phenotypes.txt\")\n\nphenotypes = CSV.read(phenofile,delim = \',\',header=true)\n\nhead(phenotypes)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │"
+},
+
+{
+    "location": "examples/BLMM.html#Univariate-Linear-Mixed-Model-(conventional)-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Univariate Linear Mixed Model (conventional)",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "examples/BLMM.html#Step-3:-Build-Model-Equations-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1 + x2 + x3 + x1*x3\"\nR     = 1.0\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/BLMM.html#Step-4:-Set-Factors-or-Covariate-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/BLMM.html#Step-5:-Set-Random-or-Fixed-Effects-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = 1.0\nset_random(model,\"x2\",G1)"
+},
+
+{
+    "location": "examples/BLMM.html#Step-6:-Run-Bayesian-Analysis-1",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 6: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes)"
+},
+
+{
+    "location": "examples/BLMM.html#Multivariate-Linear-Mixed-Model-(conventional)-1",
     "page": "Linear Mixed Model (conventional)",
     "title": "Multivariate Linear Mixed Model (conventional)",
     "category": "section",
     "text": ""
+},
+
+{
+    "location": "examples/BLMM.html#Step-3:-Build-Model-Equations-2",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1 + x3\n                  y2 = intercept + x1 + x2 + x3  \n                  y3 = intercept + x1 + x1*x3 + x2\"\n\nR     = eye(3)\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/BLMM.html#Step-4:-Set-Factors-or-Covariate-2",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/BLMM.html#Step-5:-Set-Random-or-Fixed-Effects-2",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = eye(2)\nset_random(model,\"x2\",G1)"
+},
+
+{
+    "location": "examples/BLMM.html#Step-6:-Run-Bayesian-Analysis-2",
+    "page": "Linear Mixed Model (conventional)",
+    "title": "Step 6: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes)"
 },
 
 {
@@ -649,11 +729,59 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-1:-Load-Packages-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 1: Load Packages",
+    "category": "section",
+    "text": "using JWAS,JWAS.Datasets,CSV,DataFrames"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-2:-Read-data-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 2: Read data",
+    "category": "section",
+    "text": "phenofile  = Datasets.dataset(\"example\",\"phenotypes.txt\")\npedfile    = Datasets.dataset(\"example\",\"pedigree.txt\")\n\nphenotypes = CSV.read(phenofile,delim = \',\',header=true)\npedigree   = get_pedigree(pedfile,separator=\",\",header=true)\n\nhead(phenotypes)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │"
+},
+
+{
     "location": "examples/LinearAdditiveGeneticModel.html#Univariate-Linear-Additive-Genetic-Model-1",
     "page": "Linear Additive Genetic Model",
     "title": "Univariate Linear Additive Genetic Model",
     "category": "section",
     "text": ""
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-3:-Build-Model-Equations-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1*x3 + x2 + x3 + ID + dam\"\nR     = 1.0\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-4:-Set-Factors-or-Covariate-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-5:-Set-Random-or-Fixed-Effects-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = 1.0\nG2 = eye(2)\nset_random(model,\"x2\",G1)\nset_random(model,\"ID dam\",pedigree,G2)"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-6:-Run-Bayesian-Analysis-1",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 6: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes)"
 },
 
 {
@@ -665,7 +793,39 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/genomicBLMM.html#",
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-3:-Build-Model-Equations-2",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam\n                  y2 = intercept + x1 + x2 + x3 + ID  \n                  y3 = intercept + x1 + x1*x3 + x2 + ID\"\n\nR     = eye(3)\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-4:-Set-Factors-or-Covariate-2",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-5:-Set-Random-or-Fixed-Effects-2",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = eye(2)\nG2 = eye(4)\nset_random(model,\"x2\",G1)\nset_random(model,\"ID dam\",pedigree,G2)"
+},
+
+{
+    "location": "examples/LinearAdditiveGeneticModel.html#Step-6:-Run-Bayesian-Analysis-2",
+    "page": "Linear Additive Genetic Model",
+    "title": "Step 6: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes)"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#",
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Linear Mixed Model (Genomic data)",
     "category": "page",
@@ -673,7 +833,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/genomicBLMM.html#Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
+    "location": "examples/GenomicBLMM.html#Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
@@ -681,7 +841,23 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/genomicBLMM.html#Univariate-Linear-Mixed-Model-(Genomic-data)-1",
+    "location": "examples/GenomicBLMM.html#Step-1:-Load-Packages-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 1: Load Packages",
+    "category": "section",
+    "text": "using JWAS,JWAS.Datasets,CSV,DataFrames"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-2:-Read-data-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 2: Read data",
+    "category": "section",
+    "text": "phenofile  = Datasets.dataset(\"example\",\"phenotypes.txt\")\npedfile    = Datasets.dataset(\"example\",\"pedigree.txt\")\ngenofile   = Datasets.dataset(\"example\",\"genotypes.txt\")\n\nphenotypes = CSV.read(phenofile,delim = \',\',header=true)\npedigree   = get_pedigree(pedfile,separator=\",\",header=true)\n\nhead(phenotypes)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Univariate-Linear-Mixed-Model-(Genomic-data)-1",
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Univariate Linear Mixed Model (Genomic data)",
     "category": "section",
@@ -689,11 +865,91 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/genomicBLMM.html#Multivariate-Linear-Mixed-Model-(Genomic-data)-1",
+    "location": "examples/GenomicBLMM.html#Step-3:-Build-Model-Equations-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1*x3 + x2 + x3 + ID + dam\"\nR     = 1.0\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-4:-Set-Factors-or-Covariate-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-5:-Set-Random-or-Fixed-Effects-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = 1.0\nG2 = eye(2)\nset_random(model,\"x2\",G1)\nset_random(model,\"ID dam\",pedigree,G2)"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-6:-Use-Genomic-Information-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 6: Use Genomic Information",
+    "category": "section",
+    "text": "G3 = 1.0\nadd_genotypes(model,genofile,G3,separator=\',\',header=true);"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-7:-Run-Bayesian-Analysis-1",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 7: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes,methods=\"BayesC\")"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Multivariate-Linear-Mixed-Model-(Genomic-data)-1",
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Multivariate Linear Mixed Model (Genomic data)",
     "category": "section",
-    "text": "using DataFrames,CSV,JWAS,JWAS.Datasets;phenofile = Datasets.dataset(\"testMME\",\"data.txt\");\ndata      = CSV.read(phenofile,delim = \',\',header=true);\nhead(data);model_equation    = \"nwn = intercept +parity + parity*site + yr + geneticCode + age\"\n\nresidual_variance = 2.97;\nmodel             = build_model(model_equation,residual_variance)\n\nset_covariate(model,\"age\");\n\ngeneticCode_variance = 0.26;\nset_random(model,\"geneticCode\",geneticCode_variance);outputMCMCsamples(model,\"parity\",\"age\");out=runMCMC(data,model,chain_length=50000,output_samples_frequency=100)"
+    "text": ""
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-3:-Build-Model-Equations-2",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 3: Build Model Equations",
+    "category": "section",
+    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam\n                  y2 = intercept + x1 + x2 + x3 + ID  \n                  y3 = intercept + x1 + x1*x3 + x2 + ID\"\n\nR     = eye(3)\nmodel = build_model(model_equation,R);"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-4:-Set-Factors-or-Covariate-2",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 4: Set Factors or Covariate",
+    "category": "section",
+    "text": "set_covariate(\"x1\");"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-5:-Set-Random-or-Fixed-Effects-2",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 5: Set Random or Fixed Effects",
+    "category": "section",
+    "text": "G1 = eye(2)\nG2 = eye(4)\nset_random(model,\"x2\",G1)\nset_random(model,\"ID dam\",pedigree,G2)"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-6:-Use-Genomic-Information-2",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 6: Use Genomic Information",
+    "category": "section",
+    "text": "G3 = eye(3)\nadd_genotypes(model,genofile,G3,separator=\',\',header=true);"
+},
+
+{
+    "location": "examples/GenomicBLMM.html#Step-7:-Run-Bayesian-Analysis-2",
+    "page": "Linear Mixed Model (Genomic data)",
+    "title": "Step 7: Run Bayesian Analysis",
+    "category": "section",
+    "text": "out=runMCMC(model,phenotypes,methods=\"BayesC\")"
 },
 
 ]}
