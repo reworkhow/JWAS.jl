@@ -35,21 +35,31 @@ Docker provides a straighforward way to install Jupyter-IJulia notebooks with JW
 
 - Install Docker from [here](https://docs.docker.com/install/) for your platform.
 
-- From a terminal (on Mac or Linux), run the command: "docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker" 
+- From a terminal (on Mac or Linux), run the command: 
+
+```bash
+docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker
+```
 
 This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication 
 token. Documentation for JWAS can be accessed from the notebook: "JWAS_notebooks/index.ipynb".
 
-The directories and files created within the Docker container will be lost when the container is stopped. To save your work on he host machine, a directory on the host machine can be mounted as a folder in the container with the command:
+The directories and files created within the Docker container will be lost when the container is stopped. To save your work 
+on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:
 
-- docker run -it --rm -p 8888:8888 -v pathToFolderOnHost:/home/jovyan/folderInContainer qtlrocks/jwas-docker
+```bash
+docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-docker
+```
 
-where "pathToFolderOnHost" is the path to the folder that you want to have access to from within the container, and  
-"folderInContainer" is the name of the folder in the container. For example, the Docker command
+where `path_to_folder_on_host` is the path to the folder that you want to have access to from within the container, and  
+`folder_in_container` is the name of the folder in the container. For example, the Docker command
 
- docker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-docker
- 
- creates a Docker container with the folder "rohan" with the contents of "/Users/rohan" of the host machine. Files and directories that are in the folder "/home/jovyan/rohan" will not be lost when the container is stopped.  
+```bash
+docker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-docker
+```
+
+creates a Docker container with the folder `rohan` with the contents of `/Users/rohan` of the host machine. Files and 
+directories that are in the folder `/home/jovyan/rohan` will not be lost when the container is stopped.  
  
  
 
