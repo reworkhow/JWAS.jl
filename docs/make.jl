@@ -18,9 +18,9 @@ makedocs(
             "Internals" => "manual/internals.md",
             ],
         "Examples" => Any[
-            "Linear Mixed Model (conventional)" => "examples/conventionalBLMM.md",
+            "Linear Mixed Model (conventional)" => "examples/BLMM.md",
             "Linear Additive Genetic Model" => "examples/LinearAdditiveGeneticModel.md",
-            "Linear Mixed Model (Genomic data)" => "examples/genomicBLMM.md",
+            "Linear Mixed Model (Genomic data)" => "examples/GenomicBLMM.md",
         ],
     ],
 )

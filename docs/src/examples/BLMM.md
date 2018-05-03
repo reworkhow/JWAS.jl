@@ -1,4 +1,4 @@
-# Bayesian Linear Additive Genetic Model
+# Bayesian Linear Mixed Models (conventional)
 
 ### Step 1: Load Packages
 
@@ -10,10 +10,8 @@ using JWAS,JWAS.Datasets,CSV,DataFrames
 
 ```julia
 phenofile  = Datasets.dataset("example","phenotypes.txt")
-pedfile    = Datasets.dataset("example","pedigree.txt")
 
 phenotypes = CSV.read(phenofile,delim = ',',header=true)
-pedigree   = get_pedigree(pedfile,separator=",",header=true)
 
 head(phenotypes)
 ```
@@ -31,13 +29,12 @@ output:
 │ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │
 ```
 
-
-## Univariate Linear Additive Genetic Model
+## Univariate Linear Mixed Model (conventional)
 
 ### Step 3: Build Model Equations
 
 ```julia
-model_equation = "y1 = intercept + x1*x3 + x2 + x3 + ID + dam"
+model_equation = "y1 = intercept + x1 + x2 + x3 + x1*x3"
 R     = 1.0
 model = build_model(model_equation,R);
 ```
@@ -50,9 +47,7 @@ set_covariate("x1");
 ### Step 5: Set Random or Fixed Effects
 ```julia
 G1 = 1.0
-G2 = eye(2)
 set_random(model,"x2",G1)
-set_random(model,"ID dam",pedigree,G2)
 ```
 
 ### Step 6: Run Bayesian Analysis
@@ -61,14 +56,14 @@ out=runMCMC(model,phenotypes)
 ```
 
 
-## Multivariate Linear Additive Genetic Model
+## Multivariate Linear Mixed Model (conventional)
 
 ### Step 3: Build Model Equations
 
 ```julia
-model_equation = "y1 = intercept + x1 + x3 + ID + dam
-                  y2 = intercept + x1 + x2 + x3 + ID  
-                  y3 = intercept + x1 + x1*x3 + x2 + ID"
+model_equation = "y1 = intercept + x1 + x3
+                  y2 = intercept + x1 + x2 + x3  
+                  y3 = intercept + x1 + x1*x3 + x2"
 
 R     = eye(3)
 model = build_model(model_equation,R);
@@ -82,9 +77,7 @@ set_covariate("x1");
 ### Step 5: Set Random or Fixed Effects
 ```julia
 G1 = eye(2)
-G2 = eye(4)
 set_random(model,"x2",G1)
-set_random(model,"ID dam",pedigree,G2)
 ```
 
 ### Step 6: Run Bayesian Analysis

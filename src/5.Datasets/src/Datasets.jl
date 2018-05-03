@@ -11,5 +11,5 @@ function dataset(dataset_name::AbstractString,file_name::AbstractString)
     end
 end
 
-
+export dataset
 end # module

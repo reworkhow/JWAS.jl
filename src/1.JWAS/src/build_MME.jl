@@ -26,7 +26,7 @@ R               = 6.72
 models          = build_model(model_equations,R);
 
 #multi-trait
-model_equations = "BW = intercept + age + sex;
+model_equations = "BW = intercept + age + sex
                    CW = intercept + litter";
 R               = [6.72   24.84
                    24.84  708.41]

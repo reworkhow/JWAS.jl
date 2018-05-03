@@ -64,8 +64,8 @@ Depth = 3
 ### Examples
 ```@contents
 Pages = [
-  "examples/conventionalBLMM.md"
-  "examples/genomicBLMM.md"
+  "examples/BLMM.md"
+  "examples/GenomicBLMM.md"
   "examples/LinearAdditiveGeneticModel.md"
 ]
 Depth = 4

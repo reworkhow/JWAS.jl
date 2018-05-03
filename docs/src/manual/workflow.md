@@ -205,9 +205,9 @@ The **phenotypic data** is read on line 1, and the **pedigree data** is read on 
 ## Step 3: Build Model Equations
 
 ```julia
-model_equation = "y1 = intercept + x1 + x3 + ID + dam;
-                  y2 = intercept + x1 + x2 + x3 + ID;  
-                  y2 = intercept + x1 + x1*x3 + x2 + ID"
+model_equation = "y1 = intercept + x1 + x3 + ID + dam
+                  y2 = intercept + x1 + x2 + x3 + ID  
+                  y3 = intercept + x1 + x1*x3 + x2 + ID"
 model=build_model(model_equation, R)
 ```
 

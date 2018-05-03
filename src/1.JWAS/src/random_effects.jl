@@ -1,5 +1,5 @@
 """
-    get_pedigree(pedfile::AbstractString)
+    get_pedigree(pedfile::AbstractString;header=false,separator=' ')
 * Get pedigree informtion from a pedigree file.
 * File format:
 
@@ -10,8 +10,8 @@ c a b
 d a c
 ```
 """
-function get_pedigree(pedfile::AbstractString)
-  PedModule.mkPed(pedfile)
+function get_pedigree(pedfile::AbstractString;header=false,separator=' ')
+  PedModule.mkPed(pedfile,header=header,separator=separator)
 end
 
 ################################################################################
@@ -117,7 +117,7 @@ function set_random(mme::MME,randomStr::AbstractString, G; df=4)
         if trm in strpVec
           res = [res;string(m)*":"*trm] #add model number => "1:herd"
         else
-          error(trm," is not found in model equations.")
+          info(trm," is not found in model equation ",string(m),".")
         end
       end
       if length(res) != size(G,1)
