@@ -25,7 +25,7 @@ add_genotypes(model,genofile,G3,separator=&#39;,&#39;,header=true);</code></pre>
                   y3 = intercept + x1 + x1*x3 + x2 + ID&quot;
 
 R     = eye(3)
-model = build_model(model_equation,R);</code></pre><h3><a class="nav-anchor" id="Step-4:-Set-Factors-or-Covariate-2" href="#Step-4:-Set-Factors-or-Covariate-2">Step 4: Set Factors or Covariate</a></h3><pre><code class="language-julia">set_covariate(&quot;x1&quot;);</code></pre><h3><a class="nav-anchor" id="Step-5:-Set-Random-or-Fixed-Effects-2" href="#Step-5:-Set-Random-or-Fixed-Effects-2">Step 5: Set Random or Fixed Effects</a></h3><pre><code class="language-julia">G1 = eye(2)
+model = build_model(model_equation,R);</code></pre><h3><a class="nav-anchor" id="Step-4:-Set-Factors-or-Covariate-2" href="#Step-4:-Set-Factors-or-Covariate-2">Step 4: Set Factors or Covariate</a></h3><pre><code class="language-julia">set_covariate(model,&quot;x1&quot;);</code></pre><h3><a class="nav-anchor" id="Step-5:-Set-Random-or-Fixed-Effects-2" href="#Step-5:-Set-Random-or-Fixed-Effects-2">Step 5: Set Random or Fixed Effects</a></h3><pre><code class="language-julia">G1 = eye(2)
 G2 = eye(4)
 set_random(model,&quot;x2&quot;,G1)
 set_random(model,&quot;ID dam&quot;,pedigree,G2)</code></pre><h3><a class="nav-anchor" id="Step-6:-Use-Genomic-Information-2" href="#Step-6:-Use-Genomic-Information-2">Step 6: Use Genomic Information</a></h3><pre><code class="language-julia">G3 = eye(3)
