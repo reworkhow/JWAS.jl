@@ -733,7 +733,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 1: Load Packages",
     "category": "section",
-    "text": "using JWAS,JWAS.Datasets,CSV,DataFrames"
+    "text": "using JWAS,JWAS.Datasets,CSV,DataFramesusing JWAS,JWAS.Datasets,CSV,DataFrames"
 },
 
 {
