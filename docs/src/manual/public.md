@@ -1,6 +1,6 @@
 # Public functions
 
-Documentation for JWAS.jl's public interface. Below are functions available to general users. 
+Documentation for JWAS.jl's public interface. Below are functions available to general users.
 
 
 ## Index
@@ -32,6 +32,7 @@ runMCMC
 ```
 
 ```@docs
+JWAS.misc.GWAS
 JWAS.misc.get_additive_genetic_variances
 JWAS.misc.get_heritability
 JWAS.misc.get_correlations

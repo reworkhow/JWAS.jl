@@ -47,7 +47,7 @@ If you have trouble using JWAS, want new features or find errors in JWAS, please
 Pages = [
   "theory/theory.md"
 ]
-Depth = 4
+Depth = 3
 ```
 
 ### Manual
@@ -68,5 +68,5 @@ Pages = [
   "examples/GenomicBLMM.md"
   "examples/LinearAdditiveGeneticModel.md"
 ]
-Depth = 4
+Depth = 2
 ```

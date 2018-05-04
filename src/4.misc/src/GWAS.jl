@@ -1,4 +1,10 @@
-#return model frequencies
+"""
+    GWAS(marker_effects_file;header=false)
+
+Compute the model frequency for each marker (the probability the marker is included in the model)
+
+* **marker_effects_file** is a text file created by `runMCMC()` to save MCMC samples for marker effects
+"""
 function GWAS(marker_effects_file;header=true)
     file = marker_effects_file
     if header==true
@@ -76,7 +82,7 @@ end
 
 Compute the posterior probability that window explains more than **threshold** of genetic variance
 
-* **marker_effects_file** is created by runMCMC(**model**,...) to save MCMC samples for marker effects
+* **marker_effects_file** is created by `runMCMC(**model**,...)` to save MCMC samples for marker effects
 * **map_file** has the marker position information
 """
 function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001)

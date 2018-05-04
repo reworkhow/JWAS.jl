@@ -42,7 +42,7 @@ docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker
 ```
 
 This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication
-token. Documentation for JWAS can be accessed from the notebook: "JWAS_notebooks/index.ipynb".
+token. Examples for JWAS can be accessed from the notebook: `JWAS_notebooks/index.ipynb`.
 
 The directories and files created within the Docker container will be lost when the container is stopped. To save your work
 on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:
@@ -72,16 +72,15 @@ directories that are in the folder `/home/jovyan/rohan` will not be lost when th
 
 ## Access documentation
 
+!!! warning
+
+    Please load the JWAS package at first.
+
 To show the basic information (README file) of JWAS in REPL or IJulia notebook using `?JWAS`
 and press enter.
 
 For help on a specific function, type ? followed by its name, e.g. `?runMCMC` and press enter
 in REPL or IJulia notebook.
-
-!!! warning
-
-    Please load the JWAS package at first.
-
 
 The full documentation is available [here](http://reworkhow.github.io/JWAS.jl/latest/index.html).
 
@@ -120,3 +119,5 @@ julia script.jl arg1 arg2
 where arguments `arg1` and `arg2` are passed to your script as `ARGS[1]` and `ARGS[2]` of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/) for more options.
 
 (3) To run code in **IJulia notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
+
+(4) To run code in **IJulia notebook via Docker**, please see [Jupyter-IJulia notebooks via Docker](@ref).
