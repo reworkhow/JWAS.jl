@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Theory",
     "category": "section",
-    "text": "Pages = [\n  \"theory/theory.md\"\n]\nDepth = 4"
+    "text": "Pages = [\n  \"theory/theory.md\"\n]\nDepth = 3"
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Examples",
     "category": "section",
-    "text": "Pages = [\n  \"examples/BLMM.md\"\n  \"examples/GenomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 4"
+    "text": "Pages = [\n  \"examples/BLMM.md\"\n  \"examples/GenomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 2"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Jupyter-IJulia notebooks via Docker",
     "category": "section",
-    "text": "Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Documentation for JWAS can be accessed from the notebook: \"JWAS_notebooks/index.ipynb\".The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
+    "text": "Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Examples for JWAS can be accessed from the notebook: JWAS_notebooks/index.ipynb.The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Access documentation",
     "category": "section",
-    "text": "To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter.For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook.warning: Warning\nPlease load the JWAS package at first.The full documentation is available here."
+    "text": "warning: Warning\nPlease load the JWAS package at first.To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter.For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook.The full documentation is available here."
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Run your analysis",
     "category": "section",
-    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia."
+    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia.(4) To run code in IJulia notebook via Docker, please see Jupyter-IJulia notebooks via Docker."
 },
 
 {
@@ -325,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "Public functions",
     "category": "section",
-    "text": "Documentation for JWAS.jl\'s public interface. Below are functions available to general users. "
+    "text": "Documentation for JWAS.jl\'s public interface. Below are functions available to general users."
 },
 
 {
@@ -417,6 +417,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/public.html#JWAS.misc.GWAS",
+    "page": "Public",
+    "title": "JWAS.misc.GWAS",
+    "category": "function",
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model)\n\nmarker_effects_file is a text file created by runMCMC() to save MCMC samples for marker effects\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nCompute the posterior probability that window explains more than threshold of genetic variance\n\nmarker_effects_file is created by runMCMC(**model**,...) to save MCMC samples for marker effects\nmap_file has the marker position information\n\n\n\n"
+},
+
+{
     "location": "manual/public.html#JWAS.misc.get_additive_genetic_variances",
     "page": "Public",
     "title": "JWAS.misc.get_additive_genetic_variances",
@@ -469,7 +477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "Public Interface",
     "category": "section",
-    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\noutputMCMCsamples\nshowMME\nsolve\nrunMCMCJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.report\nJWAS.misc.QC\nJWAS.misc.get_breeding_values"
+    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\noutputMCMCsamples\nshowMME\nsolve\nrunMCMCJWAS.misc.GWAS\nJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.report\nJWAS.misc.QC\nJWAS.misc.get_breeding_values"
 },
 
 {
