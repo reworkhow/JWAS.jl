@@ -6,10 +6,6 @@
 using JWAS,JWAS.Datasets,CSV,DataFrames
 ```
 
-```julia
-using JWAS,JWAS.Datasets,CSV,DataFrames
-```
-
 ### Step 2: Read data
 
 ```julia
