@@ -621,7 +621,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
-    "text": ""
+    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/1_Conventional_Linear_Mixed_Model.ipynb) for this example"
 },
 
 {
@@ -733,7 +733,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Bayesian Linear Additive Genetic Model",
     "category": "section",
-    "text": ""
+    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/2_Linear_Additive_Genetic_Model.ipynb) for this example"
 },
 
 {
@@ -845,7 +845,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
-    "text": ""
+    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/3_Genomic_Linear_Mixed_Model.ipynb) for this example"
 },
 
 {
