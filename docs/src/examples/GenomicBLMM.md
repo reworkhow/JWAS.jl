@@ -1,5 +1,9 @@
 # Bayesian Linear Mixed Models (Genomic Data)
 
+* link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/
+JWAS.jl/blob/master/docs/notebooks_v0.3/3_Genomic_Linear_Mixed_Model.ipynb)
+for this example
+
 ### Step 1: Load Packages
 
 ```julia
