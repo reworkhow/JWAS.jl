@@ -385,6 +385,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/public.html#JWAS.runMCMC",
+    "page": "Public",
+    "title": "JWAS.runMCMC",
+    "category": "function",
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"BayesC0\", \"BayesC\", \"BayesCC\",\"BayesB\".\nmissing_phenotypes\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nsave MCMC samples every output_samples_frequency iterations\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zero.\n\n\n\n"
+},
+
+{
     "location": "manual/public.html#JWAS.outputMCMCsamples",
     "page": "Public",
     "title": "JWAS.outputMCMCsamples",
@@ -409,19 +417,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public.html#JWAS.runMCMC",
-    "page": "Public",
-    "title": "JWAS.runMCMC",
-    "category": "function",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"BayesC0\", \"BayesC\", \"BayesCC\",\"BayesB\".\nmissing_phenotypes\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nsave MCMC samples every output_samples_frequency iterations\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zero.\n\n\n\n"
-},
-
-{
     "location": "manual/public.html#JWAS.misc.GWAS",
     "page": "Public",
     "title": "JWAS.misc.GWAS",
     "category": "function",
-    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model)\n\nmarker_effects_file is a text file created by runMCMC() to save MCMC samples for marker effects\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nCompute the posterior probability that window explains more than threshold of genetic variance\n\nmarker_effects_file is created by runMCMC(**model**,...) to save MCMC samples for marker effects\nmap_file has the marker position information\n\n\n\n"
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in marker_effects_file.\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in marker_effects_file\nmap_file has the marker position information\n\n\n\n"
 },
 
 {
@@ -429,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_additive_genetic_variances",
     "category": "function",
-    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples of marker effects stored in files.\n\n\n\n"
+    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples for marker effects stored in files.\nReturn a vector for single-trait analysis and an array of matrices for multi-trait analysis\n\n\n\n"
 },
 
 {
@@ -437,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_heritability",
     "category": "function",
-    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_vairances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities.\n\n\n\n"
+    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_variances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for multi-trait analysis\n\n\n\nget_heritability(samples_for_genetic_variances::Array{Float64,1},samples_for_residual_variances::Array{Float64,1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for single-trait analysis\n\n\n\n"
 },
 
 {
@@ -445,7 +445,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_correlations",
     "category": "function",
-    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations\n\n\n\n"
+    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations using MCMC samples for covariance matrces\n\n\n\n"
+},
+
+{
+    "location": "manual/public.html#JWAS.misc.get_breeding_values",
+    "page": "Public",
+    "title": "JWAS.misc.get_breeding_values",
+    "category": "function",
+    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
+},
+
+{
+    "location": "manual/public.html#JWAS.misc.reformat",
+    "page": "Public",
+    "title": "JWAS.misc.reformat",
+    "category": "function",
+    "text": "reformat(G::Array{Float64,2},ntraits=false)\n\nconvert the format from a Matrix to a Array of Matrices, when the matrix is\n\nread from text file storing samples for covariance matrices or heritabilities\n\nthe size of the Matrix is\nntraits x nsamples for MCMC samples for heritbilities\n(ntraits^2) x nsamples for MCMC samples for covariance matrices\nthe Array of Matrices is an array (length=nsamples) of\nmatrices of size ntraits X ntraits for covariance matrices\nvectors of length ntraits for heritabilities\n\n\n\nreformat(G::Array{Array{Float64,2},1},1})\n\nconvert the format from a Array of Matrices to a Matrix, then the Matrix chance\n\nbe write to text files to save samples for covariance matrices or heritabilities\n\nthe Array of Matrices is an array (length=nsamples) of\nmatrices of size ntraits X ntraits for covariance matrices (Array{Array{Float64,2},1})\nvectors of length ntraits for heritabilities (Array{Array{Float64,1},1})\nthe size of the Matrix is\nntraits x nsamples for MCMC samples for heritbilities\n(ntraits^2) x nsamples for MCMC samples for covariance matrices\n\n\n\n"
 },
 
 {
@@ -465,19 +481,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public.html#JWAS.misc.get_breeding_values",
-    "page": "Public",
-    "title": "JWAS.misc.get_breeding_values",
-    "category": "function",
-    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
-},
-
-{
     "location": "manual/public.html#Public-Interface-1",
     "page": "Public",
     "title": "Public Interface",
     "category": "section",
-    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\noutputMCMCsamples\nshowMME\nsolve\nrunMCMCJWAS.misc.GWAS\nJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.report\nJWAS.misc.QC\nJWAS.misc.get_breeding_values"
+    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\nrunMCMC\noutputMCMCsamples\nshowMME\nsolveJWAS.misc.GWAS\nJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.get_breeding_values\nJWAS.misc.reformat\nJWAS.misc.report\nJWAS.misc.QC"
 },
 
 {
@@ -621,7 +629,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
-    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/1_Conventional_Linear_Mixed_Model.ipynb) for this example"
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
@@ -733,7 +741,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Bayesian Linear Additive Genetic Model",
     "category": "section",
-    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/2_Linear_Additive_Genetic_Model.ipynb) for this example"
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
@@ -845,7 +853,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
-    "text": "link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/3_Genomic_Linear_Mixed_Model.ipynb) for this example"
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
