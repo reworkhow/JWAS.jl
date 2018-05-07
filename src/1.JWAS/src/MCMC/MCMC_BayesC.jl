@@ -1,3 +1,4 @@
+#MCMC for BayseC0, BayesC, BayesCpi and "conventional (no markers).
 function MCMC_BayesC(nIter,mme,df;
                      burnin    =0,
                      π         =0.0,
@@ -14,14 +15,12 @@ function MCMC_BayesC(nIter,mme,df;
     #starting values for location parameters(no marker) are sol
     sol,solMean = pre_check(mme,df,sol)
 
-    if π==0.0
-      methods="BayesC0"
-    end
     if methods=="BayesC0" && π != 0.0
-      error("BayesC0 runs with π=0.")
-    end
-    if methods=="BayesC0" && estimatePi == true
-      error("BayesC0 runs with estimatePi = false.")
+        error("BayesC0 runs with π=0.")
+    elseif methods=="BayesC0" && estimatePi == true
+        error("BayesC0 runs with estimatePi = false.")
+    elseif methods=="BayesC" && mme.M == 0
+        error("BayesC runs with genotypes")
     end
     ############################################################################
     # PRIORS
@@ -32,20 +31,7 @@ function MCMC_BayesC(nIter,mme,df;
     scaleRes    = vRes*(nuRes-2)/nuRes
     meanVare    = 0.0
 
-    #priors for marker effect variance
-    mGibbs      = GibbsMats(mme.M.genotypes)
-    nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-    dfEffectVar = mme.df.marker
-    vEff        = mme.M.G
-    scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
-    meanVara    = 0.0 #variable to save variance for marker effect
-    #vectors to save solutions for marker effects
-    α           = zeros(nMarkers)#starting values for marker effeccts are zeros
-    δ           = zeros(nMarkers)#inclusion indicator for marker effects
-    meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
-    mean_pi     = 0.0
-
-    #priors for polygenic effects (A) e.g Animal+ Maternal
+    #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.ped != 0
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
@@ -56,6 +42,22 @@ function MCMC_BayesC(nIter,mme,df;
        S         = zeros(Float64,k,k)
        G0Mean    = zeros(Float64,k,k)
     end
+
+    #priors for marker effect variance
+    if mme.M != 0
+        mGibbs      = GibbsMats(mme.M.genotypes)
+        nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+        dfEffectVar = mme.df.marker
+        vEff        = mme.M.G
+        scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
+        meanVara    = 0.0 #variable to save variance for marker effect
+        #vectors to save solutions for marker effects
+        α           = zeros(nMarkers)#starting values for marker effeccts are zeros
+        δ           = zeros(nMarkers)#inclusion indicator for marker effects
+        meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
+        mean_pi     = 0.0
+    end
+
     ############################################################################
     #  WORKING VECTORS (ycor)
     ############################################################################
@@ -66,7 +68,7 @@ function MCMC_BayesC(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
+        out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
     end
 
     ############################################################################
@@ -89,32 +91,33 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
-        if methods=="BayesC"
-          nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
-        elseif methods=="BayesC0"
-          sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
-          nLoci = nMarkers
-        end
-        if iter > burnin
-            meanAlpha += (α - meanAlpha)/(iter-burnin)
-        end
+        if mme.M !=0
+            if methods=="BayesC"
+                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
+            elseif methods=="BayesC0"
+                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
+                nLoci = nMarkers
+            end
+            if iter > burnin
+                meanAlpha += (α - meanAlpha)/(iter-burnin)
+            end
 
-        #sample Pi
-        if estimatePi == true
-          π = samplePi(nLoci, nMarkers)
-          if iter > burnin
-              mean_pi += (π-mean_pi)/(iter-burnin)
-          end
+            #sample Pi
+            if estimatePi == true
+                π = samplePi(nLoci, nMarkers)
+                if iter > burnin
+                    mean_pi += (π-mean_pi)/(iter-burnin)
+                end
+            end
         end
-
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
-          G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
-          if iter > burnin
-              G0Mean  += (G0  - G0Mean )/(iter-burnin)
-          end
+            G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
+            if iter > burnin
+                G0Mean  += (G0  - G0Mean )/(iter-burnin)
+            end
         end
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
@@ -133,9 +136,11 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
-        vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
-        if iter > burnin
-            meanVara += (vEff - meanVara)/(iter-burnin)
+        if mme.M != 0
+            vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
+            if iter > burnin
+                meanVara += (vEff - meanVara)/(iter-burnin)
+            end
         end
 
         ########################################################################
@@ -151,11 +156,13 @@ function MCMC_BayesC(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
             if mme.ped !=0
-              println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
+                println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
-            println("Marker effects variance: ",round(meanVara,6))
-            if estimatePi == true
-              println("π: ", round(mean_pi,3))
+            if mme.M != 0
+                println("Marker effects variance: ",round(meanVara,6))
+                if estimatePi == true
+                    println("π: ", round(mean_pi,3))
+                end
             end
         end
     end

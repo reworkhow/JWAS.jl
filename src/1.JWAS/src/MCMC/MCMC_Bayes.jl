@@ -4,11 +4,23 @@ function MCMC_Bayes(nIter,mme,df;
                      methods   ="conventional analyses",
                      output_samples_frequency=0)
 
+
+
+
+
+
     ############################################################################
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
     sol,solMean = pre_check(mme,df,sol)
+
+
+
+
+
+
+
 
     ############################################################################
     # PRIORS
@@ -18,7 +30,23 @@ function MCMC_Bayes(nIter,mme,df;
     nuRes       = mme.df.residual
     scaleRes    = vRes*(nuRes-2)/nuRes
     meanVare    = 0.0
-    #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.ped != 0
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
@@ -29,7 +57,6 @@ function MCMC_Bayes(nIter,mme,df;
        S         = zeros(Float64,k,k)
        G0Mean    = zeros(Float64,k,k)
     end
-
     ############################################################################
     #  WORKING VECTORS (ycor)
     ############################################################################
@@ -58,6 +85,41 @@ function MCMC_Bayes(nIter,mme,df;
 
         ycorr = ycorr - mme.X*sol
         solMean += (sol - solMean)/iter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         ########################################################################
         # 2.3 Residual Variance
