@@ -1,8 +1,6 @@
 # Bayesian Linear Mixed Models (conventional)
 
-* link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/
-JWAS.jl/blob/master/docs/notebooks_v0.3/1_Conventional_Linear_Mixed_Model.ipynb)
-for this example
+* link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks_v0.3/1_Conventional_Linear_Mixed_Model.ipynb) for this example
 
 ### Step 1: Load Packages
 

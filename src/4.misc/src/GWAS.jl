@@ -1,9 +1,7 @@
 """
     GWAS(marker_effects_file;header=false)
 
-Compute the model frequency for each marker (the probability the marker is included in the model)
-
-* **marker_effects_file** is a text file created by `runMCMC()` to save MCMC samples for marker effects
+Compute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in **marker_effects_file**.
 """
 function GWAS(marker_effects_file;header=true)
     file = marker_effects_file
@@ -27,7 +25,7 @@ end
 #an array of number of SNPs in each window
 
 function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
-    println("Compute posterior probability that window explains more than ",threshold," of genetic variance")
+    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance")
 
     if header==true
         output=readdlm(marker_file,header=true)[1]
@@ -80,9 +78,9 @@ end
 """
     GWAS(marker_effects_file,map_file,model;header=false,window_size="1 Mb",threshold=0.001)
 
-Compute the posterior probability that window explains more than **threshold** of genetic variance
+run genomic window-based GWAS
 
-* **marker_effects_file** is created by `runMCMC(**model**,...)` to save MCMC samples for marker effects
+* MCMC samples of marker effects are stored in **marker_effects_file**
 * **map_file** has the marker position information
 """
 function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001)
@@ -136,6 +134,5 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
     out  = [out1 out2 out3 out4]
     return out
 end
-
 
 export GWAS

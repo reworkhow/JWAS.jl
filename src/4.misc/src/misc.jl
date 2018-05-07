@@ -3,7 +3,6 @@ module misc
 using DataFrames,CSV
 using Distributions
 using ProgressMeter
-#using Plots
 
 include("genotypes.jl")
 include("fixed_effects.jl")
