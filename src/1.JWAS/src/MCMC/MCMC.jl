@@ -30,88 +30,98 @@ function runMCMC(mme,df;
                 constraint        = false,
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
-                MCMC_marker_effects_file="MCMC_samples_for_marker_effects",
+                MCMC_marker_effects_file="MCMC_samples",
+                MCMC_samples_file = "MCMC_samples",
                 printout_frequency= chain_length+1,
                 printout_MCMCinfo = true,
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
-  if mme.M != 0 && mme.nModels !=1 && Pi==0.0
-      warn("Pi (Π) is not provided!!","\n")
-      warn("Pi was generated assuming all markers have effects on all traits","\n")
-      mykey=Array{Float64}(0)
-      ntraits=mme.nModels
-      Pi=Dict{Array{Float64,1},Float64}()
-      for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ]
-          Pi[float(split(i,""))]=0.0
-      end
-      Pi[ones(ntraits)]=1.0
-  end
+    ############################################################################
+    # Pre-Check
+    ############################################################################
 
-  if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
-    genetic2marker(mme.M,Pi)
-    if mme.nModels != 1
-      println("The prior for marker effects covariance matrix were calculated from genetic covariance matrix and π.")
-      if !isposdef(mme.M.G) #also work for scalar
-        error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
-      end
-      println("Marker effects covariance matrix is \n")
-      Base.print_matrix(STDOUT,round.(mme.M.G,6))
-    else
-      println("The prior for marker effects variance was calculated from genetic varaince and π.")
-      if !isposdef(mme.M.G) #positive scalar (>0)
-        error("Marker effects variance is negative!")
-      end
-      println("Marker effects variance is ")
-      println(round.(mme.M.G,6))
+    if methods!="conventional (no markers)"
+        #set up Pi
+        if mme.M != 0 && mme.nModels !=1 && Pi==0.0
+            warn("Pi (Π) is not provided!!","\n")
+            warn("Pi was generated assuming all markers have effects on all traits","\n")
+            mykey=Array{Float64}(0)
+            ntraits=mme.nModels
+            Pi=Dict{Array{Float64,1},Float64}()
+            for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ]
+              Pi[float(split(i,""))]=0.0
+            end
+            Pi[ones(ntraits)]=1.0
+        end
+        #set up marker effect variances
+        if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
+            genetic2marker(mme.M,Pi)
+            if mme.nModels != 1
+              println("The prior for marker effects covariance matrix were calculated from genetic covariance matrix and π.")
+              if !isposdef(mme.M.G) #also work for scalar
+                error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+              end
+              println("Marker effects covariance matrix is \n")
+              Base.print_matrix(STDOUT,round.(mme.M.G,6))
+            else
+              println("The prior for marker effects variance was calculated from genetic varaince and π.")
+              if !isposdef(mme.M.G) #positive scalar (>0)
+                error("Marker effects variance is negative!")
+              end
+              println("Marker effects variance is ")
+              println(round.(mme.M.G,6))
+            end
+            println("\n\n")
+        end
     end
-    println("\n\n")
-  end
 
-  have_starting_value=false
-  if starting_value != false
-    starting_value=vec(starting_value)
-    have_starting_value=true
-  end
+    #set up starting values for location parameters (not markers)
+    have_starting_value=false
+    if starting_value != false
+      starting_value=vec(starting_value)
+      have_starting_value=true
+    end
 
-  if printout_MCMCinfo == true
-    MCMCinfo(methods,Pi,chain_length,burnin,have_starting_value,printout_frequency,
-             output_samples_frequency,missing_phenotypes,constraint,estimatePi,
-             update_priors_frequency,mme)
-  end
+    #printout basic MCMC information
+    if printout_MCMCinfo == true
+      MCMCinfo(methods,Pi,chain_length,burnin,have_starting_value,printout_frequency,
+              output_samples_frequency,missing_phenotypes,constraint,estimatePi,
+              update_priors_frequency,mme)
+    end
 
-  if mme.nModels ==1
-      if methods =="conventional (no markers)"
-        res=MCMC_Bayes(chain_length,mme,df,
-                          sol        =starting_value,
-                          outFreq    =printout_frequency,
-                          output_samples_frequency=output_samples_frequency)
-      elseif methods in ["BayesC","BayesC0"]
-        res=MCMC_BayesC(chain_length,mme,df,
-                          burnin     = burnin,
-                          π          =Pi,
-                          methods    =methods,
-                          estimatePi =estimatePi,
-                          sol        =starting_value,
-                          outFreq    =printout_frequency,
-                          output_samples_frequency=output_samples_frequency,
-                          MCMC_marker_effects_file=MCMC_marker_effects_file)
-      elseif methods =="BayesB"
-        res=MCMC_BayesB(chain_length,mme,df,Pi,
+    if mme.nModels ==1
+        if methods =="conventional (no markers)"
+            res=MCMC_Bayes(chain_length,mme,df,
+                         sol        =starting_value,
+                         outFreq    =printout_frequency,
+                         output_samples_frequency=output_samples_frequency)
+        elseif methods in ["conventional (no markers)","BayesC","BayesC0"]
+            res=MCMC_BayesC(chain_length,mme,df,
+                            burnin     = burnin,
+                            π          =Pi,
+                            methods    =methods,
+                            estimatePi =estimatePi,
+                            sol        =starting_value,
+                            outFreq    =printout_frequency,
+                            output_samples_frequency=output_samples_frequency,
+                            MCMC_marker_effects_file=MCMC_marker_effects_file)
+        elseif methods =="BayesB"
+            res=MCMC_BayesB(chain_length,mme,df,Pi,
                             burnin     = burnin,
                             sol        =starting_value,
                             outFreq    =printout_frequency,
                             output_samples_frequency=output_samples_frequency,
                             MCMC_marker_effects_file=MCMC_marker_effects_file)
-      elseif methods =="GBLUP"
-          res=MCMC_GBLUP(chain_length,mme,df;
-                            sol        =starting_value,
-                            outFreq    =printout_frequency,
-                            output_samples_frequency=output_samples_frequency,
-                            MCMC_marker_effects_file=MCMC_marker_effects_file)
-      else
-        error("No options!!!")
-      end
+        elseif methods =="GBLUP"
+            res=MCMC_GBLUP(chain_length,mme,df;
+                           sol        =starting_value,
+                           outFreq    =printout_frequency,
+                           output_samples_frequency=output_samples_frequency,
+                           MCMC_marker_effects_file=MCMC_marker_effects_file)
+        else
+            error("No options!!!")
+        end
     elseif mme.nModels > 1
         if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
@@ -178,7 +188,11 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     @printf("\n%-30s\n","Degree of freedom for hyper-parameters:")
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
     @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
-    @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
-    @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
+    if mme.ped!=0
+        @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
+    end
+    if mme.M!=0
+        @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
+    end
     @printf("\n\n\n")
 end

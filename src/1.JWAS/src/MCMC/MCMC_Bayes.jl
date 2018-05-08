@@ -133,7 +133,7 @@ function MCMC_Bayes(nIter,mme,df;
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
-          G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0) #better add A outside
+          G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
           G0Mean  += (G0  - G0Mean )/iter
         end
         ########################################################################

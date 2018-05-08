@@ -15,12 +15,18 @@ function MCMC_BayesC(nIter,mme,df;
     #starting values for location parameters(no marker) are sol
     sol,solMean = pre_check(mme,df,sol)
 
-    if methods=="BayesC0" && π != 0.0
+    if methods=="BayesC" && mme.M == 0
+        error("BayesC runs with genotypes")
+    elseif methods=="BayesC0" && mme.M == 0
+        error("BayesC0 runs with genotypes")
+    elseif methods=="BayesC0" && π != 0.0
         error("BayesC0 runs with π=0.")
     elseif methods=="BayesC0" && estimatePi == true
         error("BayesC0 runs with estimatePi = false.")
-    elseif methods=="BayesC" && mme.M == 0
-        error("BayesC runs with genotypes")
+    elseif methods=="conventional (no markers)" && estimatePi == true
+        error("conventional (no markers) analysis runs with estimatePi = false.")
+        if a
+
     end
     ############################################################################
     # PRIORS
@@ -68,11 +74,16 @@ function MCMC_BayesC(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-        out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
+        if mme.M != 0
+            out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,
+                                                 MCMC_marker_effects_file=MCMC_marker_effects_file)
+        else
+            out_i =output_MCMC_samples_setup(mme,nIter,output_samples_frequency,false)
+        end
     end
 
     ############################################################################
-    # MCMC
+    # MCMC (starting values for sol (zeros);  vRes; G0 are used)
     ############################################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
 
@@ -114,7 +125,7 @@ function MCMC_BayesC(nIter,mme,df;
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
-            G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
+            G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0) #better add A outside
             if iter > burnin
                 G0Mean  += (G0  - G0Mean )/(iter-burnin)
             end
@@ -147,7 +158,11 @@ function MCMC_BayesC(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
-            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,α,vEff,sample4π,outfile,estimatePi)
+            if mme.M != 0
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,α,vEff,sample4π,outfile,estimatePi)
+            else
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0)
+            end
         end
         ########################################################################
         # 3.2 Printout
@@ -170,12 +185,16 @@ function MCMC_BayesC(nIter,mme,df;
     ############################################################################
     # After MCMC
     ############################################################################
-    if output_samples_frequency != 0
-      for outfilei in outfile
-        close(outfilei)
-      end
-    end
+    if mme.M != 0
+        if output_samples_frequency != 0
+          for outfilei in outfile
+            close(outfilei)
+          end
+        end
 
-    output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?sample4π:false,estimatePi?mean_pi:false)
+        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?sample4π:false,estimatePi?mean_pi:false)
+    else
+        output=output_result(mme,solMean,output_samples_frequency)
+    end
     return output
 end
