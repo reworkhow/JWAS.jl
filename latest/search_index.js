@@ -781,7 +781,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -821,7 +821,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -893,7 +893,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
