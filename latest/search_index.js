@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\")link to documentation for set_covariateOn line 1, the effect x1 is defined to be a covariate rather than class effect."
+    "text": "set_covariate(model,\"x1\")link to documentation for set_covariateOn line 1, the effect x1 is defined to be a covariate rather than class effect."
 },
 
 {
