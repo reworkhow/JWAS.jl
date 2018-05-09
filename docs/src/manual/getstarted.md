@@ -22,16 +22,20 @@ The command `Pkg.add("JWAS")` will add the registered official JWAS package and 
 To use the latest/beta features under development, run `Pkg.checkout("JWAS")` to get the
 newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
 
-###### IJulia notebook
+#### IJulia notebook
 
 If you prefer “reproducible research”, an interactive Jupyter notebook interface is available
 for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating
 and sharing documents that contain live code, equations, visualizations and explanatory text.
 To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
 
-###### Jupyter-IJulia notebooks via Docker
+#### Docker
 
-Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.
+
+!!! note "Jupyter-IJulia notebooks with JWAS via Docker"
+
+    Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.
+
 
 - Install Docker from [here](https://docs.docker.com/install/) for your platform.
 
@@ -63,7 +67,7 @@ directories that are in the folder `/home/jovyan/rohan` will not be lost when th
 
 
 
-###### Standalone application
+#### Standalone application
 
 !!! note "standalone application (no installation required)"
 
