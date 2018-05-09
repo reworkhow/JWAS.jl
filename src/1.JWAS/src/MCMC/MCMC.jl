@@ -1,6 +1,5 @@
 include("outputMCMCsamples.jl")
 include("DRY.jl")
-include("MCMC_Bayes.jl")
 include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")

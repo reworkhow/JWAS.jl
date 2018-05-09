@@ -2,9 +2,9 @@
 # Pre-Check
 ################################################################################
 function pre_check(mme,df,sol)
-  if size(mme.mmeRhs)==()
+#  if size(mme.mmeRhs)==()
       getMME(mme,df)
-  end
+#  end
   #starting value for sol can be provided
   if sol == false #no starting values
       sol = zeros(size(mme.mmeLhs,1))
