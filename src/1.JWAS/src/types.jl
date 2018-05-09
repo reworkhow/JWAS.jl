@@ -153,7 +153,15 @@ type MME
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],zeros(1,1),0,0,R,R,0,1,zeros(1,1),zeros(1,1),[],DF(ν,4,4,4))
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
+                   0,0,0,0,
+                   [],0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   [],
+                   zeros(1,1),0,0,R,R,
+                   0,
+                   1,
+                   zeros(1,1),zeros(1,1),[],
+                   DF(ν,4,4,4))
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[],DF(ν,4,4,4))
       else

@@ -251,7 +251,7 @@ end
 function getinfo(model)
   println("A Mixed Effects Model was build with")
   println("Model equations:")
-  for i in models.modelVec
+  for i in model.modelVec
     println(i)
   end
   println("Term","\t\t","Covariate","\t\t","Factor","\t","Fixed","\t","Random")

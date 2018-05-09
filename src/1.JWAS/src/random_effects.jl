@@ -153,7 +153,9 @@ end
 #duplicated code in addA and sample_variance_pedigree
 #Need to be merged #MAY NOT
 ################################################################################
-
+#The 1st time setting up MME,
+#mme.GiOld = zeros(G),mme.GiNew = inv(G),mme.Rnew = mme.Rold= R
+################################################################################
 #construct MME for pedigree-based random effects part
 function addA(mme::MME) #two terms,e.g.,"animal" and "maternal" may not near in MME
     pedTrmVec = mme.pedTrmVec

@@ -15,7 +15,9 @@ function MCMC_BayesC(nIter,mme,df;
     #starting values for location parameters(no marker) are sol
     sol,solMean = pre_check(mme,df,sol)
 
-    if methods=="BayesC" && mme.M == 0
+    if methods == "conventional (no markers)" && mme.M!=0
+        error("Conventional analysis runs without genotypes!")
+    elseif methods=="BayesC" && mme.M == 0
         error("BayesC runs with genotypes")
     elseif methods=="BayesC0" && mme.M == 0
         error("BayesC0 runs with genotypes")
@@ -25,8 +27,6 @@ function MCMC_BayesC(nIter,mme,df;
         error("BayesC0 runs with estimatePi = false.")
     elseif methods=="conventional (no markers)" && estimatePi == true
         error("conventional (no markers) analysis runs with estimatePi = false.")
-        if a
-
     end
     ############################################################################
     # PRIORS
@@ -191,7 +191,6 @@ function MCMC_BayesC(nIter,mme,df;
             close(outfilei)
           end
         end
-
         output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?sample4π:false,estimatePi?mean_pi:false)
     else
         output=output_result(mme,solMean,output_samples_frequency)

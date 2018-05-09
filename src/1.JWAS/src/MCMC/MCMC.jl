@@ -91,12 +91,7 @@ function runMCMC(mme,df;
     end
 
     if mme.nModels ==1
-        if methods =="conventional (no markers)"
-            res=MCMC_Bayes(chain_length,mme,df,
-                         sol        =starting_value,
-                         outFreq    =printout_frequency,
-                         output_samples_frequency=output_samples_frequency)
-        elseif methods in ["conventional (no markers)","BayesC","BayesC0"]
+        if methods in ["conventional (no markers)","BayesC","BayesC0"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin     = burnin,
                             π          =Pi,
