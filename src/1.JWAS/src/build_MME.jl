@@ -248,15 +248,34 @@ function getMME(mme::MME, df::DataFrame)
 end
 
 #more details later
-function getinfo(model)
-  println("A Mixed Effects Model was build with")
-  println("Model equations:")
+function getinfo(model;data=false)
+  println("A Linear Mixed Model was build with")
+  println("Model equations:\n")
   for i in model.modelVec
     println(i)
   end
-  println("Term","\t\t","Covariate","\t\t","Factor","\t","Fixed","\t","Random")
-  for i in models.modelTerms
-    println(i.trmStr,"\t\t",10,"\t\t",10)
+  println()
+  @printf("%20s %20s %20s %20s\n","Term","C/F","F/R","nLevels")
+  for i in model.modelTerms
+
+    term    = i.trmStr
+    nLevels = i.nLevels
+    fixed   =
+    factor  = (nLevels==1)?"covariate":"factor"
+
+    if size(model.mmeRhs)==()&&data==false
+      nLevels="NA"
+    elseif size(model.mmeRhs)==()
+      getMME(model,data)
+    end
+
+    if split(term,':')[2]=="intercept"
+        factor="factor"
+    elseif length(split(term,'*'))!=1
+        factor="interaction"
+    end
+
+    @printf("%20s %20s %20s %20s\n",term,factor,fixed,nLevels)
   end
   #incidence matrix , #elements non-zero elements
   #"incomplete or complete",genomic data
