@@ -15,48 +15,57 @@ end
 ################################################################################
 #Wraps for Output MCMC Samples
 ################################################################################
-function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,ismarker=true;
-                    MCMC_marker_effects_file="MCMC_samples_for_marker_effects")
+function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name="MCMC_samples")
   #initialize arrays to save MCMC samples
   num_samples = Int(floor(nIter/output_samples_frequency))
   init_sample_arrays(mme,num_samples)
   out_i = 1
 
-  if ismarker==true #write samples for marker effects to a txt file
-    file_name  = MCMC_marker_effects_file
+  outfile=Dict{String,IOStream}()
+
+  if mme.M !=0 #write samples for marker effects to a text file
     if isfile(file_name*".txt")
       warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
     else
       info("The file "*file_name*" (_variance) was created to save MCMC samples for marker effects (variances).")
     end
 
-    outfile = Array{IOStream}(2)                     #better to use dictionary later
-    outfile[1]=open(file_name*".txt","w")            #marker effects
-    outfile[2]=open(file_name*"_variance.txt","w")   #marker effect variance
-    if mme.M.markerID[1]!="NA"
-        writedlm(outfile[1],transubstrarr(mme.M.markerID))
-        writedlm(outfile[2],transubstrarr(mme.M.markerID))
+    outvar=["marker_effects","marker_effects_variances","pi"];
+    for i in outvar
+        outfile[i]=open("MCMCsamples_"*i*".txt","w")
     end
-    pi = zeros(num_samples)#vector to save π (for BayesC)
-    return out_i,outfile,pi
-  else
-    return out_i #for conventional analyses (no markers)
+    if mme.M.markerID[1]!="NA"
+        writedlm(outfile["marker_effects"],transubstrarr(mme.M.markerID))
+        writedlm(outfile["marker_effects_variances"],transubstrarr(mme.M.markerID))
+    end
+
+    # outfile = Array{IOStream}(2)                     #better to use dictionary later
+    # outfile[1]=open(file_name*".txt","w")            #marker effects
+    # outfile[2]=open(file_name*"_variance.txt","w")   #marker effect variance
+    # if mme.M.markerID[1]!="NA"
+    #     writedlm(outfile[1],transubstrarr(mme.M.markerID))
+    #     writedlm(outfile[2],transubstrarr(mme.M.markerID))
+    # end
+    #pi = zeros(num_samples)#vector to save π (for BayesC)
+    #return out_i,outfile,pi
   end
+  return out_i,outfile
 end
 
-function output_MCMC_samples(mme,out_i,sol,vRes,G0,π,
-                             α=false,locusEffectVar=false,sample4π=false,outfile=false,estimatePi=false)
+function output_MCMC_samples(mme,out_i,sol,vRes,G0,
+                             π=false,
+                             α=false,
+                             locusEffectVar=false,
+                             outfile=false)
   outputSamples(mme,sol,out_i)
   mme.samples4R[:,out_i]=vRes
   if mme.ped != 0
     mme.samples4G[:,out_i]=vec(G0)
   end
   if α != false && outfile != false
-    writedlm(outfile[1],α')
-    writedlm(outfile[2],locusEffectVar')
-    if estimatePi==true && sample4π!=false
-      sample4π[out_i] = π
-    end
+    writedlm(outfile["marker_effects"],α')
+    writedlm(outfile["marker_effects_variances"],locusEffectVar')
+    writedlm(outfile["pi"],π)
   end
   out_i +=1
   return out_i

@@ -19,7 +19,7 @@ end
 # Return Output Results (Dictionary)
 ################################################################################
 function output_result(mme,solMean,output_samples_frequency,
-                       meanAlpha=false,estimatePi=false,pi=false,mean_pi=false)
+                       meanAlpha=false,estimatePi=false,mean_pi=false)
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
   if output_samples_frequency != 0
@@ -49,9 +49,6 @@ function output_result(mme,solMean,output_samples_frequency,
     output["Posterior mean of marker effects"] = markerout
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
-        if  output_samples_frequency != 0
-            output["MCMC samples for: π"] = pi
-        end
     end
   end
 
