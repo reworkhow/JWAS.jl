@@ -30,7 +30,8 @@ function output_result(mme,solMean,output_samples_frequency,
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
-          output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
+          output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
+                                                 i.sampleArray]
       end
       for i in  mme.rndTrmVec
           trmi   = i.term_array[1]
