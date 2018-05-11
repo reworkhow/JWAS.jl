@@ -23,22 +23,44 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   outfile=Dict{String,IOStream}()
 
-  if mme.M !=0 #write samples for marker effects to a text file
-    if isfile(file_name*".txt")
-      warn("The file "*file_name*" already exists!!! It was overwritten by the new output.")
-    else
-      info("The file "*file_name*" (_variance) was created to save MCMC samples for marker effects (variances).")
-    end
-
-    outvar=["marker_effects","marker_effects_variances","pi"];
-    for i in outvar
-        outfile[i]=open("MCMCsamples_"*i*".txt","w")
-    end
-    if mme.M.markerID[1]!="NA"
-        writedlm(outfile["marker_effects"],transubstrarr(mme.M.markerID))
-        writedlm(outfile["marker_effects_variances"],transubstrarr(mme.M.markerID))
-    end
+  outvar = ["residual_variance"]
+  if mme.ped != 0
+      push!(outvar,"polygenic_effects_variance")
   end
+  if mme.M !=0 #write samples for marker effects to a text file
+      push!(outvar,"marker_effects","marker_effects_variances","pi")
+  end
+  #non-marker random effects variances
+  for i in  mme.rndTrmVec
+      trmStri   = i.term_array[1].trmStr
+      push!(outvar,trmStri*"_variances")
+  end
+
+  for i in outvar
+      file_i    = file_name*"_"*i*".txt"
+      if isfile(file_i)
+        warn("The file "*file_i*" already exists!!! It is overwritten by the new output.")
+      else
+        info("The file "*file_i*" is created to save MCMC samples for "*i*".")
+      end
+      outfile[i]=open(file_i,"w")
+  end
+
+  #add headers
+  if mme.M !=0 && mme.M.markerID[1]!="NA"
+    writedlm(outfile["marker_effects"],transubstrarr(mme.M.markerID))
+  end
+  if mme.ped != 0
+    pedtrmvec  = mme.pedTrmVec
+    thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
+    writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader))
+  end
+  for i in  mme.rndTrmVec
+      trmStri   = i.term_array[1].trmStr
+      push!(outvar,trmStri*"_variances")
+  end
+
+
   return out_i,outfile
 end
 
@@ -48,9 +70,18 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
                              locusEffectVar=false,
                              outfile=false)
   outputSamples(mme,sol,out_i)
-  mme.samples4R[out_i,:]=vRes
+  #random effects variances
+  for effect in  mme.rndTrmVec
+    trmStri   = effect.term_array[1].trmStr
+    writedlm(outfile[trmStri*"_variances"],vec(effect.G)')
+  end
+
+  writedlm(outfile["residual_variance"],vRes)
+  #mme.samples4R[out_i,:]=vRes
+
   if mme.ped != 0
-    mme.samples4G[out_i,:]=vec(G0)
+    #mme.samples4G[out_i,:]=vec(G0)
+    writedlm(outfile["polygenic_effects_variance"],vec(G0)')
   end
   if α != false && outfile != false
     writedlm(outfile["marker_effects"],α')
@@ -85,16 +116,18 @@ end
 
 #init
 function init_sample_arrays(mme::MME,niter)
+    #WRITE TO FILES NOW
     #varaince components for residual
-    mme.samples4R = zeros(niter,mme.nModels^2)
+    #mme.samples4R = zeros(niter,mme.nModels^2)
     #variance components for random polygenic effects
-    if mme.ped != 0
-        mme.samples4G = zeros(niter,length(mme.pedTrmVec)^2)
-    end
+    #if mme.ped != 0
+    #    mme.samples4G = zeros(niter,length(mme.pedTrmVec)^2)
+    #end
+
     #location parameters for fixed and random effects except markers
     for i in  mme.outputSamplesVec #resize
         trmi = i.term
-        i.sampleArray = zeros(niter,trmi.nLevels,)
+        i.sampleArray = zeros(niter,trmi.nLevels)
     end
     #variance components for iid random effects
     for i in  mme.rndTrmVec #resize to be size of nTraits
@@ -125,7 +158,8 @@ function transubstrarr(vec::Array{SubString{String},1})
     return res
 end
 
-function transubstrarr(vec::Array{AbstractString,1})
+# for vec::Array{AbstractString,1} and vec::Array{String,1}
+function transubstrarr(vec)
     lvec=length(vec)
     res =Array{String}(1,lvec)
     for i in 1:lvec

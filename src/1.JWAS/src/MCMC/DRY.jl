@@ -23,10 +23,11 @@ function output_result(mme,solMean,output_samples_frequency,
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
   if output_samples_frequency != 0
-      output["MCMC samples for residual variance"]    = mme.samples4R
-      if mme.ped != 0
-          output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
-      end
+      #WRITE TO FILES
+      #output["MCMC samples for residual variance"]    = mme.samples4R
+      #if mme.ped != 0
+      #  output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
+      #end
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
