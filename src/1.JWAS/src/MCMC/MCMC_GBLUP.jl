@@ -1,12 +1,18 @@
 #Efficient GBLUP
-#y = μ + a + e with var(a)=G**σ²
+#y = μ + a + e with mean(a)=0,var(a)=G**σ²
 #G = LDL'
-#y = μ + Lα +e with var(α)=D*σ² : L orthogonal
+#<=>
+#y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
 
 function MCMC_GBLUP(nIter,mme,df;
-                     sol       =false,
-                     outFreq   =1000,
-                     output_samples_frequency=0)
+                    burnin                     = 0,
+                    sol                        = false,
+                    outFreq                    = 1000,
+                    output_samples_frequency   = 0)
+
+
+    #TURN OFF OUTPUT MCMC SAMPLES
+    output_samples_frequency=0
 
     #############################################################################
     # Pre-Check
@@ -23,26 +29,6 @@ function MCMC_GBLUP(nIter,mme,df;
     scaleRes    = vRes*(nuRes-2)/nuRes
     meanVare    = 0.0
 
-    #priors for ~~marker effect~~ genetic variance
-    mGibbs      = GibbsMats(mme.M.genotypes)
-    nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-    M           = mGibbs.X ./ sqrt(2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
-    #G           = M*M'/nMarkers
-    G           = (M*M'+eye(size(M,1))*0.00001)/nMarkers
-
-    eigenG      = eig(G)
-    L           = eigenG[2]#eigenvectros
-    D           = eigenG[1]#eigenvalues
-
-    dfEffectVar = mme.df.marker #actually for genetic effect here
-    vEff        = mme.M.G       #genetic variance
-    scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
-    meanVara    = 0.0
-    meanVarg    = 0.0
-
-    α           = zeros(nObs) #starting values for marker effeccts are zeros
-    meanAlpha   = zeros(nObs) #vectors to save solutions for marker effects
-
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
        ν         = mme.df.polygenic
@@ -54,6 +40,27 @@ function MCMC_GBLUP(nIter,mme,df;
        S         = zeros(Float64,k,k)
        G0Mean    = zeros(Float64,k,k)
     end
+
+    #priors for breeding values, genetic variance
+    mGibbs      = GibbsMats(mme.M.genotypes)
+    nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+    M           = mGibbs.X ./ sqrt.(2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
+    #G           = M*M'/nMarkers
+    G           = (M*M'+eye(size(M,1))*0.00001)/nMarkers
+
+    eigenG      = eig(G)
+    L           = eigenG[2]#eigenvectros
+    D           = eigenG[1]#eigenvalues
+
+    dfEffectVar = mme.df.marker                #actually for genetic effect here
+    vEff        = mme.M.G                      #genetic variance
+    scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
+    meanVara    = 0.0
+    meanVarg    = 0.0
+
+    α           = zeros(nObs) #starting values for pseudo breeding values are zeros
+    meanAlpha   = zeros(nObs) #vectors to save solutions for pseudo breeding values
+
     ############################################################################
     #  WORKING VECTORS (ycor)
     ############################################################################
@@ -64,7 +71,7 @@ function MCMC_GBLUP(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i =output_MCMC_samples_setup(mme,nIter,output_samples_frequency,false)
+        out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
     end
 
     ############################################################################
@@ -81,24 +88,29 @@ function MCMC_GBLUP(nIter,mme,df;
         Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
         ycorr = ycorr - mme.X*sol
-        solMean += (sol - solMean)/iter
-
+        if iter > burnin
+            solMean += (sol - solMean)/(iter-burnin)
+        end
         ########################################################################
-        # 1.2 Marker Effects (modified new alpha)
+        # 1.2 pseudo breeding values (modified new alpha)
         ########################################################################
         ycorr = ycorr + L*α
         lhs   = 1 + vRes./(vEff*D)
         mean1 = L'ycorr./lhs
-        α     = mean1 + randn(nObs).*sqrt(vRes./lhs)
-        meanAlpha += (α - meanAlpha)/iter
+        α     = mean1 + randn(nObs).*sqrt.(vRes./lhs)
         ycorr = ycorr - L*α
+        if iter > burnin
+            meanAlpha += (α - meanAlpha)/(iter-burnin)
+        end
 
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.ped != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
-          G0Mean  += (G0  - G0Mean )/iter
+          if iter > burnin
+              G0Mean  += (G0  - G0Mean )/(iter-burnin)
+          end
         end
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
@@ -111,20 +123,26 @@ function MCMC_GBLUP(nIter,mme,df;
         mme.ROld = mme.RNew
         vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         mme.RNew = vRes
-        meanVare += (vRes - meanVare)/iter
+        if iter > burnin
+            meanVare += (vRes - meanVare)/(iter-burnin)
+        end
         ###############################################
-        # 2.4 Marker Effects Variance (modified new alpha)
+        # 2.4 Genomic Genetic Variance (modified new alpha)
         ###############################################
-        vEff  = sample_variance(α./sqrt(D), nObs, dfEffectVar, scaleVar)
-        meanVara += (vEff - meanVara)/iter
+        vEff  = sample_variance(α./sqrt.(D), nObs, dfEffectVar, scaleVar)
+        if iter > burnin
+            meanVara += (vEff - meanVara)/(iter-burnin)
+        end
 
-        varg     = var(L*α,corrected=false)
-        meanVarg += (varg - meanVarg)/iter
+        if iter > burnin
+            varg     = var(L*α,corrected=false)
+            meanVarg += (varg - meanVarg)/(iter-burnin)
+        end
 
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_frequency != 0 && iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
             out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0)
         end
         ########################################################################

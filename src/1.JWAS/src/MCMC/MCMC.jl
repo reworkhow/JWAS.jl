@@ -71,8 +71,10 @@ function runMCMC(mme,df;
               println("Marker effects variance is ")
               println(round.(mme.M.G,6))
             end
-            println("\n\n")
+        elseif mme.M.G_is_marker_variance==true && methods=="GBLUP"
+            error("Please provide genetic variance for GBLUP analysis")
         end
+        println("\n\n")
     end
 
     #set up starting values for location parameters (not markers)
@@ -111,10 +113,10 @@ function runMCMC(mme,df;
                             MCMC_marker_effects_file = MCMC_marker_effects_file)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
-                           sol        =starting_value,
-                           outFreq    =printout_frequency,
-                           output_samples_frequency=output_samples_frequency,
-                           MCMC_marker_effects_file=MCMC_marker_effects_file)
+                            burnin                   = burnin,
+                            sol                      = starting_value,
+                            outFreq                  = printout_frequency,
+                            output_samples_frequency = output_samples_frequency)
         else
             error("No options!!!")
         end
