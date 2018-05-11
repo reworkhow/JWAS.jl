@@ -1,13 +1,13 @@
 #MCMC for BayseC0, BayesC, BayesCpi and "conventional (no markers).
 function MCMC_BayesC(nIter,mme,df;
-                     burnin    =0,
-                     π         =0.0,
-                     estimatePi=false,
-                     sol       =false,
-                     outFreq   =1000,
-                     methods   ="BayesC",
-                     output_samples_frequency=0,
-                     MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
+                     burnin                     = 0,
+                     π                          = 0.0,
+                     estimatePi                 = false,
+                     sol                        = false,
+                     outFreq                    = 1000,
+                     methods                    = "BayesC",
+                     output_samples_frequency   = 0,
+                     MCMC_marker_effects_file   = "MCMC_samples_for_marker_effects.txt")
 
     ############################################################################
     # Pre-Check
@@ -203,7 +203,7 @@ function MCMC_BayesC(nIter,mme,df;
             close(value)
           end
         end
-        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,estimatePi?mean_pi:false)
+        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,mean_pi)
     else
         output=output_result(mme,solMean,output_samples_frequency)
     end

@@ -92,21 +92,23 @@ function runMCMC(mme,df;
     if mme.nModels ==1
         if methods in ["conventional (no markers)","BayesC","BayesC0"]
             res=MCMC_BayesC(chain_length,mme,df,
-                            burnin     = burnin,
-                            π          =Pi,
-                            methods    =methods,
-                            estimatePi =estimatePi,
-                            sol        =starting_value,
-                            outFreq    =printout_frequency,
-                            output_samples_frequency=output_samples_frequency,
-                            MCMC_marker_effects_file=MCMC_marker_effects_file)
+                            burnin                   = burnin,
+                            π                        = Pi,
+                            methods                  = methods,
+                            estimatePi               = estimatePi,
+                            sol                      = starting_value,
+                            outFreq                  = printout_frequency,
+                            output_samples_frequency = output_samples_frequency,
+                            MCMC_marker_effects_file = MCMC_marker_effects_file)
         elseif methods =="BayesB"
-            res=MCMC_BayesB(chain_length,mme,df,Pi,
-                            burnin     = burnin,
-                            sol        =starting_value,
-                            outFreq    =printout_frequency,
-                            output_samples_frequency=output_samples_frequency,
-                            MCMC_marker_effects_file=MCMC_marker_effects_file)
+            res=MCMC_BayesB(chain_length,mme,df,
+                            burnin                   = burnin,
+                            π                        = Pi,
+                            estimatePi               = estimatePi,
+                            sol                      = starting_value,
+                            outFreq                  = printout_frequency,
+                            output_samples_frequency = output_samples_frequency,
+                            MCMC_marker_effects_file = MCMC_marker_effects_file)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                            sol        =starting_value,

@@ -1,9 +1,13 @@
-function MCMC_BayesB(nIter,mme,df,π;
-                     burnin    =0,
-                     sol       =false,
-                     outFreq   =100,
-                     output_samples_frequency =0,
-                     MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
+#MCMC for BayesB
+function MCMC_BayesB(nIter,mme,df;
+                     burnin                     = 0,
+                     π                          = 0.0,
+                     estimatePi                 = false,
+                     sol                        = false,
+                     outFreq                    = 1000,
+                     output_samples_frequency   = 0,
+                     MCMC_marker_effects_file   = "MCMC_samples_for_marker_effects.txt")
+
 
     ############################################################################
     # Pre-Check
@@ -20,20 +24,6 @@ function MCMC_BayesB(nIter,mme,df,π;
     scaleRes    = vRes*(nuRes-2)/nuRes
     meanVare    = 0.0
 
-    #priors for marker effect variance
-    mGibbs      = GibbsMats(mme.M.genotypes)
-    nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-    dfEffectVar = mme.df.marker
-    vEff        = mme.M.G
-    locusEffectVar = fill(vEff,nMarkers)
-    scaleVar       = vEff*(dfEffectVar-2)/dfEffectVar  #scale factor for locus effects
-    meanVara       = 0.0 #variable to save variance for marker effect
-    #vectors to save solutions for marker effects
-    α           = zeros(nMarkers) #starting values for partial marker effeccts are zeros
-    δ           = zeros(nMarkers) #inclusion indicator for marker effects
-    u           = zeros(nMarkers) #marker effects
-    meanu       = zeros(nMarkers) #vectors to save solutions for marker effects
-
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
     if mme.ped != 0
        ν         = mme.df.polygenic
@@ -46,6 +36,21 @@ function MCMC_BayesB(nIter,mme,df,π;
        G0Mean    = zeros(Float64,k,k)
     end
 
+    #priors for marker effect variance
+    mGibbs         = GibbsMats(mme.M.genotypes)
+    nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+    dfEffectVar    = mme.df.marker
+    vEff           = mme.M.G
+    locusEffectVar = fill(vEff,nMarkers)
+    scaleVar       = vEff*(dfEffectVar-2)/dfEffectVar  #scale factor for locus effects
+    meanVara       = 0.0 #variable to save variance for marker effect
+    #vectors to save solutions for marker effects
+    α              = zeros(nMarkers) #starting values for partial marker effeccts are zeros
+    δ              = zeros(nMarkers) #inclusion indicator for marker effects
+    u              = zeros(nMarkers) #marker effects
+    meanu          = zeros(nMarkers) #vectors to save solutions for marker effects
+    mean_pi        = 0.0
+
     ############################################################################
     # WORKING VECTORS (ycor, saving values)
     ############################################################################
@@ -56,8 +61,8 @@ function MCMC_BayesB(nIter,mme,df,π;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile,sample4π=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,MCMC_marker_effects_file=MCMC_marker_effects_file)
-    end #sample4π is not used in MME type since π is BayesC-specific
+      out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
+    end
 
     #######################################################
     # MCMC
@@ -82,6 +87,14 @@ function MCMC_BayesB(nIter,mme,df,π;
         nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,u,α,δ,vRes,locusEffectVar,π)
         if iter > burnin
             meanu += (u - meanu)/(iter-burnin)
+        end
+
+        #sample for pi
+        if estimatePi == true
+            π = samplePi(nLoci, nMarkers)
+            if iter > burnin
+                mean_pi += (π-mean_pi)/(iter-burnin)
+            end
         end
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
@@ -117,7 +130,7 @@ function MCMC_BayesB(nIter,mme,df,π;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
-          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0.0,u,locusEffectVar,false,outfile,false)
+          out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,u,locusEffectVar,outfile)
         end
         ########################################################################
         # 3.2 Printout
@@ -135,11 +148,11 @@ function MCMC_BayesB(nIter,mme,df,π;
     # After MCMC
     ############################################################################
     if output_samples_frequency != 0
-      for outfilei in outfile
-        close(outfilei)
+      for (key,value) in outfile
+        close(value)
       end
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,meanu)
+    output=output_result(mme,solMean,output_samples_frequency,meanu,estimatePi,mean_pi)
     return output
 end
