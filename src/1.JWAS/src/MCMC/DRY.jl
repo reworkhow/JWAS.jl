@@ -34,11 +34,12 @@ function output_result(mme,solMean,output_samples_frequency,
           output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
                                                  i.sampleArray]
       end
-      for i in  mme.rndTrmVec
-          trmi   = i.term_array[1]
-          trmStr = trmi.trmStr
-          output["MCMC samples for: variance of "*trmStr] = i.sampleArray
-      end
+      #WRITE TO FILES
+      #for i in  mme.rndTrmVec
+      #    trmi   = i.term_array[1]
+      #    trmStr = trmi.trmStr
+      #    output["MCMC samples for: variance of "*trmStr] = i.sampleArray
+      #end
   end
 
   if mme.M != 0 && meanAlpha != false

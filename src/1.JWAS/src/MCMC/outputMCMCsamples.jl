@@ -4,7 +4,7 @@
 """
     outputMCMCsamples(mme::MME,trmStr::AbstractString...)
 
-Get samples for specific variables.
+Get MCMC samples for specific location parameters.
 """
 function outputMCMCsamples(mme::MME,trmStr::AbstractString...)
     for i in trmStr
@@ -12,8 +12,27 @@ function outputMCMCsamples(mme::MME,trmStr::AbstractString...)
     end
 end
 
+#define samples for WHICH location parameters to output
+function outputSamplesFor(mme::MME,trmStr::AbstractString)
+    #add model number => "1:age"
+    res = []
+    for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trmStr in strpVec
+            res = [res;string(m)*":"*trmStr]
+        end
+    end #"age"->"1:age","2:age"
+
+    for trmStr in res
+        trm     = mme.modelTermDict[trmStr]
+        samples = MCMCSamples(trm,Array{Float64}(1,1))
+        push!(mme.outputSamplesVec,samples)
+    end
+end
+
 ################################################################################
-#Wraps for Output MCMC Samples
+#Set-Up files and arrays to save MCMC Samples
 ################################################################################
 function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name="MCMC_samples")
   #initialize arrays to save MCMC samples
@@ -32,7 +51,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   #non-marker random effects variances
   for i in  mme.rndTrmVec
-      trmStri   = i.term_array[1].trmStr
+      trmStri   = split(i.term_array[1].trmStr,':')[end]
       push!(outvar,trmStri*"_variances")
   end
 
@@ -56,7 +75,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
     writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader))
   end
   for i in  mme.rndTrmVec
-      trmStri   = i.term_array[1].trmStr
+      trmStri   = split(i.term_array[1].trmStr,':')[end]
       push!(outvar,trmStri*"_variances")
   end
 
@@ -64,6 +83,31 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   return out_i,outfile
 end
 
+#init sample arrays
+function init_sample_arrays(mme::MME,niter)
+    #WRITE TO FILES NOW
+    #varaince components for residual
+    #mme.samples4R = zeros(niter,mme.nModels^2)
+    #variance components for random polygenic effects
+    #if mme.ped != 0
+    #    mme.samples4G = zeros(niter,length(mme.pedTrmVec)^2)
+    #end
+
+    #location parameters for fixed and random effects except markers
+    for i in  mme.outputSamplesVec #resize
+        trmi = i.term
+        i.sampleArray = zeros(niter,trmi.nLevels)
+    end
+    #WRITE to FILES
+    #variance components for iid random effects
+    #for i in  mme.rndTrmVec #resize to be size of nTraits
+    #    i.sampleArray = zeros(niter,length(i.term_array)^2)
+    #end
+end
+
+################################################################################
+#Output MCMC Samples every output_samples_frequency steps
+################################################################################
 function output_MCMC_samples(mme,out_i,sol,vRes,G0,
                              π=false,
                              α=false,
@@ -72,7 +116,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   outputSamples(mme,sol,out_i)
   #random effects variances
   for effect in  mme.rndTrmVec
-    trmStri   = effect.term_array[1].trmStr
+    trmStri   = split(effect.term_array[1].trmStr,':')[end]
     writedlm(outfile[trmStri*"_variances"],vec(effect.G)')
   end
 
@@ -91,49 +135,6 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   out_i +=1
   return out_i
 end
-################################################################################
-#function blocks
-################################################################################
-
-#define samples for WHICH location parameters to output
-function outputSamplesFor(mme::MME,trmStr::AbstractString)
-    #add model number => "1:age"
-    res = []
-    for (m,model) = enumerate(mme.modelVec)
-        strVec  = split(model,['=','+'])
-        strpVec = [strip(i) for i in strVec]
-        if trmStr in strpVec
-            res = [res;string(m)*":"*trmStr]
-        end
-    end #"age"->"1:age","2:age"
-
-    for trmStr in res
-        trm     = mme.modelTermDict[trmStr]
-        samples = MCMCSamples(trm,Array{Float64}(1,1))
-        push!(mme.outputSamplesVec,samples)
-    end
-end
-
-#init
-function init_sample_arrays(mme::MME,niter)
-    #WRITE TO FILES NOW
-    #varaince components for residual
-    #mme.samples4R = zeros(niter,mme.nModels^2)
-    #variance components for random polygenic effects
-    #if mme.ped != 0
-    #    mme.samples4G = zeros(niter,length(mme.pedTrmVec)^2)
-    #end
-
-    #location parameters for fixed and random effects except markers
-    for i in  mme.outputSamplesVec #resize
-        trmi = i.term
-        i.sampleArray = zeros(niter,trmi.nLevels)
-    end
-    #variance components for iid random effects
-    for i in  mme.rndTrmVec #resize to be size of nTraits
-        i.sampleArray = zeros(niter,length(i.term_array)^2)
-    end
-end
 
 #output samples for location parameers
 function outputSamples(mme::MME,sol,iter::Int64)
@@ -143,22 +144,15 @@ function outputSamples(mme::MME,sol,iter::Int64)
         endPosi    = startPosi + trmi.nLevels - 1
         i.sampleArray[iter,:] = sol[startPosi:endPosi]
     end
-    for effect in  mme.rndTrmVec #variance components
-        effect.sampleArray[iter,:] = vec(effect.G)
-    end
+    #WRITE to FILES
+    #for effect in  mme.rndTrmVec #variance components
+    #    effect.sampleArray[iter,:] = vec(effect.G)
+    #end
 end
 
-#function to replace Array{SubString{String}' for issue 8
-function transubstrarr(vec::Array{SubString{String},1})
-    lvec=length(vec)
-    res =Array{String}(1,lvec)
-    for i in 1:lvec
-        res[1,i]=vec[i]
-    end
-    return res
-end
 
 # for vec::Array{AbstractString,1} and vec::Array{String,1}
+# and Array{SubString{String} for issue 8
 function transubstrarr(vec)
     lvec=length(vec)
     res =Array{String}(1,lvec)
