@@ -1,14 +1,15 @@
 function MT_MCMC_BayesC(nIter,mme,df;
-                      Pi      =0.0,
-                      sol     =false,
-                      outFreq =1000,
-                      estimatePi         =false,
-                      missing_phenotypes =false,
-                      constraint         =false,
-                      methods            ="conventional analyses",
-                      output_samples_frequency=0,
-                      update_priors_frequency=0,
-                      MCMC_marker_effects_file="MCMC_samples_for_marker_effects.txt")
+                        burnin                     = 0,
+                        Pi                         = 0.0,
+                        estimatePi                 = false,
+                        sol                        = false,
+                        outFreq                    = 1000,
+                        output_samples_frequency   = 0,
+                        methods                    = "conventional analysis",
+                        missing_phenotypes         = false,
+                        constraint                 = false,
+                        update_priors_frequency    = 0,
+                        MCMC_marker_effects_file   = "MCMC_samples_for_marker_effects.txt")
 
     ############################################################################
     # Pre-Check
@@ -121,12 +122,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
 
     ############################################################################
-    # SET UP OUTPUT
+    # SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      #initialize arrays to save MCMC samples
-      num_samples = Int(floor(nIter/output_samples_frequency))
-      init_sample_arrays(mme,num_samples)
+        out_i,outfile2=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
 
       if mme.M != 0 #write samples for marker effects to a txt file
         outfile = Array{Array{IOStream,1}}(nTraits)
@@ -287,7 +286,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
         sampleVCs(mme,sol)
         addLambdas(mme)
 
-
         ########################################################################
         # 2.3 Marker Covariance Matrix
         ########################################################################
@@ -322,11 +320,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if output_samples_frequency != 0
           if iter%output_samples_frequency==0
+            out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray[1],vec(mme.M.G)',outfile2)
+
             outputSamples(mme,sol,out_i)
-            mme.samples4R[:,out_i]=vec(R0)
-            if mme.ped != 0
-              mme.samples4G[:,out_i]=vec(G0)
-            end
+            #mme.samples4R[:,out_i]=vec(R0)
+            #if mme.ped != 0
+            #  mme.samples4G[:,out_i]=vec(G0)
+            #end
             out_i +=1
             if mme.M != 0
               for traiti in 1:nTraits
@@ -372,26 +372,17 @@ function MT_MCMC_BayesC(nIter,mme,df;
     output["Posterior mean of location parameters"]    = [getNames(mme) solMean]
     output["Posterior mean of residual covariance matrix"]       = R0Mean
     if output_samples_frequency != 0
-      output["MCMC samples for residual covariance matrix"]= mme.samples4R
 
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
           output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
       end
-      for i in  mme.rndTrmVec
-          trmi   = i.term_array[1]
-          trmStr = trmi.trmStr
-          output["MCMC samples for: variance of "*trmStr] = i.sampleArray
-      end
     end
 
     #OUTPUT Polygetic Effects
     if mme.ped != 0
       output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
-      if output_samples_frequency != 0
-        output["MCMC samples for polygenic effects covariance matrix"] = mme.samples4G
-      end
     end
 
     #OUTPUT Marker Effects
@@ -400,6 +391,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         for traiti in 1:nTraits
           close(outfile[traiti][1])
           close(outfile[traiti][2])
+        end
+        for (key,value) in outfile2
+          close(value)
         end
       end
 

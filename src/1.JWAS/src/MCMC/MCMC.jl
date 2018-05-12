@@ -44,7 +44,7 @@ function runMCMC(mme,df;
         #set up Pi
         if mme.M != 0 && mme.nModels !=1 && Pi==0.0
             warn("Pi (Π) is not provided!!","\n")
-            warn("Pi was generated assuming all markers have effects on all traits","\n")
+            warn("Pi is generated assuming all markers have effects on all traits","\n")
             mykey=Array{Float64}(0)
             ntraits=mme.nModels
             Pi=Dict{Array{Float64,1},Float64}()
