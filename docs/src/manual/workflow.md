@@ -225,7 +225,7 @@ rather than covariates (quantitative variables).
 
 ## Step 4: Set Factors or Covariate
 ```julia
-set_covariate("x1")
+set_covariate(model,"x1")
 ```
 
 - link to documentation for [`set_covariate`](@ref)

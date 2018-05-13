@@ -43,7 +43,7 @@ model = build_model(model_equation,R);
 
 ### Step 4: Set Factors or Covariate
 ```julia
-set_covariate("x1");
+set_covariate(model,"x1");
 ```
 
 ### Step 5: Set Random or Fixed Effects
@@ -73,7 +73,7 @@ model = build_model(model_equation,R);
 
 ### Step 4: Set Factors or Covariate
 ```julia
-set_covariate("x1");
+set_covariate(model,"x1");
 ```
 
 ### Step 5: Set Random or Fixed Effects
