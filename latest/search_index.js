@@ -397,7 +397,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.outputMCMCsamples",
     "category": "function",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet samples for specific variables.\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n"
 },
 
 {
@@ -549,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.outputMCMCsamples",
     "category": "method",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet samples for specific variables.\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n"
 },
 
 {
