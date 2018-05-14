@@ -11,7 +11,7 @@ include("MT_MCMC_BayesC.jl")
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
-* available **methods** include "conventional (no markers)", "BayesC0", "BayesC", "BayesCC","BayesB".
+* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "BayesCC".
 * **missing_phenotypes**
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
     * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
@@ -44,7 +44,7 @@ function runMCMC(mme,df;
         #set up Pi
         if mme.M != 0 && mme.nModels !=1 && Pi==0.0
             warn("Pi (Π) is not provided!!","\n")
-            warn("Pi is generated assuming all markers have effects on all traits","\n")
+            warn("Pi (Π) is generated assuming all markers have effects on all traits","\n")
             mykey=Array{Float64}(0)
             ntraits=mme.nModels
             Pi=Dict{Array{Float64,1},Float64}()
@@ -71,7 +71,7 @@ function runMCMC(mme,df;
               println("Marker effects variance is ")
               println(round.(mme.M.G,6))
             end
-        elseif mme.M.G_is_marker_variance==true && methods=="GBLUP"
+        elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
             error("Please provide genetic variance for GBLUP analysis")
         end
         println("\n\n")
@@ -92,7 +92,7 @@ function runMCMC(mme,df;
     end
 
     if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","BayesC0"]
+        if methods in ["conventional (no markers)","BayesC","RR-BLUP"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
@@ -124,7 +124,7 @@ function runMCMC(mme,df;
         if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
-        if methods in ["BayesC","BayesCC","BayesC0","conventional (no markers)"]
+        if methods in ["BayesC","BayesCC","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -137,9 +137,6 @@ function runMCMC(mme,df;
                           MCMC_marker_effects_file=MCMC_marker_effects_file,
                           update_priors_frequency=update_priors_frequency)
         elseif methods=="BayesB"
-            if Pi == 0.0
-                error("Pi is not provided!!")
-            end
             res=MT_MCMC_BayesB(chain_length,mme,df,Pi,
                             sol=starting_value,
                             outFreq=printout_frequency,

@@ -5,7 +5,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                         sol                        = false,
                         outFreq                    = 1000,
                         output_samples_frequency   = 0,
-                        methods                    = "conventional analysis",
+                        methods                    = "conventional (no markers)",
                         missing_phenotypes         = false,
                         constraint                 = false,
                         update_priors_frequency    = 0,
@@ -16,39 +16,48 @@ function MT_MCMC_BayesC(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     sol,solMean = pre_check(mme,df,sol)
-    if mme.M !=0
-      if methods == "BayesC"
-        if Pi == 0.0
-          error("Pi (Π) is not provided!!")
-          #println("Same values are used for Πi.")
+
+
+    if methods == "conventional (no markers)"
+        if mme.M!=0
+            error("Conventional analysis runs without genotypes!")
+        elseif estimatePi == true
+            error("conventional (no markers) analysis runs with estimatePi = false.")
+        end
+    elseif methods=="RR-BLUP"
+        if mme.M == 0
+            error("RR-BLUP runs with genotypes")
+        elseif estimatePi == true
+            error("RR-BLUP runs with estimatePi = false.")
+        end
+        BigPi = copy(Pi) #temporary for output_MCMC_samples function
+    elseif methods=="BayesC"
+        if mme.M == 0
+            error("BayesC runs with genotypes")
         end
         BigPi = copy(Pi)
         BigPiMean = copy(Pi)
         for key in keys(BigPiMean)
           BigPiMean[key]=0.0
         end
-      elseif methods == "BayesCC"
-        if Pi == 0.0
-          error("Pi is not provided!!")
-          #println("Same values are used for Πi.")
+    elseif methods == "BayesCC"
+        if mme.M == 0
+            error("BayesCC runs with genotypes")
         end
-        #label with the index of Array
-        #labels[1]=[0.0,0.0],labels[2]=[1.0,1.0]
-        #BigPi[1]=0.3,BigPi[2]=0.7
-        nlabels= length(Pi)
-        labels = Array(Array{Float64,1},nlabels)
-        BigPi  = Array(Float64,nlabels)
-        whichlabel=1
-        for pair in sort(collect(Pi), by=x->x[2],rev=true)
-          key=pair[1]
-          labels[whichlabel]=copy(key)
-          BigPi[whichlabel]=copy(pair[2])
-          whichlabel = whichlabel+1
-        end
-        BigPiMean = zeros(BigPi)
-      elseif methods == "BayesC0" && estimatePi==true
-        error("Estimating π is not allowed in BayesC0")
+      #label with the index of Array
+      #labels[1]=[0.0,0.0],labels[2]=[1.0,1.0]
+      #BigPi[1]=0.3,BigPi[2]=0.7
+      nlabels= length(Pi)
+      labels = Array(Array{Float64,1},nlabels)
+      BigPi  = Array(Float64,nlabels)
+      whichlabel=1
+      for pair in sort(collect(Pi), by=x->x[2],rev=true)
+        key=pair[1]
+        labels[whichlabel]=copy(key)
+        BigPi[whichlabel]=copy(pair[2])
+        whichlabel = whichlabel+1
       end
+      BigPiMean = zeros(BigPi)
     end
     ############################################################################
     # PRIORS
@@ -125,9 +134,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      if mme.M != 0
           out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
-      end
     end
 
     ############################################################################
@@ -138,22 +145,23 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # 1.1. Non-Marker Location Parameters
         ########################################################################
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
-        solMean += (sol - solMean)/iter
-
+        if iter > burnin
+            solMean += (sol - solMean)/(iter-burnin)
+        end
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
           iR0,iGM = inv(mme.R),inv(mme.M.G)
-
+          #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
                                       alphaArray,meanAlphaArray,
                                       deltaArray,meanDeltaArray,
                                       uArray,meanuArray,
                                       iR0,iGM,iter,BigPi)
-          elseif methods == "BayesC0"
+          elseif methods == "RR-BLUP"
             sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,
                                meanAlphaArray,iR0,iGM,iter)
           elseif methods == "BayesCC"
@@ -218,8 +226,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
           mme.R = R0
           Ri  = mkRi(mme,df) #for missing value;updata mme.ResVar
         end
-        R0Mean  += (R0  - R0Mean )/iter
-
+        if iter > burnin
+            R0Mean  += (R0  - R0Mean )/(iter-burnin)
+        end
         ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
@@ -255,8 +264,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
             G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
             mme.Gi = inv(G0)
             addA(mme)
-
-            G0Mean  += (G0  - G0Mean )/iter
+            if iter > burnin
+                G0Mean  += (G0  - G0Mean )/(iter-burnin)
+            end
         end
 
         ########################################################################
@@ -277,7 +287,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
               end
           end
           mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
-          GMMean  += (mme.M.G  - GMMean)/iter
+          if iter > burnin
+              GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
+          end
         end
 
         ########################################################################
@@ -297,23 +309,19 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # OUTPUT
         ########################################################################
-        if output_samples_frequency != 0
-          if iter%output_samples_frequency==0
+        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
-               outputSamples(mme,sol,out_i)
-
-              for traiti in 1:nTraits
-                if methods == "BayesC" || methods=="BayesCC"
+                if methods in ["BayesC","BayesCC"]
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)
-                elseif methods == "BayesC0"
+                elseif methods == "RR-BLUP"
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 end
-              end
+            else
+                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),false,false,false,outfile)
             end
-          end
         end
 
-        if iter%outFreq==0
+        if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",round.(R0Mean,6))
 
@@ -357,11 +365,12 @@ function MT_MCMC_BayesC(nIter,mme,df;
     end
 
     #OUTPUT Marker Effects
-    if mme.M != 0 && output_samples_frequency != 0
-        for (key,value) in outfile
-          close(value)
-        end
-
+    if output_samples_frequency != 0
+      for (key,value) in outfile
+        close(value)
+      end
+    end
+    if mme.M != 0
       if mme.M.markerID[1]!="NA"
         markerout        = []
         if methods == "BayesC"||methods=="BayesCC"
