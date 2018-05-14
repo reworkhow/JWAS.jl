@@ -50,9 +50,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   if mme.M !=0 #write samples for marker effects to a text file
       for traiti in 1:ntraits
           push!(outvar,string(mme.lhsVec[traiti])*"_marker_effects")
-          push!(outvar,"marker_effects_variances")
-          push!(outvar,"pi")
       end
+      push!(outvar,"marker_effects_variances")
+      push!(outvar,"pi")
   end
   #non-marker random effects variances
   for i in  mme.rndTrmVec
@@ -135,8 +135,12 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
     writedlm(outfile["polygenic_effects_variance"],vec(G0)')
   end
   if α != false && outfile != false
-      for traiti in 1:ntraits
+      if ntraits == 1
           writedlm(outfile[string(mme.lhsVec[traiti])*"_marker_effects"],α')
+      else
+          for traiti in 1:ntraits
+              writedlm(outfile[string(mme.lhsVec[traiti])*"_marker_effects"],α[traiti]')
+          end
       end
     writedlm(outfile["marker_effects_variances"],locusEffectVar')
     writedlm(outfile["pi"],π)
