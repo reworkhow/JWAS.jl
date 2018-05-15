@@ -501,7 +501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Internal functions",
     "category": "section",
-    "text": "Documentation for JWAS.jl\'s internal (private) interface, which are not available to general users. These internal functions are small blocks that public function build on."
+    "text": "Documentation for JWAS.jl\'s internal (private) interface, which are not available to general users. These internal functions are small blocks that public function build on.<!–-"
 },
 
 {
@@ -613,7 +613,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Internal interface",
     "category": "section",
-    "text": "Modules = [JWAS,JWAS.PedModule]\nOrder   = [:function, :type]"
+    "text": "Modules = [JWAS,JWAS.PedModule]\nOrder   = [:function, :type]–>"
 },
 
 {
