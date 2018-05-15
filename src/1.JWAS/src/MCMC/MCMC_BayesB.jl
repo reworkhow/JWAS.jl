@@ -6,7 +6,7 @@ function MCMC_BayesB(nIter,mme,df;
                      sol                        = false,
                      outFreq                    = 1000,
                      output_samples_frequency   = 0,
-                     MCMC_marker_effects_file   = "MCMC_samples_for_marker_effects.txt")
+                     output_file                = "MCMC_samples")
 
 
     ############################################################################
@@ -61,7 +61,7 @@ function MCMC_BayesB(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-      out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
+      out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
     end
 
     #######################################################

@@ -8,7 +8,8 @@ function MCMC_GBLUP(nIter,mme,df;
                     burnin                     = 0,
                     sol                        = false,
                     outFreq                    = 1000,
-                    output_samples_frequency   = 0)
+                    output_samples_frequency   = 0,
+                    output_file                = "MCMC_samples")
 
 
     #TURN OFF OUTPUT MCMC SAMPLES
@@ -71,7 +72,7 @@ function MCMC_GBLUP(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-        out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency)
+        out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
     end
 
     ############################################################################

@@ -12,7 +12,7 @@ include("MT_MCMC_BayesC.jl")
 Run MCMC (marker information included or not) with sampling of variance components.
 
 * available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC".
-* save MCMC samples every **output_samples_frequency** iterations to files `MCMC_samples`.
+* save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples`.
 * the first **burnin** iterations are discarded at the beginning of an MCMC run
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
     * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
@@ -29,8 +29,7 @@ function runMCMC(mme,df;
                 constraint        = false,
                 estimatePi        = false,
                 methods           = "conventional (no markers)",
-                MCMC_marker_effects_file="MCMC_samples",
-                MCMC_samples_file = "MCMC_samples",
+                output_file       = "MCMC_samples",
                 printout_frequency= chain_length+1,
                 printout_MCMCinfo = true,
                 output_samples_frequency::Int64 = 0,
@@ -101,7 +100,7 @@ function runMCMC(mme,df;
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            MCMC_marker_effects_file = MCMC_marker_effects_file)
+                            output_file              = output_file)
         elseif methods =="BayesB"
             res=MCMC_BayesB(chain_length,mme,df,
                             burnin                   = burnin,
@@ -110,13 +109,14 @@ function runMCMC(mme,df;
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            MCMC_marker_effects_file = MCMC_marker_effects_file)
+                            output_file              = output_file)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
-                            output_samples_frequency = output_samples_frequency)
+                            output_samples_frequency = output_samples_frequency,
+                            output_file              = output_file)
         else
             error("No options!!!")
         end
@@ -134,7 +134,7 @@ function runMCMC(mme,df;
                           estimatePi = estimatePi,
                           methods    = methods,
                           output_samples_frequency=output_samples_frequency,
-                          MCMC_marker_effects_file=MCMC_marker_effects_file,
+                          output_file=output_file,
                           update_priors_frequency=update_priors_frequency)
         else
             error("No methods options!!!")
