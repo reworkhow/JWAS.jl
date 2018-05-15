@@ -1,5 +1,5 @@
 function sampleMarkerEffects!(xArray,xpx,wArray,alphaArray,meanAlpha,invR0,invG0,
-                               iIter)
+                               iIter,burnin)
     # function to sample effects
     # invR0 is inverse of R0
     # invG0 is inverse of G0
@@ -38,7 +38,9 @@ function sampleMarkerEffects!(xArray,xpx,wArray,alphaArray,meanAlpha,invR0,invG0
         for trait = 1:nTraits
             #wArray[trait][:] = wArray[trait][:] - x*alphaArray[trait][j]
             BLAS.axpy!(oldβ[trait]-β[trait],x,wArray[trait])
-            meanAlpha[trait][j] += (β[trait] - meanAlpha[trait][j])/iIter
+            if iIter>burnin
+                meanAlpha[trait][j] += (β[trait] - meanAlpha[trait][j])/(iIter-burnin)
+            end
         end
 
     end

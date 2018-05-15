@@ -142,11 +142,13 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
               writedlm(outfile[string(mme.lhsVec[traiti])*"_marker_effects"],α[traiti]')
           end
       end
-    writedlm(outfile["marker_effects_variances"],locusEffectVar')
-    writedlm(outfile["pi"],π)
-    if !issubtype(typeof(π),Number)#add a blank line
-        println(outfile["pi"])
-    end
+      if locusEffectVar!=false
+          writedlm(outfile["marker_effects_variances"],locusEffectVar')
+      end
+      writedlm(outfile["pi"],π)
+      if !issubtype(typeof(π),Number)#add a blank line
+          println(outfile["pi"])
+      end
   end
   out_i +=1
   return out_i

@@ -2,7 +2,7 @@
 function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
                                     deltaArray,meanDeltaArray,
                                     uArray,meanuArray,
-                                    invR0,invG0,iIter,BigPi,labels)
+                                    invR0,invG0,iIter,BigPi,labels,burnin)
 
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
@@ -85,13 +85,14 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray
         # adjust for locus j
         for trait = 1:nTraits
             BLAS.axpy!(oldu[trait]-newu[trait],x,wArray[trait])
-            meanAlphaArray[trait][marker] += (α[trait] - meanAlphaArray[trait][marker])/iIter
-            meanDeltaArray[trait][marker] += (δ[trait] - meanDeltaArray[trait][marker])/iIter
-            meanuArray[trait][marker]     += (newu[trait] - meanuArray[trait][marker])/iIter
-
             alphaArray[trait][marker]      = α[trait]
             deltaArray[trait][marker]      = δ[trait]
             uArray[trait][marker]          = newu[trait]
+            if iIter>burnin
+                meanAlphaArray[trait][marker] += (α[trait] - meanAlphaArray[trait][marker])/(iIter-burnin)
+                meanDeltaArray[trait][marker] += (δ[trait] - meanDeltaArray[trait][marker])/(iIter-burnin)
+                meanuArray[trait][marker]     += (newu[trait] - meanuArray[trait][marker])/(iIter-burnin)
+            end
         end
     end
 end

@@ -31,9 +31,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
             error("RR-BLUP runs with estimatePi = false.")
         end
         BigPi = copy(Pi) #temporary for output_MCMC_samples function
-    elseif methods=="BayesC"
+    elseif methods in ["BayesC","BayesB"]
         if mme.M == 0
-            error("BayesC runs with genotypes")
+            error("BayesB or BayesC runs with genotypes")
         end
         BigPi = copy(Pi)
         BigPiMean = copy(Pi)
@@ -122,12 +122,21 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
             alphaArray[traiti]     = zeros(nMarkers)
             meanAlphaArray[traiti] = zeros(nMarkers)
-            deltaArray[traiti]     = zeros(nMarkers)
+            deltaArray[traiti]     = ones(nMarkers)
             meanDeltaArray[traiti] = zeros(nMarkers)
             uArray[traiti]         = zeros(nMarkers)
             meanuArray[traiti]     = zeros(nMarkers)
         end
+
+        if methods=="BayesB"
+            arrayG  = Array{Array{Float64,2}}(nMarkers)#locus specific covaraince matrix
+            for markeri = 1:nMarkers
+              arrayG[markeri]= vEff
+            end
+            nLoci = zeros(nTraits)
+        end
     end
+
 
 
     ############################################################################
@@ -153,27 +162,34 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
-          iR0,iGM = inv(mme.R),inv(mme.M.G)
+          iR0      = inv(mme.R)
+          iGM      = (methods!="BayesB"?inv(mme.M.G):[inv(G) for G in arrayG])
           #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
                                       alphaArray,meanAlphaArray,
                                       deltaArray,meanDeltaArray,
                                       uArray,meanuArray,
-                                      iR0,iGM,iter,BigPi)
+                                      iR0,iGM,iter,BigPi,burnin)
           elseif methods == "RR-BLUP"
             sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,
-                               meanAlphaArray,iR0,iGM,iter)
+                               meanAlphaArray,iR0,iGM,iter,burnin)
           elseif methods == "BayesCC"
             sampleMarkerEffectsBayesCC!(mArray,mpm,wArray,
                                         alphaArray,meanAlphaArray,
                                         deltaArray,meanDeltaArray,
                                         uArray,meanuArray,
-                                        iR0,iGM,iter,BigPi,labels)
+                                        iR0,iGM,iter,BigPi,labels,burnin)
+          elseif methods == "BayesB"
+            sampleMarkerEffectsBayesB!(mArray,mpm,wArray,
+                                       alphaArray,meanAlphaArray,
+                                       deltaArray,meanDeltaArray,
+                                       uArray,meanuArray,
+                                       iR0,iGM,iter,BigPi,burnin)
           end
 
           if estimatePi == true
-            if methods == "BayesC"
+            if methods in ["BayesC","BayesB"]
               samplePi(deltaArray,BigPi,BigPiMean,iter)
             elseif methods == "BayesCC"
               samplePi(deltaArray,BigPi,BigPiMean,iter,labels)
@@ -244,7 +260,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################
-        if mme.ped != 0  #optimize taking advantage of symmetry
+        if mme.ped != 0  #will optimize taking advantage of symmetry
             for (i,trmi) = enumerate(pedTrmVec)
                 pedTrmi   = mme.modelTermDict[trmi]
                 startPosi = pedTrmi.startPos
@@ -258,8 +274,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
             pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
             q = pedTrm1.nLevels
-            #println(P+S)
-            #println(νG0 + q)
 
             G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
             mme.Gi = inv(G0)
@@ -280,16 +294,31 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
 
         if mme.M != 0
-          for traiti = 1:nTraits
-              for traitj = traiti:nTraits
-                  SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])[1]
-                  SM[traitj,traiti]   = SM[traiti,traitj]
-              end
-          end
-          mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
-          if iter > burnin
-              GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
-          end
+            if methods != "BayesB"
+                for traiti = 1:nTraits
+                    for traitj = traiti:nTraits
+                        SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])[1]
+                        SM[traitj,traiti]   = SM[traiti,traitj]
+                    end
+                end
+                mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
+                if iter > burnin
+                    GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
+                end
+            else
+                marker_effects_matrix = alphaArray[1]
+                for traiti = 2:nTraits
+                    marker_effects_matrix = [marker_effects_matrix alphaArray[traiti]]
+                end
+                marker_effects_matrix = marker_effects_matrix'
+
+                alpha2 = [marker_effects_matrix[:,i]*marker_effects_matrix[:,i]'
+                         for i=1:size(marker_effects_matrix,2)]
+
+                for markeri = 1:nMarkers
+                  arrayG[markeri] = rand(InverseWishart(νGM + 1, convert(Array,Symmetric(PM + alpha2[markeri]))))
+                end
+            end
         end
 
         ########################################################################
@@ -315,6 +344,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)
                 elseif methods == "RR-BLUP"
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,alphaArray,vec(mme.M.G),outfile)
+                elseif methods == "BayesB"
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray,false,outfile)
                 end
             else
                 out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),false,false,false,outfile)
@@ -330,8 +361,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
 
             if mme.M != 0
-              println("Marker effects covariance matrix: \n",round.(GMMean,6))
-              if methods=="BayesC" && estimatePi == true
+              if methods != "BayesB"
+                  println("Marker effects covariance matrix: \n",round.(GMMean,6))
+              end
+              if methods in ["BayesC","BayesB"] && estimatePi == true
                 println("π: \n",BigPiMean)
               elseif methods=="BayesCC" && estimatePi == true
                 println("π for ", labels)
@@ -355,7 +388,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
-          output["MCMC samples for: "*trmStr] = [getNames(trmi) i.sampleArray]
+          output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
+                                                 i.sampleArray]
       end
     end
 
@@ -373,7 +407,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     if mme.M != 0
       if mme.M.markerID[1]!="NA"
         markerout        = []
-        if methods == "BayesC"||methods=="BayesCC"
+        if methods in ["BayesC","BayesCC","BayesB"]
           for markerArray in meanuArray
             push!(markerout,[mme.M.markerID markerArray])
           end
@@ -383,7 +417,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           end
         end
       else
-        if methods == "BayesC"||methods=="BayesCC"
+        if methods in ["BayesC","BayesCC","BayesB"]
           markerout        = meanuArray
         elseif methods == "BayesC0"
           markerout        = meanAlphaArray
@@ -391,7 +425,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
       end
 
       output["Posterior mean of marker effects"] = markerout
-      output["Posterior mean of marker effects covariance matrix"] = GMMean
+      if methods != "BayesB"
+          output["Posterior mean of marker effects covariance matrix"] = GMMean
+      end
 
       if methods=="BayesC"||methods=="BayesCC"
         output["Model frequency"] = meanDeltaArray

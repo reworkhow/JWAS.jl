@@ -3,22 +3,22 @@ include("DRY.jl")
 include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
-include("MT_MCMC_BayesB.jl")
+#include("MT_MCMC_BayesB.jl")
 include("MT_MCMC_BayesC.jl")
 
 """
-    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
+    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
-* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "BayesCC".
-* **missing_phenotypes**
+* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC".
+* save MCMC samples every **output_samples_frequency** iterations to files `MCMC_samples`.
+* the first **burnin** iterations are discarded at the beginning of an MCMC run
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
     * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
-* save MCMC samples every **output_samples_frequency** iterations
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
-* **constraint**=true if constrain residual covariances between traits to be zero.
+* **constraint**=true if constrain residual covariances between traits to be zeros.
 """
 function runMCMC(mme,df;
                 Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
@@ -124,7 +124,7 @@ function runMCMC(mme,df;
         if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
-        if methods in ["BayesC","BayesCC","RR-BLUP","conventional (no markers)"]
+        if methods in ["BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -136,15 +136,6 @@ function runMCMC(mme,df;
                           output_samples_frequency=output_samples_frequency,
                           MCMC_marker_effects_file=MCMC_marker_effects_file,
                           update_priors_frequency=update_priors_frequency)
-        elseif methods=="BayesB"
-            res=MT_MCMC_BayesB(chain_length,mme,df,Pi,
-                            sol=starting_value,
-                            outFreq=printout_frequency,
-                            missing_phenotypes=missing_phenotypes,
-                            estimatePi = estimatePi,
-                            constraint=constraint,
-                            output_samples_frequency=output_samples_frequency,
-                            MCMC_marker_effects_file=MCMC_marker_effects_file)
         else
             error("No methods options!!!")
         end
