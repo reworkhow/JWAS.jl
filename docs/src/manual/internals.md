@@ -4,6 +4,7 @@ Documentation for JWAS.jl's internal (private) interface, which are not availabl
 to general users. These internal functions are small blocks that public function
 build on.
 
+<!---
 
 ## Index
 
@@ -17,3 +18,4 @@ Pages = ["internals.md"]
 Modules = [JWAS,JWAS.PedModule]
 Order   = [:function, :type]
 ```
+-->
