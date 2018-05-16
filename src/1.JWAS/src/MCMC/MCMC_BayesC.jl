@@ -151,7 +151,7 @@ function MCMC_BayesC(nIter,mme,df;
         # 2.3 Residual Variance
         ########################################################################
         mme.ROld = mme.RNew
-        vRes     = sample_variance(ycorr, nObs, nuRes, scaleRes)
+        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         mme.RNew = vRes
         if iter > burnin
             meanVare += (vRes - meanVare)/(iter-burnin)
