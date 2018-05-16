@@ -31,7 +31,11 @@ function MCMC_BayesC(nIter,mme,df;
         end
     elseif methods=="BayesC"
         if mme.M == 0
-            error("BayesC runs with genotypes")
+            error("BayesC runs with genotypes.")
+        end
+    elseif methods=="BayesB"
+        if mme.M==0
+            error("BayesB runs with genotypes.")
         end
     end
     ############################################################################
@@ -68,10 +72,15 @@ function MCMC_BayesC(nIter,mme,df;
         δ           = zeros(nMarkers)#inclusion indicator for marker effects
         meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
         mean_pi     = 0.0
+        if methods=="BayesB" #α=β.*δ
+            β              = zeros(nMarkers) ##partial marker effeccts
+            locusEffectVar = fill(vEff,nMarkers)
+            vEff           = locusEffectVar #vEff is scalar for BayesC but a vector for BayeB
+        end
     end
 
     ############################################################################
-    #  WORKING VECTORS (ycor)
+    #  WORKING VECTORS (ycor, saving values)
     ############################################################################
     #adjust y for starting values
     ycorr       = vec(full(mme.ySparse)-mme.X*sol)
@@ -109,6 +118,8 @@ function MCMC_BayesC(nIter,mme,df;
             elseif methods=="RR-BLUP"
                 sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
                 nLoci = nMarkers
+            elseif methods=="BayesB"
+                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,vRes,locusEffectVar,π)
             end
             if iter > burnin
                 meanAlpha += (α - meanAlpha)/(iter-burnin)
@@ -140,7 +151,7 @@ function MCMC_BayesC(nIter,mme,df;
         # 2.3 Residual Variance
         ########################################################################
         mme.ROld = mme.RNew
-        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
+        vRes     = sample_variance(ycorr, nObs, nuRes, scaleRes)
         mme.RNew = vRes
         if iter > burnin
             meanVare += (vRes - meanVare)/(iter-burnin)
@@ -149,7 +160,14 @@ function MCMC_BayesC(nIter,mme,df;
         # 2.4 Marker Effects Variance
         ########################################################################
         if mme.M != 0
-            vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
+            if methods != "BayesB"
+                vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
+            else
+                for j=1:nMarkers
+                    vEff[j] = sample_variance(α[j],1,dfEffectVar, scaleVar)
+                end
+            end
+
             if iter > burnin
                 meanVara += (vEff - meanVara)/(iter-burnin)
             end
@@ -176,7 +194,9 @@ function MCMC_BayesC(nIter,mme,df;
                 println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
             if mme.M != 0
-                println("Marker effects variance: ",round(meanVara,6))
+                if methods!="BayesB"
+                    println("Marker effects variance: ",round(meanVara,6))
+                end
                 if estimatePi == true
                     println("π: ", round(mean_pi,3))
                 end
@@ -193,9 +213,11 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
     if mme.M != 0
-        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,mean_pi,output_file)
+        output=output_result(mme,solMean,meanVare,(mme.ped!=0?G0Mean:false),output_samples_frequency,
+                             meanAlpha,meanVara,estimatePi,mean_pi,output_file)
     else
-        output=output_result(mme,solMean,output_samples_frequency,false,false,false,output_file)
+        output=output_result(mme,solMean,meanVare,(mme.ped!=0?G0Mean:false),output_samples_frequency,
+                             false,false,false,false,output_file)
     end
     return output
 end

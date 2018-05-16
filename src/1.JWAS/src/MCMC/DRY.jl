@@ -18,34 +18,25 @@ end
 ################################################################################
 # Return Output Results (Dictionary)
 ################################################################################
-function output_result(mme,solMean,output_samples_frequency,
-                       meanAlpha=false,estimatePi=false,mean_pi=false,output_file="MCMC_samples")
+function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
+                       meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
+  output["Posterior mean of residual variance"]   = meanVare
+  if mme.ped != 0
+    output["Posterior mean of Polygenic effects covariance matrix"]=G0Mean
+  end
+
   if output_samples_frequency != 0
-      #WRITE TO FILES
-      #output["MCMC samples for residual variance"]    = mme.samples4R
-      #if mme.ped != 0
-      #  output["MCMC samples for polygenic effects var-cov parameters"] = mme.samples4G
-      #end
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
-          #output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
-          #                                       i.sampleArray]
           writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
                                                   i.sampleArray])
-
       end
-      #WRITE TO FILES
-      #for i in  mme.rndTrmVec
-      #    trmi   = i.term_array[1]
-      #    trmStr = trmi.trmStr
-      #    output["MCMC samples for: variance of "*trmStr] = i.sampleArray
-      #end
   end
 
-  if mme.M != 0 && meanAlpha != false
+  if mme.M != 0
     if mme.M.markerID[1]!="NA"
         markerout=[mme.M.markerID meanAlpha]
     else
@@ -53,6 +44,7 @@ function output_result(mme,solMean,output_samples_frequency,
     end
 
     output["Posterior mean of marker effects"] = markerout
+    output["Posterior mean of marker effects variance"] = meanVara
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
     end

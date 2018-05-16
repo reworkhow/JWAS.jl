@@ -1,6 +1,6 @@
 include("outputMCMCsamples.jl")
 include("DRY.jl")
-include("MCMC_BayesB.jl")
+#include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 #include("MT_MCMC_BayesB.jl")
@@ -91,7 +91,7 @@ function runMCMC(mme,df;
     end
 
     if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","RR-BLUP"]
+        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
@@ -101,15 +101,15 @@ function runMCMC(mme,df;
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_file)
-        elseif methods =="BayesB"
-            res=MCMC_BayesB(chain_length,mme,df,
-                            burnin                   = burnin,
-                            π                        = Pi,
-                            estimatePi               = estimatePi,
-                            sol                      = starting_value,
-                            outFreq                  = printout_frequency,
-                            output_samples_frequency = output_samples_frequency,
-                            output_file              = output_file)
+        # elseif methods =="BayesB"
+        #     res=MCMC_BayesB(chain_length,mme,df,
+        #                     burnin                   = burnin,
+        #                     π                        = Pi,
+        #                     estimatePi               = estimatePi,
+        #                     sol                      = starting_value,
+        #                     outFreq                  = printout_frequency,
+        #                     output_samples_frequency = output_samples_frequency,
+        #                     output_file              = output_file)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
