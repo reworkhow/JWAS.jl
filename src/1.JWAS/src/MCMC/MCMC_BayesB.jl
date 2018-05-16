@@ -153,6 +153,6 @@ function MCMC_BayesB(nIter,mme,df;
       end
     end
 
-    output=output_result(mme,solMean,output_samples_frequency,meanu,estimatePi,mean_pi)
+    output=output_result(mme,solMean,output_samples_frequency,meanu,estimatePi,mean_pi,output_file)
     return output
 end

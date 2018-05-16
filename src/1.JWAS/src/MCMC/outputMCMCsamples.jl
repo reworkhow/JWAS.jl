@@ -49,7 +49,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.M !=0 #write samples for marker effects to a text file
       for traiti in 1:ntraits
-          push!(outvar,string(mme.lhsVec[traiti])*"_marker_effects")
+          push!(outvar,"marker_effects_"*string(mme.lhsVec[traiti]))
       end
       push!(outvar,"marker_effects_variances")
       push!(outvar,"pi")
@@ -77,7 +77,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0 && mme.M.markerID[1]!="NA"
       for traiti in 1:ntraits
-          writedlm(outfile[string(mme.lhsVec[traiti])*"_marker_effects"],transubstrarr(mme.M.markerID))
+          writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID))
       end
   end
   if mme.ped != 0
@@ -136,10 +136,10 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   end
   if α != false && outfile != false
       if ntraits == 1
-          writedlm(outfile[string(mme.lhsVec[1])*"_marker_effects"],α')
+          writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α')
       else
           for traiti in 1:ntraits
-              writedlm(outfile[string(mme.lhsVec[traiti])*"_marker_effects"],α[traiti]')
+              writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],α[traiti]')
           end
       end
       if locusEffectVar!=false

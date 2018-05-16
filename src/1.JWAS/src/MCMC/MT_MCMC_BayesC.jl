@@ -388,8 +388,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
       for i in  mme.outputSamplesVec
           trmi   = i.term
           trmStr = trmi.trmStr
-          output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
-                                                 i.sampleArray]
+          #output["MCMC samples for: "*trmStr] = [transubstrarr(getNames(trmi))
+          #                                        i.sampleArray]
+          writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
+                                           i.sampleArray])
       end
     end
 

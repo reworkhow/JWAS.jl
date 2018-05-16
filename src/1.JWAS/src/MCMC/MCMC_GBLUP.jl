@@ -163,7 +163,7 @@ function MCMC_GBLUP(nIter,mme,df;
     ############################################################################
     # After MCMC
     ############################################################################
-    output=output_result(mme,solMean,output_samples_frequency)
+    output=output_result(mme,solMean,output_samples_frequency,false,false,false,output_file)
     output["Posterior mean of estimated breeding values"]  = L*meanAlpha
     output["Posterior mean of genetic variance (G matrix)"]= meanVara
     output["Posterior mean of genetic variance (GenSel)"]  = meanVarg

@@ -193,9 +193,9 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
     if mme.M != 0
-        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,mean_pi)
+        output=output_result(mme,solMean,output_samples_frequency,meanAlpha,estimatePi,mean_pi,output_file)
     else
-        output=output_result(mme,solMean,output_samples_frequency)
+        output=output_result(mme,solMean,output_samples_frequency,false,false,false,output_file)
     end
     return output
 end
