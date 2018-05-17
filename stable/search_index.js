@@ -37,7 +37,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Theory",
     "category": "section",
-    "text": "Pages = [\n  \"theory/theory.md\"\n]\nDepth = 4"
+    "text": "Pages = [\n  \"theory/theory.md\"\n]\nDepth = 3"
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Examples",
     "category": "section",
-    "text": "Pages = [\n  \"examples/BLMM.md\"\n  \"examples/GenomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 4"
+    "text": "Pages = [\n  \"examples/BLMM.md\"\n  \"examples/GenomicBLMM.md\"\n  \"examples/LinearAdditiveGeneticModel.md\"\n]\nDepth = 2"
 },
 
 {
@@ -193,11 +193,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/getstarted.html#Jupyter-IJulia-notebooks-via-Docker-1",
+    "location": "manual/getstarted.html#Docker-1",
     "page": "Get Started",
-    "title": "Jupyter-IJulia notebooks via Docker",
+    "title": "Docker",
     "category": "section",
-    "text": "Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Documentation for JWAS can be accessed from the notebook: \"JWAS_notebooks/index.ipynb\".The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
+    "text": "note: Jupyter-IJulia notebooks with JWAS via Docker\nDocker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Examples for JWAS can be accessed from the notebook: JWAS_notebooks/index.ipynb.The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Access documentation",
     "category": "section",
-    "text": "To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter.For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook.warning: Warning\nPlease load the JWAS package at first.The full documentation is available here."
+    "text": "warning: Warning\nPlease load the JWAS package at first.To show the basic information (README file) of JWAS in REPL or IJulia notebook using ?JWAS and press enter.For help on a specific function, type ? followed by its name, e.g. ?runMCMC and press enter in REPL or IJulia notebook.The full documentation is available here."
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Run your analysis",
     "category": "section",
-    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia."
+    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia.(4) To run code in IJulia notebook via Docker, please see Jupyter-IJulia notebooks via Docker."
 },
 
 {
@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\")link to documentation for set_covariateOn line 1, the effect x1 is defined to be a covariate rather than class effect."
+    "text": "set_covariate(model,\"x1\")link to documentation for set_covariateOn line 1, the effect x1 is defined to be a covariate rather than class effect."
 },
 
 {
@@ -325,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "Public functions",
     "category": "section",
-    "text": "Documentation for JWAS.jl\'s public interface. Below are functions available to general users. "
+    "text": "Documentation for JWAS.jl\'s public interface. Below are functions available to general users."
 },
 
 {
@@ -385,11 +385,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/public.html#JWAS.runMCMC",
+    "page": "Public",
+    "title": "JWAS.runMCMC",
+    "category": "function",
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\n\n\n\n"
+},
+
+{
     "location": "manual/public.html#JWAS.outputMCMCsamples",
     "page": "Public",
     "title": "JWAS.outputMCMCsamples",
     "category": "function",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet samples for specific variables.\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n"
 },
 
 {
@@ -409,11 +417,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public.html#JWAS.runMCMC",
+    "location": "manual/public.html#JWAS.misc.GWAS",
     "page": "Public",
-    "title": "JWAS.runMCMC",
+    "title": "JWAS.misc.GWAS",
     "category": "function",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"BayesC0\", \"BayesC\", \"BayesCC\",\"BayesB\".\nmissing_phenotypes\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nsave MCMC samples every output_samples_frequency iterations\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zero.\n\n\n\n"
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in marker_effects_file.\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in marker_effects_file\nmap_file has the marker position information\n\n\n\n"
 },
 
 {
@@ -421,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_additive_genetic_variances",
     "category": "function",
-    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples of marker effects stored in files.\n\n\n\n"
+    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples for marker effects stored in files.\nReturn a vector for single-trait analysis and an array of matrices for multi-trait analysis\n\n\n\n"
 },
 
 {
@@ -429,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_heritability",
     "category": "function",
-    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_vairances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities.\n\n\n\n"
+    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_variances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for multi-trait analysis\n\n\n\nget_heritability(samples_for_genetic_variances::Array{Float64,1},samples_for_residual_variances::Array{Float64,1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for single-trait analysis\n\n\n\n"
 },
 
 {
@@ -437,7 +445,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_correlations",
     "category": "function",
-    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations\n\n\n\n"
+    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations using MCMC samples for covariance matrces\n\n\n\n"
+},
+
+{
+    "location": "manual/public.html#JWAS.misc.get_breeding_values",
+    "page": "Public",
+    "title": "JWAS.misc.get_breeding_values",
+    "category": "function",
+    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
+},
+
+{
+    "location": "manual/public.html#JWAS.misc.reformat",
+    "page": "Public",
+    "title": "JWAS.misc.reformat",
+    "category": "function",
+    "text": "reformat(G::Array{Float64,2},ntraits=false)\n\nconvert the format from a Matrix to a Array of Matrices, when the matrix is\n\nread from text file storing samples for covariance matrices or heritabilities\n\nthe size of the Matrix is\nntraits x nsamples for MCMC samples for heritbilities\n(ntraits^2) x nsamples for MCMC samples for covariance matrices\nthe Array of Matrices is an array (length=nsamples) of\nmatrices of size ntraits X ntraits for covariance matrices\nvectors of length ntraits for heritabilities\n\n\n\nreformat(G::Array{Array{Float64,2},1},1})\n\nconvert the format from a Array of Matrices to a Matrix, then the Matrix chance\n\nbe write to text files to save samples for covariance matrices or heritabilities\n\nthe Array of Matrices is an array (length=nsamples) of\nmatrices of size ntraits X ntraits for covariance matrices (Array{Array{Float64,2},1})\nvectors of length ntraits for heritabilities (Array{Array{Float64,1},1})\nthe size of the Matrix is\nntraits x nsamples for MCMC samples for heritbilities\n(ntraits^2) x nsamples for MCMC samples for covariance matrices\n\n\n\n"
 },
 
 {
@@ -457,19 +481,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public.html#JWAS.misc.get_breeding_values",
-    "page": "Public",
-    "title": "JWAS.misc.get_breeding_values",
-    "category": "function",
-    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
-},
-
-{
     "location": "manual/public.html#Public-Interface-1",
     "page": "Public",
     "title": "Public Interface",
     "category": "section",
-    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\noutputMCMCsamples\nshowMME\nsolve\nrunMCMCJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.report\nJWAS.misc.QC\nJWAS.misc.get_breeding_values"
+    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\nrunMCMC\noutputMCMCsamples\nshowMME\nsolveJWAS.misc.GWAS\nJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.get_breeding_values\nJWAS.misc.reformat\nJWAS.misc.report\nJWAS.misc.QC"
 },
 
 {
@@ -485,7 +501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Internal functions",
     "category": "section",
-    "text": "Documentation for JWAS.jl\'s internal (private) interface, which are not available to general users. These internal functions are small blocks that public function build on."
+    "text": "Documentation for JWAS.jl\'s internal (private) interface, which are not available to general users. These internal functions are small blocks that public function build on.<!–-"
 },
 
 {
@@ -533,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.outputMCMCsamples",
     "category": "method",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet samples for specific variables.\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n"
 },
 
 {
@@ -541,7 +557,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.runMCMC",
     "category": "method",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"BayesC0\", \"BayesC\", \"BayesCC\",\"BayesB\".\nmissing_phenotypes\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nsave MCMC samples every output_samples_frequency iterations\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zero.\n\n\n\n"
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\n\n\n\n"
 },
 
 {
@@ -597,7 +613,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "Internal interface",
     "category": "section",
-    "text": "Modules = [JWAS,JWAS.PedModule]\nOrder   = [:function, :type]"
+    "text": "Modules = [JWAS,JWAS.PedModule]\nOrder   = [:function, :type]–>"
 },
 
 {
@@ -613,7 +629,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
-    "text": ""
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
@@ -653,7 +669,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -693,7 +709,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -725,7 +741,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Bayesian Linear Additive Genetic Model",
     "category": "section",
-    "text": ""
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
@@ -733,7 +749,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 1: Load Packages",
     "category": "section",
-    "text": "using JWAS,JWAS.Datasets,CSV,DataFramesusing JWAS,JWAS.Datasets,CSV,DataFrames"
+    "text": "using JWAS,JWAS.Datasets,CSV,DataFrames"
 },
 
 {
@@ -765,7 +781,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -805,7 +821,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -837,7 +853,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
-    "text": ""
+    "text": "link to Jupyter Notebook for this example"
 },
 
 {
@@ -877,7 +893,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
@@ -925,7 +941,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Step 4: Set Factors or Covariate",
     "category": "section",
-    "text": "set_covariate(\"x1\");"
+    "text": "set_covariate(model,\"x1\");"
 },
 
 {
