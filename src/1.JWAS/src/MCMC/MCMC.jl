@@ -7,7 +7,7 @@ include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesC.jl")
 
 """
-    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0)
+    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,printout_model_info=true)
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
@@ -21,17 +21,17 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * **constraint**=true if constrain residual covariances between traits to be zeros.
 """
 function runMCMC(mme,df;
-                Pi                = 0.0,   #Dict{Array{Float64,1},Float64}()
-                burnin            = 0,
-                chain_length      = 100,
-                starting_value    = false,
-                missing_phenotypes= false,
-                constraint        = false,
-                estimatePi        = false,
-                methods           = "conventional (no markers)",
-                output_file       = "MCMC_samples",
-                printout_frequency= chain_length+1,
-                printout_MCMCinfo = true,
+                Pi                  = 0.0,
+                burnin              = 0,
+                chain_length        = 100,
+                starting_value      = false,
+                missing_phenotypes  = false,
+                constraint          = false,
+                estimatePi          = false,
+                methods             = "conventional (no markers)",
+                output_file         = "MCMC_samples",
+                printout_frequency  = chain_length+1,
+                printout_model_info = true,
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0)
 
@@ -185,6 +185,12 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
           end
           println()
       end
+      # @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.df.residual)
+      # @printf("%-30s %20.3f\n","genetic variances (polygenic):",mme.df.residual)
+      # @printf("%-30s %20.3f\n","marker effect variances:",mme.df.residual)
+      # @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
+      # @printf("%-30s %20.3f\n","random effect variances (x1):",mme.df.random)
+      # @printf("%-30s %20.3f\n","random effect variances (x2):",mme.df.random)
     end
 
     @printf("\n%-30s\n\n","Degree of freedom for hyper-parameters:")
