@@ -11,8 +11,7 @@ function pre_check(mme,df,sol)
   else            #besure type is Float64
       sol = map(Float64,sol)
   end
-  solMean     = zeros(sol)
-  return sol,solMean
+  return sol
 end
 
 ################################################################################

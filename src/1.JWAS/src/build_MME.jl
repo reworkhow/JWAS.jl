@@ -249,18 +249,36 @@ end
 
 #more details later
 function getinfo(model;data=false)
-  println("A Linear Mixed Model was build with")
-  println("Model equations:\n")
+  println("A Linear Mixed Model was build using model equations:\n")
   for i in model.modelVec
     println(i)
   end
   println()
-  @printf("%20s %20s %20s %20s\n","Term","C/F","F/R","nLevels")
-  for i in model.modelTerms
+  println("Model Information:\n")
+  @printf("%-15s %-12s %-10s %11s\n","Term","C/F","F/R","nLevels")
 
-    term    = i.trmStr
+
+  random_effects=Array{AbstractString,1}()
+  for i in model.pedTrmVec
+        push!(random_effects,split(i,':')[end])
+    end
+  for i in model.rndTrmVec
+      for j in i.term_array
+          push!(random_effects,split(j.trmStr,':')[end])
+      end
+  end
+
+  terms=[]
+  for i in model.modelTerms
+    term    = split(i.trmStr,':')[end]
+    if term in terms
+        continue
+    else
+        push!(terms,term)
+    end
+
     nLevels = i.nLevels
-    fixed   =
+    fixed   = (term in random_effects)?"random":"fixed"
     factor  = (nLevels==1)?"covariate":"factor"
 
     if size(model.mmeRhs)==()&&data==false
@@ -269,14 +287,15 @@ function getinfo(model;data=false)
       getMME(model,data)
     end
 
-    if split(term,':')[2]=="intercept"
+    if term =="intercept"
         factor="factor"
     elseif length(split(term,'*'))!=1
         factor="interaction"
     end
 
-    @printf("%20s %20s %20s %20s\n",term,factor,fixed,nLevels)
+    @printf("%-15s %-12s %-10s %11s\n",term,factor,fixed,nLevels)
   end
+  println()
   #incidence matrix , #elements non-zero elements
   #"incomplete or complete",genomic data
 end

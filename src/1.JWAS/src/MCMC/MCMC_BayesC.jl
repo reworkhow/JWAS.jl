@@ -13,7 +13,7 @@ function MCMC_BayesC(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,df,sol)
+    solMean     = zeros(sol)
 
     if methods == "conventional (no markers)"
         if mme.M!=0

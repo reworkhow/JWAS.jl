@@ -19,7 +19,7 @@ function MCMC_GBLUP(nIter,mme,df;
     # Pre-Check
     #############################################################################
     #starting values for location parameters(no marker) are sol
-    sol,solMean = pre_check(mme,df,sol)
+    solMean     = zeros(sol)
 
     #######################################################
     # PRIORS
