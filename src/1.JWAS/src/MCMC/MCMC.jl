@@ -87,7 +87,7 @@ function runMCMC(mme,df;
     end
 
     #printout basic MCMC information
-    if printout_MCMCinfo == true
+    if printout_model_info == true
       getinfo(mme)
       MCMCinfo(methods,Pi,chain_length,burnin,have_starting_value,printout_frequency,
               output_samples_frequency,missing_phenotypes,constraint,estimatePi,
@@ -172,25 +172,50 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
     @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
 
-    if !(methods in ["conventional (no markers)", "GBLUP"])
-      @printf("\n%-30s\n\n","Hyper-parameters Information:")
-      if issubtype(typeof(Pi),Number)
-          @printf("%-30s %20s\n","π",Pi)
-      else
-          println("Π")
-          @printf("%-20s %12s\n","combinations","probability")
 
-          for (i,j) in Pi
-              @printf("%-20s %12s\n",i,j)
-          end
-          println()
-      end
-      # @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.df.residual)
-      # @printf("%-30s %20.3f\n","genetic variances (polygenic):",mme.df.residual)
-      # @printf("%-30s %20.3f\n","marker effect variances:",mme.df.residual)
-      # @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
-      # @printf("%-30s %20.3f\n","random effect variances (x1):",mme.df.random)
-      # @printf("%-30s %20.3f\n","random effect variances (x2):",mme.df.random)
+    @printf("\n%-30s\n\n","Hyper-parameters Information:")
+    if mme.nModels==1
+        for i in mme.rndTrmVec
+            thisterm=split(i.term_array[1].trmStr,':')[end]
+            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),3))
+        end
+        @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
+        if mme.ped!=0
+            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),3))
+        end
+        if !(methods in ["conventional (no markers)", "GBLUP"])
+            @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
+            @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
+            @printf("%-30s %20s\n","π",Pi)
+        end
+    else
+        for i in mme.rndTrmVec
+            thisterm=split(i.term_array[1].trmStr,':')[end]
+            @printf("%-30s\n","random effect variances ("*thisterm*"):")
+            Base.print_matrix(STDOUT,round.(i.GiNew,3))
+            println()
+        end
+        @printf("%-30s\n","residual variances:")
+        Base.print_matrix(STDOUT,round.(mme.R,3))
+        println()
+        if mme.ped!=0
+            @printf("%-30s\n","genetic variances (polygenic):")
+            Base.print_matrix(STDOUT,round.(inv(mme.Gi),3))
+            println()
+        end
+        if !(methods in ["conventional (no markers)", "GBLUP"])
+            @printf("%-30s\n","genetic variances (genomic):")
+            Base.print_matrix(STDOUT,round.(mme.M.G,3))
+            println()
+            @printf("%-30s\n","marker effect variances:")
+            Base.print_matrix(STDOUT,round.(mme.M.G,3))
+            println()
+            println("Π:")
+            @printf("%-20s %12s\n","combinations","probability")
+            for (i,j) in Pi
+                @printf("%-20s %12s\n",i,j)
+            end
+        end
     end
 
     @printf("\n%-30s\n\n","Degree of freedom for hyper-parameters:")
