@@ -135,7 +135,7 @@ function set_random(mme::MME,randomStr::AbstractString, G; df=4)
       end
       df           = df+length(term_array)
       scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-      randomEffect = RandomEffect(term_array,G,zeros(Gi),Gi,df,scale,zeros(1,1))
+      randomEffect = RandomEffect(term_array,G,zeros(Gi),Gi,df,scale)
       push!(mme.rndTrmVec,randomEffect)
     end
     nothing

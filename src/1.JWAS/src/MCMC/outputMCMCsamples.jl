@@ -162,10 +162,6 @@ function outputSamples(mme::MME,sol,iter::Int64)
         endPosi    = startPosi + trmi.nLevels - 1
         i.sampleArray[iter,:] = sol[startPosi:endPosi]
     end
-    #WRITE to FILES
-    #for effect in  mme.rndTrmVec #variance components
-    #    effect.sampleArray[iter,:] = vec(effect.G)
-    #end
 end
 
 

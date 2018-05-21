@@ -59,6 +59,7 @@ end
 
 ################################################################################
 #General (iid) random effects
+#NOW assuming different variables are independent cov(A,B)=0
 #single-trait e.g. termarray: [ModelTerm(1:A)]
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
@@ -71,8 +72,18 @@ type RandomEffect
     #vcNew #::Array{Float64,2}
     df::Float64
     scale #::Array{Float64,2}
-    sampleArray::Array{Float64,2} #for variance components
 end
+
+# type RandomEffect
+#     pedTrmVec::Array{AbstractString,1}            #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
+#     Vi                                            #inverse of covariance matrix
+#     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
+#     GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+#     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+#
+#     df::Float64
+#     scale #::Array{Float64,2}
+# end
 
 #MCMC samplers for location parameters
 type MCMCSamples
