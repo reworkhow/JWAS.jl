@@ -207,8 +207,8 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    #y = convert(Array,df[mme.lhsVec[1]],0.0) #convert NA to zero #DEPRECATED
-    y = recode(df[mme.lhsVec[1]], missing => 0.0)
+    IDs = map(string,df[:,1])
+    y   = recode(df[mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; recode(df[mme.lhsVec[i]],missing=>0.0)]
     end
@@ -217,9 +217,14 @@ function getMME(mme::MME, df::DataFrame)
     vv    = y
     ySparse = sparse(ii,jj,vv)
 
+# IF METHODS= "IMCOMPLETE GENOMIC DATA"
+#   X = [X ...]
+#
+#
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
+    mme.IDs     = IDs
 
     if mme.nModels==1     #single-trait (lambda version)
       mme.mmeLhs = X'X
@@ -234,10 +239,8 @@ function getMME(mme::MME, df::DataFrame)
 
     #Random effects parts in MME
     #Pedigree
-    if mme.ped != 0
-      ii,jj,vv = PedModule.HAi(mme.ped)
-      HAi = sparse(ii,jj,vv)
-      mme.Ai = HAi'HAi
+    if mme.ped != 0 && mme.Ai == 0
+      mme.Ai=PedModule.AInverse(mme.ped)
       addA(mme::MME)
     end
 

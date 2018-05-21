@@ -82,7 +82,6 @@ end
 
 type Genotypes
   obsID::Array{String,1}    #row ID of genotypes
-  #obsID  #now maybe string or int
   markerID
   nObs::Int64
   nMarkers::Int64
@@ -119,6 +118,7 @@ type MME
                                                   #MIXED MODEL EQUATIONS
     X                                             #incidence matrix
     ySparse                                       #phenotypes
+    IDs                                           #IDs for phenotypes
     mmeLhs                                        #Lhs of Mixed Model Equations
     mmeRhs                                        #Rhs of Mixed Model Equations
 
@@ -154,7 +154,7 @@ type MME
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
-                   0,0,0,0,
+                   0,0,0,0,0,
                    [],0,0,zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,
@@ -163,7 +163,15 @@ type MME
                    zeros(1,1),zeros(1,1),[],
                    DF(ν,4,4,4))
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],0,0,0,0,[],0,0,zeros(1,1),zeros(1,1),zeros(1,1),[],R,0,0,0.0,0.0,0,1,zeros(1,1),zeros(1,1),[],DF(ν,4,4,4))
+        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
+                   0,0,0,0,0,
+                   [],0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   [],
+                   R,0,0,0.0,0.0,
+                   0,
+                   1,
+                   zeros(1,1),zeros(1,1),[],
+                   DF(ν,4,4,4))
       else
         error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end

@@ -161,22 +161,15 @@ function HAi(ped::Pedigree)
 end
 
 function  mkPed(pedFile::AbstractString;header=false,separator=' ')
-
-    #df  = readtable(pedFile,eltypes=[String,String,String],
-    #separator=separator,header=header)
     df  = CSV.read(pedFile,types=[String,String,String],
                     delim=separator,header=header)
-
     ped = Pedigree(1,Dict{AbstractString,PedNode}(),
                      Dict{Int64, Float64}(),
                      Set(),Set(),Set(),Set())
-
     fillMap!(ped,df)
-
     @showprogress "coding pedigree... " for id in keys(ped.idMap)
      code!(ped,id)
     end
-
     @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
       calcInbreeding!(ped,id)
     end
