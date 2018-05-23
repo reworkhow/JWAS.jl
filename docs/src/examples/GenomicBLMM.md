@@ -66,6 +66,7 @@ add_genotypes(model,genofile,G3,separator=',',header=true);
 
 ### Step 7: Run Bayesian Analysis
 ```julia
+outputMCMCsamples(model,"x2")
 out=runMCMC(model,phenotypes,methods="BayesC")
 ```
 
@@ -104,5 +105,6 @@ add_genotypes(model,genofile,G3,separator=',',header=true);
 
 ### Step 7: Run Bayesian Analysis
 ```julia
+outputMCMCsamples(model,"x2")
 out=runMCMC(model,phenotypes,methods="BayesC")
 ```

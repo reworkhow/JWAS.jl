@@ -60,6 +60,7 @@ set_random(model,"ID dam",pedigree,G2)
 
 ### Step 6: Run Bayesian Analysis
 ```julia
+outputMCMCsamples(model,"x2")
 out=runMCMC(model,phenotypes)
 ```
 
@@ -92,5 +93,6 @@ set_random(model,"ID dam",pedigree,G2)
 
 ### Step 6: Run Bayesian Analysis
 ```julia
+outputMCMCsamples(model,"x2")
 out=runMCMC(model,phenotypes)
 ```
