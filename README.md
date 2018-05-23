@@ -10,7 +10,7 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 * **Homepage**: [QTL.rocks](http://QTL.rocks)
 * **Installation**: at the Julia REPL, `Pkg.add("JWAS")`
 * **Documentation**: [available here](http://reworkhow.github.io/JWAS.jl/latest/)
-* **Notebooks**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/notebooks/index.ipynb)
+* **Notebooks**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/notebooks_v0.3/0_index.ipynb)
 * **Authors**: [Hao Cheng](http://qtl.rocks/chenglab.html), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](https://www.massey.ac.nz/massey/learning/colleges/college-of-sciences/staff-list.cfm?stref=600130)
 
 

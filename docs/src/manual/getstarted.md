@@ -46,25 +46,42 @@ docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker
 ```
 
 This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication
-token. Examples for JWAS can be accessed from the notebook: `JWAS_notebooks/index.ipynb`.
+token. Examples for JWAS can be accessed from the notebook: `notebooks/0_index.ipynb`.
 
 The directories and files created within the Docker container will be lost when the container is stopped. To save your work
-on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:
+on the host machine, a directory on the host machine can be mounted as a folder in the container with the `-v` option. After `cd` into your
+working directory on your local machine or a server, run the command
 
 ```bash
-docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-docker
+docker run -it --rm -p 8888:8888 -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker
 ```
 
-where `path_to_folder_on_host` is the path to the folder that you want to have access to from within the container, and  
-`folder_in_container` is the name of the folder in the container. For example, the Docker command
+This command creates a Docker container with the folder `/home/ubuntu/work` with the contents of `pwd` of the host machine. Files and
+directories that are in the folder `pwd` will not be lost when the container is stopped.  
+
+After running this command, it is expected to prompt something like
+
+```
+[I 10:41:54.774 NotebookApp] Writing notebook server cookie secret to /home/ubuntu/.local/share/jupyter/runtime/notebook_cookie_secret
+[I 10:41:54.920 NotebookApp] Serving notebooks from local directory: /home/ubuntu
+[I 10:41:54.920 NotebookApp] 0 active kernels
+[I 10:41:54.920 NotebookApp] The Jupyter Notebook is running at:
+[I 10:41:54.920 NotebookApp] http://0.0.0.0:8888/?token=75ad671f75b4c47be70591f46bec604997d8a9bd9dd51f0d
+[I 10:41:54.920 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 10:41:54.921 NotebookApp]
+
+    Copy/paste this URL into your browser when you connect for the first time,
+    to login with a token:
+        http://0.0.0.0:8888/?token=75ad671f75b4c47be70591f46bec604997d8a9bd9dd51f0d
+```
+
+Then, open the url in an internet browser (IE, Firefox, Chrome, Safari, etc) if JWAS-docker is launched on your local machine.
+
+If you prefer running scripts using linux commands in Bash instead of Jupyter notebook, please run the command
 
 ```bash
-docker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-docker
+docker run -it --rm -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker bash
 ```
-
-creates a Docker container with the folder `rohan` with the contents of `/Users/rohan` of the host machine. Files and
-directories that are in the folder `/home/jovyan/rohan` will not be lost when the container is stopped.  
-
 
 
 #### Standalone application

@@ -4,11 +4,44 @@ type SSBR
 
 end
 
+
+function add_data_imputation_residual(mme,df)
 #add a fake column for imputaion RESIDUAL
-IDs       = convert(Array,df[:,1])
-isnongeno = [ID in ped.setNG for ID in IDs] #true/false
-df[:imputation_residual]=copy(df[:,1])
-df[:imputation_residual][!isnongeno]="0"
+    IDs       = convert(Array,df[:,1])
+    isnongeno = [ID in mme.ped.setNG for ID in IDs] #true/false
+    df[:imputation_residual]=copy(df[:,1])
+    df[:imputation_residual][!isnongeno]="0"
+end
+
+#modify model equations
+"""
+add to model an extra term: imputation_residual
+"""
+function add_term_imputation_residual(mme,G;df=4)
+    for m in 1:nModels
+        push!(mme.modelTerms,ModelTerm("imputation_residual",m))
+        mme.dict[ModelTerm("imputation_residual",m).trmStr]=ModelTerm("imputation_residual",m)
+    end
+
+
+  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keep=false)]
+  nModels    = size(modelVec,1)
+  lhsVec     = Symbol[]    #:y, phenotypes
+  modelTerms = ModelTerm[] #initialization outside for loop
+  dict       = Dict{AbstractString,ModelTerm}()
+  for (m,model) = enumerate(modelVec)
+    lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
+    lhsVec = [lhsVec;Symbol(strip(lhsRhs[1]))] #:y2
+    rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
+    mTrms  = [ModelTerm(strip(trmStr),m) for trmStr in rhsVec]
+    modelTerms  = [modelTerms;mTrms]           #vector of ModelTerm
+  end
+  for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
+    dict[trm.trmStr] = modelTerms[i]
+  end
+  return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
+  #ARE MODELVEC LHSVEC USED?
+end
 
 
 
