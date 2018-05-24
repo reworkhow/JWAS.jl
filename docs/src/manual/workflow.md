@@ -264,10 +264,10 @@ out=runMCMC(model,phenotypes,methods="BayesC",output_samples_frequency=100)
 - link to documentation for [`runMCMC`](@ref)
 
 ---
-On line 1, MCMC samples from `runMCMC` for `x2` is saved to a file. On line 2, a multi-trait BayesC
-analysis is performed with `model` and `phenotypes` as had been defined in step 1-6. MCMC samples for
-marker effects, location parameters specified on line 1, and all variance components from this analysis are saved
-every `output_samples_frequency` iterations to files.
+On line 1, MCMC samples from `runMCMC` for `x2` is saved to a file, where each row represents one sample from the MCMC.
+On line 2, a multi-trait BayesC analysis is performed with `model` and `phenotypes` as had been defined in step 1-6.
+MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis
+are saved every `output_samples_frequency` iterations to files.
 
 ---
 Several steps above can be skipped if no related information is available, e.g., step 6 is skipped
@@ -276,34 +276,36 @@ to documentation for all [Public functions](@ref).
 
 ## check results
 
-Posterior means of location parameters, most variance components, and marker effects are saved in `out`. They can be listed
-and obtained as
+Posterior means of location parameters, most variance components, and marker effects are saved in `out`.
+They can be listed and obtained as
 ```julia
 keys(out)
-```
 
-output:
+# output:
+#
+# Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:
+#   "Posterior mean of polygenic effects covariance matrix"
+#   "Model frequency"
+#   "Posterior mean of residual covariance matrix"
+#   "Posterior mean of marker effects"
+#   "Posterior mean of marker effects covariance matrix"
+#   "Posterior mean of location parameters"
+#   "Posterior mean of Pi"
 
-```julia
-Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:
-  "Posterior mean of polygenic effects covariance matrix"
-  "Model frequency"
-  "Posterior mean of residual covariance matrix"
-  "Posterior mean of marker effects"
-  "Posterior mean of marker effects covariance matrix"
-  "Posterior mean of location parameters"
-  "Posterior mean of Pi"
-```
-
-```julia
 out["Posterior mean of residual covariance matrix"]
+
+# output:
+#
+# 3×3 Array{Float64,2}:
+#   0.674651   -0.103877   0.0834044
+#  -0.103877    0.828135  -0.121798
+#   0.0834044  -0.121798   0.720751
+
 ```
 
-output:
+MCMC samples for marker effects, location parameters specified in step 7, and all variance components are saved to text
+files in your working directory. They can be obtained as
 
 ```julia
-3×3 Array{Float64,2}:
-  0.674651   -0.103877   0.0834044
- -0.103877    0.828135  -0.121798
-  0.0834044  -0.121798   0.720751
+res=readdlm("MCMC_samples_marker_effects_y1.txt",header=true)
 ```
