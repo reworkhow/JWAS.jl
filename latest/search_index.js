@@ -309,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 7: Run Bayesian Analysis",
     "category": "section",
-    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes,methods=\"BayesC\",output_samples_frequency=100)link to documentation for outputMCMCsamples\nlink to documentation for runMCMCOn line 1, MCMC samples from runMCMC for x2 is saved to a file. On line 2, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-6. MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis are saved every output_samples_frequency iterations to files.Several steps above can be skipped if no related information is available, e.g., step 6 is skipped for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link to documentation for all Public functions."
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes,methods=\"BayesC\",output_samples_frequency=100)link to documentation for outputMCMCsamples\nlink to documentation for runMCMCOn line 1, MCMC samples from runMCMC for x2 is saved to a file, where each row represents one sample from the MCMC. On line 2, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-6. MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis are saved every output_samples_frequency iterations to files.Several steps above can be skipped if no related information is available, e.g., step 6 is skipped for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link to documentation for all Public functions."
 },
 
 {
@@ -317,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "check results",
     "category": "section",
-    "text": "Posterior means of location parameters, most variance components, and marker effects are saved in out. They can be listed and obtained askeys(out)output:Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:\n  \"Posterior mean of polygenic effects covariance matrix\"\n  \"Model frequency\"\n  \"Posterior mean of residual covariance matrix\"\n  \"Posterior mean of marker effects\"\n  \"Posterior mean of marker effects covariance matrix\"\n  \"Posterior mean of location parameters\"\n  \"Posterior mean of Pi\"out[\"Posterior mean of residual covariance matrix\"]output:3×3 Array{Float64,2}:\n  0.674651   -0.103877   0.0834044\n -0.103877    0.828135  -0.121798\n  0.0834044  -0.121798   0.720751"
+    "text": "Posterior means of location parameters, most variance components, and marker effects are saved in out. They can be listed and obtained askeys(out)\n\n# output:\n#\n# Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:\n#   \"Posterior mean of polygenic effects covariance matrix\"\n#   \"Model frequency\"\n#   \"Posterior mean of residual covariance matrix\"\n#   \"Posterior mean of marker effects\"\n#   \"Posterior mean of marker effects covariance matrix\"\n#   \"Posterior mean of location parameters\"\n#   \"Posterior mean of Pi\"\n\nout[\"Posterior mean of residual covariance matrix\"]\n\n# output:\n#\n# 3×3 Array{Float64,2}:\n#   0.674651   -0.103877   0.0834044\n#  -0.103877    0.828135  -0.121798\n#   0.0834044  -0.121798   0.720751\nMCMC samples for marker effects, location parameters specified in step 7, and all variance components are saved to text files in your working directory. They can be obtained asres=readdlm(\"MCMC_samples_marker_effects_y1.txt\",header=true)"
 },
 
 {
@@ -373,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.get_pedigree",
     "category": "function",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n"
 },
 
 {
@@ -549,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.get_pedigree",
     "category": "method",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n"
 },
 
 {
