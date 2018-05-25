@@ -179,8 +179,8 @@ The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for 
 ## Step 2: Read data
 
 ```julia
-phenotypes = CSV.read("phenotypes.txt")
-pedigree   = get_pedigree("pedigree.txt")
+phenotypes = CSV.read("phenotypes.txt",delim = ',',header=true)
+pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
 head(data)
 ```
 
@@ -246,7 +246,7 @@ maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) a
 
 ## Step 6: Use Genomic Information
 ```julia
-add_genotypes(model,"genotypes.txt",G3)
+add_genotypes(model,"genotypes.txt",G3,separator=',')
 ```
 
 - link to documentation for [`add_genotypes`](@ref)
