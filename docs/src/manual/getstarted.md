@@ -141,4 +141,4 @@ where arguments `arg1` and `arg2` are passed to your script as `ARGS[1]` and `AR
 
 (3) To run code in **IJulia notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
 
-(4) To run code in **IJulia notebook via Docker**, please see [Jupyter-IJulia notebooks via Docker](@ref).
+(4) To run code in **IJulia notebook via Docker**, please see [Docker](@ref).
