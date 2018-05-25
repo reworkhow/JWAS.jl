@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 2: Read data",
     "category": "section",
-    "text": "phenotypes = CSV.read(\"phenotypes.txt\")\npedigree   = get_pedigree(\"pedigree.txt\")\nhead(data)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │link to documentation for get_pedigreeThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
+    "text": "phenotypes = CSV.read(\"phenotypes.txt\",delim = \',\',header=true)\npedigree   = get_pedigree(\"pedigree.txt\",separator=\",\",header=true)\nhead(data)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │link to documentation for get_pedigreeThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 6: Use Genomic Information",
     "category": "section",
-    "text": "add_genotypes(model,\"genotypes.txt\",G3)link to documentation for add_genotypesOn line 1, the genomic part of the model is defined with the genotype file and variance G3 (a 3x3 matrix)."
+    "text": "add_genotypes(model,\"genotypes.txt\",G3,separator=\',\')link to documentation for add_genotypesOn line 1, the genomic part of the model is defined with the genotype file and variance G3 (a 3x3 matrix)."
 },
 
 {
