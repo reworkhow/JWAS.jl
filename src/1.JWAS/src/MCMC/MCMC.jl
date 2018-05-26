@@ -40,9 +40,14 @@ function runMCMC(mme,df;
     ############################################################################
     starting_value = pre_check(mme,df,starting_value)
 
-    if methods!="conventional (no markers)"
+    if methods =="conventional (no markers)" && mme.M!=0
+        error("Conventional analysis runs without genotypes!")
+    end
+    if mme.M!=0
+        #align genotypes with phenotypes
+        align_genotypes(mme)
         #set up Pi
-        if mme.M != 0 && mme.nModels !=1 && Pi==0.0
+        if mme.nModels !=1 && Pi==0.0
             info("Pi (Π) is not provided.","\n")
             info("Pi (Π) is generated assuming all markers have effects on all traits.","\n")
             mykey=Array{Float64}(0)
@@ -54,7 +59,7 @@ function runMCMC(mme,df;
             Pi[ones(ntraits)]=1.0
         end
         #set up marker effect variances
-        if mme.M != 0 && mme.M.G_is_marker_variance==false && methods!="GBLUP"
+        if mme.M.G_is_marker_variance==false && methods!="GBLUP"
             genetic2marker(mme.M,Pi)
             println()
             if mme.nModels != 1

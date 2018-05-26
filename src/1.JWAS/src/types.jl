@@ -129,7 +129,7 @@ type MME
                                                   #MIXED MODEL EQUATIONS
     X                                             #incidence matrix
     ySparse                                       #phenotypes
-    IDs                                           #IDs for phenotypes
+    obsID                                         #IDs for phenotypes
     mmeLhs                                        #Lhs of Mixed Model Equations
     mmeRhs                                        #Rhs of Mixed Model Equations
 

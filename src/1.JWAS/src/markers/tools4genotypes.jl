@@ -50,3 +50,33 @@ type GibbsMats
         new(X,nrows,ncols,xArray,XpX)
     end
 end
+
+################################################################################
+#align genotypes with phenotyps given IDs
+################################################################################
+function align_genotypes(mme::MME)
+    if mme.obsID != mme.M.obsID
+        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
+        M  = mme.M.genotypes
+        mme.M.genotypes = Z*M
+        mme.obsID = mme.M.obsID
+    end
+end
+
+#y=Zu (complete genomic data)
+function mkmat_incidence_factor(yID,uID)
+    Z = spzeros(length(yID),length(uID))
+
+    uIDdict = Dict()
+    for (index,id) in enumerate(uID)
+        uIDdict[id]=index
+    end
+
+    rowi = 1
+    for id in yID
+        index = uIDdict[id]
+        Z[rowi,index]=1
+        rowi = rowi+1
+    end
+    return Z
+end

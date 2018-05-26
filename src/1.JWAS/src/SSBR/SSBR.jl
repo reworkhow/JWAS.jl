@@ -5,6 +5,34 @@ type SSBR
 end
 
 
+#y=Zu (complete genomic data)
+function mkmat_incidence_factor(yID,uID)
+    Z = spzeros(length(yID),length(uID))
+
+    uIDdict = Dict()
+    for (index,id) in enumerate(uID)
+        uIDdict[id]=index
+    end
+
+    rowi = 1
+    for id in yID
+        index = uIDdict[id]
+        Z[rowi,index]=1
+        rowi = rowi+1
+    end
+    return Z
+end
+
+function align_genotypes(mme::MME)
+    Z  = mkmat_incidence_factor(mme.obsID,geno.obsID)
+    M  = mme.M.genotypes
+    geno.genotypes = Z*M
+end
+
+
+
+
+
 function add_data_imputation_residual(mme,df)
 #add a fake column for imputaion RESIDUAL
     IDs       = convert(Array,df[:,1])
@@ -58,7 +86,7 @@ function calc_Ai(ped::PedModule.Pedigree,geno::Genotypes)
 end
 
 function make_MMats(geno::Genotypes,a_mats::AiMats,ped::PedModule.Pedigree)
-    Mg   = Array{Float64,1}(geno.nObs,geno.nMarkers)
+    Mg   = Array{Float64,2}(geno.nObs,geno.nMarkers)
     MgID = Array{String,1}(geno.nObs)
     #reorder genotypes to get Mg with same order as Ai_gg
     for i in 1:geno.nObs
