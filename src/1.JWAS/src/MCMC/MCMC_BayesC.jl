@@ -48,7 +48,7 @@ function MCMC_BayesC(nIter,mme,df;
     meanVare    = 0.0
 
     #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
-    if mme.ped != 0
+    if mme.pedTrmVec != 0
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
        k         = size(pedTrmVec,1)  #2
@@ -136,7 +136,7 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
-        if mme.ped != 0
+        if mme.pedTrmVec != 0
             G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0) #better add A outside
             if iter > burnin
                 G0Mean  += (G0  - G0Mean )/(iter-burnin)
@@ -178,9 +178,9 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
-                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),π,α,vEff,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),π,α,vEff,outfile)
             else
-                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),false,false,false,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),false,false,false,outfile)
             end
         end
 
@@ -190,7 +190,7 @@ function MCMC_BayesC(nIter,mme,df;
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
-            if mme.ped !=0
+            if mme.pedTrmVec !=0
                 println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
             end
             if mme.M != 0
@@ -213,10 +213,10 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
     if mme.M != 0
-        output=output_result(mme,solMean,meanVare,(mme.ped!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
                              meanAlpha,meanVara,estimatePi,mean_pi,output_file)
     else
-        output=output_result(mme,solMean,meanVare,(mme.ped!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
                              false,false,false,false,output_file)
     end
     return output

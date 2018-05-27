@@ -59,7 +59,7 @@ function align_genotypes(mme::MME)
         Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
         M  = mme.M.genotypes
         mme.M.genotypes = Z*M
-        mme.obsID = mme.M.obsID
+        mme.M.obsID = mme.obsID
     end
 end
 

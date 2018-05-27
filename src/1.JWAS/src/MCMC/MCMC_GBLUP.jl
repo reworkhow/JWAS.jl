@@ -31,7 +31,7 @@ function MCMC_GBLUP(nIter,mme,df;
     meanVare    = 0.0
 
     #priors for genetic variance (polygenic effects;A) e.g Animal+ Maternal
-    if mme.ped != 0
+    if mme.pedTrmVec != 0
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
        k         = size(pedTrmVec,1)  #2
@@ -107,7 +107,7 @@ function MCMC_GBLUP(nIter,mme,df;
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
-        if mme.ped != 0
+        if mme.pedTrmVec != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
           if iter > burnin
               G0Mean  += (G0  - G0Mean )/(iter-burnin)
@@ -144,7 +144,7 @@ function MCMC_GBLUP(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
-            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.ped!=0?G0:false),0)
+            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),0)
         end
         ########################################################################
         # 3.2 Printout
@@ -152,7 +152,7 @@ function MCMC_GBLUP(nIter,mme,df;
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,6))
-            if mme.ped !=0
+            if mme.pedTrmVec !=0
               println("Polygenic effects covariance matrix \n",round(G0Mean,3))
             end
             println("Genetic variance (G matrix): ",round(meanVara,6))

@@ -1,10 +1,9 @@
 include("outputMCMCsamples.jl")
 include("DRY.jl")
-#include("MCMC_BayesB.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
-#include("MT_MCMC_BayesB.jl")
 include("MT_MCMC_BayesC.jl")
+include("../SSBR/SSBR.jl")
 
 """
     runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,printout_model_info=true)
@@ -33,19 +32,29 @@ function runMCMC(mme,df;
                 printout_frequency  = chain_length+1,
                 printout_model_info = true,
                 output_samples_frequency::Int64 = 0,
-                update_priors_frequency::Int64=0)
+                update_priors_frequency::Int64=0,
+                #parameters for single-step analysis
+                single_step_analysis= false,
+                pedigree            = false)
 
     ############################################################################
     # Pre-Check
     ############################################################################
-    starting_value = pre_check(mme,df,starting_value)
-
     if methods =="conventional (no markers)" && mme.M!=0
         error("Conventional analysis runs without genotypes!")
     end
+
+    #single-step
+    if single_step_analysis==true
+        SSBRrun(mme,pedigree,df)
+    end
+    #make mixed model equations for non-marker parts
+    starting_value = pre_check(mme,df,starting_value)
     if mme.M!=0
         #align genotypes with phenotypes
         align_genotypes(mme)
+    end
+    if mme.M!=0
         #set up Pi
         if mme.nModels !=1 && Pi==0.0
             info("Pi (Π) is not provided.","\n")
@@ -84,17 +93,11 @@ function runMCMC(mme,df;
         println("\n\n")
     end
 
-    #set up starting values for location parameters (not markers)
-    have_starting_value=false
-    if starting_value != false
-      starting_value=vec(starting_value)
-      have_starting_value=true
-    end
 
     #printout basic MCMC information
     if printout_model_info == true
       getinfo(mme)
-      MCMCinfo(methods,Pi,chain_length,burnin,have_starting_value,printout_frequency,
+      MCMCinfo(methods,Pi,chain_length,burnin,(starting_value!=false),printout_frequency,
               output_samples_frequency,missing_phenotypes,constraint,estimatePi,
               update_priors_frequency,mme)
     end
@@ -185,7 +188,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),3))
         end
         @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
-        if mme.ped!=0
+        if mme.pedTrmVec!=0
             @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),3))
         end
         if !(methods in ["conventional (no markers)", "GBLUP"])
@@ -197,13 +200,13 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
         for i in mme.rndTrmVec
             thisterm=split(i.term_array[1].trmStr,':')[end]
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
-            Base.print_matrix(STDOUT,round.(i.GiNew,3))
+            Base.print_matrix(STDOUT,round.(inv(i.GiNew),3))
             println()
         end
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(STDOUT,round.(mme.R,3))
         println()
-        if mme.ped!=0
+        if mme.pedTrmVec!=0
             @printf("%-30s\n","genetic variances (polygenic):")
             Base.print_matrix(STDOUT,round.(inv(mme.Gi),3))
             println()
@@ -226,7 +229,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     @printf("\n%-30s\n\n","Degree of freedom for hyper-parameters:")
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
     @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
-    if mme.ped!=0
+    if mme.pedTrmVec!=0
         @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
     end
     if mme.M!=0

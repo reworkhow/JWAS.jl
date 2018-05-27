@@ -92,7 +92,7 @@ type MCMCSamples
 end
 
 type Genotypes
-  obsID::Array{String,1}    #row ID of genotypes
+  obsID::Array{AbstractString,1}    #row ID of genotypes
   markerID
   nObs::Int64
   nMarkers::Int64
@@ -134,7 +134,7 @@ type MME
     mmeRhs                                        #Rhs of Mixed Model Equations
 
                                                   #RANDOM EFFCTS
-    pedTrmVec::Array{AbstractString,1}            #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
+    pedTrmVec                                     #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
     ped                                           #PedModule.Pedigree
     Ai                                            #inverse of numerator relationship matrix
     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
@@ -166,7 +166,7 @@ type MME
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,0,0,0,
-                   [],0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,
                    0,
@@ -176,7 +176,7 @@ type MME
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,0,0,0,
-                   [],0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    R,0,0,0.0,0.0,
                    0,

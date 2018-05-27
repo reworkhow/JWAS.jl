@@ -239,8 +239,10 @@ function getMME(mme::MME, df::DataFrame)
 
     #Random effects parts in MME
     #Pedigree
-    if mme.ped != 0 && mme.Ai == 0
-      mme.Ai=PedModule.AInverse(mme.ped)
+    if mme.pedTrmVec != 0
+        if mme.Ai == 0 #if no SSBR
+            mme.Ai=PedModule.AInverse(mme.ped)
+        end
       addA(mme::MME)
     end
 

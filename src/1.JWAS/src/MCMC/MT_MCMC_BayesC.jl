@@ -73,7 +73,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     scaleRes= diag(mme.R)*(ν-2)/ν #only for chisq for constraint diagonal R
 
     #Priors for polygenic effect covariance matrix
-    if mme.ped != 0
+    if mme.pedTrmVec != 0
       ν         = mme.df.polygenic
       pedTrmVec = mme.pedTrmVec
       k         = size(pedTrmVec,1)
@@ -259,7 +259,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################
-        if mme.ped != 0  #will optimize taking advantage of symmetry
+        if mme.pedTrmVec != 0  #will optimize taking advantage of symmetry
             for (i,trmi) = enumerate(pedTrmVec)
                 pedTrmi   = mme.modelTermDict[trmi]
                 startPosi = pedTrmi.startPos
@@ -327,7 +327,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             if mme.M!=0
                 PM = GMMean*(νGM - nTraits - 1)
             end
-            if mme.ped != 0
+            if mme.pedTrmVec != 0
                 P  = G0Mean*(νG0 - k - 1)
             end
             PRes    = R0Mean*(νR0 - nTraits - 1)
@@ -340,14 +340,14 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)
                 elseif methods == "RR-BLUP"
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,alphaArray,vec(mme.M.G),outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),BigPi,uArray,false,outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,uArray,false,outfile)
                 end
             else
-                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.ped!=0?G0:false),false,false,false,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),false,false,false,outfile)
             end
         end
 
@@ -355,7 +355,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",round.(R0Mean,6))
 
-            if mme.ped !=0
+            if mme.pedTrmVec !=0
               println("Polygenic effects covariance matrix \n",round.(G0Mean,6))
             end
 
@@ -395,7 +395,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     end
 
     #OUTPUT Polygetic Effects
-    if mme.ped != 0
+    if mme.pedTrmVec != 0
       output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
     end
 

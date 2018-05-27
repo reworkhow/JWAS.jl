@@ -69,7 +69,11 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
       error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
     mme.pedTrmVec = res
-    mme.ped = ped
+    if mme.ped == 0
+        mme.ped = deepcopy(ped)
+    else
+        error("Pedigree information is already added.")
+    end
 
     if mme.nModels!=1 #multi-trait
       mme.Gi = inv(G)
@@ -140,6 +144,51 @@ function set_random(mme::MME,randomStr::AbstractString, G; df=4)
     end
     nothing
 end
+
+############################################################################
+#Set random effects (Not specific for IID or A(pedigree))
+#useful for imputaion residual in single-step methods (var(ϵ)^{-1}=A^{nn} )
+############################################################################
+"""
+    set_random(mme::MME,randomStr::AbstractString,Vinv,G;df=4)
+
+* set variables as random polygenic effects with inverse of covariance matrix **Vinv**, variances **G** whose degree of freedom **df** defaults to 4.0.
+"""
+function set_random(mme::MME,randomStr::AbstractString,Vinv, G;df=4)
+    pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
+
+    #add model equation number; "animal" => "1:animal"
+    res = []
+    for trm in pedTrmVec
+      for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trm in strpVec
+          res = [res;string(m)*":"*trm]
+        else
+          info(trm," is not found in model equation ",string(m),".")
+        end
+      end
+    end #"1:animal","1:animal*age"
+    if length(res) != size(G,1)
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+    end
+    mme.pedTrmVec = res
+    mme.ped = ped
+
+    if mme.nModels!=1 #multi-trait
+      mme.Gi = inv(G)
+    else              #single-trait
+      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
+        G=reshape([G],1,1)
+      end
+      mme.GiOld = zeros(G)
+      mme.GiNew = inv(G)
+    end
+    mme.df.polygenic=Float64(df)
+    nothing
+end
+
 ################################################################################
 #*******************************************************************************
 #following facts that scalar Inverse-Wishart(ν,S) = Inverse-Gamma(ν/2,S/2)=    *

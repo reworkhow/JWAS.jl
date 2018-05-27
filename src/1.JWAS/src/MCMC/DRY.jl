@@ -22,7 +22,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
   output = Dict()
   output["Posterior mean of location parameters"] = [getNames(mme) solMean]
   output["Posterior mean of residual variance"]   = meanVare
-  if mme.ped != 0
+  if mme.pedTrmVec != 0
     output["Posterior mean of polygenic effects covariance matrix"]=G0Mean
   end
 
