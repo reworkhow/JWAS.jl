@@ -365,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.set_random",
     "category": "function",
-    "text": "set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)\n\nset variables as random polygenic effects with pedigree information ped, variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + Age + Animal\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = 1.6\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#single-trait (example 2)\nmodel_equation  = \"y = intercept + Age + Animal + Animal*Age\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = [1.6   0.2\n                   0.2  1.0]\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex + Animal\n                   CW = intercept + age + sex + Animal\"\nmodel           = build_model(model_equations,R);\nped             = get_pedigree(pedfile);\nG               = [6.72   2.84\n                   2.84  8.41]\nset_random(model,\"Animal\", ped,G)\n\n\n\nset_random(mme::MME,randomStr::AbstractString,G;df=4)\n\nset variables as i.i.d random effects with variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nG               = 0.6\nset_random(model,\"litter\",G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + litter + sex\n                   CW = intercept + litter + sex\"\nmodel           = build_model(model_equations,R);\nG               = [3.72  1.84\n                   1.84  3.41]\nset_random(model,\"litter\",G)\n\n\n\n"
+    "text": "set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)\n\nset variables as random polygenic effects with pedigree information ped, variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + Age + Animal\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = 1.6\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#single-trait (example 2)\nmodel_equation  = \"y = intercept + Age + Animal + Animal*Age\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = [1.6   0.2\n                   0.2  1.0]\nset_random(model,\"Animal Animal*Age\", ped,G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex + Animal\n                   CW = intercept + age + sex + Animal\"\nmodel           = build_model(model_equations,R);\nped             = get_pedigree(pedfile);\nG               = [6.72   2.84\n                   2.84  8.41]\nset_random(model,\"Animal\", ped,G)\n\n\n\nset_random(mme::MME,randomStr::AbstractString,G;df=4)\n\nset variables as i.i.d random effects with variances G whose degree of freedom df defaults to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nG               = 0.6\nset_random(model,\"litter\",G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + litter + sex\n                   CW = intercept + litter + sex\"\nmodel           = build_model(model_equations,R);\nG               = [3.72  1.84\n                   1.84  3.41]\nset_random(model,\"litter\",G)\n\n\n\nset_random(mme::MME,randomStr::AbstractString,Vinv,G;df=4)\n\nset variables as random polygenic effects with inverse of covariance matrix Vinv, variances G whose degree of freedom df defaults to 4.0.\n\n\n\n"
 },
 
 {
@@ -577,6 +577,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals.html#JWAS.set_random-Tuple{JWAS.MME,AbstractString,Any,Any}",
+    "page": "Internals",
+    "title": "JWAS.set_random",
+    "category": "method",
+    "text": "set_random(mme::MME,randomStr::AbstractString,Vinv,G;df=4)\n\nset variables as random polygenic effects with inverse of covariance matrix Vinv, variances G whose degree of freedom df defaults to 4.0.\n\n\n\n"
+},
+
+{
     "location": "manual/internals.html#JWAS.set_random-Tuple{JWAS.MME,AbstractString,Any}",
     "page": "Internals",
     "title": "JWAS.set_random",
@@ -606,6 +614,14 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.solve",
     "category": "method",
     "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers includes default,Jacobi,GaussSeidel,Gibbs sampler.\n\n\n\n"
+},
+
+{
+    "location": "manual/internals.html#JWAS.add_term-Tuple{Any,AbstractString}",
+    "page": "Internals",
+    "title": "JWAS.add_term",
+    "category": "method",
+    "text": "add to model an extra term: imputation_residual\n\n\n\n"
 },
 
 {
