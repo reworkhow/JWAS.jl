@@ -72,6 +72,8 @@ type RandomEffect
     #vcNew #::Array{Float64,2}
     df::Float64
     scale #::Array{Float64,2}
+    #Vinv # 0, identity matrix
+    #General IDs and Vinv matrix (order is important now)
 end
 
 # type RandomEffect
