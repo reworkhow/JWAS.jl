@@ -269,7 +269,7 @@ function getinfo(model;data=false)
     end
   for i in model.rndTrmVec
       for j in i.term_array
-          push!(random_effects,split(j.trmStr,':')[end])
+          push!(random_effects,split(j,':')[end])
       end
   end
 

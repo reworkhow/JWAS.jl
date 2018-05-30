@@ -113,15 +113,6 @@ function runMCMC(mme,df;
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_file)
-        # elseif methods =="BayesB"
-        #     res=MCMC_BayesB(chain_length,mme,df,
-        #                     burnin                   = burnin,
-        #                     π                        = Pi,
-        #                     estimatePi               = estimatePi,
-        #                     sol                      = starting_value,
-        #                     outFreq                  = printout_frequency,
-        #                     output_samples_frequency = output_samples_frequency,
-        #                     output_file              = output_file)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
@@ -184,7 +175,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     @printf("\n%-30s\n\n","Hyper-parameters Information:")
     if mme.nModels==1
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1].trmStr,':')[end]
+            thisterm=split(i.term_array[1],':')[end]
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),3))
         end
         @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
@@ -198,7 +189,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
         end
     else
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1].trmStr,':')[end]
+            thisterm=split(i.term_array[1],':')[end]
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
             Base.print_matrix(STDOUT,round.(inv(i.GiNew),3))
             println()

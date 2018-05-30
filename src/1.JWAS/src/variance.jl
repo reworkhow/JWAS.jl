@@ -24,15 +24,17 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
       term_array = random_term.term_array
       S          = zeros(length(term_array),length(term_array))
       for (i,termi) = enumerate(term_array)
-          startPosi  = termi.startPos
-          endPosi    = startPosi + termi.nLevels - 1
-          for (j,termi) in enumerate(term_array)
-            startPosj   = termi.startPos
-            endPosj     = startPosj + termi.nLevels - 1
+          randTrmi   = mme.modelTermDict[termi]
+          startPosi  = randTrmi.startPos
+          endPosi    = startPosi + randTrmi.nLevels - 1
+          for (j,termj) in enumerate(term_array)
+            randTrmj    = mme.modelTermDict[termj]
+            startPosj   = randTrmj.startPos
+            endPosj     = startPosj + randTrmj.nLevels - 1
             S[i,j]      = (sol[startPosi:endPosi]'sol[startPosj:endPosj])[1,1]
           end
        end
-       q = term_array[1].nLevels
+       q  = mme.modelTermDict[term_array[1]].nLevels
        G0 = rand(InverseWishart(random_term.df + q, convert(Array,Symmetric(random_term.scale + S))))
 
        random_term.GiOld = copy(random_term.GiNew)

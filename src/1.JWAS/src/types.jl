@@ -64,28 +64,15 @@ end
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
 type RandomEffect
-    term_array::Array{ModelTerm,1} #term_array::::Array{AbstractString,1}
+    term_array::Array{AbstractString,1}
     G::Array{Float64,2}      #covariance matrix (multi-trait)
     GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
-    #vcOld #::Array{Float64,2}
-    #vcNew #::Array{Float64,2}
     df::Float64
     scale #::Array{Float64,2}
-    #Vinv # 0, identity matrix
-    #General IDs and Vinv matrix (order is important now)
+    Vinv # 0, identity matrix
+    names #General IDs and Vinv matrix (order is important now)(modelterm.names)
 end
-
-# type RandomEffect
-#     pedTrmVec::Array{AbstractString,1}            #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
-#     Vi                                            #inverse of covariance matrix
-#     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
-#     GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
-#     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
-#
-#     df::Float64
-#     scale #::Array{Float64,2}
-# end
 
 #MCMC samplers for location parameters
 type MCMCSamples
@@ -144,7 +131,7 @@ type MME
     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
 
     rndTrmVec::Array{RandomEffect,1}              #iid random effects
-    #should have one for pedigree randomEffect
+    #should have one for pedigree randomEffect (make pedigree) also RandomEffect later
                                                   #RESIDUAL EFFECTS
     R::Array{Float64,2}                           #residual covariance matrix (multi-trait)
     missingPattern                                #for impuation of missing residual
