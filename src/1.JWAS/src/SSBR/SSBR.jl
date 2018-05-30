@@ -7,7 +7,7 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
 
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
-    #add_term(mme,"J") #centering
+    add_term(mme,"J") #centering
     #add data for ϵ and J
     IDs       = convert(Array,df[:,1])
     isnongeno = [ID in mme.ped.setNG for ID in IDs] #true/false
@@ -16,6 +16,7 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
     df[Symbol("ϵ")]=data_ϵ
 
     df[Symbol("J")]=make_JVecs(mme,df,Ai_nn,Ai_ng)
+    set_random(mme,"ϵ",mme.M.G,Vinv=Ai_nn,names=mme.M.obsID[1:size(Ai_nn,1)])#inv(mme.Gi) wrong here
 end
 
 ############################################################################

@@ -109,7 +109,7 @@ G               = [3.72  1.84
 set_random(model,"litter",G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=0,df=4)
+function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     G = map(Float64,G)
     df= Float64(df)
     randTrmVec = split(randomStr," ",keep=false)  # "herd"
@@ -118,8 +118,12 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=0,df=4)
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
-        if trm in strpVec
-          res = [res;string(m)*":"*trm] #add model number => "1:herd"
+        if trm in strpVec || trm == "ϵ"
+          mtrm= string(m)*":"*trm #add model number => "1:herd"
+          res = [res;mtrm]
+          #*********************
+          mme.modelTermDict[mtrm].names=names
+          #*********************
         else
           info(trm," is not found in model equation ",string(m),".")
         end

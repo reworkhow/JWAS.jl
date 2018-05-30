@@ -63,7 +63,7 @@ end
 #single-trait e.g. termarray: [ModelTerm(1:A)]
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
-type RandomEffect
+type RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
     G::Array{Float64,2}      #covariance matrix (multi-trait)
     GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
@@ -71,7 +71,7 @@ type RandomEffect
     df::Float64
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
-    names #General IDs and Vinv matrix (order is important now)(modelterm.names)
+    names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
 end
 
 #MCMC samplers for location parameters

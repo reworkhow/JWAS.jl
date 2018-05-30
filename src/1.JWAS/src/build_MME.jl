@@ -165,9 +165,31 @@ function getX(trm::ModelTerm,mme::MME)
        #########################################################################
        #other fixed or random effects
        #########################################################################
-       dict,trm.names  = mkDict(trm.str) #key: levels of variable; value: column index
+       #dict,trm.names  = mkDict(trm.str) #key: levels of variable; value: column index
+       #trm.nLevels     = length(dict)
+       #xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
+       res=Array{AbstractString,1}()
+       for i in mme.rndTrmVec
+           res=[res;i.term_array]
+       end #make an array of all random effects (string)
+       if trm.trmStr in res && mme.modelTermDict[trm.trmStr].names!=[]
+           #imputational residual
+           dict,thisnames  = mkDict(mme.modelTermDict[trm.trmStr].names)
+           if thisnames!=mme.modelTermDict[trm.trmStr].names
+               error("errors in SSBR")
+           end
+       else
+           dict,trm.names  = mkDict(trm.str)
+           #delete "0"? for fixed effects missing
+       end
        trm.nLevels     = length(dict)
+       dict["0"]       = 1 #for missing data
        xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
+       xv[trm.str.=="0"]=0 #for missing data
+
+       xi      = [xi;1]              # adding a zero to
+       xj      = [xj;trm.nLevels]    # the last column in row 1
+       xv      = [xv;0.0]
     end
 
     #ensure X has nObs*nModels rows
