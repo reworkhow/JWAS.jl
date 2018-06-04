@@ -139,7 +139,7 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
       term_array   = res
       df           = df+length(term_array)
       scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-      randomEffect = RandomEffect(term_array,G,zeros(Gi),Gi,df,scale,Vinv,names)
+      randomEffect = RandomEffect(term_array,Gi,zeros(Gi),Gi,df,scale,Vinv,names)
       push!(mme.rndTrmVec,randomEffect)
     end
     nothing
@@ -196,6 +196,7 @@ end
 function addLambdas(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
+      Vi         = (random_term.Vinv!=0)?random_term.Vinv:speye(mme.modelTermDict[term_array[1]].nLevels)
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
           startPosi  = randTrmi.startPos
@@ -204,8 +205,7 @@ function addLambdas(mme::MME)
             randTrmj    = mme.modelTermDict[termj]
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
-            myeye       = speye(randTrmj.nLevels)
-            myaddLambda = (mme.nModels!=1)?(myeye*random_term.GiNew[i,j]):(myeye*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
+            myaddLambda = (mme.nModels!=1)?(Vi*random_term.Gi[i,j]):(Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddLambda
           end

@@ -59,13 +59,13 @@ end
 
 ################################################################################
 #General (iid) random effects
-#NOW assuming different variables are independent cov(A,B)=0 #NO
+#Assume independence:cov(1:A,1:B)=0 unless A.names == B.names, e.g.pedigree(pedTrmVec)
 #single-trait e.g. termarray: [ModelTerm(1:A)]
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
 type RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    G::Array{Float64,2}      #covariance matrix (multi-trait)
+    Gi::Array{Float64,2}     #covariance matrix (multi-trait)
     GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
     df::Float64

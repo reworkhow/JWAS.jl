@@ -22,6 +22,7 @@ end
 function sampleVCs(mme::MME,sol::Array{Float64,1})
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
+      Vi         = (random_term.Vinv!=0)?random_term.Vinv:speye(mme.modelTermDict[term_array[1]].nLevels)
       S          = zeros(length(term_array),length(term_array))
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
@@ -31,7 +32,7 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
             randTrmj    = mme.modelTermDict[termj]
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
-            S[i,j]      = (sol[startPosi:endPosi]'sol[startPosj:endPosj])[1,1]
+            S[i,j]      = sol[startPosi:endPosi]'*Vi*sol[startPosj:endPosj]
           end
        end
        q  = mme.modelTermDict[term_array[1]].nLevels
@@ -39,7 +40,7 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
 
        random_term.GiOld = copy(random_term.GiNew)
        random_term.GiNew = copy(inv(G0))
-       random_term.G     = copy(G0)
+       random_term.Gi    = copy(inv(G0))
     end
 end
 
@@ -56,12 +57,11 @@ function sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
             pedTrmj   = mme.modelTermDict[trmj]
             startPosj = pedTrmj.startPos
             endPosj   = startPosj + pedTrmj.nLevels - 1
-            S[i,j]    = (sol[startPosi:endPosi]'*mme.Ai*sol[startPosj:endPosj])[1,1]
+            S[i,j]    = sol[startPosi:endPosi]'*mme.Ai*sol[startPosj:endPosj]
         end
     end
 
-    pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
-    q  = pedTrm1.nLevels
+    q  = mme.modelTermDict[pedTrmVec[1]].nLevels
     G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S)))) #better invchi when ST-PBLUP (and no maternal...)
 
     mme.GiOld = copy(mme.GiNew)

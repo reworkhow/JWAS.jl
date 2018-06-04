@@ -116,7 +116,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   #random effects variances
   for effect in  mme.rndTrmVec
     trmStri   = split(effect.term_array[1],':')[end]
-    writedlm(outfile[trmStri*"_variances"],vec(effect.G)')
+    writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))')
   end
 
   writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number)?vRes:vec(vRes)')
