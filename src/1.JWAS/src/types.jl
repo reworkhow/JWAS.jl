@@ -118,7 +118,7 @@ type MME
                                                   #MIXED MODEL EQUATIONS
     X                                             #incidence matrix
     ySparse                                       #phenotypes
-    obsID                                         #IDs for phenotypes
+    obsID::Array{AbstractString,1}                #IDs for phenotypes
     mmeLhs                                        #Lhs of Mixed Model Equations
     mmeRhs                                        #Rhs of Mixed Model Equations
 
@@ -154,7 +154,7 @@ type MME
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
-                   0,0,0,0,0,
+                   0,0,[],0,0,
                    0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,
@@ -164,7 +164,7 @@ type MME
                    DF(ν,4,4,4))
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
-                   0,0,0,0,0,
+                   0,0,[],0,0,
                    0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    R,0,0,0.0,0.0,

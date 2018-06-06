@@ -74,7 +74,11 @@ function mkmat_incidence_factor(yID,uID)
 
     rowi = 1
     for id in yID
-        index = uIDdict[id]
+        if haskey(uIDdict,id)
+            index = uIDdict[id]
+        else
+            error("Phenotyped individuals are not a subset of all genotyped individuals. Please run the single-step analysis.")
+        end
         Z[rowi,index]=1
         rowi = rowi+1
     end

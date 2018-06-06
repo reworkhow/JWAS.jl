@@ -229,7 +229,7 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    obsID = map(string,df[:,1])
+    obsID = map(AbstractString,df[:,1])
     y   = recode(df[mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; recode(df[mme.lhsVec[i]],missing=>0.0)]
