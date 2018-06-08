@@ -55,11 +55,18 @@ end
 #align genotypes with phenotyps given IDs
 ################################################################################
 function align_genotypes(mme::MME)
+    Mfull    = mme.M.genotypes
+    obsIDfull= deepcopy(mme.M.obsID)
     if mme.obsID != mme.M.obsID
-        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
-        M  = mme.M.genotypes
-        mme.M.genotypes = Z*M
+        Z  = mkmat_incidence_factor(mme.obsID,obsIDfull)
+        mme.M.genotypes = Z*Mfull
         mme.M.obsID = mme.obsID
+    end
+    if mme.output_ID != mme.obsID
+        Zo  = mkmat_incidence_factor(mme.output_ID,obsIDfull)
+        mme.output_genotypes = Zo*Mfull
+    else
+        mme.output_genotypes = mme.M.genotypes
     end
 end
 

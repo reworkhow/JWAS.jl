@@ -2,6 +2,7 @@ using Distributions
 using DataFrames,CSV
 using ProgressMeter
 using .PedModule
+using .misc
 
 include("types.jl")
 include("printout.jl")

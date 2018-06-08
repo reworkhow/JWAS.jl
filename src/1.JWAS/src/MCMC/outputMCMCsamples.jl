@@ -81,9 +81,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
   end
   if mme.pedTrmVec != 0
-    pedtrmvec  = mme.pedTrmVec
-    thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
-    writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader))
+      pedtrmvec  = mme.pedTrmVec
+      thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
+      writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader))
   end
 
   return out_i,outfile

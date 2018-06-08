@@ -248,6 +248,11 @@ function getMME(mme::MME, df::DataFrame)
     mme.ySparse = ySparse
     mme.obsID   = obsID
 
+    #output ID
+    if mme.output_ID == 0
+        mme.output_ID = deepcopy(obsID)
+    end
+
     if mme.nModels==1     #single-trait (lambda version)
       mme.mmeLhs = X'X
       mme.mmeRhs = X'ySparse

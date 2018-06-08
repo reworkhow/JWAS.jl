@@ -147,9 +147,11 @@ type MME
     samples4R::Array{Float64,2}                   #residual variance  (ndim^2 * niter)
     samples4G::Array{Float64,2}                   #polygenic variance (matrix -> vector)
     outputSamplesVec::Array{MCMCSamples,1}        #location parameters
-    #samples4π                                    #samples4π is not used in MME type since π is BayesC-specific
 
     df::DF                                        #prior degree of freedom
+
+    output_ID
+    output_genotypes
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
@@ -161,7 +163,8 @@ type MME
                    0,
                    1,
                    zeros(1,1),zeros(1,1),[],
-                   DF(ν,4,4,4))
+                   DF(ν,4,4,4),
+                   0,0)
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
@@ -171,7 +174,8 @@ type MME
                    0,
                    1,
                    zeros(1,1),zeros(1,1),[],
-                   DF(ν,4,4,4))
+                   DF(ν,4,4,4),
+                   0,0)
       else
         error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end

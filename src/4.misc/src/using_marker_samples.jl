@@ -49,23 +49,21 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true
 end
 
 """
-    get_breeding_values(model::MME,files...;header=true)
+    get_breeding_values(model,files...;header=true)
 
-* Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**.
+* Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**
+    for individuals defined by `outputEBV(model,IDs::Array{String,1})`, defaulting to all phenotyped individuals.
 """
 function get_breeding_values(model,files...;header=true)
-    EBV=get_breeding_values(model.M.genotypes,files...,header=header)
-    if model.M.obsID[1] != "NA"
-        EBVwithID = Any(EBV)
-        traiti=1
-        for i in EBV
-            ID        = DataFrame(ID=model.M.obsID)
-            EBVwithID[traiti] = [ID i]
-            traiti +=1
-        end
-        return EBVwithID
+    EBV = get_breeding_values(model.output_genotypes,files...,header=header)
+    EBVwithID = Any(EBV)
+    traiti=1
+    for i in EBV
+        ID = DataFrame(ID=model.output_ID)
+        EBVwithID[traiti] = [ID i]
+        traiti +=1
     end
-    return EBV
+    return EBVwithID
 end
 
 """

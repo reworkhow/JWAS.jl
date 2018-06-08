@@ -4,6 +4,7 @@ include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesC.jl")
 include("../SSBR/SSBR.jl")
+include("output.jl")
 
 """
     runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,printout_model_info=true)
@@ -49,9 +50,11 @@ function runMCMC(mme,df;
         SSBRrun(mme,pedigree,df)
     end
     #make mixed model equations for non-marker parts
+    #assign IDs for observations
     starting_value = pre_check(mme,df,starting_value)
     if mme.M!=0
-        #align genotypes with phenotypes
+        #align genotypes with phenotypes IDs
+        #align genotypes with output IDs
         align_genotypes(mme)
     end
     if mme.M!=0
@@ -75,8 +78,8 @@ function runMCMC(mme,df;
               if !isposdef(mme.M.G) #also work for scalar
                 error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
               end
-              println("The prior for marker effects covariance matrix is calculated ")
-              println("from genetic covariance matrix and Π. The marker effects ")
+              println("The prior for marker effects covariance matrix is calculated from ")
+              println("genetic covariance matrix and Π. The prior for the marker effects ")
               println("covariance matrix is: \n")
               Base.print_matrix(STDOUT,round.(mme.M.G,6))
             else
@@ -84,7 +87,7 @@ function runMCMC(mme,df;
                 error("Marker effects variance is negative!")
               end
               println("The prior for marker effects variance is calculated from ")
-              println("the genetic variance and π. The marker effects variance ")
+              println("the genetic variance and π. The prior for the marker effects variance ")
               println("is: ",round.(mme.M.G,6))
             end
         elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
@@ -145,6 +148,14 @@ function runMCMC(mme,df;
     else
         error("No options!")
     end
+  #use MCMC samples for effects
+  if mme.output_ID!=0
+      for traiti in 1:mme.nModels
+         file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
+         res["EBV"*"_"*string(mme.lhsVec[traiti])]=
+            misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
+     end
+  end
   res
 end
 

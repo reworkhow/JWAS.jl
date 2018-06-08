@@ -17,7 +17,11 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
 
     df[Symbol("J")]=make_JVecs(mme,df,Ai_nn,Ai_ng)
     set_covariate(mme,"J")
-    set_random(mme,"ϵ",mme.M.G,Vinv=Ai_nn,names=mme.M.obsID[1:size(Ai_nn,1)])#inv(mme.Gi) wrong here
+    if mme.M.G_is_marker_variance == false
+        set_random(mme,"ϵ",mme.M.G,Vinv=Ai_nn,names=mme.M.obsID[1:size(Ai_nn,1)])#inv(mme.Gi) wrong here
+    else
+        error("Please input the genetic variance using add_genotypes()")
+    end
 end
 
 ############################################################################
