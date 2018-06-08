@@ -461,7 +461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_breeding_values",
     "category": "function",
-    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
+    "text": "get_breeding_values(model,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files   for individuals defined by outputEBV(model,IDs::Array{String,1}), defaulting to all phenotyped individuals.\n\n\n\n"
 },
 
 {
@@ -622,6 +622,14 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.getMME",
     "category": "method",
     "text": "Construct mixed model equations with\n\nincidence matrix: X      ; response        : ySparse; left-hand side  : mmeLhs ; right-hand side : mmeLhs ;\n\n\n\n"
+},
+
+{
+    "location": "manual/internals.html#JWAS.outputEBV-Tuple{Any,Array{String,1}}",
+    "page": "Internals",
+    "title": "JWAS.outputEBV",
+    "category": "method",
+    "text": "outputEBV(model,IDs::Array{String,1})\n\nOutput estimated breeding values and prediction error variances for IDs.\n\n\n\n"
 },
 
 {
