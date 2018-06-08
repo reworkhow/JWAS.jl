@@ -154,7 +154,8 @@ function runMCMC(mme,df;
          file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
          res["EBV"*"_"*string(mme.lhsVec[traiti])]=
             misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
-     end
+      end
+      output_others(mme)
   end
   res
 end

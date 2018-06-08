@@ -152,6 +152,7 @@ type MME
 
     output_ID
     output_genotypes
+    output_X
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
@@ -164,7 +165,7 @@ type MME
                    1,
                    zeros(1,1),zeros(1,1),[],
                    DF(ν,4,4,4),
-                   0,0)
+                   0,0,Dict{String,Any}())
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
@@ -175,7 +176,7 @@ type MME
                    1,
                    zeros(1,1),zeros(1,1),[],
                    DF(ν,4,4,4),
-                   0,0)
+                   0,0,Dict{String,Any}())
       else
         error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end

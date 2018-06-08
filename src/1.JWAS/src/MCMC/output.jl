@@ -11,14 +11,14 @@ function outputEBV(model,IDs::Array{String,1})
     model.output_ID=IDs
 end
 
-function reformat(res::Array)
-    out_names=[strip(i) for i in split(res[1,1],':',keep=false)]
-    for rowi in 2:size(res,1)
-        out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]
+
+function output_others(model)
+    ϵnames = model.modelTermDict["1:ϵ"].names
+    #trick to avoid errors (model.output_ID NOT ⊂ ϵ)
+    model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,[ϵnames;model.output_ID])[:,1:length(ϵnames)]
+    #model.output_X["J"] is convenient in SSBRrun
+    for i in model.pedTrmVec
+        model.output_X[i]=mkmat_incidence_factor(model.output_ID,
+                                                model.modelTermDict[i].names)
     end
-    out_names=permutedims(out_names,[2,1])
-    out_values=map(Float64,res[:,2])
-    out=[out_names out_values]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate],)
-    return out
 end

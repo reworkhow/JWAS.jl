@@ -1,4 +1,9 @@
 function SSBRrun(mme,ped::PedModule.Pedigree,df)
+    obsID      = convert(Array,df[:,1]) #phenotyped ID
+    if mme.output_ID == 0
+        mme.output_ID = deepcopy(obsID)
+    end
+
     mme.ped  = deepcopy(ped)
     geno     = mme.M
     ped      = mme.ped
@@ -9,13 +14,12 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
     add_term(mme,"ϵ") #impuatation residual
     add_term(mme,"J") #centering
     #add data for ϵ and J
-    IDs       = convert(Array,df[:,1])
-    isnongeno = [ID in mme.ped.setNG for ID in IDs] #true/false
+    isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
     data_ϵ    = deepcopy(df[:,1])
     data_ϵ[.!isnongeno].="0"
     df[Symbol("ϵ")]=data_ϵ
 
-    df[Symbol("J")]=make_JVecs(mme,df,Ai_nn,Ai_ng)
+    df[Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)
     set_covariate(mme,"J")
     if mme.M.G_is_marker_variance == false
         set_random(mme,"ϵ",mme.M.G,Vinv=Ai_nn,names=mme.M.obsID[1:size(Ai_nn,1)])#inv(mme.Gi) wrong here
@@ -71,9 +75,9 @@ function make_JVecs(mme,df,Ai_nn,Ai_ng)
     Jn = Ai_nn\(-Ai_ng*Jg)
     J  = [Jn;
           Jg]
-    Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)#pedigree ID
-
-    return Z*J
+    Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID) #now mme.M.obsID = pedigree ID
+    Zo = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+    return Z*J,Zo*J
 end
 
 """

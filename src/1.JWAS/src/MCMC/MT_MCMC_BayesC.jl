@@ -380,8 +380,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
     output = Dict()
 
     #OUTPUT Conventional Effects
-    output["Posterior mean of location parameters"]    = [getNames(mme) solMean]
-    output["Posterior mean of residual covariance matrix"]       = R0Mean
+    output["Posterior mean of location parameters"]    = reformat2DataFrame([getNames(mme) solMean])
+    output["Posterior mean of residual covariance matrix"] = R0Mean
     if output_samples_frequency != 0
 
       for i in  mme.outputSamplesVec
