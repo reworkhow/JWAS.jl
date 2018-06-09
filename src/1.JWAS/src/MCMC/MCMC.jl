@@ -53,8 +53,7 @@ function runMCMC(mme,df;
     #assign IDs for observations
     starting_value = pre_check(mme,df,starting_value)
     if mme.M!=0
-        #align genotypes with phenotypes IDs
-        #align genotypes with output IDs
+        #align genotypes with phenotypes IDs and align genotypes with output IDs
         align_genotypes(mme)
     end
     if mme.M!=0
@@ -96,6 +95,9 @@ function runMCMC(mme,df;
         println("\n\n")
     end
 
+    if mme.output_ID!=0
+        get_outputX_others(mme)
+    end
 
     #printout basic MCMC information
     if printout_model_info == true
@@ -152,10 +154,9 @@ function runMCMC(mme,df;
   if mme.output_ID!=0
       for traiti in 1:mme.nModels
          file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
-         res["EBV"*"_"*string(mme.lhsVec[traiti])]=
-            misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
+         #res["EBV"*"_"*string(mme.lhsVec[traiti])]=
+        #    misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
       end
-      output_others(mme)
   end
   res
 end

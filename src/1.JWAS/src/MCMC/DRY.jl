@@ -20,10 +20,22 @@ end
 function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
                        meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
   output = Dict()
-  output["Posterior mean of location parameters"] = reformat2DataFrame([getNames(mme) solMean])
+  for traiti in 1:mme.nModels
+      output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
+  end
+
+  location_parameters = reformat2DataFrame([getNames(mme) solMean])
+  output["Posterior mean of location parameters"] = location_parameters
   output["Posterior mean of residual variance"]   = meanVare
   if mme.pedTrmVec != 0
     output["Posterior mean of polygenic effects covariance matrix"]=G0Mean
+
+    for pedtrm in mme.pedTrmVec
+        traiti, effect = split(pedtrm,':')
+        sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+        EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+        output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
+    end
   end
 
   if output_samples_frequency != 0
@@ -47,8 +59,29 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
     end
+
+    for traiti in 1:mme.nModels
+        EBV_markers  = mme.output_genotypes*meanAlpha #fixed for mt
+        output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
+    end
   end
 
+  if haskey(mme.output_X,"J") #single-step analyis
+      for traiti in 1:mme.nModels
+          sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
+          sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
+          EBV_J        = mme.output_X["J"]*sol_J
+          EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
+          output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
+      end
+  end
+
+  for traiti in 1:mme.nModels
+      EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
+      if EBV != zeros(length(mme.output_ID))
+          output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+      end
+  end
   return output
 end
 ################################################################################

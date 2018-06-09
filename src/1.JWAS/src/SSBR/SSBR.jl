@@ -26,6 +26,9 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
     else
         error("Please input the genetic variance using add_genotypes()")
     end
+
+    outputMCMCsamples(mme,"J")
+    outputMCMCsamples(mme,"ϵ")
 end
 
 ############################################################################

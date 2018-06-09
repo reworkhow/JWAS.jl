@@ -12,13 +12,30 @@ function outputEBV(model,IDs::Array{String,1})
 end
 
 
-function output_others(model)
-    ϵnames = model.modelTermDict["1:ϵ"].names
-    #trick to avoid errors (model.output_ID NOT ⊂ ϵ)
-    model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,[ϵnames;model.output_ID])[:,1:length(ϵnames)]
+"""
+    get_outputX_others(model)
+
+Make incidence matrices for effects involve in EBV inclung J, ϵ, pedTrmVec except marker covariates
+"""
+function get_outputX_others(model)
+    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
+    model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,
+                                               PedModule.getIDs(model.ped))[:,1:length(model.ped.setNG)]
     #model.output_X["J"] is convenient in SSBRrun
     for i in model.pedTrmVec
         model.output_X[i]=mkmat_incidence_factor(model.output_ID,
                                                 model.modelTermDict[i].names)
     end
 end
+
+# function getEBV(model)
+#     for traiti in 1:mme.nModels
+#
+#         res["Posterior mean of marker effects"]
+#
+#        file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
+#        res["EBV"*"_"*string(mme.lhsVec[traiti])]=
+#           misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
+#     end
+#     output_others(mme)
+# end
