@@ -625,6 +625,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals.html#JWAS.get_outputX_others-Tuple{Any}",
+    "page": "Internals",
+    "title": "JWAS.get_outputX_others",
+    "category": "method",
+    "text": "get_outputX_others(model)\n\nMake incidence matrices for effects involve in EBV inclung J, ϵ, pedTrmVec except marker covariates\n\n\n\n"
+},
+
+{
     "location": "manual/internals.html#JWAS.outputEBV-Tuple{Any,Array{String,1}}",
     "page": "Internals",
     "title": "JWAS.outputEBV",
