@@ -38,6 +38,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
     end
   end
 
+  #samples for non-marker effects
   if output_samples_frequency != 0
       for i in  mme.outputSamplesVec
           trmi   = i.term
@@ -48,20 +49,28 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
   end
 
   if mme.M != 0
+    if mme.nModels == 1
+        meanAlpha=[meanAlpha] # make st array of array
+    end
+    markerout        = []
     if mme.M.markerID[1]!="NA"
-        markerout=[mme.M.markerID meanAlpha]
+        for markerArray in meanAlpha
+          push!(markerout,[mme.M.markerID markerArray])
+        end
     else
-        markerout= meanAlpha
+        for markerArray in meanAlpha
+          push!(markerout,markerArray)
+        end
     end
 
-    output["Posterior mean of marker effects"] = markerout
+    output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
     output["Posterior mean of marker effects variance"] = meanVara
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
     end
 
     for traiti in 1:mme.nModels
-        EBV_markers  = mme.output_genotypes*meanAlpha #fixed for mt
+        EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
         output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
     end
   end
