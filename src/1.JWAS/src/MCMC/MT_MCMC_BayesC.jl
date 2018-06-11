@@ -384,7 +384,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     end
     if mme.M != 0 && methods == "RR-BLUP"
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
-                             meanAlphaArray,GMMean,estimatePi,BigPiMean,output_file)
+                             meanAlphaArray,GMMean,estimatePi,false,output_file)
     elseif mme.M != 0
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
                              meanuArray,GMMean,estimatePi,BigPiMean,output_file)
@@ -399,7 +399,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           output["Posterior mean of marker effects covariance matrix"] = GMMean
       end
 
-      if methods=="BayesC"||methods=="BayesCC"
+      if methods=="BayesC"||methods=="BayesCC"||methods=="BayesB"
         output["Model frequency"] = meanDeltaArray
       end
     end
