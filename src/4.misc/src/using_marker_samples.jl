@@ -49,12 +49,12 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true
 end
 
 """
-    get_breeding_values(model,files...;header=true)
+    getEBV(model,files...;header=true)
 
 * Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**
     for individuals defined by `outputEBV(model,IDs::Array{String,1})`, defaulting to all phenotyped individuals.
 """
-function get_breeding_values(model,files...;header=true)
+function getEBV(model,files...;header=true)
     EBV = get_breeding_values(model.output_genotypes,files...,header=header)
     EBVwithID = Any(EBV)
     traiti=1
@@ -65,6 +65,49 @@ function get_breeding_values(model,files...;header=true)
     end
     return EBVwithID
 end
+
+"""
+    get_breeding_values(model,filename;header=true)
+
+* Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**
+    for individuals defined by `outputEBV(model,IDs::Array{String,1})`, defaulting to all phenotyped individuals.
+"""
+function get_breeding_values(model,files...;header=true)
+    for traiti in 1:model.nModels
+        file_marker= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
+        file_J     = output_file*"_"*"J"*string(mme.lhsVec[traiti])*".txt"
+        BVsamples_markers = get_BV_samples(model.output_genotypes,file,header=header)
+
+
+
+        res["EBV"*"_"*string(mme.lhsVec[traiti])]=misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
+
+        EBV = get_breeding_values(model.output_genotypes,files...,header=header)
+        EBVwithID = Any(EBV)
+        traiti=1
+        for i in EBV
+            ID = DataFrame(ID=model.output_ID)
+            EBVwithID[traiti] = [ID i]
+            traiti +=1
+        end
+        return EBVwithID
+    end
+end
+
+# function getEBV(model)
+#     for traiti in 1:mme.nModels
+#
+#         res["Posterior mean of marker effects"]
+#
+#        file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
+#        res["EBV"*"_"*string(mme.lhsVec[traiti])]=
+#           misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
+#     end
+#     output_others(mme)
+# end
+
+
+
 
 """
     get_additive_genetic_variances(model::MME,files...;header=true)

@@ -20,8 +20,10 @@ end
 function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
                        meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
   output = Dict()
-  for traiti in 1:mme.nModels
-      output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
+  if mme.pedTrmVec != 0 || mme.M != 0
+      for traiti in 1:mme.nModels
+          output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
+      end
   end
 
   location_parameters = reformat2DataFrame([getNames(mme) solMean])
@@ -85,10 +87,12 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
       end
   end
 
-  for traiti in 1:mme.nModels
-      EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
-      if EBV != zeros(length(mme.output_ID))
-          output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+  if mme.pedTrmVec != 0 || mme.M != 0
+      for traiti in 1:mme.nModels
+          EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
+          if EBV != zeros(length(mme.output_ID))
+              output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+          end
       end
   end
   return output

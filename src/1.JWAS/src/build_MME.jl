@@ -291,9 +291,11 @@ function getinfo(model;data=false)
 
 
   random_effects=Array{AbstractString,1}()
-  for i in model.pedTrmVec
+  if model.pedTrmVec != 0
+    for i in model.pedTrmVec
         push!(random_effects,split(i,':')[end])
     end
+  end
   for i in model.rndTrmVec
       for j in i.term_array
           push!(random_effects,split(j,':')[end])

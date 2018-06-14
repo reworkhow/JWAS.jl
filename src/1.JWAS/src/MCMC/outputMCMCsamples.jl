@@ -15,11 +15,12 @@ end
 #define samples for WHICH location parameters to output
 function outputSamplesFor(mme::MME,trmStr::AbstractString)
     #add model number => "1:age"
+    #"age" may be in trait 1 but not 2
     res = []
     for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
-        if trmStr in strpVec
+        if trmStr in strpVec || trmStr in ["J","ϵ"]
             res = [res;string(m)*":"*trmStr]
         end
     end #"age"->"1:age","2:age"

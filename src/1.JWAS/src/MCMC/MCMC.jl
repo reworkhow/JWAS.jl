@@ -96,7 +96,7 @@ function runMCMC(mme,df;
     end
 
     if mme.output_ID!=0
-        get_outputX_others(mme)
+        get_outputX_others(mme,single_step_analysis)
     end
 
     #printout basic MCMC information
@@ -186,6 +186,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
 
 
     @printf("\n%-30s\n\n","Hyper-parameters Information:")
+
     if mme.nModels==1
         for i in mme.rndTrmVec
             thisterm=split(i.term_array[1],':')[end]
@@ -196,6 +197,9 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
             @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),3))
         end
         if !(methods in ["conventional (no markers)", "GBLUP"])
+            if mme.M == 0
+                error("Please add genotypes using add_genotypes().")
+            end
             @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
             @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
             @printf("%-30s %20s\n","π",Pi)
