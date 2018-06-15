@@ -67,47 +67,58 @@ function getEBV(model,files...;header=true)
 end
 
 """
-    get_breeding_values(model,filename;header=true)
+    get_breeding_values(model)
 
 * Get esitimated breeding values and prediction error variances using samples of marker effects stored in **files**
     for individuals defined by `outputEBV(model,IDs::Array{String,1})`, defaulting to all phenotyped individuals.
 """
-function get_breeding_values(model,files...;header=true)
-    for traiti in 1:model.nModels
-        file_marker= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
-        file_J     = output_file*"_"*"J"*string(mme.lhsVec[traiti])*".txt"
-        BVsamples_markers = get_BV_samples(model.output_genotypes,file,header=header)
-
-
-
-        res["EBV"*"_"*string(mme.lhsVec[traiti])]=misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
-
-        EBV = get_breeding_values(model.output_genotypes,files...,header=header)
-        EBVwithID = Any(EBV)
-        traiti=1
-        for i in EBV
-            ID = DataFrame(ID=model.output_ID)
-            EBVwithID[traiti] = [ID i]
-            traiti +=1
+function get_breeding_values(mme,output_file,chain_length,output_samples_frequency,output)
+    BVsamples=Dict()
+    if mme.pedTrmVec != 0 || mme.M != 0
+        for traiti in 1:mme.nModels
+            num_samples = Int(floor(chain_length/output_samples_frequency))
+            num_inds    = length(mme.output_ID)
+            BVsamples[string(mme.lhsVec[traiti])]=zeros(num_inds,num_samples)
         end
-        return EBVwithID
+    end
+
+    if mme.M != 0
+        for traiti in 1:mme.nModels
+            file_marker= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
+            BVsamples_markers= mme.output_genotypes*(readdlm(file_marker,'\t',header=true)[1])'
+            BVsamples[string(mme.lhsVec[traiti])] += BVsamples_markers
+        end
+    end
+
+            # if mme.pedTrmVec != 0 #not outputing MCMC samples for pedTrmVec
+            #   for pedtrm in mme.pedTrmVec
+            #       traiti, effect = split(pedtrm,':')
+            #       sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+            #       EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+            #       output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
+            #   end
+            # end
+
+
+    if haskey(mme.output_X,"J") #single-step analyis
+        for traiti in 1:mme.nModels
+            file_J     = output_file*"_"*string(traiti)*":J"*".txt"
+            file_ϵ     = output_file*"_"*string(traiti)*":ϵ"*".txt"
+
+            BVsamples_J = mme.output_X["J"]*(readdlm(file_J,'\t',header=true)[1])'
+            BVsamples_ϵ = mme.output_X["ϵ"]*(readdlm(file_ϵ,'\t',header=true)[1])'
+            BVsamples[string(mme.lhsVec[traiti])] += (BVsamples_J+BVsamples_ϵ)
+        end
+    end
+
+    if mme.pedTrmVec != 0 || mme.M != 0
+        for traiti in 1:mme.nModels
+            myBVsamples = BVsamples[string(mme.lhsVec[traiti])]
+            output["EBV"*"_"*string(mme.lhsVec[traiti])]=
+            DataFrame(ID=mme.output_ID,EBV=vec(mean(myBVsamples,2)),PEV=vec(var(myBVsamples,2)))
+        end
     end
 end
-
-# function getEBV(model)
-#     for traiti in 1:mme.nModels
-#
-#         res["Posterior mean of marker effects"]
-#
-#        file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
-#        res["EBV"*"_"*string(mme.lhsVec[traiti])]=
-#           misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
-#     end
-#     output_others(mme)
-# end
-
-
-
 
 """
     get_additive_genetic_variances(model::MME,files...;header=true)

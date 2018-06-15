@@ -36,7 +36,11 @@ function runMCMC(mme,df;
                 update_priors_frequency::Int64=0,
                 #parameters for single-step analysis
                 single_step_analysis= false,
-                pedigree            = false)
+                pedigree            = false,
+                #output
+                output_genetic_variance = false,
+                output_residual_variance= false,
+                output_heritability     = false)
 
     ############################################################################
     # Pre-Check

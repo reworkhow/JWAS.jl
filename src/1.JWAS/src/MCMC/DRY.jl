@@ -97,13 +97,14 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
   end
   return output
 end
+
 ################################################################################
 # Reformat Output Array to DataFrame
 ################################################################################
 function reformat2DataFrame(res::Array)
     out_names=[strip(i) for i in split(res[1,1],':',keep=false)]
     for rowi in 2:size(res,1)
-        out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]
+        out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]#hcat two vectors
     end
     out_names=permutedims(out_names,[2,1])
     out_values=map(Float64,res[:,2])

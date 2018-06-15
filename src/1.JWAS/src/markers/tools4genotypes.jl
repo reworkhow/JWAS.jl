@@ -60,7 +60,8 @@ function align_genotypes(mme::MME)
     if mme.obsID != mme.M.obsID
         Z  = mkmat_incidence_factor(mme.obsID,obsIDfull)
         mme.M.genotypes = Z*Mfull
-        mme.M.obsID = mme.obsID
+        mme.M.obsID     = mme.obsID
+        mme.M.nObs      = length(mme.M.obsID)
     end
     if mme.output_ID != mme.obsID
         Zo  = mkmat_incidence_factor(mme.output_ID,obsIDfull)

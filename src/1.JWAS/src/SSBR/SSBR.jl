@@ -67,6 +67,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
 
     mme.M.genotypes = Mfull
     mme.M.obsID     = IDs
+    mme.M.nObs      = length(mme.M.obsID)
     gc()
 end
 ############################################################################
