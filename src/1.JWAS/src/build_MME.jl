@@ -213,6 +213,7 @@ left-hand side  : mmeLhs ;
 right-hand side : mmeLhs ;
 """
 function getMME(mme::MME, df::DataFrame)
+    df[:,1]=map(string,df[:,1]) #make sure IDs (1st column) are strings
     if mme.mmePos != 1
       error("Please build your model again using the function build_model().")
     end
