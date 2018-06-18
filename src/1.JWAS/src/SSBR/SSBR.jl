@@ -1,5 +1,5 @@
 function SSBRrun(mme,ped::PedModule.Pedigree,df)
-    obsID      = convert(Array,df[:,1]) #phenotyped ID
+    obsID      = map(string,df[:,1]) #phenotyped ID
     if mme.output_ID == 0
         mme.output_ID = deepcopy(obsID)
     end
