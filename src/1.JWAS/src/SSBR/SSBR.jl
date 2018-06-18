@@ -15,7 +15,7 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
     add_term(mme,"J") #centering
     #add data for ϵ and J
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
-    data_ϵ    = deepcopy(df[:,1])
+    data_ϵ    = deepcopy(map(string,df[:,1]))
     data_ϵ[.!isnongeno].="0"
     df[Symbol("ϵ")]=data_ϵ
 
