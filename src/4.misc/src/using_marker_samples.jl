@@ -90,15 +90,14 @@ function get_breeding_values(mme,output_file,chain_length,output_samples_frequen
         end
     end
 
-            # if mme.pedTrmVec != 0 #not outputing MCMC samples for pedTrmVec
-            #   for pedtrm in mme.pedTrmVec
-            #       traiti, effect = split(pedtrm,':')
-            #       sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
-            #       EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-            #       output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
-            #   end
-            # end
-
+    if mme.pedTrmVec != 0 #not outputing MCMC samples for pedTrmVec
+        for pedtrm in mme.pedTrmVec
+            file_ped      = output_file*"_"*pedtrm*".txt"
+            BVsamples_ped = mme.output_X[pedtrm]*(readdlm(file_ped,',',header=true)[1])'
+            traiti  = parse(Int64,split(pedtrm,':')[1])
+            BVsamples[string(mme.lhsVec[traiti])] += BVsamples_ped
+        end
+    end
 
     if haskey(mme.output_X,"J") #single-step analyis
         for traiti in 1:mme.nModels

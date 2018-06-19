@@ -49,7 +49,7 @@ G               = [6.72   2.84
 set_random(model,"Animal", ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4,output_samples=true)
     pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
 
     #add model equation number; "animal" => "1:animal"
@@ -60,6 +60,9 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
           res = [res;string(m)*":"*trm]
+          if output_samples == true
+              outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
+          end
         else
           info(trm," is not found in model equation ",string(m),".")
         end
@@ -85,6 +88,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
       mme.GiNew = inv(G)
     end
     mme.df.polygenic=Float64(df)
+
     nothing
 end
 
