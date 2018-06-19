@@ -74,17 +74,23 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   #add headers
   mytraits=map(string,mme.lhsVec)
   residual_header = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
-  writedlm(outfile["residual_variance"],transubstrarr(residual_header))
+  writedlm(outfile["residual_variance"],transubstrarr(residual_header),',')
+
+  for effect in  mme.rndTrmVec
+    trmStri   = split(effect.term_array[1],':')[end]                  #x2
+    thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
+    writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
+  end
 
   if mme.M !=0 && mme.M.markerID[1]!="NA"
       for traiti in 1:ntraits
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID))
+          writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID),',')
       end
   end
   if mme.pedTrmVec != 0
       pedtrmvec  = mme.pedTrmVec
       thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
-      writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader))
+      writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader),',')
   end
 
   return out_i,outfile
@@ -117,28 +123,28 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   #random effects variances
   for effect in  mme.rndTrmVec
     trmStri   = split(effect.term_array[1],':')[end]
-    writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))')
+    writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
   end
 
-  writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number)?vRes:vec(vRes)')
+  writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number)?vRes:vec(vRes)',',')
   #mme.samples4R[out_i,:]=vRes
 
   if mme.pedTrmVec != 0
     #mme.samples4G[out_i,:]=vec(G0)
-    writedlm(outfile["polygenic_effects_variance"],vec(G0)')
+    writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
   end
   if α != false && outfile != false
       if ntraits == 1
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α')
+          writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α',',')
       else
           for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],α[traiti]')
+              writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],α[traiti]',',')
           end
       end
       if locusEffectVar!=false
-          writedlm(outfile["marker_effects_variances"],locusEffectVar')
+          writedlm(outfile["marker_effects_variances"],locusEffectVar',',')
       end
-      writedlm(outfile["pi"],π)
+      writedlm(outfile["pi"],π,',')
       if !issubtype(typeof(π),Number)#add a blank line
           println(outfile["pi"])
       end

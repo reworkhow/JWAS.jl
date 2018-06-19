@@ -6,9 +6,9 @@ Compute the model frequency for each marker (the probability the marker is inclu
 function GWAS(marker_effects_file;header=true)
     file = marker_effects_file
     if header==true
-        samples,markerID =readdlm(file,header=true)[1]
+        samples,markerID =readdlm(file,',',header=true)[1]
     else
-        samples=readdlm(file)
+        samples=readdlm(file,',')
     end
 
     modelfrequency = vec(mean(samples .!= 0.0,1))
@@ -28,9 +28,9 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance")
 
     if header==true
-        output=readdlm(marker_file,header=true)[1]
+        output=readdlm(marker_file,',',header=true)[1]
     else
-        output=readdlm(marker_file)
+        output=readdlm(marker_file,',')
     end
 
     nsamples,nMarkers=size(output)
@@ -91,7 +91,7 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
         window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
     end
 
-    mapfile = readdlm(map_file)
+    mapfile = readdlm(map_file,',')
     chr     = map(Int64,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
 

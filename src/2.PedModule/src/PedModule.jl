@@ -160,7 +160,7 @@ function HAi(ped::Pedigree)
     return (ii,jj,vv)
 end
 
-function  mkPed(pedFile::AbstractString;header=false,separator=' ')
+function  mkPed(pedFile::AbstractString;header=false,separator=',')
     df  = CSV.read(pedFile,types=[String,String,String],
                     delim=separator,header=header)
     ped = Pedigree(1,Dict{AbstractString,PedNode}(),

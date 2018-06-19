@@ -307,5 +307,5 @@ MCMC samples for marker effects, location parameters specified in step 7, and al
 files in your working directory. They can be obtained as
 
 ```julia
-res=readdlm("MCMC_samples_marker_effects_y1.txt",header=true)
+res=readdlm("MCMC_samples_marker_effects_y1.txt",',',header=true)
 ```

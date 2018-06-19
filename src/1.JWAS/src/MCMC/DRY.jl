@@ -46,7 +46,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
           trmi   = i.term
           trmStr = trmi.trmStr
           writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
-                                                  i.sampleArray])
+                                                  i.sampleArray],',')
       end
   end
 

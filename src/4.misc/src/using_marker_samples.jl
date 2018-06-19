@@ -1,8 +1,8 @@
 function get_BV_samples(M::Array{Float64,2},marker_file;header=true)
     if header==true
-        alpha=readdlm(marker_file,header=true)[1]
+        alpha=readdlm(marker_file,',',header=true)[1]
     else
-        alpha=readdlm(marker_file)
+        alpha=readdlm(marker_file,',')
     end
     M*alpha'
 end
@@ -85,7 +85,7 @@ function get_breeding_values(mme,output_file,chain_length,output_samples_frequen
     if mme.M != 0
         for traiti in 1:mme.nModels
             file_marker= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
-            BVsamples_markers= mme.output_genotypes*(readdlm(file_marker,'\t',header=true)[1])'
+            BVsamples_markers= mme.output_genotypes*(readdlm(file_marker,',',header=true)[1])'
             BVsamples[string(mme.lhsVec[traiti])] += BVsamples_markers
         end
     end
@@ -105,8 +105,8 @@ function get_breeding_values(mme,output_file,chain_length,output_samples_frequen
             file_J     = output_file*"_"*string(traiti)*":J"*".txt"
             file_ϵ     = output_file*"_"*string(traiti)*":ϵ"*".txt"
 
-            BVsamples_J = mme.output_X["J"]*(readdlm(file_J,'\t',header=true)[1])'
-            BVsamples_ϵ = mme.output_X["ϵ"]*(readdlm(file_ϵ,'\t',header=true)[1])'
+            BVsamples_J = mme.output_X["J"]*(readdlm(file_J,',',header=true)[1])'
+            BVsamples_ϵ = mme.output_X["ϵ"]*(readdlm(file_ϵ,',',header=true)[1])'
             BVsamples[string(mme.lhsVec[traiti])] += (BVsamples_J+BVsamples_ϵ)
         end
     end
