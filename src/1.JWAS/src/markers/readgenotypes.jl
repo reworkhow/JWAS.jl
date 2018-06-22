@@ -21,7 +21,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
     df = CSV.read(file, types=etv, delim = separator, header=header)
 
 
-    obsID=convert(Array,df[:,1])
+    obsID     = map(string,df[:,1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
     genotypes = map(Float64,convert(Array,df[:,2:end]))
     nObs,nMarkers = size(genotypes)
 
@@ -36,28 +36,12 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
 
-#M is of type: Array{Float64,2} or DataFrames
-function readgenotypes(M::DataFrames.DataFrame;header=false,separator=' ',center=true)#improve later
-    genotypes  = map(Float64,convert(Array,M))
-    obsID     = ["NA"]
-    markerID  = ["NA"]
-    nObs,nMarkers = size(genotypes)
-
-    if center==true
-        markerMeans = center!(genotypes) #centering
-    else
-        markerMeans = center!(copy(genotypes))  #get marker means
-    end
-    p             = markerMeans/2.0
-    sum2pq       = (2*p*(1-p)')[1,1]
-
-    return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
-end
-
-function readgenotypes(M::Array{Float64,2};header=false,separator=' ',center=true)
-    genotypes = map(Float64,M)
-    obsID     = ["NA"]
-    markerID  = ["NA"]
+#M is of type: Array{Float64,2}
+function readgenotypes(M::Union{Array{Float64,2},DataFrames.DataFrame};header=false,separator=' ',center=true)
+    header        = false
+    obsID         = map(string,M[:,1])
+    markerID      = ["NA"]
+    genotypes     = map(Float64,M[:,2:end])
     nObs,nMarkers = size(genotypes)
 
     if center==true
