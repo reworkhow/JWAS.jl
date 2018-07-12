@@ -59,8 +59,7 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
           windowi +=1
         end
     end
-    #return(vec(mean(winVarProps .> threshold,1)), mean(winVarProps,1))
-    return vec(mean(winVarProps .> threshold,1)), vec(mean(winVarProps,1))
+    return winVarProps
 end
 
 
@@ -83,7 +82,7 @@ run genomic window-based GWAS
 * MCMC samples of marker effects are stored in **marker_effects_file**
 * **map_file** has the marker position information
 """
-function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001)
+function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001,output_winVarProps=false)
 
     if window_size=="1 Mb"
         window_size_Mb = 1_000_000
@@ -123,7 +122,9 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
         end
       end
     end
-    WPPA, prop_genvar = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    winVarProps = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    winVarProps[isnan.(winVarProps)]=0.0 #replace NaN caused by situations no markers are included in the model
+    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,1)), vec(mean(winVarProps,1))
     prop_genvar = round.(prop_genvar*100,2)
     #bug in Julia, vcat too long
     #out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]["WPPA"; WPPA]]
@@ -132,7 +133,11 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
     out3 = [["start_SNP"; window_snp_start] ["end_SNP"; window_snp_end] ["#SNPS"; window_size]]
     out4 = [["%genetic variance";prop_genvar] ["WPPA"; WPPA]]
     out  = [out1 out2 out3 out4]
-    return out
+    if output_winVarProps == false
+        return out
+    else
+        return out,winVarProps
+    end
 end
 
 export GWAS

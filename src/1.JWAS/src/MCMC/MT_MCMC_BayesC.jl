@@ -337,7 +337,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # OUTPUT
         ########################################################################
-        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
+        if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)

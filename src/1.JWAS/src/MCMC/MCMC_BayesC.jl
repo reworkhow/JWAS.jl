@@ -176,7 +176,7 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
+        if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
                 out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),π,α,vEff,outfile)
             else
