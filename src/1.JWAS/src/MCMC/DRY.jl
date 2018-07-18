@@ -106,6 +106,9 @@ function reformat2DataFrame(res::Array)
     for rowi in 2:size(res,1)
         out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]#hcat two vectors
     end
+    if size(out_names,2)==1 #convert vector to matrix
+        out_names = reshape(out_names,length(out_names),1)
+    end
     out_names=permutedims(out_names,[2,1])
     out_values=map(Float64,res[:,2])
     out=[out_names out_values]
