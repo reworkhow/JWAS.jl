@@ -11,6 +11,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Some Theory" => "theory/theory.md",
+        "Citing" => "citing/citing.md",
         "Manual" => Any[
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",

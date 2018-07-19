@@ -33,7 +33,7 @@ understand and learn the methodologies for whole-genome analyses by using JWAS a
 If you would like to help support JWAS, please star the repository on the upper right corner
 [here](https://github.com/reworkhow/JWAS.jl) as such statistic will help to demonstrate the
 active involvement of the community. If you use JWAS for your research, teaching, or other activities,
-we would be grateful if you could cite our work following [this citation guideline](https://github.com/reworkhow/JWAS.jl).
+we would be grateful if you could cite our work following [Citing](@ref).
 
 
 ## The trouble, the error and the new feature
