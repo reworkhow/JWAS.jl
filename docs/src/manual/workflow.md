@@ -181,7 +181,7 @@ The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for 
 ```julia
 phenotypes = CSV.read("phenotypes.txt",delim = ',',header=true)
 pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
-head(data)
+head(phenotypes)
 ```
 
 output:
@@ -215,9 +215,9 @@ model=build_model(model_equation, R)
 
 ---
 The non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.
-* The effects fitted in the model for trait 1 are the intercept, `x1`, `x3`, direct genetic effects (`ID`) and maternal genetic effects (`dam`).
-* The effects fitted in the model for trait 2 are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
-* The effects fitted in the model for trait 3 are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
+* The effects fitted in the model for trait `y1` are the intercept, `x1`, `x3`, direct genetic effects (`ID`) and maternal genetic effects (`dam`).
+* The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
+* The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
 
 On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix).
 By default, all effects are treated as fixed and classed as factors (categorical variables)
