@@ -11,19 +11,29 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
       markerID= ["NA"]
     end
     #set types for each column and get number of markers
-    ncol= length(row1)
-    etv = Array{DataType}(ncol)
-    fill!(etv,Float64)
-    etv[1]=String
-    close(myfile)
+    # ncol= length(row1)
+    # etv = Array{DataType}(ncol)
+    # fill!(etv,Float64)
+    # etv[1]=String
+    # close(myfile)
+    #
+    # #read genotypes
+    # df = CSV.read(file, types=etv, delim = separator, header=header)
+    # obsID     = map(String,df[:,1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
+    # genotypes = map(Float64,convert(Array,df[:,2:end]))
+    # nObs,nMarkers = size(genotypes)
 
-    #read genotypes
-    df = CSV.read(file, types=etv, delim = separator, header=header)
 
+    df            = readdlm(file,separator,header=header)
 
-    obsID     = map(string,df[:,1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
-    genotypes = map(Float64,convert(Array,df[:,2:end]))
+    if header == true
+        df=df[1]
+    end
+    obsID         = map(String,df[:,1])
+    genotypes     = map(Float64,df[:,2:end])
     nObs,nMarkers = size(genotypes)
+
+
 
     if center==true
         markerMeans = center!(genotypes) #centering
