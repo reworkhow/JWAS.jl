@@ -54,12 +54,12 @@ function sampleMissingResiduals(mme,resVec)
     for i=1:n
         notMsng = reshape(msngPtrn[i,:,],k)
         if (notMsng!=allTrue)
-            msng    = !notMsng
+            msng    = .!notMsng
             nMsng   = sum(msng)
             resi    = resVec[yIndex+i][notMsng]
             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
             Rc      = mme.R[msng,notMsng]
-            L       = chol(mme.R[msng,msng] - Rc*Ri*Rc')'
+            L       = chol(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc'))'
             resVec[(yIndex+i)[msng]] = Rc*Ri*resi + L*randn(nMsng)
             #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
         end
