@@ -200,6 +200,7 @@ function getX(trm::ModelTerm,mme::MME)
 
     #create X
     trm.X = sparse(xi,xj,xv)
+    dropzeros!(trm.X)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
 end
@@ -278,6 +279,9 @@ function getMME(mme::MME, df::DataFrame)
     if mme.nModels==1 #single-trait
       addLambdas(mme)
     end
+
+    dropzeros!(mme.mmeLhs)
+    dropzeros!(mme.mmeRhs)    
 end
 
 #more details later
