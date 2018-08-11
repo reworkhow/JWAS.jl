@@ -585,11 +585,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/internals.html#JWAS.outputEBV-Tuple{Any,Array{String,1}}",
+    "location": "manual/internals.html#JWAS.outputEBV-Tuple{Any,Any}",
     "page": "Internals",
     "title": "JWAS.outputEBV",
     "category": "method",
-    "text": "outputEBV(model,IDs::Array{String,1};PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n"
+    "text": "outputEBV(model,IDs::Array;PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n"
 },
 
 {
