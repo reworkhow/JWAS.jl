@@ -2,12 +2,13 @@
 #User-interface to output EBV
 ################################################################################
 """
-    outputEBV(model,IDs::Array{String,1};PEV=false)
+    outputEBV(model,IDs::Array;PEV=false)
 
 Output estimated breeding values and prediction error variances (defaulting to false) for IDs.
 """
-function outputEBV(model,IDs::Array{String,1};PEV=false)
+function outputEBV(model,IDs;PEV=false)
     #print("Estimated breeding values and prediction error variances will be included in the output.")
+    IDs = map(String,vec(IDs)) #Array{String,1}
     model.output_ID=IDs
 end
 

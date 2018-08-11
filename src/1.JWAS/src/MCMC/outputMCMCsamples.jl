@@ -72,7 +72,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   #add headers
-  mytraits=map(string,mme.lhsVec)
+  mytraits=map(String,mme.lhsVec)
   residual_header = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
   writedlm(outfile["residual_variance"],transubstrarr(residual_header),',')
 

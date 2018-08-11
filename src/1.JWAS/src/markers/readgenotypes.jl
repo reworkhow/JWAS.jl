@@ -49,7 +49,7 @@ end
 #M is of type: Array{Float64,2}
 function readgenotypes(M::Union{Array{Float64,2},DataFrames.DataFrame};header=false,separator=' ',center=true)
     header        = false
-    obsID         = map(string,M[:,1])
+    obsID         = map(String,M[:,1])
     markerID      = ["NA"]
     genotypes     = map(Float64,M[:,2:end])
     nObs,nMarkers = size(genotypes)

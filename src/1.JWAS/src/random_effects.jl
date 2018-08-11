@@ -15,7 +15,7 @@ function get_pedigree(pedfile::AbstractString;header=false,separator=',')
 end
 
 ################################################################################
-#set specific ModelTerm to random
+#set specific ModelTerm to random using pedigree information
 #e.g. Animal, Animal*Age, Maternal
 ################################################################################
 """
@@ -91,7 +91,10 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
 
     nothing
 end
-
+############################################################################
+#EXTEND TO Set random effects (Not specific for IID or A(pedigree))
+#useful for imputaion residual in single-step methods (var(ϵ)^{-1}=A^{nn} )
+############################################################################
 """
     set_random(mme::MME,randomStr::AbstractString,G;df=4)
 
@@ -126,6 +129,7 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
           mtrm= string(m)*":"*trm #add model number => "1:herd"
           res = [res;mtrm]
           #*********************
+          #e.g.,phenotypes ⊂ names
           mme.modelTermDict[mtrm].names=names
           #*********************
         else
@@ -148,10 +152,6 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     end
     nothing
 end
-############################################################################
-#EXTEND TO Set random effects (Not specific for IID or A(pedigree))
-#useful for imputaion residual in single-step methods (var(ϵ)^{-1}=A^{nn} )
-############################################################################
 
 
 

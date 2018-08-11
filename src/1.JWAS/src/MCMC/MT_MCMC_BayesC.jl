@@ -2,6 +2,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                         burnin                     = 0,
                         Pi                         = 0.0,
                         estimatePi                 = false,
+                        estimate_variance          = true,
                         sol                        = false,
                         outFreq                    = 1000,
                         output_samples_frequency   = 0,
@@ -207,26 +208,27 @@ function MT_MCMC_BayesC(nIter,mme,df;
           sampleMissingResiduals(mme,resVec)
         end
 
-        for traiti = 1:nTraits
-            startPosi = (traiti-1)*nObs + 1
-            endPosi   = startPosi + nObs - 1
-            for traitj = traiti:nTraits
-                startPosj = (traitj-1)*nObs + 1
-                endPosj   = startPosj + nObs - 1
-                SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
-                SRes[traitj,traiti] = SRes[traiti,traitj]
+        if estimate_variance == true
+            for traiti = 1:nTraits
+                startPosi = (traiti-1)*nObs + 1
+                endPosi   = startPosi + nObs - 1
+                for traitj = traiti:nTraits
+                    startPosj = (traitj-1)*nObs + 1
+                    endPosj   = startPosj + nObs - 1
+                    SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
+                    SRes[traitj,traiti] = SRes[traiti,traitj]
+                end
             end
-        end
 
+            R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
 
-        R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
-
-        #for constraint R, chisq
-        if constraint == true
-          R0 = zeros(nTraits,nTraits)
-          for traiti = 1:nTraits
-            R0[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
-          end
+            #for constraint R, chisq
+            if constraint == true
+                R0 = zeros(nTraits,nTraits)
+                for traiti = 1:nTraits
+                    R0[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+                end
+            end
         end
 
         if mme.M != 0
@@ -237,10 +239,11 @@ function MT_MCMC_BayesC(nIter,mme,df;
           RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
         end
 
-        if mme.M == 0
+        if mme.M == 0 #Good? still use tricky Ri
           mme.R = R0
           Ri  = mkRi(mme,df) #for missing value;updata mme.ResVar
         end
+
         if iter > burnin
             R0Mean  += (R0  - R0Mean )/(iter-burnin)
         end
@@ -259,7 +262,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################
-        if mme.pedTrmVec != 0  #will optimize taking advantage of symmetry
+        if mme.pedTrmVec != 0 && estimate_variance == true #will optimize taking advantage of symmetry
             for (i,trmi) = enumerate(pedTrmVec)
                 pedTrmi   = mme.modelTermDict[trmi]
                 startPosi = pedTrmi.startPos
@@ -285,14 +288,15 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
-        sampleVCs(mme,sol)
-        addLambdas(mme)
-
+        if estimate_variance == true
+            sampleVCs(mme,sol)
+            addLambdas(mme)
+        end
         ########################################################################
         # 2.3 Marker Covariance Matrix
         ########################################################################
 
-        if mme.M != 0
+        if mme.M != 0 && estimate_variance == true
             if methods != "BayesB"
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
