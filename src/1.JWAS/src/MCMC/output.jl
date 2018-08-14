@@ -1,6 +1,12 @@
 ################################################################################
-#User-interface to output EBV
+#User-interface to set training and testing individuals
 ################################################################################
+#function set_training(model,IDs)
+#    IDs = map(String,vec(IDs)) #Array{String,1}
+#    model.training_ID=IDs
+#end
+
+
 """
     outputEBV(model,IDs::Array;PEV=false)
 
@@ -12,6 +18,11 @@ function outputEBV(model,IDs;PEV=false)
     model.output_ID=IDs
 end
 
+function set_testing(model,IDs;PEV=false)
+    #print("Estimated breeding values and prediction error variances will be included in the output.")
+    IDs = map(String,vec(IDs)) #Array{String,1}
+    model.output_ID=IDs
+end
 
 """
     get_outputX_others(model)
