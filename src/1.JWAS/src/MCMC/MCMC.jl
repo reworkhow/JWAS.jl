@@ -58,10 +58,11 @@ function runMCMC(mme,df;
     end
     #make mixed model equations for non-marker parts
     #assign IDs for observations
+    starting_value,df = pre_check(mme,df,starting_value)
     if outputEBV == false
       mme.output_ID = 0
     end
-    starting_value = pre_check(mme,df,starting_value)
+
 
     if mme.M!=0
         #align genotypes with phenotypes IDs and align genotypes with output IDs

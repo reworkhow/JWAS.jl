@@ -20,7 +20,7 @@ function pre_check(mme,df,sol)
     #df
   end
 
-  if !issubset(mme.outputID,mme.M.obsID)
+  if !issubset(mme.output_ID,mme.M.obsID)
     warn("abc")
     #ONE LINE TO MODIFY DF SURE return it
     #df=df[]
@@ -35,7 +35,7 @@ end
 function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
                        meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
   output = Dict()
-  if mme.pedTrmVec != 0 || mme.M != 0
+  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
       for traiti in 1:mme.nModels
           output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
       end
@@ -46,12 +46,13 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
   output["Posterior mean of residual variance"]   = meanVare
   if mme.pedTrmVec != 0
     output["Posterior mean of polygenic effects covariance matrix"]=G0Mean
-
-    for pedtrm in mme.pedTrmVec
-        traiti, effect = split(pedtrm,':')
-        sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
-        EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-        output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
+    if mme.output_ID != 0
+        for pedtrm in mme.pedTrmVec
+            traiti, effect = split(pedtrm,':')
+            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+            EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+            output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
+        end
     end
   end
 
@@ -65,51 +66,53 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
       end
   end
 
-  # if mme.M != 0
-  #   if mme.nModels == 1
-  #       meanAlpha=[meanAlpha] # make st array of array
-  #   end
-  #   markerout        = []
-  #   if mme.M.markerID[1]!="NA"
-  #       for markerArray in meanAlpha
-  #         push!(markerout,[mme.M.markerID markerArray])
-  #       end
-  #   else
-  #       for markerArray in meanAlpha
-  #         push!(markerout,markerArray)
-  #       end
-  #   end
-  #
-  #   output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
-  #   output["Posterior mean of marker effects variance"] = meanVara
-  #   if estimatePi == true
-  #       output["Posterior mean of Pi"] = mean_pi
-  #   end
-  #
-  #   for traiti in 1:mme.nModels
-  #       EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
-  #       output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
-  #   end
-  # end
-  #
-  # if haskey(mme.output_X,"J") #single-step analyis
-  #     for traiti in 1:mme.nModels
-  #         sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
-  #         sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
-  #         EBV_J        = mme.output_X["J"]*sol_J
-  #         EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
-  #         output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
-  #     end
-  # end
-  #
-  # if mme.pedTrmVec != 0 || mme.M != 0
-  #     for traiti in 1:mme.nModels
-  #         EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
-  #         if EBV != zeros(length(mme.output_ID))
-  #             output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
-  #         end
-  #     end
-  # end
+  if mme.M != 0
+    if mme.nModels == 1
+        meanAlpha=[meanAlpha] # make st array of array
+    end
+    markerout        = []
+    if mme.M.markerID[1]!="NA"
+        for markerArray in meanAlpha
+          push!(markerout,[mme.M.markerID markerArray])
+        end
+    else
+        for markerArray in meanAlpha
+          push!(markerout,markerArray)
+        end
+    end
+
+    output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
+    output["Posterior mean of marker effects variance"] = meanVara
+    if estimatePi == true
+        output["Posterior mean of Pi"] = mean_pi
+    end
+
+    if mme.output_ID != 0
+        for traiti in 1:mme.nModels
+            EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
+            output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
+        end
+    end
+  end
+
+  if mme.output_ID != 0 && haskey(mme.output_X,"J") #single-step analyis
+      for traiti in 1:mme.nModels
+          sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
+          sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
+          EBV_J        = mme.output_X["J"]*sol_J
+          EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
+          output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
+      end
+  end
+
+  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
+      for traiti in 1:mme.nModels
+          EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
+          if EBV != zeros(length(mme.output_ID))
+              output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+          end
+      end
+  end
   return output
 end
 
@@ -117,17 +120,23 @@ end
 # Reformat Output Array to DataFrame
 ################################################################################
 function reformat2DataFrame(res::Array)
-    out_names=[strip(i) for i in split(res[1,1],':',keep=false)]
-    for rowi in 2:size(res,1)
-        out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]#hcat two vectors
+    ##SLOW, 130s
+    #out_names=[strip(i) for i in split(res[1,1],':',keep=false)]
+    #for rowi in 2:size(res,1)
+    #    out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]#hcat two vectors
+    #end
+    out_names = Array{String}(size(res,1),3)
+    for rowi in 1:size(res,1)
+        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keep=false)]
     end
+
     if size(out_names,2)==1 #convert vector to matrix
         out_names = reshape(out_names,length(out_names),1)
     end
-    out_names=permutedims(out_names,[2,1])
+    #out_names=permutedims(out_names,[2,1]) #rotate
     out_values=map(Float64,res[:,2])
     out=[out_names out_values]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate],)
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate])
     return out
 end
 
