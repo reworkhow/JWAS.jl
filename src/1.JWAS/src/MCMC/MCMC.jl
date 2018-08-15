@@ -35,6 +35,8 @@ function runMCMC(mme,df;
                 printout_model_info = true,
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0,
+                #Genomic Prediction
+                outputEBV           = false,
                 #parameters for single-step analysis
                 single_step_analysis= false,
                 pedigree            = false,
@@ -56,7 +58,11 @@ function runMCMC(mme,df;
     end
     #make mixed model equations for non-marker parts
     #assign IDs for observations
+    if outputEBV == false
+      mme.output_ID = 0
+    end
     starting_value = pre_check(mme,df,starting_value)
+
     if mme.M!=0
         #align genotypes with phenotypes IDs and align genotypes with output IDs
         align_genotypes(mme)
@@ -107,7 +113,7 @@ function runMCMC(mme,df;
     #printout basic MCMC information
     if printout_model_info == true
       getinfo(mme)
-      MCMCinfo(methods,Pi,chain_length,burnin,(starting_value!=false),printout_frequency,
+      MCMCinfo(methods,Pi,chain_length,burnin,(starting_value!=zeros(size(mme.mmeLhs,1))),printout_frequency,
               output_samples_frequency,missing_phenotypes,constraint,estimatePi,
               update_priors_frequency,mme)
     end
@@ -156,14 +162,6 @@ function runMCMC(mme,df;
     else
         error("No options!")
     end
-  #use MCMC samples for effects
-  if mme.output_ID!=0
-      for traiti in 1:mme.nModels
-         file= output_file*"_"*"marker_effects_"*string(mme.lhsVec[traiti])*".txt"
-         #res["EBV"*"_"*string(mme.lhsVec[traiti])]=
-        #    misc.get_breeding_values(mme,file,header=(mme.M.markerID[1]!="NA")?true:false)[1]
-      end
-  end
   res
 end
 

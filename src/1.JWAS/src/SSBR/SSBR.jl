@@ -1,8 +1,5 @@
 function SSBRrun(mme,ped::PedModule.Pedigree,df)
     obsID      = map(String,df[:,1]) #phenotyped ID
-    if mme.output_ID == 0
-        mme.output_ID = deepcopy(obsID)
-    end
 
     mme.ped  = deepcopy(ped)
     geno     = mme.M
@@ -29,6 +26,10 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
 
     outputMCMCsamples(mme,"J")
     outputMCMCsamples(mme,"ϵ")
+
+    if mme.output_ID == 0
+        mme.output_ID = deepcopy(mme.M.obsID) #imputed M, Pedigee IDs
+    end
 end
 
 ############################################################################

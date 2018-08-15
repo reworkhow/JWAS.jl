@@ -252,7 +252,7 @@ function getMME(mme::MME, df::DataFrame)
 
     #output ID
     if mme.output_ID == 0
-        mme.output_ID = deepcopy(obsID)
+        mme.output_ID = union(obsID,mme.M.obsID)
     end
 
     if mme.nModels==1     #single-trait (lambda version)

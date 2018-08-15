@@ -11,7 +11,22 @@ function pre_check(mme,df,sol)
   else            #besure type is Float64
       sol = map(Float64,sol)
   end
-  return sol
+
+  if !issubset(mme.obsID,mme.M.obsID) #or not a subset of pedigree
+    warn("Phenotyped individuals are not a subset of all genotyped individuals.","\n",
+    "Only individuals with both genotypes and phenotypes are used in the analysis.","\n",
+    "You can try the single-step analysis later.")
+    #ONE LINE TO MODIFY DF SURE return it
+    #df
+  end
+
+  if !issubset(mme.outputID,mme.M.obsID)
+    warn("abc")
+    #ONE LINE TO MODIFY DF SURE return it
+    #df=df[]
+  end
+
+  return sol,df
 end
 
 ################################################################################
@@ -50,51 +65,51 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
       end
   end
 
-  if mme.M != 0
-    if mme.nModels == 1
-        meanAlpha=[meanAlpha] # make st array of array
-    end
-    markerout        = []
-    if mme.M.markerID[1]!="NA"
-        for markerArray in meanAlpha
-          push!(markerout,[mme.M.markerID markerArray])
-        end
-    else
-        for markerArray in meanAlpha
-          push!(markerout,markerArray)
-        end
-    end
-
-    output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
-    output["Posterior mean of marker effects variance"] = meanVara
-    if estimatePi == true
-        output["Posterior mean of Pi"] = mean_pi
-    end
-
-    for traiti in 1:mme.nModels
-        EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
-        output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
-    end
-  end
-
-  if haskey(mme.output_X,"J") #single-step analyis
-      for traiti in 1:mme.nModels
-          sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
-          sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
-          EBV_J        = mme.output_X["J"]*sol_J
-          EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
-          output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
-      end
-  end
-
-  if mme.pedTrmVec != 0 || mme.M != 0
-      for traiti in 1:mme.nModels
-          EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
-          if EBV != zeros(length(mme.output_ID))
-              output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
-          end
-      end
-  end
+  # if mme.M != 0
+  #   if mme.nModels == 1
+  #       meanAlpha=[meanAlpha] # make st array of array
+  #   end
+  #   markerout        = []
+  #   if mme.M.markerID[1]!="NA"
+  #       for markerArray in meanAlpha
+  #         push!(markerout,[mme.M.markerID markerArray])
+  #       end
+  #   else
+  #       for markerArray in meanAlpha
+  #         push!(markerout,markerArray)
+  #       end
+  #   end
+  #
+  #   output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
+  #   output["Posterior mean of marker effects variance"] = meanVara
+  #   if estimatePi == true
+  #       output["Posterior mean of Pi"] = mean_pi
+  #   end
+  #
+  #   for traiti in 1:mme.nModels
+  #       EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
+  #       output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
+  #   end
+  # end
+  #
+  # if haskey(mme.output_X,"J") #single-step analyis
+  #     for traiti in 1:mme.nModels
+  #         sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
+  #         sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
+  #         EBV_J        = mme.output_X["J"]*sol_J
+  #         EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
+  #         output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
+  #     end
+  # end
+  #
+  # if mme.pedTrmVec != 0 || mme.M != 0
+  #     for traiti in 1:mme.nModels
+  #         EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
+  #         if EBV != zeros(length(mme.output_ID))
+  #             output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+  #         end
+  #     end
+  # end
   return output
 end
 

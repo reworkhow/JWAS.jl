@@ -57,17 +57,19 @@ end
 function align_genotypes(mme::MME)
     Mfull    = mme.M.genotypes
     obsIDfull= deepcopy(mme.M.obsID)
-    if mme.obsID != mme.M.obsID
+    if mme.obsID != mme.M.obsID  #align genotypes with phenotypes
         Z  = mkmat_incidence_factor(mme.obsID,obsIDfull)
         mme.M.genotypes = Z*Mfull
         mme.M.obsID     = mme.obsID
         mme.M.nObs      = length(mme.M.obsID)
     end
-    if mme.output_ID != mme.obsID
-        Zo  = mkmat_incidence_factor(mme.output_ID,obsIDfull)
-        mme.output_genotypes = Zo*Mfull
-    else
-        mme.output_genotypes = mme.M.genotypes
+    if mme.output_ID != 0  #get genotypes for outputEBV individuals
+        if mme.output_ID == mme.M.obsID
+            mme.output_genotypes = mme.M.genotypes
+        else
+            Zo  = mkmat_incidence_factor(mme.output_ID,obsIDfull)
+            mme.output_genotypes = Zo*Mfull
+        end
     end
 end
 
@@ -85,7 +87,7 @@ function mkmat_incidence_factor(yID,uID)
         if haskey(uIDdict,id)
             index = uIDdict[id]
         else
-            error("Phenotyped individuals are not a subset of all genotyped individuals. Please run the single-step analysis.")
+            error("IDs are wrong!")
         end
         Z[rowi,index]=1
         rowi = rowi+1

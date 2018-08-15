@@ -19,9 +19,7 @@ function outputEBV(model,IDs;PEV=false)
 end
 
 function set_testing(model,IDs;PEV=false)
-    #print("Estimated breeding values and prediction error variances will be included in the output.")
-    IDs = map(String,vec(IDs)) #Array{String,1}
-    model.output_ID=IDs
+    outputEBV(model,IDs,PEV=PEV)
 end
 
 """
