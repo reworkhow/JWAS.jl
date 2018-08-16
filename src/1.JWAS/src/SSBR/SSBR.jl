@@ -26,10 +26,6 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
 
     outputMCMCsamples(mme,"J")
     outputMCMCsamples(mme,"ϵ")
-
-    if mme.output_ID == 0
-        mme.output_ID = deepcopy(mme.M.obsID) #imputed M, Pedigee IDs
-    end
 end
 
 ############################################################################
