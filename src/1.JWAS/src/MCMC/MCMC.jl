@@ -52,12 +52,17 @@ function runMCMC(mme,df;
         error("Conventional analysis runs without genotypes!")
     end
 
+    #users need to provide high-quality pedigree file
+    if mme.ped!=0 || pedigree!=false
+        check_pedigree(mme,df,pedigree)
+    end
+
 
     #Genotyped individuals are usaully not many, and are used in GWAS (complete
     #and incomplete), thus those IDs are default output_ID if not provided
     if outputEBV == false
         mme.output_ID = 0
-    elseif mme.output_ID == 0 && mme.M.obsID != 0
+    elseif mme.output_ID == 0 && mme.M != 0
         mme.output_ID = mme.M.obsID
     end
 

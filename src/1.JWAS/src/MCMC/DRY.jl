@@ -1,31 +1,54 @@
 ################################################################################
 # Pre-Check
 ################################################################################
+
+function check_pedigree(mme,df,pedigree)
+    if pedigree!=false
+        pedID=map(String,collect(keys(pedigree.idMap)))
+    else
+        pedID=map(String,collect(keys(mme.ped.idMap)))
+    end
+
+    if mme.M!=0 && !issubset(mme.M.obsID,pedID)
+        error("Not all genotyped individuals are found in pedigree!")
+    end
+
+    phenoID = map(String,df[:,1])
+    if !issubset(phenoID,pedID)
+        error("Not all phenotyped individuals are found in pedigree!")
+    end
+end
+
 function pre_check(mme,df,sol)
-#  if size(mme.mmeRhs)==()
-      getMME(mme,df)
-#  end
-  #starting value for sol can be provided
-  if sol == false #no starting values
-      sol = zeros(size(mme.mmeLhs,1))
-  else            #besure type is Float64
-      sol = map(Float64,sol)
-  end
+    #mme.M.obsID is IDs for M after imputation M in SSBR (all individuals in pedigree)
+    #mme.M.obsID is IDs for all genotyped animals in complete genomic data
+    phenoID = map(String,df[:,1])
+    if mme.M!=0 && !issubset(phenoID,mme.M.obsID)
+      warn("Phenotyped individuals are not a subset of either\n",
+      "genotyped individuals (complete genomic data,non-single-step) or\n",
+      "individuals in pedigree (incomplete genomic data, single-step).\n",
+      "Only individuals with both information are used in the analysis.\n")
+      index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
+      df    = df[index,:]
+    end
 
-  if mme.M!=0 && !issubset(mme.obsID,mme.M.obsID) #or not a subset of pedigree
-    warn("Phenotyped individuals are not a subset of all genotyped individuals.","\n",
-    "Only individuals with both genotypes and phenotypes are used in the analysis.","\n",
-    "You can try the single-step analysis later.")
-    #ONE LINE TO MODIFY DF SURE return it
-    #df
-  end
+    if mme.M!=0 && mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
+      warn("Testing individuals are not a subset of \n",
+      "genotyped individuals (complete genomic data,non-single-step) or\n",
+      "individuals in pedigree (incomplete genomic data, single-step).\n",
+      "Only tesing individuals with both information are used in the analysis.\n")
+      mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
+    end
 
-  if mme.M!=0 && mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-    error("Testing individuals are not a subet of genotyped individuals
-    (complete genomic data) or pedigree (incomplete genomic data).")
-  end
+    getMME(mme,df)
 
-  return sol,df
+    #starting value for sol can be provided
+    if sol == false #no starting values
+        sol = zeros(size(mme.mmeLhs,1))
+    else            #besure type is Float64
+        sol = map(Float64,sol)
+    end
+    return sol,df
 end
 
 ################################################################################
