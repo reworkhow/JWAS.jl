@@ -59,7 +59,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
       MgID[row] = id
     end
     #impute genotypes for non-genotyped inds
-    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg];
+    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg
     IDs   = PedModule.getIDs(ped) #mme.M.obsID at the end (double-check)
 
     mme.M.genotypes = Mfull
@@ -77,7 +77,9 @@ function make_JVecs(mme,df,Ai_nn,Ai_ng)
     J  = [Jn;
           Jg]
     Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID) #now mme.M.obsID = pedigree ID
-    Zo = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+    if mme.output_ID != 0
+        Zo = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+    end
     return Z*J,Zo*J
 end
 

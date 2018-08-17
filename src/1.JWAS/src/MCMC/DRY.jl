@@ -12,7 +12,7 @@ function pre_check(mme,df,sol)
       sol = map(Float64,sol)
   end
 
-  if !issubset(mme.obsID,mme.M.obsID) #or not a subset of pedigree
+  if mme.M!=0 && !issubset(mme.obsID,mme.M.obsID) #or not a subset of pedigree
     warn("Phenotyped individuals are not a subset of all genotyped individuals.","\n",
     "Only individuals with both genotypes and phenotypes are used in the analysis.","\n",
     "You can try the single-step analysis later.")
@@ -20,7 +20,7 @@ function pre_check(mme,df,sol)
     #df
   end
 
-  if !issubset(mme.output_ID,mme.M.obsID)
+  if mme.M!=0 && !issubset(mme.output_ID,mme.M.obsID)
     warn("abc")
     #ONE LINE TO MODIFY DF SURE return it
     #df=df[]
