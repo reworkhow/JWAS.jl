@@ -20,10 +20,9 @@ function pre_check(mme,df,sol)
     #df
   end
 
-  if mme.M!=0 && !issubset(mme.output_ID,mme.M.obsID)
-    warn("abc")
-    #ONE LINE TO MODIFY DF SURE return it
-    #df=df[]
+  if mme.M!=0 && mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
+    error("Testing individuals are not a subet of genotyped individuals
+    (complete genomic data) or pedigree (incomplete genomic data).")
   end
 
   return sol,df

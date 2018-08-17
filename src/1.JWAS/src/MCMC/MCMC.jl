@@ -52,16 +52,24 @@ function runMCMC(mme,df;
         error("Conventional analysis runs without genotypes!")
     end
 
+
+    #Genotyped individuals are usaully not many, and are used in GWAS (complete
+    #and incomplete), thus those IDs are default output_ID if not provided
+    if outputEBV == false
+        mme.output_ID = 0
+    elseif mme.output_ID == 0 && mme.M.obsID != 0
+        mme.output_ID = mme.M.obsID
+    end
+
     #single-step
+    #impute genotypes for non-genotyped individuals
+    #add imputation error and J as varaibles in data
     if single_step_analysis==true
         SSBRrun(mme,pedigree,df)
     end
     #make mixed model equations for non-marker parts
     #assign IDs for observations
     starting_value,df = pre_check(mme,df,starting_value)
-    if outputEBV == false
-      mme.output_ID = 0
-    end
 
 
     if mme.M!=0
