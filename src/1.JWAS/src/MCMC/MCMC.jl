@@ -7,7 +7,9 @@ include("../SSBR/SSBR.jl")
 include("output.jl")
 
 """
-    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,printout_model_info=true)
+    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,
+    missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,
+    printout_model_info=true,outputEBV=false)
 
 Run MCMC (marker information included or not) with sampling of variance components.
 
@@ -19,6 +21,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * **starting_value** can be provided as a vector for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
 * **constraint**=true if constrain residual covariances between traits to be zeros.
+* Individual EBVs are returned if **outputEBV**=true.
 """
 function runMCMC(mme,df;
                 Pi                  = 0.0,
@@ -35,12 +38,12 @@ function runMCMC(mme,df;
                 printout_model_info = true,
                 output_samples_frequency::Int64 = 0,
                 update_priors_frequency::Int64=0,
-                #Genomic Prediction
-                outputEBV           = false,
                 #parameters for single-step analysis
                 single_step_analysis= false,
                 pedigree            = false,
                 #output
+                #Genomic Prediction
+                outputEBV               = false,
                 output_genetic_variance = false,
                 output_residual_variance= false,
                 output_heritability     = false)
@@ -64,6 +67,9 @@ function runMCMC(mme,df;
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0
         mme.output_ID = mme.M.obsID
+    elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #PBLUP
+        pedID=map(String,collect(keys(mme.ped.idMap)))
+        mme.output_ID = pedID
     end
 
     #single-step

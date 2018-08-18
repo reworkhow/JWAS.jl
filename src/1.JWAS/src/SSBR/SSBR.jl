@@ -78,9 +78,12 @@ function make_JVecs(mme,df,Ai_nn,Ai_ng)
           Jg]
     Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID) #now mme.M.obsID = pedigree ID
     if mme.output_ID != 0
-        Zo = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+        Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+        ZoJ = Zo*J
+    else
+        ZoJ=0
     end
-    return Z*J,Zo*J
+    return Z*J,ZoJ
 end
 
 """
