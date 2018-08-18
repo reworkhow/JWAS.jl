@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Supporting and Citing",
     "category": "section",
-    "text": "We hope the friendly user interface and fast computing speed of JWAS will provide power and convenience for users in both industry and academia to analyze large datasets. Further, as a well-documented open-source software tool, we hope JWAS will also be used by a group of active community members, who will contribute to the source code and help maintain the project. Junior scientists can understand and learn the methodologies for whole-genome analyses by using JWAS and reading the tutorials and source code.If you would like to help support JWAS, please star the repository on the upper right corner here as such statistic will help to demonstrate the active involvement of the community. If you use JWAS for your research, teaching, or other activities, we would be grateful if you could cite our work following this citation guideline."
+    "text": "We hope the friendly user interface and fast computing speed of JWAS will provide power and convenience for users in both industry and academia to analyze large datasets. Further, as a well-documented open-source software tool, we hope JWAS will also be used by a group of active community members, who will contribute to the source code and help maintain the project. Junior scientists can understand and learn the methodologies for whole-genome analyses by using JWAS and reading the tutorials and source code.If you would like to help support JWAS, please star the repository on the upper right corner here as such statistic will help to demonstrate the active involvement of the community. If you use JWAS for your research, teaching, or other activities, we would be grateful if you could cite our work following Citing."
 },
 
 {
@@ -161,6 +161,38 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "citing/citing.html#",
+    "page": "Citing",
+    "title": "Citing",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "citing/citing.html#Citing-1",
+    "page": "Citing",
+    "title": "Citing",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "citing/citing.html#Software-1",
+    "page": "Citing",
+    "title": "Software",
+    "category": "section",
+    "text": "Cheng, H., Fernando, R. L., and Garrick, D. J. 2018 JWAS: Julia implementation of whole-genome analysis software. Proceedings of the World Congress on Genetics Applied to Livestock Production,11.859. Auckland, New Zealand."
+},
+
+{
+    "location": "citing/citing.html#Methods-1",
+    "page": "Citing",
+    "title": "Methods",
+    "category": "section",
+    "text": "Meuwissen T, Hayes B, Goddard M. 2001 Prediction of total genetic value using genome-wide dense marker maps. Genetics, 157:1819–1829.\nFernando R, Garrick D. 2013 Bayesian methods applied to GWAS. Methods Mol Biol., 1019:237–274.\nCheng H, Garrick D, Fernando R. 2015 A fast and efficient Gibbs sampler for BayesB in whole- genome analyses. Genet Sel Evol, 47:80.\nFernando R, Dekkers J,Garrick D. 2015 A class of Bayesian methods to combine large numbers of genotyped and non-genotyped animals for whole-genome analyses. Genetics Selection Evolution, 46(1), 50.\nCheng, H., Kizilkaya, K., Zeng, J., and Garrick, D., and Fernando, R. 2018 Genomic Prediction from Multiple-Trait Bayesian Regression Methods Using Mixture Priors. Genetics, 209(1): 89-103."
+},
+
+{
     "location": "manual/getstarted.html#",
     "page": "Get Started",
     "title": "Get Started",
@@ -197,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Docker",
     "category": "section",
-    "text": "note: Jupyter-IJulia notebooks with JWAS via Docker\nDocker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Examples for JWAS can be accessed from the notebook: JWAS_notebooks/index.ipynb.The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the command:docker run -it --rm -p 8888:8888 -v path_to_folder_on_host:/home/jovyan/folder_in_container qtlrocks/jwas-dockerwhere path_to_folder_on_host is the path to the folder that you want to have access to from within the container, and   folder_in_container is the name of the folder in the container. For example, the Docker commanddocker run -it --rm -p 8888:8888 -v /Users/rohan:/home/jovyan/rohan qtlrocks/jwas-dockercreates a Docker container with the folder rohan with the contents of /Users/rohan of the host machine. Files and directories that are in the folder /home/jovyan/rohan will not be lost when the container is stopped.  "
+    "text": "note: Jupyter-IJulia notebooks with JWAS via Docker\nDocker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.Install Docker from here for your platform.\nFrom a terminal (on Mac or Linux), run the command:docker run -it --rm -p 8888:8888 qtlrocks/jwas-dockerThis will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication token. Examples for JWAS can be accessed from the notebook: notebooks/0_index.ipynb.The directories and files created within the Docker container will be lost when the container is stopped. To save your work on the host machine, a directory on the host machine can be mounted as a folder in the container with the -v option. After cd into your working directory on your local machine or a server, run the commanddocker run -it --rm -p 8888:8888 -v `pwd`:/home/ubuntu/work qtlrocks/jwas-dockerThis command creates a Docker container with the folder /home/ubuntu/work with the contents of pwd of the host machine. Files and directories that are in the folder pwd will not be lost when the container is stopped.  After running this command, it is expected to prompt something like[I 10:41:54.774 NotebookApp] Writing notebook server cookie secret to /home/ubuntu/.local/share/jupyter/runtime/notebook_cookie_secret\n[I 10:41:54.920 NotebookApp] Serving notebooks from local directory: /home/ubuntu\n[I 10:41:54.920 NotebookApp] 0 active kernels\n[I 10:41:54.920 NotebookApp] The Jupyter Notebook is running at:\n[I 10:41:54.920 NotebookApp] http://0.0.0.0:8888/?token=75ad671f75b4c47be70591f46bec604997d8a9bd9dd51f0d\n[I 10:41:54.920 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).\n[C 10:41:54.921 NotebookApp]\n\n    Copy/paste this URL into your browser when you connect for the first time,\n    to login with a token:\n        http://0.0.0.0:8888/?token=75ad671f75b4c47be70591f46bec604997d8a9bd9dd51f0dThen, open the url in an internet browser (IE, Firefox, Chrome, Safari, etc) if JWAS-docker is launched on your local machine.If you prefer running scripts using linux commands in Bash instead of Jupyter notebook, please run the commanddocker run -it --rm -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker bash"
 },
 
 {
@@ -221,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Get Started",
     "title": "Run your analysis",
     "category": "section",
-    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia.(4) To run code in IJulia notebook via Docker, please see Jupyter-IJulia notebooks via Docker."
+    "text": "There are several ways to run your analysis.(1) The easiest way to run analysis in Julia is by starting an interactive session (REPL) by double-clicking the Julia executable or running julia from the command line (e.g., terminal) asjulia> 1+2\n3\n\njulia> 3*4\n12To evaluate code written in a file script.jl in REPL, write and runjulia> include(\"script.jl\").To exit the interactive session, type ^D – the control key together with the d key or type quit().(2) To run code in a file non-interactively from the command line (e.g.,termial), you can give it as the first argument to the julia command:julia script.jlIf you want to pass arguments to your script, run it asjulia script.jl arg1 arg2where arguments arg1 and arg2 are passed to your script as ARGS[1] and ARGS[2] of type String. Please see julia docs for more options.(3) To run code in IJulia notebook, please see IJulia.(4) To run code in IJulia notebook via Docker, please see Docker."
 },
 
 {
@@ -269,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 2: Read data",
     "category": "section",
-    "text": "phenotypes = CSV.read(\"phenotypes.txt\")\npedigree   = get_pedigree(\"pedigree.txt\")\nhead(data)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │link to documentation for get_pedigreeThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
+    "text": "phenotypes = CSV.read(\"phenotypes.txt\",delim = \',\',header=true)\npedigree   = get_pedigree(\"pedigree.txt\",separator=\",\",header=true)\nhead(phenotypes)output:6×8 DataFrames.DataFrame\n│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │\n├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤\n│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │\n│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │\n│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │\n│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │\n│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │\n│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │link to documentation for get_pedigreeThe phenotypic data is read on line 1, and the pedigree data is read on line 2. On line 3, the first several rows of data are shown."
 },
 
 {
@@ -277,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 3: Build Model Equations",
     "category": "section",
-    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam\n                  y2 = intercept + x1 + x2 + x3 + ID  \n                  y3 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation, R)link to documentation for build_modelThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait 1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait 2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait 3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation and residual variance R (a 3x3 matrix). By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
+    "text": "model_equation = \"y1 = intercept + x1 + x3 + ID + dam\n                  y2 = intercept + x1 + x2 + x3 + ID  \n                  y3 = intercept + x1 + x1*x3 + x2 + ID\"\nmodel=build_model(model_equation, R)link to documentation for build_modelThe non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.The effects fitted in the model for trait y1 are the intercept, x1, x3, direct genetic effects (ID) and maternal genetic effects (dam).\nThe effects fitted in the model for trait y2 are the intercept, x1, x2, x3 and direct genetic effects (ID).\nThe effects fitted in the model for trait y3 are the intercept, x1, the interaction between x1 and x3, x2 and direct genetic effects (ID).On the last line, the model is built given the model equation and residual variance R (a 3x3 matrix). By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables)."
 },
 
 {
@@ -301,7 +333,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 6: Use Genomic Information",
     "category": "section",
-    "text": "add_genotypes(model,\"genotypes.txt\",G3)link to documentation for add_genotypesOn line 1, the genomic part of the model is defined with the genotype file and variance G3 (a 3x3 matrix)."
+    "text": "add_genotypes(model,\"genotypes.txt\",G3,separator=\',\')link to documentation for add_genotypesOn line 1, the genomic part of the model is defined with the genotype file and variance G3 (a 3x3 matrix)."
 },
 
 {
@@ -309,7 +341,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Workflow",
     "title": "Step 7: Run Bayesian Analysis",
     "category": "section",
-    "text": "runMCMC(model,phenotypes,methods=\"BayesC\")link to documentation for runMCMCOn line 1, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-6.Several steps above can be skipped if no related information is available, e.g., step 6 is skipped for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link to documentation for all Public functions."
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes,methods=\"BayesC\",output_samples_frequency=100)link to documentation for outputMCMCsamples\nlink to documentation for runMCMCOn line 1, MCMC samples from runMCMC for x2 is saved to a file, where each row represents one sample from the MCMC. On line 2, a multi-trait BayesC analysis is performed with model and phenotypes as had been defined in step 1-6. MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis are saved every output_samples_frequency iterations to files.Several steps above can be skipped if no related information is available, e.g., step 6 is skipped for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link to documentation for all Public functions."
+},
+
+{
+    "location": "manual/workflow.html#check-results-1",
+    "page": "Workflow",
+    "title": "check results",
+    "category": "section",
+    "text": "Posterior means of location parameters, most variance components, and marker effects are saved in out. They can be listed and obtained askeys(out)\n\n# output:\n#\n# Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:\n#   \"Posterior mean of polygenic effects covariance matrix\"\n#   \"Model frequency\"\n#   \"Posterior mean of residual covariance matrix\"\n#   \"Posterior mean of marker effects\"\n#   \"Posterior mean of marker effects covariance matrix\"\n#   \"Posterior mean of location parameters\"\n#   \"Posterior mean of Pi\"\n\nout[\"Posterior mean of residual covariance matrix\"]\n\n# output:\n#\n# 3×3 Array{Float64,2}:\n#   0.674651   -0.103877   0.0834044\n#  -0.103877    0.828135  -0.121798\n#   0.0834044  -0.121798   0.720751\nMCMC samples for marker effects, location parameters specified in step 7, and all variance components are saved to text files in your working directory. They can be obtained asres=readdlm(\"MCMC_samples_marker_effects_y1.txt\",\',\',header=true)"
 },
 
 {
@@ -365,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.get_pedigree",
     "category": "function",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n"
 },
 
 {
@@ -389,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.runMCMC",
     "category": "function",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\n\n\n\n"
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,\nmissing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0,\nprintout_model_info=true,outputEBV=false)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n"
 },
 
 {
@@ -453,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.get_breeding_values",
     "category": "function",
-    "text": "get_breeding_values(model::MME,files...;header=true)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files.\n\n\n\n"
+    "text": "get_breeding_values(model)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files   for individuals defined by outputEBV(model,IDs::Array{String,1}), defaulting to all phenotyped individuals.\n\n\n\n"
 },
 
 {
@@ -541,7 +581,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.get_pedigree",
     "category": "method",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\' \')\n\nGet pedigree informtion from a pedigree file.\nFile format:\n\na 0 0\nb 0 0\nc a b\nd a c\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n"
+},
+
+{
+    "location": "manual/internals.html#JWAS.outputEBV-Tuple{Any,Any}",
+    "page": "Internals",
+    "title": "JWAS.outputEBV",
+    "category": "method",
+    "text": "outputEBV(model,IDs::Array;PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n"
 },
 
 {
@@ -557,7 +605,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.runMCMC",
     "category": "method",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,missing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\n\n\n\n"
+    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,\nmissing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0,\nprintout_model_info=true,outputEBV=false)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every output_samples_frequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n"
 },
 
 {
@@ -601,11 +649,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals.html#JWAS.add_term-Tuple{Any,AbstractString}",
+    "page": "Internals",
+    "title": "JWAS.add_term",
+    "category": "method",
+    "text": "add to model an extra term: imputation_residual\n\n\n\n"
+},
+
+{
     "location": "manual/internals.html#JWAS.getMME-Tuple{JWAS.MME,DataFrames.DataFrame}",
     "page": "Internals",
     "title": "JWAS.getMME",
     "category": "method",
     "text": "Construct mixed model equations with\n\nincidence matrix: X      ; response        : ySparse; left-hand side  : mmeLhs ; right-hand side : mmeLhs ;\n\n\n\n"
+},
+
+{
+    "location": "manual/internals.html#JWAS.get_outputX_others-Tuple{Any,Any}",
+    "page": "Internals",
+    "title": "JWAS.get_outputX_others",
+    "category": "method",
+    "text": "get_outputX_others(model)\n\nMake incidence matrices for effects involve in EBV inclung J, ϵ, pedTrmVec except marker covariates\n\n\n\n"
 },
 
 {
@@ -685,7 +749,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Step 6: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes)"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes)"
 },
 
 {
@@ -725,7 +789,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (conventional)",
     "title": "Step 6: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes)"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes)"
 },
 
 {
@@ -797,7 +861,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 6: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes)"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes)"
 },
 
 {
@@ -837,7 +901,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Additive Genetic Model",
     "title": "Step 6: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes)"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes)"
 },
 
 {
@@ -917,7 +981,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Step 7: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes,methods=\"BayesC\")"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes,methods=\"BayesC\")"
 },
 
 {
@@ -965,7 +1029,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Linear Mixed Model (Genomic data)",
     "title": "Step 7: Run Bayesian Analysis",
     "category": "section",
-    "text": "out=runMCMC(model,phenotypes,methods=\"BayesC\")"
+    "text": "outputMCMCsamples(model,\"x2\")\nout=runMCMC(model,phenotypes,methods=\"BayesC\")"
 },
 
 ]}
