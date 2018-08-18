@@ -163,7 +163,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if mme.M != 0
           ycorr[:] = ycorr[:] - mme.X*sol
           iR0      = inv(mme.R)
-          iGM      = (methods!="BayesB"?inv(mme.M.G):[inv(G) for G in arrayG])
+          iGM      = (methods!="BayesB" ? inv(mme.M.G) : [inv(G) for G in arrayG])
           #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
@@ -201,7 +201,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.1 Residual Covariance Matrix
         ########################################################################
-        resVec = (mme.M==0?(mme.ySparse - mme.X*sol):ycorr)
+        resVec = (mme.M==0 ? (mme.ySparse - mme.X*sol) : ycorr)
         #here resVec is alias for ycor ***
 
         if missing_phenotypes==true
@@ -257,7 +257,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
           ycorr[:]   = ycorr[:] + X*sol
           #same to ycorr[:]=resVec+X*sol
         end
-        mme.mmeRhs = (mme.M == 0?(X'Ri*mme.ySparse):(X'Ri*ycorr))
+        mme.mmeRhs = (mme.M == 0 ? (X'Ri*mme.ySparse) : (X'Ri*ycorr))
 
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
@@ -344,14 +344,14 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,uArray,vec(mme.M.G),outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
                 elseif methods == "RR-BLUP"
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,alphaArray,vec(mme.M.G),outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),BigPi,uArray,false,outfile)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,false,outfile)
                 end
             else
-                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0?G0:false),false,false,false,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
             end
         end
 
@@ -387,13 +387,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
       end
     end
     if mme.M != 0 && methods == "RR-BLUP"
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              meanAlphaArray,GMMean,estimatePi,false,output_file)
     elseif mme.M != 0
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              meanuArray,GMMean,estimatePi,BigPiMean,output_file)
     else
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              false,false,false,false,output_file)
     end
 

@@ -126,7 +126,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
     writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
   end
 
-  writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number)?vRes:vec(vRes)',',')
+  writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number) ? vRes : vec(vRes)' ,',')
   #mme.samples4R[out_i,:]=vRes
 
   if mme.pedTrmVec != 0

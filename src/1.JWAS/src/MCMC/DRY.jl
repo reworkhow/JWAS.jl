@@ -103,7 +103,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
         end
     end
 
-    output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
+    output["Posterior mean of marker effects"] = (mme.nModels==1) ? markerout[1] : markerout
     output["Posterior mean of marker effects variance"] = meanVara
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi

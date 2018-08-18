@@ -22,7 +22,7 @@ end
 function sampleVCs(mme::MME,sol::Array{Float64,1})
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
-      Vi         = (random_term.Vinv!=0)?random_term.Vinv:speye(mme.modelTermDict[term_array[1]].nLevels)
+      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : speye(mme.modelTermDict[term_array[1]].nLevels)
       S          = zeros(length(term_array),length(term_array))
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]

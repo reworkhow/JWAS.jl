@@ -37,7 +37,7 @@ function getXpRinvX(X)
     return XpRinvX
 end
 
-type GibbsMats
+mutable struct GibbsMats
     X::Array{Float64,2}
     nrows::Int64
     ncols::Int64

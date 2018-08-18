@@ -178,9 +178,9 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
-                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),π,α,vEff,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),π,α,vEff,outfile)
             else
-                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),false,false,false,outfile)
+                out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
             end
         end
 
@@ -213,10 +213,10 @@ function MCMC_BayesC(nIter,mme,df;
       end
     end
     if mme.M != 0
-        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              meanAlpha,meanVara,estimatePi,mean_pi,output_file)
     else
-        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0?G0Mean:false),output_samples_frequency,
+        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              false,false,false,false,output_file)
     end
     return output

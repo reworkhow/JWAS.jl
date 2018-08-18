@@ -144,7 +144,7 @@ function MCMC_GBLUP(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && iter%output_samples_frequency==0 && iter>burnin
-            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0?G0:false),0)
+            out_i=output_MCMC_samples(mme,out_i,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),0)
         end
         ########################################################################
         # 3.2 Printout
