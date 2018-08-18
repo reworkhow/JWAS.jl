@@ -309,8 +309,8 @@ function getinfo(model;data=false)
     end
 
     nLevels = i.nLevels
-    fixed   = (term in random_effects)?"random":"fixed"
-    factor  = (nLevels==1)?"covariate":"factor"
+    fixed   = (term in random_effects) ? "random" : "fixed"
+    factor  = (nLevels==1) ? "covariate" : "factor"
 
     if size(model.mmeRhs)==()&&data==false
       nLevels="NA"

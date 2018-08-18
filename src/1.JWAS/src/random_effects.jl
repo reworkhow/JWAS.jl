@@ -185,7 +185,7 @@ function addA(mme::MME) #two terms,e.g.,"animal" and "maternal" may not near in 
             startPosj= pedTrmj.startPos
             endPosj  = startPosj + pedTrmj.nLevels - 1
             #lamda version (single trait) or not (multi-trait)
-            myaddA   = (mme.nModels!=1)?(mme.Ai*mme.Gi[i,j]):(mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
+            myaddA   = (mme.nModels!=1) ? (mme.Ai*mme.Gi[i,j]) : (mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddA
         end
@@ -200,7 +200,7 @@ end
 function addLambdas(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
-      Vi         = (random_term.Vinv!=0)?random_term.Vinv:speye(mme.modelTermDict[term_array[1]].nLevels)
+      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : speye(mme.modelTermDict[term_array[1]].nLevels)
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
           startPosi  = randTrmi.startPos
@@ -209,7 +209,7 @@ function addLambdas(mme::MME)
             randTrmj    = mme.modelTermDict[termj]
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
-            myaddLambda = (mme.nModels!=1)?(Vi*random_term.Gi[i,j]):(Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
+            myaddLambda = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddLambda
           end

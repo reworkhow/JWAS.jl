@@ -53,7 +53,7 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
         for win=1:nWindows
           wStart = wEnd + 1
           wEnd  += window_size[windowi]
-          wEnd   = (wEnd > nMarkers) ? nMarkers:wEnd
+          wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
           winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
 
           windowi +=1

@@ -1,4 +1,5 @@
-type InputParameters
+using Printf 
+mutable struct InputParameters
   seed::Int64            # seed
   method::AbstractString # BaysABC
   chainLength::Int64     # number of iterations
@@ -35,7 +36,7 @@ function MCMCinfo(input::InputParameters)
     @printf("%-20s %10s\n","centering",input.centering)
 end
 
-type GibbsMats #in src/1.JWAS/markers/tools
+mutable struct GibbsMats #in src/1.JWAS/markers/tools
     X::Array{Float64,2}
     nrows::Int64
     ncols::Int64
@@ -49,7 +50,7 @@ type GibbsMats #in src/1.JWAS/markers/tools
     end
 end
 
-type Current
+mutable struct Current
     varGenotypic::Float64      #genotypic variance
     varResidual::Float64       #residual variance
     varEffect::Float64  # common marker variance
@@ -102,7 +103,7 @@ type Current
     end
 end
 
-type Output
+mutable struct Output
     mean_fixed_effects::Array{Float64,1}
     meanMarkerEffects::Array{Float64,1}
     modelFreq::Array{Float64,1}
