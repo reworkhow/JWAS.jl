@@ -153,9 +153,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
-        println("HAHAHA ",iter)
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
-        println("WAWAWA ",iter)
 
         if iter > burnin
             solMean += (sol - solMean)/(iter-burnin)

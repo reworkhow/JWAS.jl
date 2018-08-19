@@ -50,6 +50,10 @@ set_random(model,"Animal", ped,G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4,output_samples=true)
+    if !isposdef(G)
+        @error "The covariance matrix is not positive definite."
+    end
+
     pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
 
     #add model equation number; "animal" => "1:animal"
@@ -117,6 +121,9 @@ set_random(model,"litter",G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
+    if !isposdef(G)
+        @error "The covariance matrix is not positive definite."
+    end
     G = map(Float64,G)
     df= Float64(df)
     randTrmVec = split(randomStr," ",keepempty=false)  # "herd"
