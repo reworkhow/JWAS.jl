@@ -13,7 +13,7 @@ function MCMC_BayesC(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
-    solMean     = zeros(sol)
+    solMean     = zero(sol)
 
     if methods == "conventional (no markers)"
         if mme.M!=0
@@ -83,7 +83,7 @@ function MCMC_BayesC(nIter,mme,df;
     #  WORKING VECTORS (ycor, saving values)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(full(mme.ySparse)-mme.X*sol)
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
 
     ############################################################################
     #  SET UP OUTPUT MCMC samples
@@ -189,16 +189,16 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round(meanVare,6))
+            println("Residual variance: ",round(meanVare,digits=6))
             if mme.pedTrmVec !=0
-                println("Polygenic effects covariance matrix \n",round.(G0Mean,3))
+                println("Polygenic effects covariance matrix \n",round.(G0Mean,digits=3))
             end
             if mme.M != 0
                 if methods!="BayesB"
-                    println("Marker effects variance: ",round(meanVara,6))
+                    println("Marker effects variance: ",round(meanVara,digits=6))
                 end
                 if estimatePi == true
-                    println("π: ", round(mean_pi,3))
+                    println("π: ", round(mean_pi,digits=3))
                 end
             end
         end

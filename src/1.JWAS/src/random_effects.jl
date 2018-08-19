@@ -50,7 +50,7 @@ set_random(model,"Animal", ped,G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4,output_samples=true)
-    pedTrmVec = split(randomStr," ",keep=false)  # "animal animal*age"
+    pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
 
     #add model equation number; "animal" => "1:animal"
     res = []
@@ -64,7 +64,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
               outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
           end
         else
-          info(trm," is not found in model equation ",string(m),".")
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
       end
     end #"1:animal","1:animal*age"
@@ -81,10 +81,10 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
     if mme.nModels!=1 #multi-trait
       mme.Gi = inv(G)
     else              #single-trait
-      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
+      if (typeof(G)<:Number) ==true #convert scalar G to 1x1 matrix
         G=reshape([G],1,1)
       end
-      mme.GiOld = zeros(G)
+      mme.GiOld = zero(G)
       mme.GiNew = inv(G)
     end
     mme.df.polygenic=Float64(df)
@@ -119,7 +119,7 @@ set_random(model,"litter",G)
 function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     G = map(Float64,G)
     df= Float64(df)
-    randTrmVec = split(randomStr," ",keep=false)  # "herd"
+    randTrmVec = split(randomStr," ",keepempty=false)  # "herd"
     for trm in randTrmVec
       res = []
       for (m,model) = enumerate(mme.modelVec)
@@ -133,13 +133,13 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
           mme.modelTermDict[mtrm].names=names
           #*********************
         else
-          info(trm," is not found in model equation ",string(m),".")
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
       end
       if length(res) != size(G,1)
         error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
       end
-      if issubtype(typeof(G),Number)==true #convert scalar G to 1x1 matrix
+      if (typeof(G)<:Number) ==true #convert scalar G to 1x1 matrix #Need (here in julia0.7)
         G=reshape([G],1,1)
       end
       Gi = inv(G)
@@ -147,7 +147,7 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
       term_array   = res
       df           = df+length(term_array)
       scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-      randomEffect = RandomEffect(term_array,Gi,zeros(Gi),Gi,df,scale,Vinv,names)
+      randomEffect = RandomEffect(term_array,Gi,zero(Gi),Gi,df,scale,Vinv,names)
       push!(mme.rndTrmVec,randomEffect)
     end
     nothing
@@ -200,7 +200,7 @@ end
 function addLambdas(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
-      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : speye(mme.modelTermDict[term_array[1]].nLevels)
+      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : SparseMatrixCSC{Float64}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
           startPosi  = randTrmi.startPos

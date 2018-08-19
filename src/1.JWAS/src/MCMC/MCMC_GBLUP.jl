@@ -151,12 +151,12 @@ function MCMC_GBLUP(nIter,mme,df;
         ########################################################################
         if iter%outFreq==0
             println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round(meanVare,6))
+            println("Residual variance: ",round(meanVare,digits=6))
             if mme.pedTrmVec !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,3))
+              println("Polygenic effects covariance matrix \n",round(G0Mean,digits=3))
             end
-            println("Genetic variance (G matrix): ",round(meanVara,6))
-            println("Genetic variance (GenSel): ",round(meanVarg,6))
+            println("Genetic variance (G matrix): ",round(meanVara,digits=6))
+            println("Genetic variance (GenSel): ",round(meanVarg,digits=6))
         end
     end
 

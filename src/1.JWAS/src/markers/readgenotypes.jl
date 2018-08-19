@@ -3,7 +3,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
 
     myfile = open(file)
     #get number of columns
-    row1   = split(readline(myfile),[separator,'\n'],keep=false)
+    row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
 
     if header==true
       markerID=row1[2:end]  #skip header
@@ -41,7 +41,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,center=tr
         markerMeans = center!(copy(genotypes))  #get marker means
     end
     p             = markerMeans/2.0
-    sum2pq        = (2*p*(1-p)')[1,1]
+    sum2pq        = (2*p*(1 .- p)')[1,1]
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
@@ -60,7 +60,7 @@ function readgenotypes(M::Union{Array{Float64,2},DataFrames.DataFrame};header=fa
         markerMeans = center!(copy(genotypes))  #get marker means
     end
     p             = markerMeans/2.0
-    sum2pq       = (2*p*(1-p)')[1,1]
+    sum2pq       = (2*p*(1 .- p)')[1,1]
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end

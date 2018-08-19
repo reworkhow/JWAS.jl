@@ -27,7 +27,7 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
 
     for trmStr in res
         trm     = mme.modelTermDict[trmStr]
-        samples = MCMCSamples(trm,Array{Float64}(1,1))
+        samples = MCMCSamples(trm,Array{Float64}(undef,1,1))
         push!(mme.outputSamplesVec,samples)
     end
 end
@@ -64,9 +64,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   for i in outvar
       file_i    = file_name*"_"*i*".txt"
       if isfile(file_i)
-        warn("The file "*file_i*" already exists!!! It is overwritten by the new output.")
+        printstyled("The file "*file_i*" already exists!!! It is overwritten by the new output.\n",bold=false,color=:red)
       else
-        info("The file "*file_i*" is created to save MCMC samples for "*i*".")
+        printstyled("The file "*file_i*" is created to save MCMC samples for "*i*".\n",bold=false,color=:green)
       end
       outfile[i]=open(file_i,"w")
   end
@@ -126,7 +126,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
     writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
   end
 
-  writedlm(outfile["residual_variance"],issubtype(typeof(vRes),Number) ? vRes : vec(vRes)' ,',')
+  writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
   #mme.samples4R[out_i,:]=vRes
 
   if mme.pedTrmVec != 0
@@ -145,7 +145,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
           writedlm(outfile["marker_effects_variances"],locusEffectVar',',')
       end
       writedlm(outfile["pi"],π,',')
-      if !issubtype(typeof(π),Number)#add a blank line
+      if !(typeof(π) <: Number) #add a blank line
           println(outfile["pi"])
       end
   end
@@ -168,7 +168,7 @@ end
 # and Array{SubString{String} for issue 8
 function transubstrarr(vec)
     lvec=length(vec)
-    res =Array{String}(1,lvec)
+    res =Array{String}(undef,1,lvec)
     for i in 1:lvec
         res[1,i]=vec[i]
     end

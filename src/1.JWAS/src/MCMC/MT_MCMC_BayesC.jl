@@ -16,7 +16,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
-    solMean     = zeros(sol)
+    solMean     = zero(sol)
 
     if methods == "conventional (no markers)"
         if mme.M!=0
@@ -101,18 +101,18 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         ##WORKING VECTORS
         ########################################################################
-        ycorr          = vec(full(mme.ySparse)) #ycorr for different traits
-        wArray         = Array{Array{Float64,1}}(nTraits)#wArray is list reference of ycor
+        ycorr          = vec(Matrix(mme.ySparse)) #ycorr for different traits
+        wArray         = Array{Array{Float64,1}}(undef,nTraits)#wArray is list reference of ycor
         ########################################################################
         #Arrays to save solutions for marker effects
         ########################################################################
         #starting values for marker effects(zeros) and location parameters (sol)
-        alphaArray     = Array{Array{Float64,1}}(nTraits) #BayesC,BayesC0
-        meanAlphaArray = Array{Array{Float64,1}}(nTraits) #BayesC,BayesC0
-        deltaArray     = Array{Array{Float64,1}}(nTraits) #BayesC
-        meanDeltaArray = Array{Array{Float64,1}}(nTraits) #BayesC
-        uArray         = Array{Array{Float64,1}}(nTraits) #BayesC
-        meanuArray     = Array{Array{Float64,1}}(nTraits) #BayesC
+        alphaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
+        meanAlphaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
+        deltaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meanDeltaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        uArray         = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meanuArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
 
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
@@ -153,7 +153,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
+        println("HAHAHA ",iter)
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
+        println("WAWAWA ",iter)
+
         if iter > burnin
             solMean += (sol - solMean)/(iter-burnin)
         end
@@ -357,15 +360,15 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
-            println("Residual covariance matrix: \n",round.(R0Mean,6))
+            println("Residual covariance matrix: \n",round.(R0Mean,digits=6))
 
             if mme.pedTrmVec !=0
-              println("Polygenic effects covariance matrix \n",round.(G0Mean,6))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,digits=6))
             end
 
             if mme.M != 0
               if methods != "BayesB"
-                  println("Marker effects covariance matrix: \n",round.(GMMean,6))
+                  println("Marker effects covariance matrix: \n",round.(GMMean,digits=6))
               end
               if methods in ["BayesC","BayesB"] && estimatePi == true
                 println("π: \n",BigPiMean)

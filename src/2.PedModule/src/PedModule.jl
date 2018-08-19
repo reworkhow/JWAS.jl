@@ -1,6 +1,7 @@
 module PedModule
 
 using DataFrames,CSV
+using SparseArrays
 using ProgressMeter
 
 mutable struct PedNode
@@ -179,7 +180,7 @@ end
 
 function getIDs(ped::Pedigree)
     n = length(ped.idMap)
-    ids = Array{String}(n)
+    ids = Array{String}(undef,n)
     for i in ped.idMap
       ids[i[2].seqID] = i[1]
     end

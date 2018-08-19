@@ -3,7 +3,7 @@
 function mkDict(a)
   aUnique = unique(a)
   d = Dict()
-  names = Array{Any}(size(aUnique,1))
+  names = Array{Any}(undef,size(aUnique,1))
   for (i,s) in enumerate(aUnique)
     names[i] = s
     d[s] = i
@@ -39,7 +39,7 @@ function build_model(model_equations::AbstractString,R;df=4)
       To find an example, type ?build_model and press enter.\n")
   end
 
-  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keep=false)]
+  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
   nModels    = size(modelVec,1)
   lhsVec     = Symbol[]    #:y, phenotypes
   modelTerms = ModelTerm[] #initialization outside for loop
@@ -72,7 +72,7 @@ set_covariate(models,"age year")
 function set_covariate(mme::MME,covStr::AbstractString...)
   covVec=[]
   for i in covStr
-    covVec = [covVec;split(i," ",keep=false)]
+    covVec = [covVec;split(i," ",keepempty=false)]
   end
   mme.covVec = [mme.covVec;[Symbol(i) for i in covVec]]
 end
@@ -84,8 +84,8 @@ end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   nObs    = size(df,1)
-  trm.str = Array{AbstractString}(nObs)
-  trm.val = Array{Float64}(nObs)
+  trm.str = Array{AbstractString}(undef,nObs)
+  trm.val = Array{Float64}(undef,nObs)
 
   if trm.factors[1] == :intercept #for intercept
     str = fill("intercept",nObs)
@@ -127,7 +127,7 @@ getFactor(str) = [strip(i) for i in split(str,"*")]
 function getX(trm::ModelTerm,mme::MME)
     #Row Index
     nObs  = length(trm.str)
-    xi    = (trm.iModel-1)*nObs + collect(1:nObs)
+    xi    = (trm.iModel-1)*nObs .+ collect(1:nObs)
     #Value
     xv    = trm.val
     #Column Index
@@ -185,7 +185,7 @@ function getX(trm::ModelTerm,mme::MME)
        trm.nLevels     = length(dict)
        dict["0"]       = 1 #for missing data
        xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
-       xv[trm.str.=="0"]=0 #for missing data
+       xv[trm.str.=="0"] .= 0 #for missing data
 
        xi      = [xi;1]              # adding a zero to
        xj      = [xj;trm.nLevels]    # the last column in row 1
@@ -237,7 +237,7 @@ function getMME(mme::MME, df::DataFrame)
       y   = [y; recode(df[mme.lhsVec[i]],missing=>0.0)]
     end
     ii    = 1:length(y)
-    jj    = ones(ii)
+    jj    = ones(length(y))
     vv    = y
     ySparse = sparse(ii,jj,vv)
 

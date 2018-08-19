@@ -12,7 +12,7 @@ end
 
 function get_column_ref(X)
     ncol = size(X)[2]
-    xArray = Array{Array{Float64,1}}(ncol)
+    xArray = Array{Array{Float64,1}}(undef,ncol)
     for i=1:ncol
         xArray[i] = get_column(X,i)
     end
@@ -21,7 +21,7 @@ end
 
 function center!(X)
     nrow,ncol = size(X)
-    colMeans = mean(X,1)
+    colMeans = mean(X,dims=1)
     BLAS.axpy!(-1,ones(nrow)*colMeans,X)
     return colMeans
 end
