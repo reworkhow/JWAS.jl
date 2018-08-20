@@ -235,7 +235,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if mme.M != 0
           mme.R = R0
           R0    = mme.R
-          Ri    = kron(inv(R0),speye(nObs))
+          Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))  
 
           RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
         end

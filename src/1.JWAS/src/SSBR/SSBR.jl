@@ -48,8 +48,8 @@ end
 # Genotypes
 ############################################################################
 function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
-    Mg   = Array{Float64,2}(geno.nObs,geno.nMarkers)
-    MgID = Array{String,1}(geno.nObs)
+    Mg   = Array{Float64,2}(undef,geno.nObs,geno.nMarkers)
+    MgID = Array{String,1}(undef,geno.nObs)
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
     for i in 1:geno.nObs #Better to use Z matrix?
@@ -65,7 +65,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
     mme.M.genotypes = Mfull
     mme.M.obsID     = IDs
     mme.M.nObs      = length(mme.M.obsID)
-    gc()
+    GC.gc()
 end
 ############################################################################
 # Fixed effects (J)
