@@ -1,4 +1,4 @@
-type FixedMatrix
+mutable struct FixedMatrix
     C::Array{Float64,2}
     variables::Array{Any,1}
 end

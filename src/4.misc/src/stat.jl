@@ -7,8 +7,8 @@ function report(X::Array{Array{Float64,2},1};index=false)
     Xmean = mean(X)
     Xvar  = mean(X.^2)-Xmean.^2
     println("Summary Stats:")
-    println("Mean:\n",round(Xmean,6))
-    println("Variance:\n",round(Xvar,6))
+    println("Mean:\n",round(Xmean,digits=6))
+    println("Variance:\n",round(Xvar,digits=6))
   else
     xArray = zeros(length(X))
     i=1
@@ -30,7 +30,7 @@ end
 function report(X::Array{Array{Float64,1},1};index=false)
   if index==false
     println("Summary Stats:")
-    println("Mean:\n",round(mean(X),6))
+    println("Mean:\n",round(mean(X),digits=6))
   else
     xArray = zeros(length(X))
     i=1

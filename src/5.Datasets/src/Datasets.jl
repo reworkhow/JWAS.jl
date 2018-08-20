@@ -1,5 +1,6 @@
 module Datasets
 
+using Printf
 function dataset(dataset_name::AbstractString,file_name::AbstractString)
     basename = joinpath(dirname(@__FILE__), "..", "data", dataset_name)
 

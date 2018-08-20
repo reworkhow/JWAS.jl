@@ -1,16 +1,17 @@
 module PedModule
 
 using DataFrames,CSV
+using SparseArrays
 using ProgressMeter
 
-type PedNode
+mutable struct PedNode
     seqID::Int64
     sire::String
     dam::String
     f::Float64
 end
 
-type Pedigree
+mutable struct Pedigree
     currentID::Int64
     idMap::Dict{AbstractString,PedNode}
     aij::Dict{Int64, Float64}
@@ -61,7 +62,7 @@ function calcAddRel!(ped::Pedigree,id1::AbstractString,id2::AbstractString)
     if id1=="0" || id2=="0"           # zero
         return 0.0
     end
-    old,yng = ped.idMap[id1].seqID<ped.idMap[id2].seqID ? (id1,id2):(id2,id1)
+    old,yng = ped.idMap[id1].seqID < ped.idMap[id2].seqID ? (id1,id2) : (id2,id1)
     oldID = ped.idMap[old].seqID
     yngID = ped.idMap[yng].seqID
 
@@ -81,8 +82,8 @@ function calcAddRel!(ped::Pedigree,id1::AbstractString,id2::AbstractString)
         return (aii)
     end
 
-    aOldDamYoung  = (old=="0" || damOfYng =="0")? 0.0:calcAddRel!(ped,old,damOfYng)
-    aOldSireYoung = (old=="0" || sireOfYng=="0")? 0.0:calcAddRel!(ped,old,sireOfYng)
+    aOldDamYoung  = (old=="0" || damOfYng =="0") ? 0.0 : calcAddRel!(ped,old,damOfYng)
+    aOldSireYoung = (old=="0" || sireOfYng=="0") ? 0.0 : calcAddRel!(ped,old,sireOfYng)
     aijVal = 0.5*(aOldSireYoung + aOldDamYoung)
     ped.aij[aijKey] = aijVal
 
@@ -120,8 +121,8 @@ function HAi(ped::Pedigree)
     for ind in keys(ped.idMap)
         sire = ped.idMap[ind].sire
         dam  = ped.idMap[ind].dam
-        sirePos = sire=="0" ? 0: ped.idMap[sire].seqID
-        damPos  = dam =="0" ? 0: ped.idMap[dam ].seqID
+        sirePos = sire=="0" ? 0 : ped.idMap[sire].seqID
+        damPos  = dam =="0" ? 0 : ped.idMap[dam ].seqID
         myPos   = ped.idMap[ind].seqID
         if sirePos>0 && damPos>0
             d = sqrt(4.0/(2 - ped.idMap[sire].f - ped.idMap[dam].f))
@@ -179,7 +180,7 @@ end
 
 function getIDs(ped::Pedigree)
     n = length(ped.idMap)
-    ids = Array{String}(n)
+    ids = Array{String}(undef,n)
     for i in ped.idMap
       ids[i[2].seqID] = i[1]
     end

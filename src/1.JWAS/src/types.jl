@@ -7,7 +7,7 @@
 # terms: 1:A,1:B,2:A,2:B,2:A*B
 #
 ################################################################################
-type ModelTerm
+mutable struct ModelTerm
     iModel::Int64                  # 1st or 2nd model_equation
 
                                    # | trmStr | nFactors | factors |
@@ -52,7 +52,7 @@ end
 #In JWAS, ONLY used when residual variance is constant
 #or missing phenotypes are not imputed at each step of MCMC (no marker effects).
 ################################################################################
-type ResVar
+mutable struct ResVar
     R0::Array{Float64,2}
     RiDict::Dict{BitArray{1},Array{Float64,2}}
 end
@@ -63,7 +63,7 @@ end
 #single-trait e.g. termarray: [ModelTerm(1:A)]
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
 ################################################################################
-type RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
+mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
     Gi::Array{Float64,2}     #covariance matrix (multi-trait)
     GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
@@ -75,12 +75,12 @@ type RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,
 end
 
 #MCMC samplers for location parameters
-type MCMCSamples
+mutable struct MCMCSamples
     term::ModelTerm
     sampleArray::Array{Float64,2}
 end
 
-type Genotypes
+mutable struct Genotypes
   obsID::Array{AbstractString,1}    #row ID of genotypes
   markerID
   nObs::Int64
@@ -94,7 +94,7 @@ type Genotypes
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,0.0,false)
 end
 
-type DF
+mutable struct DF
     residual::Float64
     polygenic::Float64
     marker::Float64
@@ -107,7 +107,7 @@ end
 # single-trait analyses: lambda version of MME
 #  multi-trait analysis: formal version of MME
 ################################################################################
-type MME
+mutable struct MME
     nModels::Int64                                #number of model equations
     modelVec::Array{AbstractString,1}             #["y1 = A + B","y2 = A + B + A*B"]
     modelTerms::Array{ModelTerm,1}                #ModelTerms for "1:intercept","1:A","2:intercept","2:A","2:A*B"...;

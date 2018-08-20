@@ -24,9 +24,9 @@ function mkRi(mme::MME,df::DataFrame)
     mme.missingPattern = tstMsng
     n    = size(tstMsng,2)
     nObs = size(tstMsng,1)
-    ii = Array{Int64}(nObs*n^2)
-    jj = Array{Int64}(nObs*n^2)
-    vv = Array{Float64}(nObs*n^2)
+    ii = Array{Int64}(undef,nObs*n^2)
+    jj = Array{Int64}(undef,nObs*n^2)
+    vv = Array{Float64}(undef,nObs*n^2)
     pos = 1
     for i=1:size(tstMsng,1)
         sel = reshape(tstMsng[i,:],n)

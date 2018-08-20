@@ -24,19 +24,19 @@ function pre_check(mme,df,sol)
     #mme.M.obsID is IDs for all genotyped animals in complete genomic data
     phenoID = map(String,df[:,1])
     if mme.M!=0 && !issubset(phenoID,mme.M.obsID)
-      warn("Phenotyped individuals are not a subset of either\n",
+      printstyled("Phenotyped individuals are not a subset of either\n",
       "genotyped individuals (complete genomic data,non-single-step) or\n",
       "individuals in pedigree (incomplete genomic data, single-step).\n",
-      "Only individuals with both information are used in the analysis.\n")
+      "Only individuals with both information are used in the analysis.\n",bold=false,color=:red)
       index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
       df    = df[index,:]
     end
 
     if mme.M!=0 && mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-      warn("Testing individuals are not a subset of \n",
+      printstyled("Testing individuals are not a subset of \n",
       "genotyped individuals (complete genomic data,non-single-step) or\n",
       "individuals in pedigree (incomplete genomic data, single-step).\n",
-      "Only tesing individuals with both information are used in the analysis.\n")
+      "Only tesing individuals with both information are used in the analysis.\n",bold=false,color=:red)
       mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
     end
 
@@ -103,7 +103,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
         end
     end
 
-    output["Posterior mean of marker effects"] = (mme.nModels==1)?markerout[1]:markerout
+    output["Posterior mean of marker effects"] = (mme.nModels==1) ? markerout[1] : markerout
     output["Posterior mean of marker effects variance"] = meanVara
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
@@ -143,13 +143,13 @@ end
 ################################################################################
 function reformat2DataFrame(res::Array)
     ##SLOW, 130s
-    #out_names=[strip(i) for i in split(res[1,1],':',keep=false)]
+    #out_names=[strip(i) for i in split(res[1,1],':',keepempty=false)]
     #for rowi in 2:size(res,1)
-    #    out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keep=false)]]#hcat two vectors
+    #    out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keepempty=false)]]#hcat two vectors
     #end
-    out_names = Array{String}(size(res,1),3)
+    out_names = Array{String}(undef,size(res,1),3)
     for rowi in 1:size(res,1)
-        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keep=false)]
+        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keepempty=false)]
     end
 
     if size(out_names,2)==1 #convert vector to matrix
@@ -171,7 +171,9 @@ function genetic2marker(M::Genotypes,Pi::Dict)
   denom   = zeros(nTraits,nTraits)
   for i in 1:nTraits
     for j in i:nTraits
-      pi_selected = filter((k,v)->k[i]==1.0 && k[j]==1.0,Pi)
+      #pi_selected = filter((k,v)->k[i]==1.0 && k[j]==1.0,Pi)
+      pi_selected = filter(d->d.first[i]==1.0 && d.first[j]==1.0,Pi)
+
       denom[i,j] = M.sum2pq*sum(values(pi_selected))
       denom[j,i] = denom[i,j]
     end

@@ -19,47 +19,50 @@ end
 # colLabels = "",
 # rowLabels = ""
 
-function latexTable{T}(A::Array{T,2};
-    fileName::AbstractString = "",
-    colLabels = "",
-    rowLabels = ""
-    )
-    if fileName == ""
-        outFile = STDOUT
-    else
-        outFile = open(fileName, "w")
-    end
-    rows, cols = size(A)
-    println(outFile,"\\begin{center}")
-    print(outFile,"\\begin{tabular}{",)
-    if rowLabels!=""
-        print(outFile,"l")
-    end
-    for j=1:cols
-        print(outFile,"r")
-    end
-    println(outFile,"}\\hline")
-    if colLabels!=""
-        nCol = length(colLabels)
-        for j = 1:(nCol-1)
-            print(outFile,colLabels[j]," & ")
-        end
-        print(outFile,colLabels[nCol]," \\\\ \\hline  \n")
-    end
-    for i =1:rows
-        if rowLabels!=""
-            print(outFile,rowLabels[i]," & ")
-        end
-        for j = 1:(cols-1)
-            print(outFile,A[i,j])
-            print(outFile," & ")
-        end
-        print(outFile,A[i,cols]," \\\\ \n")
-    end
-    println(outFile,"\\hline")
-    println(outFile,"\\end{tabular}")
-    println(outFile,"\\end{center}")
-    if fileName != ""
-        close(outFile)
-    end
-end
+# ┌ Warning: Deprecated syntax `parametric method syntax latexTable{T}(A::Array{T, 2},; fileName::AbstractString = "", colLabels = "", rowLabels = "")` around /home/jovyan/qtlcheng/Github/JWAS.jl/src/4.misc/src/files.jl:27.
+# │ Use `latexTable(A::Array{T, 2},; fileName::AbstractString = "", colLabels = "", rowLabels = "") where T` instead.
+# └ @ nothing /home/jovyan/qtlcheng/Github/JWAS.jl/src/4.misc/src/files.jl:27
+# function latexTable{T}(A::Array{T,2};
+#     fileName::AbstractString = "",
+#     colLabels = "",
+#     rowLabels = ""
+#     )
+#     if fileName == ""
+#         outFile = STDOUT
+#     else
+#         outFile = open(fileName, "w")
+#     end
+#     rows, cols = size(A)
+#     println(outFile,"\\begin{center}")
+#     print(outFile,"\\begin{tabular}{",)
+#     if rowLabels!=""
+#         print(outFile,"l")
+#     end
+#     for j=1:cols
+#         print(outFile,"r")
+#     end
+#     println(outFile,"}\\hline")
+#     if colLabels!=""
+#         nCol = length(colLabels)
+#         for j = 1:(nCol-1)
+#             print(outFile,colLabels[j]," & ")
+#         end
+#         print(outFile,colLabels[nCol]," \\\\ \\hline  \n")
+#     end
+#     for i =1:rows
+#         if rowLabels!=""
+#             print(outFile,rowLabels[i]," & ")
+#         end
+#         for j = 1:(cols-1)
+#             print(outFile,A[i,j])
+#             print(outFile," & ")
+#         end
+#         print(outFile,A[i,cols]," \\\\ \n")
+#     end
+#     println(outFile,"\\hline")
+#     println(outFile,"\\end{tabular}")
+#     println(outFile,"\\end{center}")
+#     if fileName != ""
+#         close(outFile)
+#     end
+# end

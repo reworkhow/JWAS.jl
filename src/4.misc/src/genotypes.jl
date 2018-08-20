@@ -1,4 +1,4 @@
-type Genotypes
+mutable struct Genotypes
   obsID::Array{AbstractString,1}    #row ID of genotypes
   markerID
   nObs::Int64

@@ -9,7 +9,7 @@ function samplePi(deltaArray,BigPi,BigPiMean,iter)
   nLoci_array=zeros(2^nTraits)
   for i in keys(BigPi) #assume order of key won't change
     temp2 = broadcast(-,temp,i')
-    nLoci =  sum(mean(abs.(temp2),2).==0.0)
+    nLoci =  sum(mean(abs.(temp2),dims=2).==0.0)
     nLoci_array[iloci] = nLoci +1
     iloci = iloci +1
   end

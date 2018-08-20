@@ -3,6 +3,8 @@ module SSBR
 using ..misc
 using ..PedModule
 using DataFrames
+using SparseArrays
+using Printf
 
 include("SSBR_types.jl")
 include("getMatrices.jl")

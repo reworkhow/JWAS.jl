@@ -90,13 +90,14 @@ function runMCMC(mme,df;
     if mme.M!=0
         #set up Pi
         if mme.nModels !=1 && Pi==0.0
-            info("Pi (Π) is not provided.","\n")
-            info("Pi (Π) is generated assuming all markers have effects on all traits.","\n")
-            mykey=Array{Float64}(0)
+            printstyled("Pi (Π) is not provided.\n",bold=false,color=:green)
+            printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false,color=:green)
+            mykey=Array{Float64}(undef,0)
             ntraits=mme.nModels
             Pi=Dict{Array{Float64,1},Float64}()
-            for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ]
-              Pi[float(split(i,""))]=0.0
+            #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
+            for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
+              Pi[parse.(Float64, split(i,""))]=0.0
             end
             Pi[ones(ntraits)]=1.0
         end
@@ -106,22 +107,22 @@ function runMCMC(mme,df;
             println()
             if mme.nModels != 1
               if !isposdef(mme.M.G) #also work for scalar
-                error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+                @error "Marker effects covariance matrix is not postive definite! Please modify the argument: Pi."
               end
-              println("The prior for marker effects covariance matrix is calculated from ")
-              println("genetic covariance matrix and Π. The prior for the marker effects ")
-              println("covariance matrix is: \n")
-              Base.print_matrix(STDOUT,round.(mme.M.G,6))
+              print("The prior for marker effects covariance matrix is calculated from ")
+              print("genetic covariance matrix and Π. The mean of the prior for the marker effects ")
+              print("covariance matrix is: \n")
+              Base.print_matrix(stdout,round.(mme.M.G,digits=6))
             else
               if !isposdef(mme.M.G) #positive scalar (>0)
-                error("Marker effects variance is negative!")
+                @error "Marker effects variance is negative!"
               end
-              println("The prior for marker effects variance is calculated from ")
-              println("the genetic variance and π. The prior for the marker effects variance ")
-              println("is: ",round.(mme.M.G,6))
+              print("The prior for marker effects variance is calculated from ")
+              print("the genetic variance and π. The mean of the prior for the marker effects variance ")
+              print("is: ",round.(mme.M.G,digits=6))
             end
         elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
-            error("Please provide genetic variance for GBLUP analysis")
+            @error "Please provide genetic variance for GBLUP analysis"
         end
         println("\n\n")
     end
@@ -160,7 +161,7 @@ function runMCMC(mme,df;
             error("No options!!!")
         end
     elseif mme.nModels > 1
-        if Pi != 0.0 && round(sum(values(Pi)),2)!=1.0
+        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
         if methods in ["BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
@@ -198,14 +199,14 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     @printf("%-30s %20s\n","chain_length",chain_length)
     @printf("%-30s %20s\n","burnin",burnin)
     if !(methods in ["conventional (no markers)", "GBLUP"])
-      @printf("%-30s %20s\n","estimatePi",estimatePi?"true":"false")
+      @printf("%-30s %20s\n","estimatePi",estimatePi ? "true" : "false")
     end
-    @printf("%-30s %20s\n","starting_value",starting_value?"true":"false")
+    @printf("%-30s %20s\n","starting_value",starting_value ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
 
-    @printf("%-30s %20s\n","constraint",constraint?"true":"false")
-    @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes?"true":"false")
+    @printf("%-30s %20s\n","constraint",constraint ? "true" : "false")
+    @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes ? "true" : "false")
     @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
 
 
@@ -214,11 +215,11 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
     if mme.nModels==1
         for i in mme.rndTrmVec
             thisterm=split(i.term_array[1],':')[end]
-            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),3))
+            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),digits=3))
         end
         @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
         if mme.pedTrmVec!=0
-            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),3))
+            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),digits=3))
         end
         if !(methods in ["conventional (no markers)", "GBLUP"])
             if mme.M == 0
@@ -232,23 +233,23 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
         for i in mme.rndTrmVec
             thisterm=split(i.term_array[1],':')[end]
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
-            Base.print_matrix(STDOUT,round.(inv(i.GiNew),3))
+            Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
             println()
         end
         @printf("%-30s\n","residual variances:")
-        Base.print_matrix(STDOUT,round.(mme.R,3))
+        Base.print_matrix(stdout,round.(mme.R,digits=3))
         println()
         if mme.pedTrmVec!=0
             @printf("%-30s\n","genetic variances (polygenic):")
-            Base.print_matrix(STDOUT,round.(inv(mme.Gi),3))
+            Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
             println()
         end
         if !(methods in ["conventional (no markers)", "GBLUP"])
             @printf("%-30s\n","genetic variances (genomic):")
-            Base.print_matrix(STDOUT,round.(mme.M.G,3))
+            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
             println()
             @printf("%-30s\n","marker effect variances:")
-            Base.print_matrix(STDOUT,round.(mme.M.G,3))
+            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
             println()
             println("Π:")
             @printf("%-20s %12s\n","combinations","probability")
