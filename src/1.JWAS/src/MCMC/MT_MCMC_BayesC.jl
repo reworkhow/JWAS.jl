@@ -129,7 +129,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
         if methods=="BayesB"
-            arrayG  = Array{Array{Float64,2}}(nMarkers)#locus specific covaraince matrix
+            arrayG  = Array{Array{Float64,2}}(undef,nMarkers)#locus specific covaraince matrix
             for markeri = 1:nMarkers
               arrayG[markeri]= vEff
             end
@@ -235,7 +235,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if mme.M != 0
           mme.R = R0
           R0    = mme.R
-          Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))  
+          Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
 
           RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
         end
@@ -349,7 +349,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
                 elseif methods == "RR-BLUP"
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,false,outfile)
+                    #res=hcat([x for x in arrayG]...)
+                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in arrayG]...),outfile)
                 end
             else
                 out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)

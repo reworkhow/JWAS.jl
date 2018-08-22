@@ -30,7 +30,9 @@ function sampleMarkerEffectsBayesB!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
             nok    = deleteat!(collect(1:nTraits),k)
             Ginv12 = Ginv[marker][k,nok]
             C11    = Ginv11+Rinv[k,k]*xpx[marker]
-            C12    = Ginv12+xpx[marker]*diagm(δ[nok])*Rinv[k,nok]
+            #C12    = Ginv12+xpx[marker]*diagm(δ[nok])*Rinv[k,nok]
+            C12    = Ginv12+xpx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
+
             #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
 
             invLhs0  = 1/Ginv11
