@@ -24,13 +24,13 @@ end
 #same number of SNPs in each window
 #an array of number of SNPs in each window
 
-function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
+function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001)
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance")
 
     if header==true
-        output=readdlm(marker_file,',',header=true)[1]
+        output=readdlm(marker_effect_file,',',header=true)[1]
     else
-        output=readdlm(marker_file,',')
+        output=readdlm(marker_effect_file,',')
     end
 
     nsamples,nMarkers=size(output)
@@ -42,7 +42,8 @@ function GWAS(marker_file,mme;header=true,window_size=100,threshold=0.001)
     end
 
     winVarProps = zeros(nsamples,nWindows)
-    X           = mme.M.genotypes
+    #X           = mme.M.genotypes
+    X           = mme.output_genotypes
 
     @showprogress for i=1:nsamples
         α = output[i,:]
@@ -91,18 +92,18 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
     end
 
     mapfile = readdlm(map_file,',')
-    chr     = map(Int64,mapfile[:,2])
+    chr     = map(string,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
 
     window_size = Array{Int64,1}() #save number of markers in ith window for all windows
-    window_chr  = Array{Int64,1}()
+    window_chr  = Array{String,1}()
     window_pos_start = Array{Int64,1}()
     window_pos_end   = Array{Int64,1}()
     window_snp_start = Array{Int64,1}()
     window_snp_end   = Array{Int64,1}()
 
-    for i in 1:maximum(chr)
-      pos_on_chri     = pos[chr.==i]
+    for i in unique(chr)
+      pos_on_chri     = pos[chr.== i] #assume pos are sorted ?not good
       nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
 
       for j in 1: nwindow_on_chri

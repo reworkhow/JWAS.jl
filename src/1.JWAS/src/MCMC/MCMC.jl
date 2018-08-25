@@ -43,7 +43,7 @@ function runMCMC(mme,df;
                 pedigree            = false,
                 #output
                 #Genomic Prediction
-                outputEBV               = false,
+                outputEBV               = true,
                 output_genetic_variance = false,
                 output_residual_variance= false,
                 output_heritability     = false)
@@ -62,7 +62,7 @@ function runMCMC(mme,df;
 
 
     #Genotyped individuals are usaully not many, and are used in GWAS (complete
-    #and incomplete), thus those IDs are default output_ID if not provided
+    #and incomplete), thus are used as default output_ID if not provided
     if outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0

@@ -52,10 +52,10 @@ mutable struct GibbsMats
 end
 
 ################################################################################
-#align genotypes with phenotyps given IDs
+#align genotypes with phenotyps given IDs #MAY USE TOO MUCH MEMORY
 ################################################################################
 function align_genotypes(mme::MME)
-    Mfull    = mme.M.genotypes
+    Mfull    = mme.M.genotypes #imputed genotype in SSBR
     obsIDfull= deepcopy(mme.M.obsID)
     if mme.obsID != mme.M.obsID  #align genotypes with phenotypes
         Z  = mkmat_incidence_factor(mme.obsID,obsIDfull)
