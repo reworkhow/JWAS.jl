@@ -43,7 +43,7 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
 
     winVarProps = zeros(nsamples,nWindows)
     #X           = mme.M.genotypes
-    X           = mme.M.output_genotypes
+    X           = mme.output_genotypes
 
     @showprogress for i=1:nsamples
         α = output[i,:]
