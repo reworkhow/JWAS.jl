@@ -168,7 +168,7 @@ function MCMC_BayesC(nIter,mme,df;
                 end
             end
 
-            if iter > burnin
+            if iter > burnin && methods != "BayesB"
                 meanVara += (vEff - meanVara)/(iter-burnin)
             end
         end

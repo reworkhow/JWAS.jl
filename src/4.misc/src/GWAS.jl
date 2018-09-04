@@ -124,8 +124,8 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
       end
     end
     winVarProps = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
-    winVarProps[isnan.(winVarProps)]=0.0 #replace NaN caused by situations no markers are included in the model
-    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,1)), vec(mean(winVarProps,1))
+    winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
+    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
     prop_genvar = round.(prop_genvar*100,digits=2)
     #bug in Julia, vcat too long
     #out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]["WPPA"; WPPA]]
