@@ -23,7 +23,7 @@ end
 
 function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true)
     nTraits = length(files)
-    BV  = Array{Array{Float64,2}}(nTraits)
+    BV  = Array{Array{Float64,2}}(undef,nTraits)
     traiti=1
     for i in files
         BV[traiti] = get_BV_samples(M,i,header=header)

@@ -11,7 +11,7 @@ function GWAS(marker_effects_file;header=true)
         samples=readdlm(file,',')
     end
 
-    modelfrequency = vec(mean(samples .!= 0.0,1))
+    modelfrequency = vec(mean(samples .!= 0.0,dims=1))
     if header==true
         out = [markerID modelfrequency]
     else
