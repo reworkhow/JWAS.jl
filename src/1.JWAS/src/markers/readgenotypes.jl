@@ -29,7 +29,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,rowID=tru
     if header == true
         df=df[1]
     end
-    obsID         = map(String,df[:,1])
+    obsID         = map(string,df[:,1]) #map(String,df[:,1]) not work, if df[:,1] are integers
     genotypes     = map(Float64,df[:,2:end])
     nObs,nMarkers = size(genotypes)
 
