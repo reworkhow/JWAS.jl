@@ -22,7 +22,7 @@ end
 function pre_check(mme,df,sol)
     #mme.M.obsID is IDs for M after imputation M in SSBR (all individuals in pedigree)
     #mme.M.obsID is IDs for all genotyped animals in complete genomic data
-    phenoID = map(String,df[:,1])
+    phenoID = map(string,df[:,1])
     if mme.M!=0 && !issubset(phenoID,mme.M.obsID)
       printstyled("Phenotyped individuals are not a subset of either\n",
       "genotyped individuals (complete genomic data,non-single-step) or\n",
