@@ -24,7 +24,7 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,rowID=tru
     # nObs,nMarkers = size(genotypes)
 
 
-    df            = readdlm(file,separator,header=header)
+    df            = readdlm(file,separator,Any,header=header)
 
     if header == true
         df=df[1]
