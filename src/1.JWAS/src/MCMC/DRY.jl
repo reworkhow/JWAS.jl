@@ -4,9 +4,9 @@
 
 function check_pedigree(mme,df,pedigree)
     if pedigree!=false
-        pedID=map(String,collect(keys(pedigree.idMap)))
+        pedID=map(string,collect(keys(pedigree.idMap)))
     else
-        pedID=map(String,collect(keys(mme.ped.idMap)))
+        pedID=map(string,collect(keys(mme.ped.idMap)))
     end
 
     if mme.M!=0 && !issubset(mme.M.obsID,pedID)
