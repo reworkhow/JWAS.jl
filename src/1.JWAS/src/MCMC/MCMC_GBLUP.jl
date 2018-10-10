@@ -19,7 +19,7 @@ function MCMC_GBLUP(nIter,mme,df;
     # Pre-Check
     #############################################################################
     #starting values for location parameters(no marker) are sol
-    solMean     = zeros(sol)
+    solMean     = zero(sol)
 
     #######################################################
     # PRIORS
@@ -45,13 +45,13 @@ function MCMC_GBLUP(nIter,mme,df;
     #priors for breeding values, genetic variance
     mGibbs      = GibbsMats(mme.M.genotypes)
     nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-    M           = mGibbs.X ./ sqrt.(2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
+    M           = mGibbs.X ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
     #G           = M*M'/nMarkers
-    G           = (M*M'+eye(size(M,1))*0.00001)/nMarkers
+    G           = (M*M'+Matrix{Float64}(I, size(M,1), size(M,1))*0.00001)/nMarkers
 
-    eigenG      = eig(G)
-    L           = eigenG[2]#eigenvectros
-    D           = eigenG[1]#eigenvalues
+    eigenG      = eigen(G)
+    L           = eigenG.vectors#eigenvectros
+    D           = eigenG.values#eigenvalues
 
     dfEffectVar = mme.df.marker                #actually for genetic effect here
     vEff        = mme.M.G                      #genetic variance
@@ -67,7 +67,7 @@ function MCMC_GBLUP(nIter,mme,df;
     #  WORKING VECTORS (ycor)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(full(mme.ySparse)-mme.X*sol)
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
 
     ############################################################################
     #  SET UP OUTPUT MCMC samples
@@ -97,7 +97,7 @@ function MCMC_GBLUP(nIter,mme,df;
         # 1.2 pseudo breeding values (modified new alpha)
         ########################################################################
         ycorr = ycorr + L*α
-        lhs   = 1 + vRes./(vEff*D)
+        lhs   = 1 .+ vRes./(vEff*D)
         mean1 = L'ycorr./lhs
         α     = mean1 + randn(nObs).*sqrt.(vRes./lhs)
         ycorr = ycorr - L*α
