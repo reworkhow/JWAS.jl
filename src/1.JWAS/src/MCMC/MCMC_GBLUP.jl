@@ -58,6 +58,7 @@ function MCMC_GBLUP(nIter,mme,df;
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     meanVara    = 0.0
     meanVarg    = 0.0
+    meanh2      = 0.0
 
     α           = zeros(nObs) #starting values for pseudo breeding values are zeros
     meanAlpha   = zeros(nObs) #vectors to save solutions for pseudo breeding values
@@ -136,8 +137,11 @@ function MCMC_GBLUP(nIter,mme,df;
         end
 
         if iter > burnin
-            varg     = var(L*α,corrected=false)
+            varg      = var(L*α,corrected=false)
             meanVarg += (varg - meanVarg)/(iter-burnin)
+
+            h2       = varg/(varg+vRes)
+            meanh2  += (h2 - meanh2)/(iter-burnin)
         end
 
         ########################################################################
@@ -157,15 +161,20 @@ function MCMC_GBLUP(nIter,mme,df;
             end
             println("Genetic variance (G matrix): ",round(meanVara,digits=6))
             println("Genetic variance (GenSel): ",round(meanVarg,digits=6))
+            println("Heritability: ",round(meanh2,digits=6))
         end
     end
 
     ############################################################################
     # After MCMC
     ############################################################################
-    output=output_result(mme,solMean,output_samples_frequency,false,false,false,output_file)
+
+    #output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
+    #                    false,false,false,output_file)
+    output = Dict()
     output["Posterior mean of estimated breeding values"]  = L*meanAlpha
     output["Posterior mean of genetic variance (G matrix)"]= meanVara
     output["Posterior mean of genetic variance (GenSel)"]  = meanVarg
+    output["Posterior mean of heritability"]  = meanh2
     return output
 end
