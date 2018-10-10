@@ -10,9 +10,13 @@ end
 #s = open("123.bin")
 #nrows = read(s,Int64)
 #ncols = read(s,Int64)
-#M = Array(Int64,nrows,ncols)
+#M = Array{Float64}(undef,nrows,ncols)
 #read!(s,M)
 #close(s)
+
+#only one variable
+#M = Array{Float64}(undef,nrows,ncols)
+#read!("1.bin",M)
 
 #latex table from matrix
 # fileName::AbstractString = "",

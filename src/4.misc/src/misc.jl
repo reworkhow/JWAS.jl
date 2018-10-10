@@ -1,6 +1,6 @@
 module misc
 
-using DataFrames,CSV
+using DataFrames,CSV,DelimitedFiles
 using Distributions
 using ProgressMeter
 
