@@ -39,19 +39,21 @@ function code!(ped::Pedigree,id::AbstractString)
 end
 
 function fillMap!(ped::Pedigree,df)
+    #Warning: indexing with colon as row will create a copy in the future
+    #use df[col_inds] to get the columns without copying
     n = size(df,1)
-    for i in df[:,2]
+    for i in df[2] #same to df[:,2] in deprecated CSV
         if i!="0" && !haskey(ped.idMap,i)          # skip 0 and if already done
             ped.idMap[i]=PedNode(0,"0","0",-1.0)
         end
     end
-    for i in df[:,3]
+    for i in df[3]
         if i!="0" && !haskey(ped.idMap,i)         # make an entry for all dams
             ped.idMap[i]=PedNode(0,"0","0",-1.0)
         end
     end
     j=1
-    for i in df[:,1]
+    for i in df[1]
         ped.idMap[i]=PedNode(0,df[j,2],df[j,3],-1.0)
         j+=1
     end

@@ -19,7 +19,7 @@ function MCMC_GBLUP(nIter,mme,df;
     # Pre-Check
     #############################################################################
     #starting values for location parameters(no marker) are sol
-    solMean     = zeros(sol)
+    solMean     = zero(sol)
 
     #######################################################
     # PRIORS
@@ -45,19 +45,20 @@ function MCMC_GBLUP(nIter,mme,df;
     #priors for breeding values, genetic variance
     mGibbs      = GibbsMats(mme.M.genotypes)
     nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-    M           = mGibbs.X ./ sqrt.(2*mme.M.alleleFreq.*(1-mme.M.alleleFreq))
+    M           = mGibbs.X ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
     #G           = M*M'/nMarkers
-    G           = (M*M'+eye(size(M,1))*0.00001)/nMarkers
+    G           = (M*M'+Matrix{Float64}(I, size(M,1), size(M,1))*0.00001)/nMarkers
 
-    eigenG      = eig(G)
-    L           = eigenG[2]#eigenvectros
-    D           = eigenG[1]#eigenvalues
+    eigenG      = eigen(G)
+    L           = eigenG.vectors#eigenvectros
+    D           = eigenG.values#eigenvalues
 
     dfEffectVar = mme.df.marker                #actually for genetic effect here
     vEff        = mme.M.G                      #genetic variance
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     meanVara    = 0.0
     meanVarg    = 0.0
+    meanh2      = 0.0
 
     α           = zeros(nObs) #starting values for pseudo breeding values are zeros
     meanAlpha   = zeros(nObs) #vectors to save solutions for pseudo breeding values
@@ -66,7 +67,7 @@ function MCMC_GBLUP(nIter,mme,df;
     #  WORKING VECTORS (ycor)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(full(mme.ySparse)-mme.X*sol)
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
 
     ############################################################################
     #  SET UP OUTPUT MCMC samples
@@ -96,7 +97,7 @@ function MCMC_GBLUP(nIter,mme,df;
         # 1.2 pseudo breeding values (modified new alpha)
         ########################################################################
         ycorr = ycorr + L*α
-        lhs   = 1 + vRes./(vEff*D)
+        lhs   = 1 .+ vRes./(vEff*D)
         mean1 = L'ycorr./lhs
         α     = mean1 + randn(nObs).*sqrt.(vRes./lhs)
         ycorr = ycorr - L*α
@@ -136,8 +137,11 @@ function MCMC_GBLUP(nIter,mme,df;
         end
 
         if iter > burnin
-            varg     = var(L*α,corrected=false)
+            varg      = var(L*α,corrected=false)
             meanVarg += (varg - meanVarg)/(iter-burnin)
+
+            h2       = varg/(varg+vRes)
+            meanh2  += (h2 - meanh2)/(iter-burnin)
         end
 
         ########################################################################
@@ -157,15 +161,20 @@ function MCMC_GBLUP(nIter,mme,df;
             end
             println("Genetic variance (G matrix): ",round(meanVara,digits=6))
             println("Genetic variance (GenSel): ",round(meanVarg,digits=6))
+            println("Heritability: ",round(meanh2,digits=6))
         end
     end
 
     ############################################################################
     # After MCMC
     ############################################################################
-    output=output_result(mme,solMean,output_samples_frequency,false,false,false,output_file)
+
+    #output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
+    #                    false,false,false,output_file)
+    output = Dict()
     output["Posterior mean of estimated breeding values"]  = L*meanAlpha
     output["Posterior mean of genetic variance (G matrix)"]= meanVara
     output["Posterior mean of genetic variance (GenSel)"]  = meanVarg
+    output["Posterior mean of heritability"]  = meanh2
     return output
 end
