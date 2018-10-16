@@ -13,7 +13,7 @@ function check_pedigree(mme,df,pedigree)
         error("Not all genotyped individuals are found in pedigree!")
     end
 
-    phenoID = map(String,df[:,1])
+    phenoID = map(String,df[1])
     if !issubset(phenoID,pedID)
         error("Not all phenotyped individuals are found in pedigree!")
     end

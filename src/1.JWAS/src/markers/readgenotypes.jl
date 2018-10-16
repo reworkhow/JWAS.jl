@@ -11,27 +11,28 @@ function readgenotypes(file::AbstractString;separator=' ',header=false,rowID=tru
       markerID= ["NA"]
     end
     #set types for each column and get number of markers
-    # ncol= length(row1)
-    # etv = Array{DataType}(ncol)
-    # fill!(etv,Float64)
-    # etv[1]=String
-    # close(myfile)
+    ncol= length(row1)
+    etv = Array{DataType}(undef,ncol)
+    fill!(etv,Float64)
+    etv[1]=String
+    close(myfile)
     #
     # #read genotypes
-    # df = CSV.read(file, types=etv, delim = separator, header=header)
-    # obsID     = map(String,df[:,1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
-    # genotypes = map(Float64,convert(Array,df[:,2:end]))
-    # nObs,nMarkers = size(genotypes)
-
-
-    df            = readdlm(file,separator,Any,header=header)
-
-    if header == true
-        df=df[1]
-    end
-    obsID         = map(string,df[:,1]) #map(String,df[:,1]) not work, if df[:,1] are integers
-    genotypes     = map(Float64,df[:,2:end])
+    #df = CSV.read(file, types=etv, delim = separator, header=header)
+    df = readtable(file, eltypes=etv, separator = separator, header=header)
+    obsID     = map(String,df[1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
+    genotypes = map(Float64,convert(Array,df[2:end]))
     nObs,nMarkers = size(genotypes)
+
+
+    #df            = readdlm(file,separator,Any,header=header)
+
+    #if header == true
+    #    df=df[1]
+    #end
+    #obsID         = map(string,df[:,1]) #map(String,df[:,1]) not work, if df[:,1] are integers
+    #genotypes     = map(Float64,df[:,2:end])
+    #nObs,nMarkers = size(genotypes)
 
 
 
