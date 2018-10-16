@@ -1,7 +1,8 @@
 
 function genoSet!(genoID_file::AbstractString,ped::Pedigree)
     df = readtable(genoID_file, eltypes=[String], separator = ' ',header=false)
-    for i in df[:,1]
+	df = vec(map(String,convert(Array,df)))
+    for i in df
         push!(ped.setG,i)
 	end
     all = Set()
