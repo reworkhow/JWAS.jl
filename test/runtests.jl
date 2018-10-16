@@ -1,5 +1,5 @@
 using JWAS
-using Base.Test
+using Test
 
 # write your own tests here
 model_equations = "BW = intercept + age + sex;
