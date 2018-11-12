@@ -19,22 +19,22 @@ using JWAS
 
 The command `Pkg.add("JWAS")` will add the registered official JWAS package and dependencies.
 
-To use the latest/beta features under development, run `Pkg.checkout("JWAS")` to get the
-newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
+To use the latest/beta features under development, run `Pkg.add(PackageSpec(name="JWAS", rev="master"))` to get the
+newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the official one.
 
-#### IJulia notebook
+#### Jupyter Notebook
 
-If you prefer “reproducible research”, an interactive Jupyter notebook interface is available
-for Julia (and therefore JWAS). The Jupyter notebook is an open-source web application for creating
+If you prefer “reproducible research”, an interactive Jupyter Notebook interface is available
+for Julia (and therefore JWAS). The Jupyter Notebook is an open-source web application for creating
 and sharing documents that contain live code, equations, visualizations and explanatory text.
-To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
+To install IJulia for Jupyter Notebook, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl).
 
 #### Docker
 
 
-!!! note "Jupyter-IJulia notebooks with JWAS via Docker"
+!!! note "Jupyter Notebooks with JWAS via Docker"
 
-    Docker provides a straightforward way to install Jupyter-IJulia notebooks with JWAS.
+    Docker provides a straightforward way to install Jupyter Notebooks with JWAS.
 
 
 - Install Docker from [here](https://docs.docker.com/install/) for your platform.
@@ -45,7 +45,7 @@ To install IJulia, please go to [IJulia](https://github.com/JuliaLang/IJulia.jl)
 docker run -it --rm -p 8888:8888 qtlrocks/jwas-docker
 ```
 
-This will start a Jupyter-IJulia Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication
+This will start a Jupyter Notebook server listening for HTTP connections on port 8888 with a randomly generated authentication
 token. Examples for JWAS can be accessed from the notebook: `notebooks/0_index.ipynb`.
 
 The directories and files created within the Docker container will be lost when the container is stopped. To save your work
@@ -53,10 +53,10 @@ on the host machine, a directory on the host machine can be mounted as a folder 
 working directory on your local machine or a server, run the command
 
 ```bash
-docker run -it --rm -p 8888:8888 -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker
+docker run -it --rm -p 8888:8888 -v `pwd`:/home/jovyan/work qtlrocks/jwas-docker
 ```
 
-This command creates a Docker container with the folder `/home/ubuntu/work` with the contents of `pwd` of the host machine. Files and
+This command creates a Docker container with the folder `/home/jovyan/work` with the contents of `pwd` of the host machine. Files and
 directories that are in the folder `pwd` will not be lost when the container is stopped.  
 
 After running this command, it is expected to prompt something like
@@ -77,10 +77,10 @@ After running this command, it is expected to prompt something like
 
 Then, open the url in an internet browser (IE, Firefox, Chrome, Safari, etc) if JWAS-docker is launched on your local machine.
 
-If you prefer running scripts using linux commands in Bash instead of Jupyter notebook, please run the command
+If you prefer running scripts using linux commands in Bash instead of Jupyter Notebook, please run the command
 
 ```bash
-docker run -it --rm -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker bash
+docker run -it --rm -v `pwd`:/home/jovyan/work qtlrocks/jwas-docker bash
 ```
 
 
@@ -88,7 +88,7 @@ docker run -it --rm -v `pwd`:/home/ubuntu/work qtlrocks/jwas-docker bash
 
 !!! note "standalone application (no installation required)"
 
-    A fully self-contained application for JWAS (no installation required) will come out this year.
+    A fully self-contained application for JWAS (no installation required) will come out next year.
 
 
 ## Access documentation
@@ -139,6 +139,6 @@ julia script.jl arg1 arg2
 ```
 where arguments `arg1` and `arg2` are passed to your script as `ARGS[1]` and `ARGS[2]` of type *String*. Please see [julia docs](https://docs.julialang.org/en/stable/manual/getting-started/) for more options.
 
-(3) To run code in **IJulia notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
+(3) To run code in **Jupyter Notebook**, please see [IJulia](https://github.com/JuliaLang/IJulia.jl).
 
-(4) To run code in **IJulia notebook via Docker**, please see [Docker](@ref).
+(4) To run code in **Jupyter Notebook via Docker**, please see [Docker](@ref).
