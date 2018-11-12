@@ -9,7 +9,7 @@ methods for whole-genome analyses, including shrinkage estimation and variable s
 
 * Univariate (single-trait) analysis
 * Multivariate (multi-trait) analysis  
-* No limitations on fixed effects (e.g., herd, year,age,sex)
+* No limitations on fixed effects (e.g., herd, year, age, sex)
 * Random effects other than markers (e.g., litter, pen)                                  
 * Random effects using pedigree information
   - Additive genetic effects
