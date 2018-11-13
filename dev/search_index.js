@@ -701,23 +701,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Examples",
     "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Univariate-Linear-Mixed-Model-(conventional)-1",
-    "page": "Examples",
-    "title": "Univariate Linear Mixed Model (conventional)",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Multivariate-Linear-Mixed-Model-(conventional)-1",
-    "page": "Examples",
-    "title": "Multivariate Linear Mixed Model (conventional)",
-    "category": "section",
-    "text": ""
+    "text": "Univariate Linear Mixed Model (conventional)\nMultivariate Linear Mixed Model (conventional)"
 },
 
 {
@@ -725,23 +709,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Examples",
     "title": "Bayesian Linear Additive Genetic Model",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Univariate-Linear-Additive-Genetic-Model-1",
-    "page": "Examples",
-    "title": "Univariate Linear Additive Genetic Model",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Multivariate-Linear-Additive-Genetic-Model-1",
-    "page": "Examples",
-    "title": "Multivariate Linear Additive Genetic Model",
-    "category": "section",
-    "text": ""
+    "text": "Univariate Linear Additive Genetic Model\nMultivariate Linear Additive Genetic Model"
 },
 
 {
@@ -749,23 +717,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Examples",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Univariate-Linear-Mixed-Model-(Genomic-data)-1",
-    "page": "Examples",
-    "title": "Univariate Linear Mixed Model (Genomic data)",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Multivariate-Linear-Mixed-Model-(Genomic-data)-1",
-    "page": "Examples",
-    "title": "Multivariate Linear Mixed Model (Genomic data)",
-    "category": "section",
-    "text": ""
+    "text": "Univariate Linear Mixed Model (Genomic data)\nMultivariate Linear Mixed Model (Genomic data)"
 },
 
 {
@@ -773,23 +725,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Examples",
     "title": "Single-step Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Univariate-Single-step-Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
-    "page": "Examples",
-    "title": "Univariate Single-step Bayesian Linear Mixed Models (Genomic Data)",
-    "category": "section",
-    "text": ""
-},
-
-{
-    "location": "examples/examples/#Multivariate-Single-step-Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
-    "page": "Examples",
-    "title": "Multivariate Single-step Bayesian Linear Mixed Models (Genomic Data)",
-    "category": "section",
-    "text": ""
+    "text": "Univariate Single-step Bayesian Linear Mixed Models (Genomic Data)\nMultivariate Single-step Bayesian Linear Mixed Models (Genomic Data)"
 },
 
 ]}
