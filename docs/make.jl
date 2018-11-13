@@ -8,7 +8,7 @@ makedocs(
 #    assets = ["assets/favicon.ico"],
     sitename = "JWAS.jl",
     authors = "Hao Cheng, Rohan Fernando, Dorian Garrick and contributors.",
-    pages = [
+    pages = Any[
         "Home" => "index.md",
         "Some Theory" => "theory/theory.md",
         "Citing" => "citing/citing.md",
@@ -16,10 +16,10 @@ makedocs(
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",
             "Public" => "manual/public.md",
-            "Internals" => "manual/internals.md",
+            "Internals" => "manual/internals.md"
             ],
         "Examples" => Any[
-            "Examples" => "examples/examples.md",
+            "Examples" => "examples/examples.md"
         ],
     ],
 )
@@ -27,8 +27,4 @@ makedocs(
 deploydocs(
     repo = "github.com/reworkhow/JWAS.jl.git",
     target = "build",
-    deps = nothing,
-    make = nothing,
-    julia  = "1.0",
-    osname = "osx"
 )
