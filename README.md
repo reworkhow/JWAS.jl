@@ -8,9 +8,9 @@
 JWAS.jl is an open-source software tool written in Julia for Bayesian multiple regression methods applied to genome-wide association studies and genomic prediction.
 
 * **Homepage**: [QTL.rocks](http://QTL.rocks)
-* **Installation**: at the Julia REPL, `Pkg.add("JWAS")`
+* **Installation**: at the Julia REPL, `using Pkg; Pkg.add("JWAS")`
 * **Documentation**: [available here](http://reworkhow.github.io/JWAS.jl/latest/)
-* **Notebooks**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/notebooks_v0.3/0_index.ipynb)
+* **Notebooks**: [available here](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/tree/master/docs/notebooks/0_index.ipynb)
 * **Authors**: [Hao Cheng](http://qtl.rocks/chenglab.html), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](https://www.massey.ac.nz/massey/learning/colleges/college-of-sciences/staff-list.cfm?stref=600130)
 
 
@@ -52,4 +52,4 @@ JWAS.jl
 
 1. Show this README file in REPL or notebook using `?JWAS`
 2. For help on a specific function above, type ? followed by its name, e.g. `?runMCMC` and press enter.
-3. Run `Pkg.checkout("JWAS")` to get the newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
+3. Run `Pkg.add(PackageSpec(name="JWAS", rev="master"))` to get the newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the offical one.
