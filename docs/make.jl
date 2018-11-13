@@ -19,9 +19,7 @@ makedocs(
             "Internals" => "manual/internals.md",
             ],
         "Examples" => Any[
-            "Linear Mixed Model (conventional)" => "examples/BLMM.md",
-            "Linear Additive Genetic Model" => "examples/LinearAdditiveGeneticModel.md",
-            "Linear Mixed Model (Genomic data)" => "examples/GenomicBLMM.md",
+            "Examples" => "examples/examples.md",
         ],
     ],
 )
@@ -31,6 +29,6 @@ deploydocs(
     target = "build",
     deps = nothing,
     make = nothing,
-    julia  = "0.6",
+    julia  = "1.0",
     osname = "osx"
 )
