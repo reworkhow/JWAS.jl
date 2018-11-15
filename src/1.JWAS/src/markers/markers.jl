@@ -3,10 +3,10 @@ include("readgenotypes.jl")
 include("BayesianAlphabet/BayesC0.jl")
 include("BayesianAlphabet/BayesC.jl")
 include("BayesianAlphabet/BayesB.jl")
-include("BayesianAlphabet/MTBayesC0.jl")
 include("BayesianAlphabet/MTBayesC.jl")
 include("BayesianAlphabet/MTBayesCC.jl")
 include("BayesianAlphabet/MTBayesB.jl")
+include("BayesianAlphabet/MTBayesC0L.jl")
 
 
 """
