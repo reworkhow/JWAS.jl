@@ -164,7 +164,7 @@ function runMCMC(mme,df;
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
-        if methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
+        if methods in ["BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,

@@ -94,7 +94,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
         dfEffectVar = mme.df.marker
         if methods=="BayesL"
-            mme.M.G /= 4*(nTraits+1) # in BayesL mme.M.G is the scale Matrix, Sigma, in the MTBayesLasso paper
+            mme.M.G /= 4*(nTraits+1)
         end
         vEff        = mme.M.G
         νGM         = dfEffectVar + nTraits
@@ -123,7 +123,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             #wArray[traiti]         = pointer_to_array(ptr,nObs)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
 
-            alphaArray[traiti]     = randn(nMarkers) #zeros(nMarkers)
+            alphaArray[traiti]     = zeros(nMarkers)
             meanAlphaArray[traiti] = zeros(nMarkers)
             deltaArray[traiti]     = ones(nMarkers)
             meanDeltaArray[traiti] = zeros(nMarkers)
@@ -139,8 +139,11 @@ function MT_MCMC_BayesC(nIter,mme,df;
             nLoci = zeros(nTraits)
         end
         if methods=="BayesL"
-           gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale paramenter of the Gamma distribution (1/8 is the rate parameter)
-           gammaArray = rand(gammaDist,nMarkers)
+           gammaDist = Gamma((nTraits+1)/2, 8) # 8 is the scale paramenter of the Gamma distribution (1/8 is the rate parameter)                     
+           arrayGamma = Array{Float64}(undef,nMarkers) 
+           for markeri = 1:nMarkers
+               arrayGamma[markeri] = rand(gammaDist)
+           end
         end
     end
 
@@ -178,7 +181,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                                       uArray,meanuArray,
                                       iR0,iGM,iter,BigPi,burnin)
           elseif methods == "RR-BLUP"
-            sampleMarkerEffectsMTBayesC0!(mArray,mpm,wArray,alphaArray,
+            sampleMarkerEffects!(mArray,mpm,wArray,alphaArray,
                                meanAlphaArray,iR0,iGM,iter,burnin)
           elseif methods == "BayesCC"
             sampleMarkerEffectsBayesCC!(mArray,mpm,wArray,
@@ -192,9 +195,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
                                        deltaArray,meanDeltaArray,
                                        uArray,meanuArray,
                                        iR0,iGM,iter,BigPi,burnin)
+          end
           elseif methods == "BayesL"
-            sampleMarkerEffectsMTBayesL!(mArray,mpm,wArray,alphaArray,
-                               meanAlphaArray,gammaArray,iR0,iGM,iter,burnin)
+            sampleMarkerEffectsBayesL!(mArray,mpm,wArray,alphaArray,
+                               meanAlphaArray,arrayGamma,iR0,iGM,iter,burnin)
           end
           if estimatePi == true
             if methods in ["BayesC","BayesB"]
@@ -305,7 +309,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
 
         if mme.M != 0 && estimate_variance == true
-            if !(methods in ["BayesB","BayesL"])
+            if methods != "BayesB"
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
                         SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])[1]
@@ -316,20 +320,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
                 if iter > burnin
                     GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
                 end
-            elseif methods == "BayesL"
-                for traiti = 1:nTraits
-                    alphai = alphaArray[traiti]./gammaArray
-                    for traitj = traiti:nTraits
-                        SM[traiti,traitj]   = (alphai'alphaArray[traitj])[1]
-                        SM[traitj,traiti]   = SM[traiti,traitj]
-                    end
-                end
-                mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
-                if iter > burnin
-                    GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
-                end
-                # MH sampler of gammaArray (Appendix C in paper)
-                sampleGammaArray!(gammaArray,alphaArray,mme.M.G)
             else
                 marker_effects_matrix = alphaArray[1]
                 for traiti = 2:nTraits
@@ -367,7 +357,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
-                elseif methods in ["RR-BLUP","BayesL"]
+                elseif methods == "RR-BLUP"
                     out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
                     #res=hcat([x for x in arrayG]...)
@@ -409,7 +399,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         close(value)
       end
     end
-    if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
+    if mme.M != 0 && methods == "RR-BLUP"
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
                              meanAlphaArray,GMMean,estimatePi,false,output_file)
     elseif mme.M != 0
@@ -492,24 +482,4 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # end
 
     return output
-end
-
-function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
-    Gi = inv(mmeMG)
-    nMarkers = size(gammaArray,1)
-    nTraits  = length(alphaArray)
-    Q  = zeros(nMarkers)
-    for locus = 1:nMarkers
-        for traiti = 1:nTraits
-            for traitj = 1:nTraits
-                Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
-            end
-        end
-    end
-    gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
-    candidateArray = 1 ./ rand(gammaDist,nMarkers)
-    uniformArray = rand(nMarkers)
-    acceptProbArray = exp.(Q ./4 .*(2 ./ gammaArray - candidateArray))
-    replace = uniformArray .< acceptProbArray
-    gammaArray[replace] = 2 ./ candidateArray[replace]
 end
