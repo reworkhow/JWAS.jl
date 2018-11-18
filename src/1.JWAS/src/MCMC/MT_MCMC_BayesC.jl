@@ -123,7 +123,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
             #wArray[traiti]         = pointer_to_array(ptr,nObs)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
 
-            alphaArray[traiti]     = randn(nMarkers) #zeros(nMarkers)
+            alphaArray[traiti]     = zeros(nMarkers)
             meanAlphaArray[traiti] = zeros(nMarkers)
             deltaArray[traiti]     = ones(nMarkers)
             meanDeltaArray[traiti] = zeros(nMarkers)
