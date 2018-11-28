@@ -229,7 +229,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
 
             R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
-
             #for constraint R, chisq
             if constraint == true
                 R0 = zeros(nTraits,nTraits)

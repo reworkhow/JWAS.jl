@@ -59,8 +59,8 @@ function sampleMissingResiduals(mme,resVec)
             resi    = resVec[yIndex .+ i][notMsng]
             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
             Rc      = mme.R[msng,notMsng]
-            L       = cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc'))'
-            resVec[(yIndex+i)[msng]] = Rc*Ri*resi + L*randn(nMsng)
+            L       = (cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc')).U)'
+            resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(nMsng)
             #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
         end
     end
