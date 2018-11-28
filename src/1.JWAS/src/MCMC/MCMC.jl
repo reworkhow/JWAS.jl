@@ -225,7 +225,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")
             end
-            @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
+            #@printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
             @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
             @printf("%-30s %20s\n","π",Pi)
         end
