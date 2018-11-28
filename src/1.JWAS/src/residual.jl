@@ -56,7 +56,7 @@ function sampleMissingResiduals(mme,resVec)
         if (notMsng!=allTrue)
             msng    = .!notMsng
             nMsng   = sum(msng)
-            resi    = resVec[yIndex+i][notMsng]
+            resi    = resVec[yIndex .+ i][notMsng]
             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
             Rc      = mme.R[msng,notMsng]
             L       = chol(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc'))'
