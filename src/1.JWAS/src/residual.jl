@@ -17,7 +17,6 @@ function mkRi(mme::MME,df::DataFrame)
     tstMsng    = .!missingobs
     #find all missing patterns in data
     for i=2:size(mme.lhsVec,1)
-      df[mme.lhsVec[i]]
         missingobs =  ismissing.(df[mme.lhsVec[i]])
         tstMsng    = [tstMsng .!missingobs]
     end
