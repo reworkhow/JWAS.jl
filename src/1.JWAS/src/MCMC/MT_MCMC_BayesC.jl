@@ -229,6 +229,11 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
 
             R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
+
+            if missing_phenotypes==true
+                RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
+            end
+
             #for constraint R, chisq
             if constraint == true
                 R0 = zeros(nTraits,nTraits)
@@ -238,18 +243,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
         end
 
-        if mme.M != 0
-          mme.R = R0
-          R0    = mme.R
-          Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
+        mme.R = R0
+        Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
+        RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
 
-          RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
-        end
-
-        if mme.M == 0 #Good? still use tricky Ri
-          mme.R = R0
-          Ri  = mkRi(mme,df) #for missing value;updata mme.ResVar
-        end
 
         if iter > burnin
             R0Mean  += (R0  - R0Mean )/(iter-burnin)
@@ -265,7 +262,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
           #same to ycorr[:]=resVec+X*sol
         end
         mme.mmeRhs = (mme.M == 0 ? (X'Ri*mme.ySparse) : (X'Ri*ycorr))
-
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################

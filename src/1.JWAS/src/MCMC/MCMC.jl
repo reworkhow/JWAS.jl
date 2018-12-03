@@ -165,7 +165,16 @@ function runMCMC(mme,df;
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
-        if methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP"]
+        if methods == "conventional (no markers)" && estimate_variance == false
+          res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
+                            sol    = starting_value,
+                            outFreq= printout_frequency,
+                            missing_phenotypes=missing_phenotypes,
+                            estimate_variance = estimate_variance,
+                            output_samples_frequency=output_samples_frequency,
+                            output_file=output_file,
+                            update_priors_frequency=update_priors_frequency)
+        elseif methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -178,15 +187,6 @@ function runMCMC(mme,df;
                           output_samples_frequency=output_samples_frequency,
                           output_file=output_file,
                           update_priors_frequency=update_priors_frequency)
-        elseif methods == "conventional (no markers)"
-            res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
-                            sol    = starting_value,
-                            outFreq= printout_frequency,
-                            missing_phenotypes=missing_phenotypes,
-                            estimate_variance = estimate_variance,
-                            output_samples_frequency=output_samples_frequency,
-                            output_file=output_file,
-                            update_priors_frequency=update_priors_frequency)
         else
             error("No methods options!!!")
         end

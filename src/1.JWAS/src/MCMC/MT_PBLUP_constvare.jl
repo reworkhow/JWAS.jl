@@ -1,6 +1,6 @@
 
 #This function is for Multi-trait Pedigree-Based BLUP when Residual Covariance
-#Matrix is *CONSTANT*. In this situation, Ri, the inverse of residual covariance
+#Matrix is *CONSTANT*. In this situation, Ri (big), the inverse of residual covariance
 #matrix is modify based on phenotype missing patterns such that no imputation for
 #missing phenotypes is required.
 function MT_MCMC_PBLUP_constvare(nIter,mme,df;
