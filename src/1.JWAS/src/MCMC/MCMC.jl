@@ -3,6 +3,7 @@ include("DRY.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesC.jl")
+include("MT_PBLUP_constvare.jl")
 include("../SSBR/SSBR.jl")
 include("output.jl")
 
@@ -107,7 +108,7 @@ function runMCMC(mme,df;
             println()
             if mme.nModels != 1
               if !isposdef(mme.M.G) #also work for scalar
-                @error "Marker effects covariance matrix is not postive definite! Please modify the argument: Pi."
+                error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
               end
               print("The prior for marker effects covariance matrix is calculated from ")
               print("genetic covariance matrix and Π. The mean of the prior for the marker effects ")
@@ -115,14 +116,14 @@ function runMCMC(mme,df;
               Base.print_matrix(stdout,round.(mme.M.G,digits=6))
             else
               if !isposdef(mme.M.G) #positive scalar (>0)
-                @error "Marker effects variance is negative!"
+                error("Marker effects variance is negative!")
               end
               print("The prior for marker effects variance is calculated from ")
               print("the genetic variance and π. The mean of the prior for the marker effects variance ")
               print("is: ",round.(mme.M.G,digits=6))
             end
         elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
-            @error "Please provide genetic variance for GBLUP analysis"
+            error("Please provide genetic variance for GBLUP analysis")
         end
         println("\n\n")
     end
@@ -164,7 +165,7 @@ function runMCMC(mme,df;
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
-        if methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
+        if methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -177,6 +178,15 @@ function runMCMC(mme,df;
                           output_samples_frequency=output_samples_frequency,
                           output_file=output_file,
                           update_priors_frequency=update_priors_frequency)
+        elseif methods == "conventional (no markers)"
+            res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
+                            sol    = starting_value,
+                            outFreq= printout_frequency,
+                            missing_phenotypes=missing_phenotypes,
+                            estimate_variance = estimate_variance,
+                            output_samples_frequency=output_samples_frequency,
+                            output_file=output_file,
+                            update_priors_frequency=update_priors_frequency)
         else
             error("No methods options!!!")
         end

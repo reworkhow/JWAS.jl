@@ -50,23 +50,23 @@ end
 #M is of type: Array{Float64,2} or DataFrames ( genotype covariates only), marker ID and row ID required separately.
 function readgenotypes(M::Union{Array{Float64,2},DataFrames.DataFrame};header=true,rowID=true,separator=' ',center=true)
     if rowID == true
-        @error "Row IDs must be provided as an array when the input is not a file."
+        error("Row IDs must be provided as an array when the input is not a file.")
     end
     if header==true
-        @error "Header (marker IDs) must be false or provided as an array when the input is not a file."
+        error("Header (marker IDs) must be false or provided as an array when the input is not a file.")
     end
 
     if length(rowID)==size(M,1)
         obsID      = rowID
     else
-        @error "The length of row IDs must be equal to the number of individuals in the genotype covariate matrix."
+        error("The length of row IDs must be equal to the number of individuals in the genotype covariate matrix.")
     end
     if length(header)==size(M,2)
         markerID = header
     elseif header==false
         markerID = ["NA"]
     else
-        @error "The length of header (marker IDs) must be equal to the number of markers in the genotype covariate matrix."
+        error("The length of header (marker IDs) must be equal to the number of markers in the genotype covariate matrix.")
     end
 
     genotypes  = map(Float64,convert(Array,M))

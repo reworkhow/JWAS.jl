@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString,R;df=4)
   if !isposdef(R)
-    @error "The covariance matrix is not positive definite."
+    error("The covariance matrix is not positive definite.")
   end
 
   if !(typeof(model_equations)<:AbstractString) || model_equations==""
