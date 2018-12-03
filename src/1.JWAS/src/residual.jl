@@ -20,7 +20,7 @@ end
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame)
     resVar   = ResVar(mme.R,Dict())
-    tstMsng  = .!ismissing.(convert(Array,df[model.lhsVec]))
+    tstMsng  = .!ismissing.(convert(Array,df[mme.lhsVec]))
     mme.missingPattern = tstMsng
     ntrait = size(tstMsng,2)
     nObs   = size(tstMsng,1)
