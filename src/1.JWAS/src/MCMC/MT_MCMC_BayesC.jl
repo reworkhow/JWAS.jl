@@ -213,7 +213,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         #here resVec is alias for ycor ***
 
         if missing_phenotypes==true
-          sampleMissingResiduals(mme,resVec)
+          resVec[:]=sampleMissingResiduals(mme,resVec)
         end
 
         if estimate_variance == true

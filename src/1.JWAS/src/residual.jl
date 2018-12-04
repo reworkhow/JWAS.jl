@@ -58,16 +58,41 @@ function sampleMissingResiduals(mme,resVec)
     nobs,ntraits = size(msngPtrn)
     yIndex = collect(0:(ntraits-1))*nobs
     allTrue = fill(true,ntraits)
-    for i=1:nobs
-        notMsng = msngPtrn[i,:]
-        if (notMsng!=allTrue)
-            msng    = .!notMsng
-            resi    = resVec[yIndex .+ i][notMsng]
-            Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
-            Rc      = mme.R[msng,notMsng]
-            L       = (cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc')).U)'
-            resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(sum(msng))
-            #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
+    mydata = reshape(resVec,nobs,ntraits)
+    for (notmissing, _ ) in model.resVar.RiDict
+        if notmissing!=allTrue
+            #find all inds with same missing pattern
+            mybool = msngPtrn[:,1].==notmissing[1]
+            for i in 2:size(msngPtrn,2)
+                mybool = mybool .& (msngPtrn[:,i].==notmissing[i])
+            end
+            #create cov and var matrices for BLP imputation
+            Ri  = inv(Symmetric(mme.R[notmissing,notmissing]))
+            Rc  = mme.R[.!notmissing,notmissing]
+            L   = (cholesky(Symmetric(mme.R[.!notmissing,.!notmissing] - Rc*Ri*Rc')).U)
+            #imputation
+            mydata[mybool,.!notmissing]= mydata[mybool,notmissing]*Ri*Rc' + randn(sum(mybool),sum(.!notmissing))*L
         end
     end
+    return reshape(mydata,nobs*ntraits)
 end
+
+#SLOW DUE TO ACCESSING A SUBSET OF A MATRIX MANY TIMES
+# function sampleMissingResiduals(mme,resVec)
+#     msngPtrn = mme.missingPattern
+#     nobs,ntraits = size(msngPtrn)
+#     yIndex = collect(0:(ntraits-1))*nobs
+#     allTrue = fill(true,ntraits)
+#     for i=1:nobs
+#         notMsng = msngPtrn[i,:]
+#         if (notMsng!=allTrue)
+#             msng    = .!notMsng
+#             resi    = resVec[yIndex .+ i][notMsng]
+#             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
+#             Rc      = mme.R[msng,notMsng]
+#             L       = (cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc')).U)'
+#             resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(sum(msng))
+#             #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
+#         end
+#     end
+# end
