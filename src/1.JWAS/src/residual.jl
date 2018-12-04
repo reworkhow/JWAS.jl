@@ -4,6 +4,9 @@
 #matrix is modify based on phenotype missing patterns such that no imputation for
 #missing phenotypes is required.
 
+#function fillmissingpatterns(ntraits)
+
+
 #fill up missing phenotype patterns with corresponding inverted residual variance
 function getRi(resVar::ResVar,sel::BitArray{1})
     if haskey(resVar.RiDict,sel)
@@ -29,7 +32,7 @@ function mkRi(mme::MME,df::DataFrame)
     vv = Array{Float64}(undef,nObs*ntrait^2)
     pos = 1
     for i=1:nObs
-        sel = reshape(tstMsng[i,:],ntrait)
+        sel = tstMsng[i,:]
         Ri  = getRi(resVar,sel)
         for ti=1:ntrait
             tii = (ti-1)*nObs + i
@@ -52,19 +55,18 @@ end
 #variances and adjusting phenotyp approach to sample marker effects.
 function sampleMissingResiduals(mme,resVec)
     msngPtrn = mme.missingPattern
-    n,k = size(msngPtrn)
-    yIndex = collect(0:k-1)*n
-    allTrue = fill(true,k)
-    for i=1:n
+    nobs,ntraits = size(msngPtrn)
+    yIndex = collect(0:(ntraits-1))*nobs
+    allTrue = fill(true,ntraits)
+    for i=1:nobs
         notMsng = msngPtrn[i,:]
         if (notMsng!=allTrue)
             msng    = .!notMsng
-            nMsng   = sum(msng)
             resi    = resVec[yIndex .+ i][notMsng]
             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
             Rc      = mme.R[msng,notMsng]
             L       = (cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc')).U)'
-            resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(nMsng)
+            resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(sum(msng))
             #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
         end
     end

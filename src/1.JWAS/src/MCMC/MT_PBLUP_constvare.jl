@@ -29,7 +29,7 @@ function MT_MCMC_PBLUP_constvare(nIter,mme,df;
     nTraits = size(mme.lhsVec,1)
     R0      = mme.R
     R0Mean  = zeros(Float64,nTraits,nTraits)
-    Ri      = mkRi(mme,df) #for missing value;updata mme.ResVar
+    Ri      = mkRi(mme,df)#create Ri of size (ntrait*nobs)^2, no residual imputation
 
     #Priors for polygenic effect covariance matrix
     if mme.pedTrmVec != 0
