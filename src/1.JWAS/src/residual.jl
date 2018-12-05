@@ -4,9 +4,6 @@
 #matrix is modify based on phenotype missing patterns such that no imputation for
 #missing phenotypes is required.
 
-#function fillmissingpatterns(ntraits)
-
-
 #fill up missing phenotype patterns with corresponding inverted residual variance
 function getRi(resVar::ResVar,sel::BitArray{1})
     if haskey(resVar.RiDict,sel)
@@ -59,7 +56,7 @@ function sampleMissingResiduals(mme,resVec)
     yIndex = collect(0:(ntraits-1))*nobs
     allTrue = fill(true,ntraits)
     mydata = reshape(resVec,nobs,ntraits)
-    for (notmissing, _ ) in model.resVar.RiDict
+    for (notmissing, _ ) in mme.resVar.RiDict
         if notmissing!=allTrue
             #find all inds with same missing pattern
             mybool = msngPtrn[:,1].==notmissing[1]

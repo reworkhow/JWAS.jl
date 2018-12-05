@@ -73,6 +73,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
     R0Mean  = zeros(Float64,nTraits,nTraits)
     scaleRes= diag(mme.R)*(ν-2)/ν #only for chisq for constraint diagonal R
 
+    if missing_phenotypes==true
+        RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
+    end
+
     #Priors for polygenic effect covariance matrix
     if mme.pedTrmVec != 0
       ν         = mme.df.polygenic
@@ -230,10 +234,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
             R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
 
-            if missing_phenotypes==true
-                RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
-            end
-
             #for constraint R, chisq
             if constraint == true
                 R0 = zeros(nTraits,nTraits)
@@ -245,8 +245,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
 
         mme.R = R0
         Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
-        RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
-
 
         if iter > burnin
             R0Mean  += (R0  - R0Mean )/(iter-burnin)
