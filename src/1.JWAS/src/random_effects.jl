@@ -64,9 +64,9 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
           res = [res;string(m)*":"*trm]
-          if output_samples == true
-              outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
-          end
+          #if output_samples == true
+          #    outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
+          #end
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
