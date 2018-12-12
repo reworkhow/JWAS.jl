@@ -19,7 +19,7 @@ Run MCMC (marker information included or not) with sampling of variance componen
 * the first **burnin** iterations are discarded at the beginning of an MCMC run
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
     * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
-* **starting_value** can be provided as a vector for all location parameteres except marker effects.
+* **starting_value** can be provided as a vector of numbers for all location parameteres except marker effects.
 * print out the monte carlo mean in REPL with **printout_frequency**
 * **constraint**=true if constrain residual covariances between traits to be zeros.
 * Individual EBVs are returned if **outputEBV**=true.
@@ -150,14 +150,16 @@ function runMCMC(mme,df;
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            output_file              = output_file)
+                            output_file              = output_file,
+                            update_priors_frequency  = update_priors_frequency)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            output_file              = output_file)
+                            output_file              = output_file,
+                            update_priors_frequency  = update_priors_frequency)
         else
             error("No options!!!")
         end

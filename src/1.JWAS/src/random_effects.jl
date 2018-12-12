@@ -88,7 +88,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
       if (typeof(G)<:Number) ==true #convert scalar G to 1x1 matrix
         G=reshape([G],1,1)
       end
-      mme.GiOld = zero(G)
+      mme.GiOld = inv(G)
       mme.GiNew = inv(G)
     end
     mme.df.polygenic=Float64(df)
@@ -175,8 +175,15 @@ end
 #duplicated code in addA and sample_variance_pedigree
 #Need to be merged #MAY NOT
 ################################################################################
-#The 1st time setting up MME,
-#mme.GiOld = zeros(G),mme.GiNew = inv(G),mme.Rnew = mme.Rold= R
+#SINGLE TRAIT
+#The equation Ai*(GiNew*RNew - GiOld*ROld) is used to update Ai part in LHS
+#The 1st time to add Ai to set up MME,
+#mme.GiOld == zeros(G),mme.GiNew == inv(G),mme.Rnew == mme.Rold= R
+#After that, if variances are constant,
+#mme.GiOld == mme.GiNew; mme.Rnew == mme.Rold
+#If sampling genetic variances, mme.Ginew is updated with a new sample, then
+#LHS is update as Ai*(GiNew*RNew - GiOld*ROld), then GiOld = Ginew
+#if sample residual variances,
 ################################################################################
 #MERGE addA and addlammbda later
 ################################################################################

@@ -271,7 +271,9 @@ function getMME(mme::MME, df::DataFrame)
         if mme.Ai == 0 #if no SSBR
             mme.Ai=PedModule.AInverse(mme.ped)
         end
+      mme.GiOld = zeros(size(mme.GiOld))
       addA(mme::MME)
+      mme.GiOld = copy(mme.GiNew)
     end
 
     addLambdas(mme)

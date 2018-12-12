@@ -7,6 +7,7 @@ function MCMC_BayesC(nIter,mme,df;
                      outFreq                    = 1000,
                      methods                    = "BayesC",
                      output_samples_frequency   = 0,
+                     update_priors_frequency    = 0,
                      output_file                = "MCMC_samples")
 
     ############################################################################
@@ -138,6 +139,7 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         if mme.pedTrmVec != 0
             G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0) #better add A outside
+            addA(mme)
             if iter > burnin
                 G0Mean  += (G0  - G0Mean )/(iter-burnin)
             end
@@ -171,6 +173,20 @@ function MCMC_BayesC(nIter,mme,df;
             if iter > burnin && methods != "BayesB"
                 meanVara += (vEff - meanVara)/(iter-burnin)
             end
+        end
+
+        ########################################################################
+        # 2.5 Update priors using posteriors (empirical)
+        ########################################################################
+        if update_priors_frequency !=0 && iter%update_priors_frequency==0
+            if mme.M!=0 && methods != "BayesB"
+                scaleVar    = meanVara*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
+            end
+            if mme.pedTrmVec != 0
+                P  = G0Mean*(νG0 - k - 1)
+            end
+            scaleRes    =  meanVare*(nuRes-2)/nuRes
+            println("\n Update priors from posteriors.")
         end
 
         ########################################################################
