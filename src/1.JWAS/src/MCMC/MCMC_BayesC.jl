@@ -1,4 +1,6 @@
-#MCMC for RR-BLUP, BayesC, BayesCpi and "conventional (no markers).
+################################################################################
+#MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
+################################################################################
 function MCMC_BayesC(nIter,mme,df;
                      burnin                     = 0,
                      π                          = 0.0,
@@ -53,7 +55,7 @@ function MCMC_BayesC(nIter,mme,df;
        ν         = mme.df.polygenic
        pedTrmVec = mme.pedTrmVec
        k         = size(pedTrmVec,1)  #2
-       νG0       = ν + k
+       νG0       = ν + k #final df for this inverse wisahrt
        G0        = inv(mme.GiNew)
        P         = G0*(νG0 - k - 1)
        S         = zeros(Float64,k,k)

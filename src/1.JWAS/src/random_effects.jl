@@ -160,17 +160,6 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     nothing
 end
 
-
-
-################################################################################
-#*******************************************************************************
-#following facts that scalar Inverse-Wishart(ν,S) = Inverse-Gamma(ν/2,S/2)=    *
-#scale-inv-chi2(ν,S/ν), variances for random effects(non-marker) will be be    *
-#sampled from Inverse-Wishart for coding simplicity thus prior for scalar      *
-#variance is treated as a 1x1 matrix.                                          *
-#*******************************************************************************
-################################################################################
-
 ################################################################################
 #duplicated code in addA and sample_variance_pedigree
 #Need to be merged #MAY NOT
