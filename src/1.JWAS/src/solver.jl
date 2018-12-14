@@ -80,7 +80,8 @@ function GaussSeidel(A,x,b;tolerance=0.000001,outFreq=10,maxiter=1000)
     return x
 end
 
-function Gibbs(A,x,b,varRes::Float64,nIter::Int64;outFreq=100) #Gibbs for \lambda version of MME
+#Gibbs for \lambda version of MME (single-trait)
+function Gibbs(A,x,b,varRes::Float64,nIter::Int64;outFreq=100)
     n = size(x,1)
     xMean = zeros(n)
     for iter = 1:nIter
@@ -97,7 +98,8 @@ function Gibbs(A,x,b,varRes::Float64,nIter::Int64;outFreq=100) #Gibbs for \lambd
     return xMean
 end
 
-function Gibbs(A,x,b,nIter::Int64;outFreq=100) #General Gibbs
+#General Gibbs (multi-trait)
+function Gibbs(A,x,b,nIter::Int64;outFreq=100)
     n = size(x,1)
     xMean = zeros(n)
     for iter = 1:nIter
@@ -114,7 +116,7 @@ function Gibbs(A,x,b,nIter::Int64;outFreq=100) #General Gibbs
     return xMean
 end
 
-#one iteration of Gibbs for \lambda version of MME
+#one iteration of Gibbs for \lambda version of MME (single-trait)
 function Gibbs(A,x,b,varRes::Float64)
     n = size(x,1)
      for i=1:n
@@ -124,7 +126,7 @@ function Gibbs(A,x,b,varRes::Float64)
     end
 end
 
-#one iteration of Gibbs for general version of MME
+#one iteration of Gibbs for general version of MME (multi-trait)
 function Gibbs(A,x,b)
     n = size(x,1)
     for i=1:n
