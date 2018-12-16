@@ -19,25 +19,36 @@ function check_pedigree(mme,df,pedigree)
     end
 end
 
-function pre_check(mme,df,sol)
-    #mme.M.obsID is IDs for M after imputation M in SSBR (all individuals in pedigree)
-    #mme.M.obsID is IDs for all genotyped animals in complete genomic data
+function pre_check(mme,df,sol,single_step_analysis=false)
+    #mme.M.obsID is
+    #IDs for M after imputation, i.e., all individuals in pedigree, in SSBR
+    #IDs for all genotyped individuals in complete genomic data
     phenoID = map(string,df[1])#same to df[:,1] in deprecated CSV
     if mme.M!=0 && !issubset(phenoID,mme.M.obsID)
-      printstyled("Phenotyped individuals are not a subset of either\n",
-      "genotyped individuals (complete genomic data,non-single-step) or\n",
-      "individuals in pedigree (incomplete genomic data, single-step).\n",
-      "Only individuals with both information are used in the analysis.\n",bold=false,color=:red)
+      if  single_step_analysis == false
+          printstyled("Phenotyped individuals are not a subset of\n",
+          "genotyped individuals (complete genomic data,non-single-step).\n",
+          "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
+      else
+          printstyled("Phenotyped individuals are not a subset of either\n",
+          "individuals in pedigree (incomplete genomic data, single-step).\n",
+          "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
+      end
       index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
       df    = df[index,:]
     end
 
     if mme.M!=0 && mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-      printstyled("Testing individuals are not a subset of \n",
-      "genotyped individuals (complete genomic data,non-single-step) or\n",
-      "individuals in pedigree (incomplete genomic data, single-step).\n",
-      "Only tesing individuals with both information are used in the analysis.\n",bold=false,color=:red)
-      mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
+        if  single_step_analysis == false
+            printstyled("Testing individuals are not a subset of \n",
+            "genotyped individuals (complete genomic data,non-single-step).\n",
+            "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
+        else
+            printstyled("Testing individuals are not a subset of \n",
+            "individuals in pedigree (incomplete genomic data, single-step).\n",
+            "Only output EBV for tesing individuals in he pedigree.\n",bold=false,color=:red)
+        end
+        mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
     end
 
     getMME(mme,df)

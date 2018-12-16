@@ -81,7 +81,7 @@ function runMCMC(mme,df;
     end
     #make mixed model equations for non-marker parts
     #assign IDs for observations
-    starting_value,df = pre_check(mme,df,starting_value)
+    starting_value,df = pre_check(mme,df,starting_value,single_step_analysis)
 
 
     if mme.M!=0
