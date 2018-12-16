@@ -195,7 +195,8 @@ function runMCMC(mme,df;
     else
         error("No options!")
     end
-  res
+  mme.output = res
+  return res
 end
 
 ################################################################################

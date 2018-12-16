@@ -42,4 +42,18 @@ function get_outputX_others(model,single_step_analysis)
     end
 end
 
+function getEBV(model::MME)
+    if model.output_ID != 0 &&  (model.pedTrmVec != 0 || model.M != 0)
+        if model.nModels == 1
+            EBV = model.output["EBV"*"_"*string(model.lhsVec[1])]
+        else
+            EBV =[] #Array{Any,1}(undef,0)
+            for traiti in 1:model.nModels
+                push!(EBV,model.output["EBV"*"_"*string(model.lhsVec[traiti])])
+            end
+        end
+    end
+    return EBV
+end
+
 export outputEBV
