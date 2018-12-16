@@ -56,4 +56,59 @@ function getEBV(model::MME)
     return EBV
 end
 
+#only for genotyped individuals
+#same order for markers
+#first column is individual ID
+function getEBV(model::MME,genotypefile::AbstractString;header=true,separator=',')
+    myfile = open(genotypefile)
+    #get number of columns
+    row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
+    #set types for each column and get number of markers
+    ncol= length(row1)
+    etv = Array{DataType}(undef,ncol)
+    fill!(etv,Float64)
+    etv[1]=String
+    close(myfile)
+    df = readtable(genotypefile, eltypes=etv, separator = separator, header=header)
+    obsID     = map(String,df[1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
+    genotypes = map(Float64,convert(Array,df[2:end]))
+    genotypes = genotypes .- model.M.alleleFreq
+
+    if model.nModels == 1
+        marker_effects=map(Float64,
+                        model.output["Posterior mean of marker effects"][:,end])
+        EBV = [obsID genotypes*marker_effects]
+    else
+        EBV =[] #Array{Any,1}(undef,0)
+        for traiti in 1:model.nModels
+            marker_effects=map(Float64,
+                model.output["Posterior mean of marker effects"][traiti][:,end])
+
+            push!(EBV,[obsID genotypes*marker_effects])
+        end
+    end
+    return EBV
+end
+
+function getEBV(model::MME,genotypes::Array{Float64,2})
+    genotypes = genotypes .- model.M.alleleFreq
+
+    if model.nModels == 1
+        marker_effects=map(Float64,
+                        model.output["Posterior mean of marker effects"][:,end])
+        EBV = genotypes*marker_effects
+    else
+        EBV =[] #Array{Any,1}(undef,0)
+        for traiti in 1:model.nModels
+            marker_effects=map(Float64,
+                model.output["Posterior mean of marker effects"][traiti][:,end])
+
+            push!(EBV,genotypes*marker_effects)
+        end
+    end
+    return EBV
+end
+
+
+
 export outputEBV
