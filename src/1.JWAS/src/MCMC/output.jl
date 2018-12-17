@@ -42,6 +42,11 @@ function get_outputX_others(model,single_step_analysis)
     end
 end
 
+"""
+    getEBV(model::MME)
+
+Get estimated breeding values for individuals defined by `outputEBV()` (defaulting to all genotyped individuals).
+"""
 function getEBV(model::MME)
     if model.output_ID != 0 &&  (model.pedTrmVec != 0 || model.M != 0)
         if model.nModels == 1
@@ -56,9 +61,21 @@ function getEBV(model::MME)
     return EBV
 end
 
-#only for genotyped individuals
-#same order for markers
-#first column is individual ID
+"""
+    getEBV(model::MME,genotypefile::AbstractString;header=true,separator=',')
+
+Get estimated breeding values for individuals with genotypes defined by `genotypefile`.
+The genotype file format is same to that used in `add_genotypes()`. The same order for
+markers (columns) in  `genotypefile` as in `add_genotypes()` is assumed for simplicity
+now. The file format is as follows,
+
+```
+Animal,marker1,marker2,marker3,marker4,marker5
+A1,1,0,1,1,1
+C3,1,2,0,1,0
+B2,0,0,2,1,1
+```
+"""
 function getEBV(model::MME,genotypefile::AbstractString;header=true,separator=',')
     myfile = open(genotypefile)
     #get number of columns
@@ -90,6 +107,13 @@ function getEBV(model::MME,genotypefile::AbstractString;header=true,separator=',
     return EBV
 end
 
+"""
+    getEBV(model::MME,genotypes::Array{Float64,2})
+
+Get estimated breeding values for individuals with genotypes. The genotypes are
+provided as an Array. The same order for markers (columns)in `genotypes::Array{Float64,2}`
+as in `add_genotypes()` is assumed for simplicity now.
+"""
 function getEBV(model::MME,genotypes::Array{Float64,2})
     genotypes = genotypes .- model.M.alleleFreq
 
@@ -110,5 +134,4 @@ function getEBV(model::MME,genotypes::Array{Float64,2})
 end
 
 
-
-export outputEBV
+export outputEBV,getEBV

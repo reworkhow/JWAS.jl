@@ -1,7 +1,7 @@
 """
     get_pedigree(pedfile::AbstractString;header=false,separator=',')
-* Get pedigree informtion from a pedigree file with **header** defaulting to `false`
-  and **separator** defaulting to `,`.
+* Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
+  and **separator** (defaulting to `,`).
 * Pedigree file format:
 
 ```
@@ -21,7 +21,8 @@ end
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)
 
-* set variables as random polygenic effects with pedigree information **ped**, variances **G** whose degree of freedom **df** defaults to 4.0.
+* set variables as random polygenic effects with pedigree information **ped**,
+  variances **G** whose degree of freedom **df** defaults to 4.0.
 
 ```julia
 #single-trait (example 1)
@@ -102,7 +103,8 @@ end
 """
     set_random(mme::MME,randomStr::AbstractString,G;df=4)
 
-* set variables as i.i.d random effects with variances **G** whose degree of freedom **df** defaults to 4.0.
+* set variables as i.i.d random effects with variances **G** whose degree of
+  freedom **df** defaults to 4.0.
 
 ```julia
 #single-trait (example 1)
