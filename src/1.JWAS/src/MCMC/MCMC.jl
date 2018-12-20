@@ -8,23 +8,27 @@ include("../SSBR/SSBR.jl")
 include("output.jl")
 
 """
-    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,
-    missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,
-    printout_model_info=true,outputEBV=false)
+    runMCMC(mme,df;
+    chain_length=1000,starting_value=false,burnin = 0,output_samples_frequency::Int64 = 0,output_file,
+    printout_model_info=true,printout_frequency=100,
+    methods="conventional (no markers)",Pi=0.0,estimatePi=false,missing_phenotypes=false,
+    single_step_analysis= false,pedigree = false,
+    constraint=false,update_priors_frequency::Int64=0,
+    outputEBV=true)
 
-Run MCMC (marker information included or not) with sampling of variance components.
+Run MCMC for Bayesian Linear Mixed Models with estimation of variance components.
 
-* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC".
-* save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples`.
-* the first **burnin** iterations are discarded at the beginning of an MCMC run
+* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", and "Bayesian Lasso".
+* **starting_value** can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to `0.0`s.
+* the first **burnin** iterations are discarded at the beginning of an MCMC run of length **chain_length**
+* save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples.txt`.
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
-    * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
-* **starting_value** can be provided as a vector of numbers for all location parameteres except marker effects.
+  defaulting to `all markers have effects on the trait (0.0)` in single-trait analysis and `all markers have effects on all traits` in multi-trait analysis.
 * print out the monte carlo mean in REPL with **printout_frequency**
 * **constraint**=true if constrain residual covariances between traits to be zeros.
 * Individual EBVs are returned if **outputEBV**=true.
 """
-function runMCMC(mme,df;
+function runMCMC(mme::MME,df;
                 Pi                  = 0.0,
                 burnin              = 0,
                 chain_length        = 100,
@@ -52,7 +56,7 @@ function runMCMC(mme,df;
     ############################################################################
     # Pre-Check
     ############################################################################
-    if methods =="conventional (no markers)" && mme.M!=0
+    if methods == "conventional (no markers)" && mme.M!=0
         error("Conventional analysis runs without genotypes!")
     end
 
