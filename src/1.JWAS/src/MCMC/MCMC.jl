@@ -18,7 +18,7 @@ include("output.jl")
 
 Run MCMC for Bayesian Linear Mixed Models with estimation of variance components.
 
-* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", and "Bayesian Lasso".
+* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
 * **starting_value** can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to `0.0`s.
 * the first **burnin** iterations are discarded at the beginning of an MCMC run of length **chain_length**
 * save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples.txt`.
@@ -54,42 +54,29 @@ function runMCMC(mme::MME,df;
                 output_heritability     = false)
 
     ############################################################################
-    # Pre-Check
+    # Single-Step
     ############################################################################
-    if methods == "conventional (no markers)" && mme.M!=0
-        error("Conventional analysis runs without genotypes!")
-    end
-
-    #users need to provide high-quality pedigree file
-    if mme.ped!=0 || pedigree!=false
-        check_pedigree(mme,df,pedigree)
-    end
-
-
-    #Genotyped individuals are usaully not many, and are used in GWAS (complete
-    #and incomplete), thus are used as default output_ID if not provided
-    if outputEBV == false
-        mme.output_ID = 0
-    elseif mme.output_ID == 0 && mme.M != 0
-        mme.output_ID = mme.M.obsID
-    elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #PBLUP
-        pedID=map(String,collect(keys(mme.ped.idMap)))
-        mme.output_ID = pedID
-    end
-
-    #single-step
     #impute genotypes for non-genotyped individuals
-    #add imputation error and J as varaibles in data
-    if single_step_analysis==true
+    #add imputation errors and J as variables in data for non-genotyped individuals
+    if single_step_analysis == true
         SSBRrun(mme,pedigree,df)
     end
+    ############################################################################
+    # Pre-Check
+    ############################################################################
+    #check errors in function arguments
+    errors_args(mme,methods,Pi)
+    #users need to provide high-quality pedigree file
+    check_pedigree(mme,df,pedigree)
+    #user-defined IDs to return genetic values (EBVs)
+    check_outputID(outputEBV,mme)
+    #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
+    check_phenotypes(mme,df,single_step_analysis)
     #make mixed model equations for non-marker parts
-    #assign IDs for observations
-    starting_value,df = pre_check(mme,df,starting_value,single_step_analysis)
-
+    starting_value,df = pre_check(mme,df,starting_value)
 
     if mme.M!=0
-        #align genotypes with phenotypes IDs and align genotypes with output IDs
+        #align genotypes with 1) phenotypes IDs; 2) output IDs.
         align_genotypes(mme)
     end
     if mme.M!=0
@@ -126,8 +113,6 @@ function runMCMC(mme::MME,df;
               print("the genetic variance and π. The mean of the prior for the marker effects variance ")
               print("is: ",round.(mme.M.G,digits=6))
             end
-        elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
-            error("Please provide genetic variance for GBLUP analysis")
         end
         println("\n\n")
     end
@@ -168,9 +153,6 @@ function runMCMC(mme::MME,df;
             error("No options!!!")
         end
     elseif mme.nModels > 1
-        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
-          error("Summation of probabilities of Pi is not equal to one.")
-        end
         if methods == "conventional (no markers)" && estimate_variance == false
           res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
                             sol    = starting_value,
