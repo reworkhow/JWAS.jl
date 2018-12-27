@@ -82,7 +82,7 @@ end
 
 mutable struct Genotypes
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped inds with phenotypes
-  genoID::Array{AbstractString,1} #row ID for original genotyped individuals
+  genoID::Array{AbstractString,1} #row ID for original genotyped individuals (may not be phenotyped)
   markerID
   nObs::Int64
   nMarkers::Int64

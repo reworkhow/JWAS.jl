@@ -41,7 +41,7 @@ function check_outputID(outputEBV,mme)
     if outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0
-        mme.output_ID = mme.M.obsID
+        mme.output_ID = mme.M.genoID
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0
         #output EBV for all individuals in the pedigree for PBLUP
         pedID=map(String,collect(keys(mme.ped.idMap)))
