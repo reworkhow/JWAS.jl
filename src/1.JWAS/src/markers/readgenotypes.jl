@@ -30,8 +30,8 @@ end
 
 #load genotypes from a text file (individual IDs in the 1st column)
 function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
-    printstyled("The delimiter in ",file," is \'",separator,"\'.\n",bold=false,color=:red)
-    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in $file.\n",bold=false,color=:red)
+    printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
+    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:red)
 
     myfile = open(file)
     #get number of columns
