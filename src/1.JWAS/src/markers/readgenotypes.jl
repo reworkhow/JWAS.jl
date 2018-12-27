@@ -1,5 +1,8 @@
+#load genotypes from a text file
 function readgenotypes(file::AbstractString;separator=',',header=true,rowID=true,center=true)
-    #println("The delimiters in file $file is ",separator,"  .")
+    printstyled("The delimiter in ",file," is ",bold=false)
+    printstyled("\'",separator,"\'.\n",bold=false,color=:red)
+
 
     myfile = open(file)
     #get number of columns
@@ -24,9 +27,8 @@ function readgenotypes(file::AbstractString;separator=',',header=true,rowID=true
     genotypes = map(Float64,convert(Array,df[2:end]))
     nObs,nMarkers = size(genotypes)
 
-
+    ##readdlm
     #df            = readdlm(file,separator,Any,header=header)
-
     #if header == true
     #    df=df[1]
     #end
@@ -34,15 +36,13 @@ function readgenotypes(file::AbstractString;separator=',',header=true,rowID=true
     #genotypes     = map(Float64,df[:,2:end])
     #nObs,nMarkers = size(genotypes)
 
-
-
     if center==true
         markerMeans = center!(genotypes) #centering
     else
         markerMeans = center!(copy(genotypes))  #get marker means
     end
     p             = markerMeans/2.0
-    sum2pq        = (2*p*(1 .- p)')[1,1]
+    sum2pq        = (2*p*(1 .- p)')[1,1] #(1x1 matrix)[1,1]
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
