@@ -1,3 +1,4 @@
+#result 'y-intercept-group'
 function adjust_phenotypes(model,phenotype;chain_length=50000,printout_frequency=10000)
   output=runMCMC(model,phenotype,chain_length=chain_length,printout_frequency=printout_frequency);
   animals_count= model.modelTermDict["1:Animal"].nLevels
@@ -8,3 +9,5 @@ function adjust_phenotypes(model,phenotype;chain_length=50000,printout_frequency
   adjusted_phenotype= DataFrame(Animal=phenotype[:Animal],adjusted_phenotype=adjusted_y)
   return adjusted_phenotype
 end
+
+#get_genetic_variance
