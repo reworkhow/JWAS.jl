@@ -110,6 +110,7 @@ function MCMC_GBLUP(nIter,mme,df;
         ########################################################################
         if mme.pedTrmVec != 0
           G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
+          addA(mme)
           if iter > burnin
               G0Mean  += (G0  - G0Mean )/(iter-burnin)
           end

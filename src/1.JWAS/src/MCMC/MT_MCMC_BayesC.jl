@@ -73,6 +73,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
     R0Mean  = zeros(Float64,nTraits,nTraits)
     scaleRes= diag(mme.R)*(ν-2)/ν #only for chisq for constraint diagonal R
 
+    if missing_phenotypes==true
+        RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
+    end
+
     #Priors for polygenic effect covariance matrix
     if mme.pedTrmVec != 0
       ν         = mme.df.polygenic
@@ -213,7 +217,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         #here resVec is alias for ycor ***
 
         if missing_phenotypes==true
-          sampleMissingResiduals(mme,resVec)
+          resVec[:]=sampleMissingResiduals(mme,resVec)
         end
 
         if estimate_variance == true
@@ -239,18 +243,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
         end
 
-        if mme.M != 0
-          mme.R = R0
-          R0    = mme.R
-          Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
-
-          RiNotUsing   = mkRi(mme,df) #get small Ri (Resvar) used in imputation
-        end
-
-        if mme.M == 0 #Good? still use tricky Ri
-          mme.R = R0
-          Ri  = mkRi(mme,df) #for missing value;updata mme.ResVar
-        end
+        mme.R = R0
+        Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
 
         if iter > burnin
             R0Mean  += (R0  - R0Mean )/(iter-burnin)
@@ -266,7 +260,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
           #same to ycorr[:]=resVec+X*sol
         end
         mme.mmeRhs = (mme.M == 0 ? (X'Ri*mme.ySparse) : (X'Ri*ycorr))
-
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################

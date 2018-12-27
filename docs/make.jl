@@ -21,6 +21,8 @@ makedocs(
         "Examples" => Any[
             "Examples" => "examples/examples.md"
         ],
+        "Frequently Asked Questions" => "FrequentlyAskedQuestions/FrequentlyAskedQuestions.md",
+
     ],
 )
 

@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString,R;df=4)
   if !isposdef(R)
-    @error "The covariance matrix is not positive definite."
+    error("The covariance matrix is not positive definite.")
   end
 
   if !(typeof(model_equations)<:AbstractString) || model_equations==""
@@ -271,7 +271,9 @@ function getMME(mme::MME, df::DataFrame)
         if mme.Ai == 0 #if no SSBR
             mme.Ai=PedModule.AInverse(mme.ped)
         end
+      mme.GiOld = zeros(size(mme.GiOld))
       addA(mme::MME)
+      mme.GiOld = copy(mme.GiNew)
     end
 
     addLambdas(mme)

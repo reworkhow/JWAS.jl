@@ -3,27 +3,32 @@ include("DRY.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesC.jl")
+include("MT_PBLUP_constvare.jl")
 include("../SSBR/SSBR.jl")
 include("output.jl")
 
 """
-    runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,
-    missing_phenotypes=false,constraint=false,methods="conventional (no markers)",output_samples_frequency::Int64 = 0,
-    printout_model_info=true,outputEBV=false)
+    runMCMC(mme,df;
+    chain_length=1000,starting_value=false,burnin = 0,output_samples_frequency::Int64 = 0,output_file,
+    printout_model_info=true,printout_frequency=100,
+    methods="conventional (no markers)",Pi=0.0,estimatePi=false,missing_phenotypes=false,
+    single_step_analysis= false,pedigree = false,
+    constraint=false,update_priors_frequency::Int64=0,
+    outputEBV=true)
 
-Run MCMC (marker information included or not) with sampling of variance components.
+Run MCMC for Bayesian Linear Mixed Models with estimation of variance components.
 
-* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC".
-* save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples`.
-* the first **burnin** iterations are discarded at the beginning of an MCMC run
+* available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
+* **starting_value** can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to `0.0`s.
+* the first **burnin** iterations are discarded at the beginning of an MCMC run of length **chain_length**
+* save MCMC samples every **output_samples_frequency** iterations to files **output_file** defaulting to `MCMC_samples.txt`.
 * **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`,
-    * if Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.
-* **starting_value** can be provided as a vector for all location parameteres except marker effects.
+  defaulting to `all markers have effects on the trait (0.0)` in single-trait analysis and `all markers have effects on all traits` in multi-trait analysis.
 * print out the monte carlo mean in REPL with **printout_frequency**
 * **constraint**=true if constrain residual covariances between traits to be zeros.
 * Individual EBVs are returned if **outputEBV**=true.
 """
-function runMCMC(mme,df;
+function runMCMC(mme::MME,df;
                 Pi                  = 0.0,
                 burnin              = 0,
                 chain_length        = 100,
@@ -49,42 +54,29 @@ function runMCMC(mme,df;
                 output_heritability     = false)
 
     ############################################################################
-    # Pre-Check
+    # Single-Step
     ############################################################################
-    if methods =="conventional (no markers)" && mme.M!=0
-        error("Conventional analysis runs without genotypes!")
-    end
-
-    #users need to provide high-quality pedigree file
-    if mme.ped!=0 || pedigree!=false
-        check_pedigree(mme,df,pedigree)
-    end
-
-
-    #Genotyped individuals are usaully not many, and are used in GWAS (complete
-    #and incomplete), thus are used as default output_ID if not provided
-    if outputEBV == false
-        mme.output_ID = 0
-    elseif mme.output_ID == 0 && mme.M != 0
-        mme.output_ID = mme.M.obsID
-    elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #PBLUP
-        pedID=map(String,collect(keys(mme.ped.idMap)))
-        mme.output_ID = pedID
-    end
-
-    #single-step
     #impute genotypes for non-genotyped individuals
-    #add imputation error and J as varaibles in data
-    if single_step_analysis==true
+    #add imputation errors and J as variables in data for non-genotyped individuals
+    if single_step_analysis == true
         SSBRrun(mme,pedigree,df)
     end
+    ############################################################################
+    # Pre-Check
+    ############################################################################
+    #check errors in function arguments
+    errors_args(mme,methods,Pi)
+    #users need to provide high-quality pedigree file
+    check_pedigree(mme,df,pedigree)
+    #user-defined IDs to return genetic values (EBVs)
+    check_outputID(outputEBV,mme)
+    #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
+    check_phenotypes(mme,df,single_step_analysis)
     #make mixed model equations for non-marker parts
-    #assign IDs for observations
     starting_value,df = pre_check(mme,df,starting_value)
 
-
     if mme.M!=0
-        #align genotypes with phenotypes IDs and align genotypes with output IDs
+        #align genotypes with 1) phenotypes IDs; 2) output IDs.
         align_genotypes(mme)
     end
     if mme.M!=0
@@ -107,7 +99,7 @@ function runMCMC(mme,df;
             println()
             if mme.nModels != 1
               if !isposdef(mme.M.G) #also work for scalar
-                @error "Marker effects covariance matrix is not postive definite! Please modify the argument: Pi."
+                error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
               end
               print("The prior for marker effects covariance matrix is calculated from ")
               print("genetic covariance matrix and Π. The mean of the prior for the marker effects ")
@@ -115,14 +107,12 @@ function runMCMC(mme,df;
               Base.print_matrix(stdout,round.(mme.M.G,digits=6))
             else
               if !isposdef(mme.M.G) #positive scalar (>0)
-                @error "Marker effects variance is negative!"
+                error("Marker effects variance is negative!")
               end
               print("The prior for marker effects variance is calculated from ")
               print("the genetic variance and π. The mean of the prior for the marker effects variance ")
               print("is: ",round.(mme.M.G,digits=6))
             end
-        elseif methods=="GBLUP" && mme.M.G_is_marker_variance==true
-            @error "Please provide genetic variance for GBLUP analysis"
         end
         println("\n\n")
     end
@@ -149,22 +139,30 @@ function runMCMC(mme,df;
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            output_file              = output_file)
+                            output_file              = output_file,
+                            update_priors_frequency  = update_priors_frequency)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            output_file              = output_file)
+                            output_file              = output_file,
+                            update_priors_frequency  = update_priors_frequency)
         else
             error("No options!!!")
         end
     elseif mme.nModels > 1
-        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
-          error("Summation of probabilities of Pi is not equal to one.")
-        end
-        if methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
+        if methods == "conventional (no markers)" && estimate_variance == false
+          res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
+                            sol    = starting_value,
+                            outFreq= printout_frequency,
+                            missing_phenotypes=missing_phenotypes,
+                            estimate_variance = estimate_variance,
+                            output_samples_frequency=output_samples_frequency,
+                            output_file=output_file,
+                            update_priors_frequency=update_priors_frequency)
+        elseif methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesC(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -183,7 +181,8 @@ function runMCMC(mme,df;
     else
         error("No options!")
     end
-  res
+  mme.output = res
+  return res
 end
 
 ################################################################################
@@ -225,7 +224,7 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")
             end
-            @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
+            #@printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
             @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
             @printf("%-30s %20s\n","π",Pi)
         end

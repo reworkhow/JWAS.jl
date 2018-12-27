@@ -1,7 +1,7 @@
 """
     get_pedigree(pedfile::AbstractString;header=false,separator=',')
-* Get pedigree informtion from a pedigree file with **header** defaulting to `false`
-  and **separator** defaulting to `,`.
+* Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
+  and **separator** (defaulting to `,`).
 * Pedigree file format:
 
 ```
@@ -21,7 +21,8 @@ end
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)
 
-* set variables as random polygenic effects with pedigree information **ped**, variances **G** whose degree of freedom **df** defaults to 4.0.
+* set variables as random polygenic effects with pedigree information **ped**,
+  variances **G** whose degree of freedom **df** defaults to 4.0.
 
 ```julia
 #single-trait (example 1)
@@ -51,7 +52,7 @@ set_random(model,"Animal", ped,G)
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4,output_samples=true)
     if !isposdef(G)
-        @error "The covariance matrix is not positive definite."
+        error("The covariance matrix is not positive definite.")
     end
 
     pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
@@ -64,9 +65,9 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
           res = [res;string(m)*":"*trm]
-          if output_samples == true
-              outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
-          end
+          #if output_samples == true
+          #    outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
+          #end
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
@@ -88,7 +89,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
       if (typeof(G)<:Number) ==true #convert scalar G to 1x1 matrix
         G=reshape([G],1,1)
       end
-      mme.GiOld = zero(G)
+      mme.GiOld = inv(G)
       mme.GiNew = inv(G)
     end
     mme.df.polygenic=Float64(df)
@@ -102,7 +103,8 @@ end
 """
     set_random(mme::MME,randomStr::AbstractString,G;df=4)
 
-* set variables as i.i.d random effects with variances **G** whose degree of freedom **df** defaults to 4.0.
+* set variables as i.i.d random effects with variances **G** whose degree of
+  freedom **df** defaults to 4.0.
 
 ```julia
 #single-trait (example 1)
@@ -122,7 +124,7 @@ set_random(model,"litter",G)
 """
 function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     if !isposdef(G)
-        @error "The covariance matrix is not positive definite."
+        error("The covariance matrix is not positive definite.")
     end
     G = map(Float64,G)
     df= Float64(df)
@@ -160,23 +162,19 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
     nothing
 end
 
-
-
-################################################################################
-#*******************************************************************************
-#following facts that scalar Inverse-Wishart(ν,S) = Inverse-Gamma(ν/2,S/2)=    *
-#scale-inv-chi2(ν,S/ν), variances for random effects(non-marker) will be be    *
-#sampled from Inverse-Wishart for coding simplicity thus prior for scalar      *
-#variance is treated as a 1x1 matrix.                                          *
-#*******************************************************************************
-################################################################################
-
 ################################################################################
 #duplicated code in addA and sample_variance_pedigree
 #Need to be merged #MAY NOT
 ################################################################################
-#The 1st time setting up MME,
-#mme.GiOld = zeros(G),mme.GiNew = inv(G),mme.Rnew = mme.Rold= R
+#SINGLE TRAIT
+#The equation Ai*(GiNew*RNew - GiOld*ROld) is used to update Ai part in LHS
+#The 1st time to add Ai to set up MME,
+#mme.GiOld == zeros(G),mme.GiNew == inv(G),mme.Rnew == mme.Rold= R
+#After that, if variances are constant,
+#mme.GiOld == mme.GiNew; mme.Rnew == mme.Rold
+#If sampling genetic variances, mme.Ginew is updated with a new sample, then
+#LHS is update as Ai*(GiNew*RNew - GiOld*ROld), then GiOld = Ginew
+#if sample residual variances,
 ################################################################################
 #MERGE addA and addlammbda later
 ################################################################################

@@ -24,6 +24,10 @@ function genoSet!(genoID_file::AbstractString,ped::Pedigree)
 end
 
 function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
+    if !issubset(genoID,map(string,collect(keys(ped.idMap))))
+        error("Not all genotyped individuals are found in pedigree! Please use genotyped individuals in the pedigree only")
+    end
+
     for i in genoID
         push!(ped.setG,i)
     end
@@ -42,9 +46,10 @@ function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
 		ped.idMap[i].seqID = j
 		j += 1
 	end
-	return (numberNonGeno)
+	return numberNonGeno
 end
 
+#for APY
 function genoSet!(genoID_file::AbstractString,genoCoreID_file::AbstractString,ped::Pedigree)
     df1 = readtable(genoID_file, eltypes=[String], separator = ' ',header=false)
     for i in df1[:,1]
