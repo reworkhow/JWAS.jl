@@ -405,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.get_pedigree",
     "category": "function",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header (defaulting to false) and separator (defaulting to ,).\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
 },
 
 {
@@ -429,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.runMCMC",
     "category": "function",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,\nmissing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0,\nprintout_model_info=true,outputEBV=false)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every outputsamplesfrequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n\n\n"
+    "text": "runMCMC(mme,df;\nchain_length=1000,starting_value=false,burnin = 0,output_samples_frequency::Int64 = 0,output_file,\nprintout_model_info=true,printout_frequency=100,\nmethods=\"conventional (no markers)\",Pi=0.0,estimatePi=false,missing_phenotypes=false,\nsingle_step_analysis= false,pedigree = false,\nconstraint=false,update_priors_frequency::Int64=0,\noutputEBV=true)\n\nRun MCMC for Bayesian Linear Mixed Models with estimation of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nstarting_value can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to 0.0s.\nthe first burnin iterations are discarded at the beginning of an MCMC run of length chain_length\nsave MCMC samples every outputsamplesfrequency iterations to files output_file defaulting to MCMC_samples.txt.\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects on the trait (0.0) in single-trait analysis and all markers have effects on all traits in multi-trait analysis.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n\n\n"
 },
 
 {
@@ -453,7 +453,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.solve",
     "category": "function",
-    "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers includes default,Jacobi,GaussSeidel,Gibbs sampler.\n\n\n\n\n\n"
+    "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers include default, Jacobi, GaussSeidel, and Gibbs sampler.\n\n\n\n\n\n"
 },
 
 {
@@ -577,11 +577,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME,AbstractString}",
+    "page": "Internals",
+    "title": "JWAS.getEBV",
+    "category": "method",
+    "text": "getEBV(model::MME,genotypefile::AbstractString;header=true,separator=\',\')\n\nGet estimated breeding values for individuals with genotypes defined by genotypefile. The genotype file format is same to that used in add_genotypes(). The same order for markers (columns) in  genotypefile as in add_genotypes() is assumed for simplicity now. The file format is as follows,\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nA1,1,0,1,1,1\nC3,1,2,0,1,0\nB2,0,0,2,1,1\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME,Array{Float64,2}}",
+    "page": "Internals",
+    "title": "JWAS.getEBV",
+    "category": "method",
+    "text": "getEBV(model::MME,genotypes::Array{Float64,2})\n\nGet estimated breeding values for individuals with genotypes. The genotypes are provided as an Array. The same order for markers (columns)in genotypes::Array{Float64,2} as in add_genotypes() is assumed for simplicity now.\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME}",
+    "page": "Internals",
+    "title": "JWAS.getEBV",
+    "category": "method",
+    "text": "getEBV(model::MME)\n\nGet estimated breeding values for individuals defined by outputEBV() (defaulting to all genotyped individuals).\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/internals/#JWAS.get_pedigree-Tuple{AbstractString}",
     "page": "Internals",
     "title": "JWAS.get_pedigree",
     "category": "method",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header defaulting to false and separator defaulting to ,.\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header (defaulting to false) and separator (defaulting to ,).\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
 },
 
 {
@@ -601,11 +625,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/internals/#JWAS.runMCMC-Tuple{Any,Any}",
+    "location": "manual/internals/#JWAS.runMCMC-Tuple{JWAS.MME,Any}",
     "page": "Internals",
     "title": "JWAS.runMCMC",
     "category": "method",
-    "text": "runMCMC(mme,df;Pi=0.0,estimatePi=false,chain_length=1000,burnin = 0,starting_value=false,printout_frequency=100,\nmissing_phenotypes=false,constraint=false,methods=\"conventional (no markers)\",output_samples_frequency::Int64 = 0,\nprintout_model_info=true,outputEBV=false)\n\nRun MCMC (marker information included or not) with sampling of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\".\nsave MCMC samples every outputsamplesfrequency iterations to files output_file defaulting to MCMC_samples.\nthe first burnin iterations are discarded at the beginning of an MCMC run\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1),\nif Pi (Π) is not provided in multi-trait analysis, it will be generated assuming all markers have effects on all traits.\nstarting_value can be provided as a vector for all location parameteres except marker effects.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n\n\n"
+    "text": "runMCMC(mme,df;\nchain_length=1000,starting_value=false,burnin = 0,output_samples_frequency::Int64 = 0,output_file,\nprintout_model_info=true,printout_frequency=100,\nmethods=\"conventional (no markers)\",Pi=0.0,estimatePi=false,missing_phenotypes=false,\nsingle_step_analysis= false,pedigree = false,\nconstraint=false,update_priors_frequency::Int64=0,\noutputEBV=true)\n\nRun MCMC for Bayesian Linear Mixed Models with estimation of variance components.\n\navailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nstarting_value can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to 0.0s.\nthe first burnin iterations are discarded at the beginning of an MCMC run of length chain_length\nsave MCMC samples every outputsamplesfrequency iterations to files output_file defaulting to MCMC_samples.txt.\nPi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects on the trait (0.0) in single-trait analysis and all markers have effects on all traits in multi-trait analysis.\nprint out the monte carlo mean in REPL with printout_frequency\nconstraint=true if constrain residual covariances between traits to be zeros.\nIndividual EBVs are returned if outputEBV=true.\n\n\n\n\n\n"
 },
 
 {
@@ -645,7 +669,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.solve",
     "category": "method",
-    "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers includes default,Jacobi,GaussSeidel,Gibbs sampler.\n\n\n\n\n\n"
+    "text": "solve(mme::MME,df::DataFrame;solver=\"default\",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)\n\nSolve the mixed model equations (no marker information) without estimating variance components.\n\nAvailable solvers include default, Jacobi, GaussSeidel, and Gibbs sampler.\n\n\n\n\n\n"
 },
 
 {
@@ -726,6 +750,46 @@ var documenterSearchIndex = {"docs": [
     "title": "Single-step Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
     "text": "Univariate Single-step Bayesian Linear Mixed Models (Genomic Data)\nMultivariate Single-step Bayesian Linear Mixed Models (Genomic Data)"
+},
+
+{
+    "location": "FrequentlyAskedQuestions/FrequentlyAskedQuestions/#",
+    "page": "Frequently Asked Questions",
+    "title": "Frequently Asked Questions",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "FrequentlyAskedQuestions/FrequentlyAskedQuestions/#Frequently-Asked-Questions-1",
+    "page": "Frequently Asked Questions",
+    "title": "Frequently Asked Questions",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "FrequentlyAskedQuestions/FrequentlyAskedQuestions/#Memory-1",
+    "page": "Frequently Asked Questions",
+    "title": "Memory",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "FrequentlyAskedQuestions/FrequentlyAskedQuestions/#Why-do-I-get-an-out-of-memory-error?-(answered-by-Tianjing-Zhao)-1",
+    "page": "Frequently Asked Questions",
+    "title": "Why do I get an out of memory error? (answered by Tianjing Zhao)",
+    "category": "section",
+    "text": "In Julia, when we run the same code repeatedly, the garbage collection works as follows:Steps 1. open 2. create matrix 3. repeat 4.repeat ...repeat...\nRunning  x = rand(10000,10000) x = rand(10000,10000) x = rand(10000,10000) ...\nMemory(MB) 89.2 866.8 1628.4 1628.4 1628.4Note that Memory(MB) information are obtained from Task Manager(Win10), which shows total physical memory reserved by Julia. You can also check free memory by running versioninfo(verbose=true) or  Sys.free_memory()/2^20.From above table, when we create a matrix, it will definitely use memory, and when we repeat it for the first time (step 3), the memory doubled. But for the consecutive repeating (step 4,5...), the memory doesn\'t change.So if you repeat your code for the first time, your will double the memory. In this situation, restarting kernel will solve the problem. Here is a trick to avoid double memory: change to garbage (step iii) and collect garbage via GC.gc()(step iv) before repeating. See below example:Steps i. open ii. create matrix iii. set to zero iv. collect garbage v. repeat\nRunning  x = rand(10000,10000) x=0 GC.gc() x = rand(10000,10000)\nMemory(MB) 86.9 865.1 865.1 98.6 861.6"
+},
+
+{
+    "location": "FrequentlyAskedQuestions/FrequentlyAskedQuestions/#Speed-1",
+    "page": "Frequently Asked Questions",
+    "title": "Speed",
+    "category": "section",
+    "text": ""
 },
 
 ]}
