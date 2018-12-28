@@ -5,7 +5,7 @@ function errors_args(mme,methods,Pi)
     if methods == "conventional (no markers)" && mme.M!=0
         error("Conventional analysis runs without genotypes!")
     end
-    if mme.M!=0 && methods=="GBLUP" && mme.M.G_is_marker_variance==true
+    if mme.M!=0 && methods=="GBLUP" && mme.M.genetic_variance == false
         error("Please provide values for the genetic variance for GBLUP analysis")
     end
     if mme.nModels > 1 && mme.M!=0
@@ -68,7 +68,7 @@ function check_phenotypes(mme,df,single_step_analysis=false)
             mme.output_ID = intersect(mme.output_ID,mme.M.genoID)
         end
     else
-        pedID = map(string,collect(keys(ped.idMap)))
+        pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",
             "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",

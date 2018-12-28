@@ -14,8 +14,11 @@ O3,0,0,2,1,1
 """
 function add_genotypes(mme::MME,file,G;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
     mme.M   = readgenotypes(file;separator=separator,header=header,center=center)
-    mme.M.G = G
-    mme.M.G_is_marker_variance = G_is_marker_variance
+    if G_is_marker_variance == true
+        mme.M.G = G
+    else
+        mme.M.genetic_variance = G
+    end
     mme.df.marker = Float64(df)
 
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")

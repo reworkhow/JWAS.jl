@@ -26,7 +26,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
       Pi[ones(ntraits)]=1.0
   end
   #marker effect variances
-  if mme.M.G_is_marker_variance==false && methods!="GBLUP"
+  if mme.M.G == false && methods!="GBLUP"
       genetic2marker(mme.M,Pi)
       println()
       if mme.nModels != 1
@@ -50,8 +50,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
 end
 
 function genetic2marker(M::Genotypes,Pi::Dict)
-  G = M.G
-  nTraits = size(G,1)
+  nTraits = size(M.genetic_variance,1)
   denom   = zeros(nTraits,nTraits)
   for i in 1:nTraits
     for j in i:nTraits
@@ -62,10 +61,9 @@ function genetic2marker(M::Genotypes,Pi::Dict)
       denom[j,i] = denom[i,j]
     end
   end
-  M.G = M.G ./ denom
-  M.G_is_marker_variance = true
+  M.G = M.genetic_variance ./ denom
 end
 
 function genetic2marker(M::Genotypes,π::Float64)
-    M.G=M.G/((1-π)*M.sum2pq)
+    M.G = M.genetic_variance/((1-π)*M.sum2pq)
 end
