@@ -401,9 +401,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public/#JWAS.get_pedigree",
+    "location": "manual/public/#JWAS.PedModule.get_pedigree",
     "page": "Public",
-    "title": "JWAS.get_pedigree",
+    "title": "JWAS.PedModule.get_pedigree",
     "category": "function",
     "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header (defaulting to false) and separator (defaulting to ,).\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
 },
@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file (same order as the phenotype file).\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -557,7 +557,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "method",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file (same order as the phenotype file).\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -598,14 +598,6 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.getEBV",
     "category": "method",
     "text": "getEBV(model::MME)\n\nGet estimated breeding values for individuals defined by outputEBV() (defaulting to all genotyped individuals).\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.get_pedigree-Tuple{AbstractString}",
-    "page": "Internals",
-    "title": "JWAS.get_pedigree",
-    "category": "method",
-    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header (defaulting to false) and separator (defaulting to ,).\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
 },
 
 {
@@ -694,6 +686,14 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.get_outputX_others",
     "category": "method",
     "text": "get_outputX_others(model)\n\nMake incidence matrices for effects involve in EBV inclung J, ϵ, pedTrmVec except marker covariates\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.PedModule.get_pedigree-Tuple{AbstractString}",
+    "page": "Internals",
+    "title": "JWAS.PedModule.get_pedigree",
+    "category": "method",
+    "text": "get_pedigree(pedfile::AbstractString;header=false,separator=\',\')\n\nGet pedigree informtion from a pedigree file with header (defaulting to false) and separator (defaulting to ,).\nPedigree file format:\n\na,0,0\nc,a,b\nd,a,c\n\n\n\n\n\n"
 },
 
 {
