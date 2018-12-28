@@ -20,7 +20,7 @@ function getNames(trm::ModelTerm)
 end
 
 ################################################################################
-#Print out MME (no markers)
+#Get left-hand side and right-hand side of the mixed model equation (no markers)
 ################################################################################
 """
     showMME(mme::MME,df::DataFrame)
@@ -33,6 +33,15 @@ function showMME(mme::MME,df::DataFrame)
    end
    return [getNames(mme) mme.mmeLhs],[getNames(mme) mme.mmeRhs]
 end
+
+################################################################################
+#Print out model information
+################################################################################
+"""
+    getinfo(model::MME)
+
+* Print out model information.
+"""
 
 #more details later
 function getinfo(model;data=false)
