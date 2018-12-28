@@ -1,8 +1,37 @@
-#load genotypes from a text file
-function readgenotypes(file::AbstractString;separator=',',header=true,rowID=true,center=true)
-    printstyled("The delimiter in ",file," is ",bold=false)
-    printstyled("\'",separator,"\'.\n",bold=false,color=:red)
+"""
+    add_genotypes(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
+* Get marker informtion from a genotype file.
+* **G** defaults to the genetic variance with degree of freedom **df**=4.0.
+* File format:
 
+```
+Animal,marker1,marker2,marker3,marker4,marker5
+S1,1,0,1,1,1
+D1,2,0,2,2,1
+O1,1,2,0,1,0
+O3,0,0,2,1,1
+```
+"""
+function add_genotypes(mme::MME,file,G;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
+    mme.M   = readgenotypes(file;separator=separator,header=header,center=center)
+    mme.M.G = G
+    mme.M.G_is_marker_variance = G_is_marker_variance
+    mme.df.marker = Float64(df)
+
+    println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
+end
+
+"""
+    same to add_genotypes
+"""
+function add_markers(mme::MME,file,G;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
+    add_genotypes(mme,file,G;separator=separator,header=header,center=center,G_is_marker_variance=G_is_marker_variance,df=df)
+end
+
+#load genotypes from a text file (individual IDs in the 1st column)
+function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
+    printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
+    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:red)
 
     myfile = open(file)
     #get number of columns
@@ -47,31 +76,27 @@ function readgenotypes(file::AbstractString;separator=',',header=true,rowID=true
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
 
-#M is of type: Array{Float64,2} or DataFrames ( genotype covariates only), marker ID and row ID required separately.
-function readgenotypes(M::Union{Array{Float64,2},DataFrames.DataFrame};header=true,rowID=true,separator=' ',center=true)
-    if rowID == true
-        error("Row IDs must be provided as an array when the input is not a file.")
-    end
+#load genotypes from Array or DataFrames (individual IDs in the 1st column,
+function readgenotypes(df::Union{Array{Float64,2},DataFrames.DataFrame};header=false,separator=false,center=true)
     if header==true
-        error("Header (marker IDs) must be false or provided as an array when the input is not a file.")
+        error("The header (marker IDs) must be false or provided as an array when the input is not a file.")
     end
 
-    if length(rowID)==size(M,1)
-        obsID      = rowID
-    else
-        error("The length of row IDs must be equal to the number of individuals in the genotype covariate matrix.")
-    end
-    if length(header)==size(M,2)
+    if length(header)==size(df,2)
         markerID = header
     elseif header==false
         markerID = ["NA"]
     else
-        error("The length of header (marker IDs) must be equal to the number of markers in the genotype covariate matrix.")
+        error("The length of the header (marker IDs) must be equal to the number of markers (columns).")
     end
 
-    genotypes  = map(Float64,convert(Array,M))
-
-
+    if typeof(df) == DataFrames.DataFrame
+        obsID     = map(string,df[1])
+        genotypes = map(Float64,convert(Array,df[2:end]))
+    else
+        obsID         = map(string,view(df,:,1))  #map(String,df[:,1]) not work, if df[:,1] are integers
+        genotypes     = map(Float64,convert(Array,view(df,:,2:size(df,2))))
+    end
     nObs,nMarkers = size(genotypes)
 
     if center==true

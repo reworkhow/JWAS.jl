@@ -1,4 +1,3 @@
-
 function genoSet!(genoID_file::AbstractString,ped::Pedigree)
     df = readtable(genoID_file, eltypes=[String], separator = ' ',header=false)
 	df = vec(map(String,convert(Array,df)))

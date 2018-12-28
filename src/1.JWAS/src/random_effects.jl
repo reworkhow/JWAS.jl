@@ -1,19 +1,3 @@
-"""
-    get_pedigree(pedfile::AbstractString;header=false,separator=',')
-* Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
-  and **separator** (defaulting to `,`).
-* Pedigree file format:
-
-```
-a,0,0
-c,a,b
-d,a,c
-```
-"""
-function get_pedigree(pedfile::AbstractString;header=false,separator=',')
-  PedModule.mkPed(pedfile,header=header,separator=separator)
-end
-
 ################################################################################
 #set specific ModelTerm to random using pedigree information
 #e.g. Animal, Animal*Age, Maternal
