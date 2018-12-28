@@ -50,9 +50,6 @@ function check_outputID(outputEBV,mme)
 end
 
 function check_phenotypes(mme,df,single_step_analysis=false)
-    #mme.M.obsID is
-    #IDs for M after imputation, i.e., all individuals in pedigree, in SSBR
-    #IDs for all genotyped individuals in complete genomic data
     phenoID = map(string,df[1])#same to df[:,1] in deprecated CSV
     if mme.M == 0
         return
@@ -87,7 +84,7 @@ function check_phenotypes(mme,df,single_step_analysis=false)
     end
 end
 
-function pre_check(mme,df,sol)
+function init_mixed_model_equations(mme,df,sol)
     getMME(mme,df)
     #starting value for sol can be provided
     if sol == false #no starting values
@@ -207,28 +204,4 @@ function reformat2DataFrame(res::Array)
     out=[out_names out_values]
     out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate])
     return out
-end
-
-################################################################################
-#Convert Genetic variance to marker effect variance based on Pi
-################################################################################
-function genetic2marker(M::Genotypes,Pi::Dict)
-  G=M.G #genetic variance
-  nTraits = size(G,1)
-  denom   = zeros(nTraits,nTraits)
-  for i in 1:nTraits
-    for j in i:nTraits
-      #pi_selected = filter((k,v)->k[i]==1.0 && k[j]==1.0,Pi)
-      pi_selected = filter(d->d.first[i]==1.0 && d.first[j]==1.0,Pi)
-
-      denom[i,j] = M.sum2pq*sum(values(pi_selected))
-      denom[j,i] = denom[i,j]
-    end
-  end
-  M.G = M.G ./ denom
-  M.G_is_marker_variance = true
-end
-
-function genetic2marker(M::Genotypes,π::Float64)
-    M.G=M.G/((1-π)*M.sum2pq)
 end

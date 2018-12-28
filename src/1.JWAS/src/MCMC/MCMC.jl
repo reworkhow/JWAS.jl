@@ -54,14 +54,6 @@ function runMCMC(mme::MME,df;
                 output_heritability     = false)
 
     ############################################################################
-    # Single-Step
-    ############################################################################
-    #impute genotypes for non-genotyped individuals
-    #add imputation errors and J as variables in data for non-genotyped individuals
-    if single_step_analysis == true
-        SSBRrun(mme,pedigree,df)
-    end
-    ############################################################################
     # Pre-Check
     ############################################################################
     #check errors in function arguments
@@ -72,49 +64,23 @@ function runMCMC(mme::MME,df;
     check_outputID(outputEBV,mme)
     #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
     check_phenotypes(mme,df,single_step_analysis)
-    #make mixed model equations for non-marker parts
-    starting_value,df = pre_check(mme,df,starting_value)
+    ############################################################################
+    # Single-Step
+    ############################################################################
+    #impute genotypes for non-genotyped individuals
+    #add ϵ (imputation errors) and J as variables in data for non-genotyped individuals
+    if single_step_analysis == true
+        SSBRrun(mme,pedigree,df)
+    end
+    ############################################################################
+    # Initiate Mixed Model Equations for Non-marker Parts (after SSBRrun for ϵ & J)
+    ############################################################################
+    starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
         #align genotypes with 1) phenotypes IDs; 2) output IDs.
         align_genotypes(mme)
-    end
-    if mme.M!=0
-        #set up Pi
-        if mme.nModels !=1 && Pi==0.0
-            printstyled("Pi (Π) is not provided.\n",bold=false,color=:green)
-            printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false,color=:green)
-            mykey=Array{Float64}(undef,0)
-            ntraits=mme.nModels
-            Pi=Dict{Array{Float64,1},Float64}()
-            #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
-            for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
-              Pi[parse.(Float64, split(i,""))]=0.0
-            end
-            Pi[ones(ntraits)]=1.0
-        end
-        #set up marker effect variances
-        if mme.M.G_is_marker_variance==false && methods!="GBLUP"
-            genetic2marker(mme.M,Pi)
-            println()
-            if mme.nModels != 1
-              if !isposdef(mme.M.G) #also work for scalar
-                error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
-              end
-              print("The prior for marker effects covariance matrix is calculated from ")
-              print("genetic covariance matrix and Π. The mean of the prior for the marker effects ")
-              print("covariance matrix is: \n")
-              Base.print_matrix(stdout,round.(mme.M.G,digits=6))
-            else
-              if !isposdef(mme.M.G) #positive scalar (>0)
-                error("Marker effects variance is negative!")
-              end
-              print("The prior for marker effects variance is calculated from ")
-              print("the genetic variance and π. The mean of the prior for the marker effects variance ")
-              print("is: ",round.(mme.M.G,digits=6))
-            end
-        end
-        println("\n\n")
+        Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
     end
 
     if mme.output_ID!=0
@@ -183,90 +149,4 @@ function runMCMC(mme::MME,df;
     end
   mme.output = res
   return res
-end
-
-################################################################################
-#Print out MCMC information #Make all info a member of MME?
-################################################################################
-function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
-                  output_samples_frequency,missing_phenotypes,constraint,
-                  estimatePi,update_priors_frequency,mme)
-
-    println("MCMC Information:\n")
-    @printf("%-30s %20s\n","methods",methods)
-#    @printf("%-20s %10s\n","seed",seed)
-    @printf("%-30s %20s\n","chain_length",chain_length)
-    @printf("%-30s %20s\n","burnin",burnin)
-    if !(methods in ["conventional (no markers)", "GBLUP"])
-      @printf("%-30s %20s\n","estimatePi",estimatePi ? "true" : "false")
-    end
-    @printf("%-30s %20s\n","starting_value",starting_value ? "true" : "false")
-    @printf("%-30s %20d\n","printout_frequency",printout_frequency)
-    @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
-
-    @printf("%-30s %20s\n","constraint",constraint ? "true" : "false")
-    @printf("%-30s %20s\n","missing_phenotypes",missing_phenotypes ? "true" : "false")
-    @printf("%-30s %20d\n","update_priors_frequency",update_priors_frequency)
-
-
-    @printf("\n%-30s\n\n","Hyper-parameters Information:")
-
-    if mme.nModels==1
-        for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
-            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),digits=3))
-        end
-        @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),digits=3))
-        end
-        if !(methods in ["conventional (no markers)", "GBLUP"])
-            if mme.M == 0
-                error("Please add genotypes using add_genotypes().")
-            end
-            #@printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.G)
-            @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
-            @printf("%-30s %20s\n","π",Pi)
-        end
-    else
-        for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
-            @printf("%-30s\n","random effect variances ("*thisterm*"):")
-            Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
-            println()
-        end
-        @printf("%-30s\n","residual variances:")
-        Base.print_matrix(stdout,round.(mme.R,digits=3))
-        println()
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n","genetic variances (polygenic):")
-            Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
-            println()
-        end
-        if !(methods in ["conventional (no markers)", "GBLUP"])
-            @printf("%-30s\n","genetic variances (genomic):")
-            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
-            println()
-            @printf("%-30s\n","marker effect variances:")
-            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
-            println()
-            println("\nΠ: (Y(yes):included; N(no):excluded)")
-            @printf("%-20s %12s\n",string.(mme.lhsVec),"probability")
-            for (i,j) in Pi
-                i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                @printf("%-20s %12s\n",i,j)
-            end
-        end
-    end
-
-    @printf("\n%-30s\n\n","Degree of freedom for hyper-parameters:")
-    @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
-    @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
-    if mme.pedTrmVec!=0
-        @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
-    end
-    if mme.M!=0
-        @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
-    end
-    @printf("\n\n\n")
 end
