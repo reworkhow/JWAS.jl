@@ -186,7 +186,7 @@ function runMCMC(mme::MME,df;
 end
 
 ################################################################################
-#Print out MCMC information
+#Print out MCMC information #Make all info a member of MME?
 ################################################################################
 function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
                   output_samples_frequency,missing_phenotypes,constraint,
@@ -250,9 +250,10 @@ function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequen
             @printf("%-30s\n","marker effect variances:")
             Base.print_matrix(stdout,round.(mme.M.G,digits=3))
             println()
-            println("Π:")
-            @printf("%-20s %12s\n","combinations","probability")
+            println("\nΠ: (Y(yes):included; N(no):excluded)")
+            @printf("%-20s %12s\n",string.(mme.lhsVec),"probability")
             for (i,j) in Pi
+                i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
                 @printf("%-20s %12s\n",i,j)
             end
         end
