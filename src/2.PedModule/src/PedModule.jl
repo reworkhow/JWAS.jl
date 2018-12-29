@@ -37,6 +37,8 @@ mutable struct Pedigree
     setG::Set
     setG_core::Set
     setG_notcore::Set
+    #individuals IDs (in order of numerator relationship matrix A)
+    IDs::Array{String,1}
 end
 
 function code!(ped::Pedigree,id::AbstractString)
@@ -229,7 +231,7 @@ function  mkPed(pedFile::AbstractString;header=false,separator=',')
                     delim=separator,header=header)
     ped = Pedigree(1,Dict{AbstractString,PedNode}(),
                      Dict{Int64, Float64}(),
-                     Set(),Set(),Set(),Set())
+                     Set(),Set(),Set(),Set(),Array{String,1}())
     fillMap!(ped,df)
     @showprogress "coding pedigree... " for id in keys(ped.idMap)
      code!(ped,id)
@@ -237,6 +239,9 @@ function  mkPed(pedFile::AbstractString;header=false,separator=',')
     @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
       calcInbreeding!(ped,id)
     end
+
+    ped.IDs=getIDs(ped)
+
     println("Finished!")
     return ped
 end
