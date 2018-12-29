@@ -25,7 +25,7 @@ function check_pedigree(mme,df,pedigree)
         pedID=map(string,collect(keys(mme.ped.idMap)))
     end
 
-    if mme.M!=0 && !issubset(mme.M.genoID,pedID)
+    if mme.M!=0 && !issubset(mme.M.obsID,pedID)
         error("Not all genotyped individuals are found in pedigree!")
     end
 
@@ -41,7 +41,7 @@ function check_outputID(outputEBV,mme)
     if outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0
-        mme.output_ID = mme.M.genoID
+        mme.output_ID = mme.M.obsID
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0
         #output EBV for all individuals in the pedigree for PBLUP
         pedID=map(String,collect(keys(mme.ped.idMap)))
@@ -55,17 +55,17 @@ function check_phenotypes(mme,df,single_step_analysis=false)
         return
     end
     if single_step_analysis == false
-        if !issubset(phenoID,mme.M.genoID)
+        if !issubset(phenoID,mme.M.obsID)
             printstyled("Phenotyped individuals are not a subset of\n",
             "genotyped individuals (complete genomic data,non-single-step).\n",
             "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
-            index = [phenoID[i] in mme.M.genoID for i=1:length(phenoID)]
+            index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
-        elseif mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.genoID)
+        elseif mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
             printstyled("Testing individuals are not a subset of \n",
             "genotyped individuals (complete genomic data,non-single-step).\n",
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
-            mme.output_ID = intersect(mme.output_ID,mme.M.genoID)
+            mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
     else
         pedID = map(string,collect(keys(mme.ped.idMap)))
