@@ -2,8 +2,6 @@ __precompile__(true)
 
 module JWAS
 
-#SSBR is using misc,Pedmodule
-#JWAS is using PedModule
 include("2.PedModule/src/PedModule.jl")
 include("4.misc/src/misc.jl")
 include("1.JWAS/src/JWAS.jl")
