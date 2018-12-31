@@ -100,10 +100,11 @@ end
 ################################################################################
 #Print out MCMC information #Make all info a member of MME?
 ################################################################################
-function MCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
+function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
                   output_samples_frequency,missing_phenotypes,constraint,
                   estimatePi,update_priors_frequency,mme)
-
+    #metaprogramming
+    #model2.MCMCinfo.(eval(fieldnames(typeof(model2.MCMCinfo))[1]))
     printstyled("MCMC Information:\n\n",bold=true)
 
     @printf("%-30s %20s\n","methods",methods)
