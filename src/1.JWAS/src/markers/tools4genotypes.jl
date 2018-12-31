@@ -68,10 +68,10 @@ function align_genotypes(mme::MME,output_genetic_variance=false,single_step_anal
         mme.M.obsID     = mme.obsID
         mme.M.nObs      = length(mme.M.obsID)
     end
-    #Set ouput IDs to all genotyped individual IDs in complete genomic data analysis
+    #Set ouput IDs to all genotyped individual IDs in COMPLETE genomic data analysis
     #before aligning genotypes with phenotypes to output genetic variances
     if output_genetic_variance == true && single_step_analysis == false
-        mme.output_ID = mme.M.obsID  ##NEED UPDATE 
+        mme.output_ID = mme.M.obsID  ##NEED UPDATE
     end
     #Get genotypes for outputEBV individuals
     if mme.output_ID != 0
