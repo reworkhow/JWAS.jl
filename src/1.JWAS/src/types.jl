@@ -101,6 +101,28 @@ mutable struct DF
     random::Float64
 end
 
+mutable struct MCMCinfo
+    chain_length
+    starting_value
+    burnin
+    output_samples_file
+    output_samples_frequency
+    printout_model_info
+    printout_frequency
+    methods
+    Pi
+    estimatePi
+    single_step_analysis #pedigree,
+    missing_phenotypes
+    constraint
+    estimate_variance
+    update_priors_frequency
+    outputEBV
+    output_genetic_variance
+    output_heritability
+    output_PEV
+end
+
 ################################################################################
 # the class MME is shown below with members for models, mixed model equations...
 #
@@ -154,9 +176,9 @@ mutable struct MME
     output_genotypes
     output_X
 
-    training_ID
-
     output
+
+    MCMCinfo
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
