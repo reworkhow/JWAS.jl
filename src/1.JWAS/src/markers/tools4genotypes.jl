@@ -54,21 +54,32 @@ end
 ################################################################################
 #align genotypes with phenotyps given IDs #MAY USE TOO MUCH MEMORY
 ################################################################################
-function align_genotypes(mme::MME)
-    Mfull    = mme.M.genotypes #imputed genotype in SSBR
-    obsIDfull= deepcopy(mme.M.obsID)
-    if mme.obsID != mme.M.obsID  #align genotypes with phenotypes
-        Z  = mkmat_incidence_factor(mme.obsID,obsIDfull)
-        mme.M.genotypes = Z*Mfull
+#input: mme.M.genotypes (1) all genotyped individuals --> complete genomic data
+#                       (2) all pedigree individuals  --> incomplete genomic data
+#output:mme.M.genotypes (1) subset
+#
+function align_genotypes(mme::MME,output_genetic_variance=false,single_step_analysis=false)
+    ##Align genotypes with phenotypes
+    #Change mme.M.genotypes to phenotyped individuals to accommodate
+    #individuals with repeated records or individuals without records
+    if mme.obsID != mme.M.obsID
+        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
+        mme.M.genotypes = Z*mme.M.genotypes
         mme.M.obsID     = mme.obsID
         mme.M.nObs      = length(mme.M.obsID)
     end
-    if mme.output_ID != 0  #get genotypes for outputEBV individuals
-        if mme.output_ID == mme.M.obsID
+    #Set ouput IDs to all genotyped individual IDs in complete genomic data analysis
+    #before aligning genotypes with phenotypes to output genetic variances
+    if output_genetic_variance == true && single_step_analysis == false
+        mme.output_ID = mme.M.obsID  ##NEED UPDATE 
+    end
+    #Get genotypes for outputEBV individuals
+    if mme.output_ID != 0
+        if mme.output_ID == mme.M.obsID #save memory
             mme.output_genotypes = mme.M.genotypes
         else
-            Zo  = mkmat_incidence_factor(mme.output_ID,obsIDfull)
-            mme.output_genotypes = Zo*Mfull
+            Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+            mme.output_genotypes = Zo*mme.M.genotypes
         end
     end
 end
