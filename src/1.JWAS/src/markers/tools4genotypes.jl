@@ -59,21 +59,13 @@ end
 #output:mme.M.genotypes (1) subset
 #
 function align_genotypes(mme::MME,output_genetic_variance=false,single_step_analysis=false)
-    ##Align genotypes with phenotypes
-    #Change mme.M.genotypes to phenotyped individuals to accommodate
-    #individuals with repeated records or individuals without records
-    if mme.obsID != mme.M.obsID
-        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
-        mme.M.genotypes = Z*mme.M.genotypes
-        mme.M.obsID     = mme.obsID
-        mme.M.nObs      = length(mme.M.obsID)
-    end
     #Set ouput IDs to all genotyped individual IDs in COMPLETE genomic data analysis
     #before aligning genotypes with phenotypes to output genetic variances
     if output_genetic_variance == true && single_step_analysis == false
         mme.output_ID = mme.M.obsID  ##NEED UPDATE
     end
     #Get genotypes for outputEBV individuals
+    #(run before align genotypes with phenotypes)
     if mme.output_ID != 0
         if mme.output_ID == mme.M.obsID #save memory
             mme.output_genotypes = mme.M.genotypes
@@ -81,6 +73,16 @@ function align_genotypes(mme::MME,output_genetic_variance=false,single_step_anal
             Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
             mme.output_genotypes = Zo*mme.M.genotypes
         end
+    end
+    ##Align genotypes with phenotypes
+    #Change mme.M.genotypes to phenotyped individuals to accommodate
+    #individuals with repeated records or individuals without records
+    #CENTERING?
+    if mme.obsID != mme.M.obsID
+        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
+        mme.M.genotypes = Z*mme.M.genotypes
+        mme.M.obsID     = mme.obsID
+        mme.M.nObs      = length(mme.M.obsID)
     end
 end
 
