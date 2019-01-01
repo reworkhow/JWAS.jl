@@ -61,6 +61,16 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       push!(outvar,trmStri*"_variances")
   end
 
+  #EBV
+  if mme.MCMCinfo.outputEBV == true
+      for traiti in 1:ntraits
+          push!(outvar,"EBV_"*string(mme.lhsVec[traiti]))
+      end
+      if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+          push!(outvar,"genetic_variance")
+      end
+  end
+
   for i in outvar
       file_i    = file_name*"_"*i*".txt"
       if isfile(file_i)
@@ -73,8 +83,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   #add headers
   mytraits=map(String,mme.lhsVec)
-  residual_header = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
-  writedlm(outfile["residual_variance"],transubstrarr(residual_header),',')
+  varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
+  writedlm(outfile["residual_variance"],transubstrarr(varheader),',')
 
   for effect in  mme.rndTrmVec
     trmStri   = split(effect.term_array[1],':')[end]                  #x2
@@ -91,6 +101,15 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       pedtrmvec  = mme.pedTrmVec
       thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
       writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader),',')
+  end
+
+  if mme.MCMCinfo.outputEBV == true
+      for traiti in 1:ntraits
+          writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],transubstrarr(mme.output_ID),',')
+      end
+      if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+          writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
+      end          
   end
 
   return out_i,outfile
@@ -127,10 +146,8 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
   end
 
   writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
-  #mme.samples4R[out_i,:]=vRes
 
   if mme.pedTrmVec != 0
-    #mme.samples4G[out_i,:]=vec(G0)
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
   end
   if α != false && outfile != false
@@ -148,6 +165,31 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
       if !(typeof(π) <: Number) #add a blank line
           println(outfile["pi"])
       end
+  end
+
+  if mme.MCMCinfo.outputEBV == true
+      if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 || α != false)
+          if ntraits == 1
+             myEBV = getEBV(mme,sol,α,1)
+             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+             if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+                 mygvar = var(myEBV)
+                 writedlm(outfile["genetic_variance"],mygvar,',')
+             end
+          else
+              EBVmat = myEBV = getEBV(mme,sol,α[1],1)
+              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+              for traiti in 2:ntraits
+                  myEBV = getEBV(mme,sol,α[traiti],traiti)
+                  writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
+                  EBVmat = [EBVmat myEBV]
+                  if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+                      mygvar = var(myEBV)
+                      writedlm(outfile["genetic_variance"],vec(cov(EBVmat))',',')
+                  end
+              end
+          end
+       end
   end
   out_i +=1
   return out_i
