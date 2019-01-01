@@ -123,6 +123,8 @@ mutable struct MCMCinfo
     output_PEV
 end
 
+#@warn Too frequent will slow down the computation
+
 ################################################################################
 # the class MME is shown below with members for models, mixed model equations...
 #
