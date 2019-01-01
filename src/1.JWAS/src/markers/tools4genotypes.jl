@@ -58,10 +58,10 @@ end
 #                       (2) all pedigree individuals  --> incomplete genomic data
 #output:mme.M.genotypes (1) subset
 #
-function align_genotypes(mme::MME,output_genetic_variance=false,single_step_analysis=false)
+function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
     #Set ouput IDs to all genotyped individual IDs in COMPLETE genomic data analysis
     #before aligning genotypes with phenotypes to output genetic variances
-    if output_genetic_variance == true && single_step_analysis == false
+    if output_heritability == true && single_step_analysis == false
         mme.output_ID = mme.M.obsID  ##NEED UPDATE
     end
     #Get genotypes for outputEBV individuals

@@ -118,7 +118,6 @@ mutable struct MCMCinfo
     estimate_variance
     update_priors_frequency
     outputEBV
-    output_genetic_variance
     output_heritability
     output_PEV
 end
