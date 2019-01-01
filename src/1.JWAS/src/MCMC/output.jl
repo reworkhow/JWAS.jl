@@ -1,11 +1,115 @@
 ################################################################################
-#User-interface to set training and testing individuals
+# Return Output Results (Dictionary)
 ################################################################################
-#function set_training(model,IDs)
-#    IDs = map(String,vec(IDs)) #Array{String,1}
-#    model.training_ID=IDs
-#end
+function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
+                       meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
+  output = Dict()
+  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
+      for traiti in 1:mme.nModels
+          output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
+      end
+  end
 
+  location_parameters = reformat2DataFrame([getNames(mme) solMean])
+  output["Posterior mean of location parameters"] = location_parameters
+  output["Posterior mean of residual variance"]   = meanVare
+  if mme.pedTrmVec != 0
+    output["Posterior mean of polygenic effects covariance matrix"]=G0Mean
+    if mme.output_ID != 0
+        for pedtrm in mme.pedTrmVec
+            traiti, effect = split(pedtrm,':')
+            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+            EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+            output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
+        end
+    end
+  end
+
+  #samples for non-marker effects
+  if output_samples_frequency != 0
+      for i in  mme.outputSamplesVec
+          trmi   = i.term
+          trmStr = trmi.trmStr
+          writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
+                                                  i.sampleArray],',')
+      end
+  end
+
+  if mme.M != 0
+    if mme.nModels == 1
+        meanAlpha=[meanAlpha] # make st array of array
+    end
+    markerout        = []
+    if mme.M.markerID[1]!="NA"
+        for markerArray in meanAlpha
+          push!(markerout,[mme.M.markerID markerArray])
+        end
+    else
+        for markerArray in meanAlpha
+          push!(markerout,markerArray)
+        end
+    end
+
+    output["Posterior mean of marker effects"] = (mme.nModels==1) ? markerout[1] : markerout
+    output["Posterior mean of marker effects variance"] = meanVara
+    if estimatePi == true
+        output["Posterior mean of Pi"] = mean_pi
+    end
+
+    if mme.output_ID != 0
+        for traiti in 1:mme.nModels
+            EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
+            output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
+        end
+    end
+  end
+
+  if mme.output_ID != 0 && haskey(mme.output_X,"J") #single-step analyis
+      for traiti in 1:mme.nModels
+          sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
+          sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
+          EBV_J        = mme.output_X["J"]*sol_J
+          EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
+          output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
+      end
+  end
+
+  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
+      for traiti in 1:mme.nModels
+          EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
+          if EBV != zeros(length(mme.output_ID))
+              output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+          end
+      end
+      #if output_PEV == true add PEV
+  end
+
+  return output
+end
+
+################################################################################
+# Reformat Output Array to DataFrame
+################################################################################
+function reformat2DataFrame(res::Array)
+    ##SLOW, 130s
+    #out_names=[strip(i) for i in split(res[1,1],':',keepempty=false)]
+    #for rowi in 2:size(res,1)
+    #    out_names=[out_names [strip(i) for i in split(res[rowi,1],':',keepempty=false)]]#hcat two vectors
+    #end
+    out_names = Array{String}(undef,size(res,1),3)
+    for rowi in 1:size(res,1)
+        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keepempty=false)]
+    end
+
+    if size(out_names,2)==1 #convert vector to matrix
+        out_names = reshape(out_names,length(out_names),1)
+    end
+    #out_names=permutedims(out_names,[2,1]) #rotate
+    out_values=map(Float64,res[:,2])
+    out=[out_names out_values]
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate])
+    return out
+end
 
 """
     outputEBV(model,IDs::Array;PEV=false)
@@ -18,14 +122,10 @@ function outputEBV(model,IDs;PEV=false)
     model.output_ID=IDs
 end
 
-function set_testing(model,IDs;PEV=false)
-    outputEBV(model,IDs,PEV=PEV)
-end
-
 """
     get_outputX_others(model)
 
-Make incidence matrices for effects involve in EBV inclung J, ϵ, pedTrmVec except marker covariates
+Make incidence matrices for effects involved in calculation of EBV including J, ϵ, pedTrmVec except marker covariates.
 """
 function get_outputX_others(model,single_step_analysis)
     #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
@@ -135,3 +235,33 @@ end
 
 
 export outputEBV,getEBV
+
+function getEBV(mme,sol,α,traiti)
+    EBV=zeros(length(mme.output_ID))
+
+    location_parameters = reformat2DataFrame([getNames(mme) sol])
+    if mme.pedTrmVec != 0
+        for pedtrm in mme.pedTrmVec
+            traiti, effect = split(pedtrm,':')
+            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+            EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+            EBV += EBV_pedtrm
+        end
+    end
+
+    if mme.M != 0
+        EBV += mme.output_genotypes*α
+    end
+
+    if haskey(mme.output_X,"J") #single-step analyis
+        for traiti in 1:mme.nModels
+            sol_J  = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
+            sol_ϵ  = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
+            EBV_J  = mme.output_X["J"]*sol_J
+            EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
+            EBV   += (EBV_J+EBV_ϵ)
+        end
+    end
+
+    return EBV
+end

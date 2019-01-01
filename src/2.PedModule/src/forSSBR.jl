@@ -19,6 +19,9 @@ function genoSet!(genoID_file::AbstractString,ped::Pedigree)
 		ped.idMap[i].seqID = j
 		j += 1
 	end
+
+	ped.IDs=getIDs(ped) #order of IDs is changed
+
 	return (numberNonGeno)
 end
 
@@ -45,6 +48,9 @@ function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
 		ped.idMap[i].seqID = j
 		j += 1
 	end
+
+	ped.IDs = getIDs(ped) #order of IDs is changed
+
 	return numberNonGeno
 end
 
@@ -86,5 +92,8 @@ function genoSet!(genoID_file::AbstractString,genoCoreID_file::AbstractString,pe
 
 	numberNonGeno = length(ped.setNG)
 	numberGenoCore = length(ped.setG_core)
+
+	ped.IDs=getIDs(ped) #ID are changed
+
 	return (numberNonGeno,numberGenoCore)
 end

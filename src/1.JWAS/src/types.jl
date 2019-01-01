@@ -81,18 +81,17 @@ mutable struct MCMCSamples
 end
 
 mutable struct Genotypes
-  obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped inds with phenotypes
-  genoID::Array{AbstractString,1} #row ID for original genotyped individuals (may not be phenotyped)
+  obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
-  nObs::Int64
+  nObs::Int64                     #length of obsID
   nMarkers::Int64
   alleleFreq::Array{Float64,2}
   sum2pq::Float64
   centered::Bool
   genotypes::Array{Float64,2}
-  G  #ST->Float64;MT->Array{Float64,2}
-  G_is_marker_variance::Bool
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a1,a2,a3,a4,a5,a6,a7,a8,0.0,false)
+  G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
+  genetic_variance  #genetic variance
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,false,false)
 end
 
 mutable struct DF
@@ -101,6 +100,30 @@ mutable struct DF
     marker::Float64
     random::Float64
 end
+
+mutable struct MCMCinfo
+    chain_length
+    starting_value
+    burnin
+    output_samples_file
+    output_samples_frequency
+    printout_model_info
+    printout_frequency
+    methods
+    Pi
+    estimatePi
+    single_step_analysis #pedigree,
+    missing_phenotypes
+    constraint
+    estimate_variance
+    update_priors_frequency
+    outputEBV
+    output_genetic_variance
+    output_heritability
+    output_PEV
+end
+
+#@warn Too frequent will slow down the computation
 
 ################################################################################
 # the class MME is shown below with members for models, mixed model equations...
@@ -155,9 +178,9 @@ mutable struct MME
     output_genotypes
     output_X
 
-    training_ID
-
     output
+
+    MCMCinfo
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1 && typeof(R)==Float64             #single-trait
