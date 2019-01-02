@@ -66,8 +66,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       for traiti in 1:ntraits
           push!(outvar,"EBV_"*string(mme.lhsVec[traiti]))
       end
-      if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
           push!(outvar,"genetic_variance")
+          push!(outvar,"heritability")
       end
   end
 
@@ -107,9 +108,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       for traiti in 1:ntraits
           writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],transubstrarr(mme.output_ID),',')
       end
-      if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
-      end          
+          writedlm(outfile["heritability"],transubstrarr(map(String,mme.lhsVec)),',')
+      end
   end
 
   return out_i,outfile
@@ -172,9 +174,10 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
           if ntraits == 1
              myEBV = getEBV(mme,sol,α,1)
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-             if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
+             if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
                  mygvar = var(myEBV)
                  writedlm(outfile["genetic_variance"],mygvar,',')
+                 writedlm(outfile["heritability"],mygvar/(mygvar+vRes),',')
              end
           else
               EBVmat = myEBV = getEBV(mme,sol,α[1],1)
@@ -183,10 +186,11 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
                   myEBV = getEBV(mme,sol,α[traiti],traiti)
                   writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
                   EBVmat = [EBVmat myEBV]
-                  if mme.MCMCinfo.output_genetic_variance == true && mme.MCMCinfo.single_step_analysis == false
-                      mygvar = var(myEBV)
-                      writedlm(outfile["genetic_variance"],vec(cov(EBVmat))',',')
-                  end
+              end
+              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+                  mygvar = cov(EBVmat)
+                  writedlm(outfile["genetic_variance"],vec(mygvar)',',')
+                  writedlm(outfile["heritability"],(diag(mygvar./(mygvar+vRes)))',',')
               end
           end
        end

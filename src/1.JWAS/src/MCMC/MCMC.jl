@@ -16,7 +16,7 @@ include("output.jl")
             single_step_analysis= false,pedigree = false,
             missing_phenotypes=false,constraint=false,
             update_priors_frequency::Int64=0,
-            outputEBV=true)
+            outputEBV=true,output_PEV=false,output_heritability=false)
 
 
 **Run MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.**
@@ -37,8 +37,8 @@ include("output.jl")
   If **constraint**=true, constrain residual covariances between traits to be zeros.
 * Print out the model information in REPL if `printout_model_info=true`; print out the monte carlo mean in REPL with **printout_frequency**,
   defaulting to `false`.
-* Individual estimted breeding values (EBVs) are returned if **outputEBV**=`true`, defaulting to `true`. Genetic variances is returned if
-  **output_genetic_variance**=`true`, defaulting to `false`. Note that calculation of genetic variances is computaionally intensive.
+* Individual estimted breeding values (EBVs) are returned if **outputEBV**=`true`, defaulting to `true`. Heritability and genetic variances are returned if
+  **output_heritability**=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
 """
 function runMCMC(mme::MME,df;
                 #chain
@@ -59,8 +59,7 @@ function runMCMC(mme::MME,df;
                 pedigree            = false,
                 #output
                 outputEBV                = true,
-                output_genetic_variance  = false, #complete or incomplete genomic data
-                output_heritability      = false,
+                output_heritability      = false, #complete or incomplete genomic data
                 output_PEV               = false)
 
     ############################################################################
@@ -82,7 +81,6 @@ function runMCMC(mme::MME,df;
                             estimate_variance,
                             update_priors_frequency,
                             outputEBV,
-                            output_genetic_variance,
                             output_heritability,
                             output_PEV)
     #check errors in function arguments
@@ -108,7 +106,7 @@ function runMCMC(mme::MME,df;
 
     if mme.M!=0
         #align genotypes with 1) phenotypes IDs; 2) output IDs.
-        align_genotypes(mme,output_genetic_variance,single_step_analysis)
+        align_genotypes(mme,output_heritability,single_step_analysis)
         Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
     end
 
