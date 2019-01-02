@@ -2,7 +2,7 @@
 # Return Output Results (Dictionary)
 ################################################################################
 function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
-                       meanAlpha,meanVara,estimatePi,mean_pi,output_file="MCMC_samples")
+                       meanAlpha,meanVara,estimatePi,mean_pi,output_file)
   output = Dict()
   if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
       for traiti in 1:mme.nModels
@@ -78,10 +78,19 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
       for traiti in 1:mme.nModels
           EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
           if EBV != zeros(length(mme.output_ID))
-              output["EBV"*"_"*string(mme.lhsVec[traiti])]= [mme.output_ID EBV]
+              myEBV = "EBV"*"_"*string(mme.lhsVec[traiti])
+              output[myEBV]= DataFrame([mme.output_ID EBV],[:ID,:Estimate])
+          end
+          if mme.MCMCinfo.output_PEV == true
+              EBVsamplesfile = output_file*"_"*myEBV*".txt"
+              EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
+              if vec(IDs) == mme.output_ID
+                  output[myEBV][:PEV]= vec(var(EBVsamples,dims=1))
+              else
+                  error("The EBV file is wrong.")
+              end
           end
       end
-      #if output_PEV == true add PEV
   end
 
   return output
