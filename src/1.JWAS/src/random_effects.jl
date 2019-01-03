@@ -1,47 +1,48 @@
 ################################################################################
-#set specific ModelTerm to random using pedigree information
+#Set specific ModelTerm as random using pedigree information
 #e.g. Animal, Animal*Age, Maternal
 ################################################################################
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)
 
 * set variables as random polygenic effects with pedigree information **ped**,
-  variances **G** whose degree of freedom **df** defaults to 4.0.
+  variances **G** with degree of freedom **df**, defaulting to `4.0`.
 
 ```julia
 #single-trait (example 1)
-model_equation  = "y = intercept + Age + Animal"
+model_equation  = "y = intercept + age + animal"
 model           = build_model(model_equation,R)
 ped             = get_pedigree(pedfile)
 G               = 1.6
-set_random(model,"Animal Animal*Age", ped,G)
+set_random(model,"animal", ped, G)
 
 #single-trait (example 2)
-model_equation  = "y = intercept + Age + Animal + Animal*Age"
+model_equation  = "y = intercept + age + animal + animal*age"
 model           = build_model(model_equation,R)
 ped             = get_pedigree(pedfile)
 G               = [1.6   0.2
                    0.2  1.0]
-set_random(model,"Animal Animal*Age", ped,G)
+set_random(model,"animal animal*age", ped,G)
 
 #multi-trait
-model_equations = "BW = intercept + age + sex + Animal
-                   CW = intercept + age + sex + Animal"
+model_equations = "BW = intercept + age + sex + animal
+                   CW = intercept + age + sex + animal"
 model           = build_model(model_equations,R);
 ped             = get_pedigree(pedfile);
 G               = [6.72   2.84
                    2.84  8.41]
-set_random(model,"Animal", ped,G)
+set_random(model,"animal",ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4,output_samples=true)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
     if !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
 
     pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
 
-    #add model equation number; "animal" => "1:animal"
+    #add model equation number to variables;
+    #"animal" => "1:animal"; "animal*age"=>"1:animal*age"
     res = []
     for trm in pedTrmVec
       for (m,model) = enumerate(mme.modelVec)
@@ -49,14 +50,11 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
           res = [res;string(m)*":"*trm]
-          #if output_samples == true
-          #    outputMCMCsamples(mme,trm) #output MCMC samples (used to calculate EBV,PEV)
-          #end
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
       end
-    end #"1:animal","1:animal*age"
+    end
     if length(res) != size(G,1)
       error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
