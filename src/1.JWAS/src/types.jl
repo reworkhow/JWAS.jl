@@ -58,7 +58,7 @@ mutable struct ResVar
 end
 
 ################################################################################
-#General (iid) random effects
+#General (including i.i.d.) random effects
 #Assume independence:cov(1:A,1:B)=0 unless A.names == B.names, e.g.pedigree(pedTrmVec)
 #single-trait e.g. termarray: [ModelTerm(1:A)]
 #multi-trait  e.g. termarray: [ModelTerm(1:A), ModelTerm(2:A)]
