@@ -245,10 +245,6 @@ function getMME(mme::MME, df::DataFrame)
     vv    = y
     ySparse = sparse(ii,jj,vv)
 
-# IF METHODS= "IMCOMPLETE GENOMIC DATA"
-#   X = [X ...]
-#
-#
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
@@ -276,7 +272,15 @@ function getMME(mme::MME, df::DataFrame)
       mme.GiOld = copy(mme.GiNew)
     end
 
+    #trick to enable addLambdas() 1st time
+    #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
+    for random_term in mme.rndTrmVec
+      random_term.GiOld = zeros(size(random_term.GiOld))
+    end
     addLambdas(mme)
+    for random_term in mme.rndTrmVec
+      random_term.GiOld = copy(random_term.GiNew)
+    end
 
     dropzeros!(mme.mmeLhs)
     dropzeros!(mme.mmeRhs)
