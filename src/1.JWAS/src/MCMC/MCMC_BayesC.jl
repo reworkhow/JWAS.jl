@@ -190,7 +190,13 @@ function MCMC_BayesC(nIter,mme,df;
             scaleRes    =  meanVare*(nuRes-2)/nuRes
             println("\n Update priors from posteriors.")
         end
-
+                                            
+        ########################################################################
+        # 2.6 Estimate Scale parameter in prior for variance of marker effects
+        ########################################################################
+        if estimateScale == true
+                                                
+                                            
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################

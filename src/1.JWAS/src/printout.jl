@@ -102,7 +102,7 @@ end
 ################################################################################
 function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_frequency,
                   output_samples_frequency,missing_phenotypes,constraint,
-                  estimatePi,update_priors_frequency,mme)
+                  estimatePi,estimateScale,update_priors_frequency,mme)
     #metaprogramming
     #model2.MCMCinfo.(eval(fieldnames(typeof(model2.MCMCinfo))[1]))
     printstyled("MCMC Information:\n\n",bold=true)
@@ -114,6 +114,7 @@ function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_freq
     if !(methods in ["conventional (no markers)", "GBLUP"])
       @printf("%-30s %20s\n","estimatePi",estimatePi ? "true" : "false")
     end
+    @printf("%-30s %20s\n","estimateScale",estimateScale ? "true" : "false")            
     @printf("%-30s %20s\n","starting_value",starting_value ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
