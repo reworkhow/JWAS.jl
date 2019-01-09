@@ -50,18 +50,21 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 #methods
-                methods             = "conventional (no markers)", Pi = 0.0, estimatePi = false,
-                estimateScale       = false,
-                missing_phenotypes  = true, constraint = false,
-                estimate_variance   = true,
-                update_priors_frequency::Int64=0,
+                methods                         = "conventional (no markers)", 
+                Pi                              = 0.0, 
+                estimatePi                      = false,
+                estimateScale                   = false,
+                missing_phenotypes              = true, 
+                constraint                      = false,
+                estimate_variance               = true,
+                update_priors_frequency::Int64  =0,
                 #parameters for single-step analysis
-                single_step_analysis= false,
-                pedigree            = false,
+                single_step_analysis            = false,
+                pedigree                        = false,
                 #output
-                outputEBV                = true,
-                output_heritability      = false, #complete or incomplete genomic data
-                output_PEV               = false)
+                outputEBV                       = true,
+                output_heritability             = false, #complete or incomplete genomic data
+                output_PEV                      = false)
 
     ############################################################################
     # Pre-Check
@@ -131,7 +134,7 @@ function runMCMC(mme::MME,df;
                             π                        = Pi,
                             methods                  = methods,
                             estimatePi               = estimatePi,
-                            estimateScale            = 
+                            estimateScale            = estimateScale,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
