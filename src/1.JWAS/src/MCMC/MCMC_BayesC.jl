@@ -167,14 +167,13 @@ function MCMC_BayesC(nIter,mme,df;
         # 2.4 Marker Effects Variance
         ########################################################################
         if mme.M != 0
-            if methods != "BayesB"
+            if methods != "BayesB" && mme.MCMCinfo.estimate_variance
                 vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
-            else
+            elseif methods == "BayesB"   
                 for j=1:nMarkers
-                    vEff[j] = sample_variance(α[j],1,dfEffectVar, scaleVar)
+                    vEff[j] = sample_variance(β[j],1,dfEffectVar, scaleVar)
                 end
             end
-
             if iter > burnin && methods != "BayesB"
                 meanVara += (vEff - meanVara)/(iter-burnin)
             end
