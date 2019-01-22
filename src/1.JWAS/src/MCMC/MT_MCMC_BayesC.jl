@@ -404,13 +404,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
     end
     if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             meanAlphaArray,GMMean,estimatePi,false,output_file)
+                             meanAlphaArray,GMMean,estimatePi,false,false,false,output_file)
     elseif mme.M != 0
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             meanuArray,GMMean,estimatePi,BigPiMean,output_file)
+                             meanuArray,GMMean,estimatePi,BigPiMean,false,false,output_file)
     else
         output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             false,false,false,false,output_file)
+                             false,false,false,false,false,false,output_file)
     end
 
     #OUTPUT Marker Effects
