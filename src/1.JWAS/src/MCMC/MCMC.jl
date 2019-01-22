@@ -50,17 +50,21 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 #methods
-                methods             = "conventional (no markers)", Pi = 0.0, estimatePi = false,
-                missing_phenotypes  = true, constraint = false,
-                estimate_variance   = true,
-                update_priors_frequency::Int64=0,
+                methods                         = "conventional (no markers)", 
+                Pi                              = 0.0, 
+                estimatePi                      = false,
+                estimateScale                   = false,
+                missing_phenotypes              = true, 
+                constraint                      = false,
+                estimate_variance               = true,
+                update_priors_frequency::Int64  =0,
                 #parameters for single-step analysis
-                single_step_analysis= false,
-                pedigree            = false,
+                single_step_analysis            = false,
+                pedigree                        = false,
                 #output
-                outputEBV                = true,
-                output_heritability      = false, #complete or incomplete genomic data
-                output_PEV               = false)
+                outputEBV                       = true,
+                output_heritability             = false, #complete or incomplete genomic data
+                output_PEV                      = false)
 
     ############################################################################
     # Pre-Check
@@ -75,6 +79,7 @@ function runMCMC(mme::MME,df;
                             methods,
                             Pi,
                             estimatePi,
+                            estimateScale,
                             single_step_analysis, #pedigree,
                             missing_phenotypes,
                             constraint,
@@ -118,7 +123,7 @@ function runMCMC(mme::MME,df;
     if printout_model_info == true
       getinfo(mme)
       getMCMCinfo(methods,Pi,chain_length,burnin,(starting_value!=zeros(size(mme.mmeLhs,1))),printout_frequency,
-                  output_samples_frequency,missing_phenotypes,constraint,estimatePi,
+                  output_samples_frequency,missing_phenotypes,constraint,estimatePi, estimateScale,
                   update_priors_frequency,mme)
     end
 
@@ -129,6 +134,7 @@ function runMCMC(mme::MME,df;
                             π                        = Pi,
                             methods                  = methods,
                             estimatePi               = estimatePi,
+                            estimateScale            = estimateScale,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,

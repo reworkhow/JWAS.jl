@@ -2,7 +2,7 @@
 # Return Output Results (Dictionary)
 ################################################################################
 function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
-                       meanAlpha,meanVara,estimatePi,mean_pi,output_file)
+                       meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file)
   output = Dict()
   if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
       for traiti in 1:mme.nModels
@@ -54,6 +54,9 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
     output["Posterior mean of marker effects variance"] = meanVara
     if estimatePi == true
         output["Posterior mean of Pi"] = mean_pi
+    end
+    if estimateScale == true
+        output["Posterior mean of ScaleEffectVar"] = meanScaleVar
     end
 
     if mme.output_ID != 0
