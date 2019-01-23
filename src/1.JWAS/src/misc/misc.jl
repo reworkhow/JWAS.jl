@@ -1,3 +1,3 @@
 include("convergence_diagnosis.jl")
 
-export traceplot
+export traceplot, PSRF

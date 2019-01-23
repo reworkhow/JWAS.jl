@@ -27,3 +27,31 @@ function traceplot(file;header=true,separator=',',backend="pyplot",nplots=4)
     # default(size=(800*upscale,600*upscale)) #Plot canvas size
     # default(dpi=300) #Only for PyPlot - presently broken
 end
+
+function PSRF(files::AbstractString...;header=true)
+    nchain = length(files)
+
+    sample_mean     = []
+    sample_variance = []
+    chainlength     = 0
+
+    for i in files
+        if header == true
+            mysample,myheader = readdlm(i,header=header)
+        else
+            mysample = readdlm(i,header=header)
+        end
+        push!(sample_mean, mean(mysample))
+        push!(sample_variance, std(mysample)^2)
+        chainlength = length(mysample)
+    end
+
+    M, N = nchain, chainlength
+    B = N / (M - 1) * sum((sample_mean .- mean(sample_mean)).^2) # between chain variance
+    W = mean(sample_variance)                                    # with-in chain variance
+
+    # unbiased estimator of the marginal posterior variance
+    V = (N-1)/N * W + (M + 1)/N*M * B
+
+    return V/W
+end
