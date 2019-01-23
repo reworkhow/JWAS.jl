@@ -3,7 +3,7 @@ using DelimitedFiles
 using DataFrames,CSV
 using SparseArrays
 using LinearAlgebra
-using ProgressMeter
+using ProgressMeter,Plots
 using .PedModule
 using .misc
 
@@ -18,6 +18,7 @@ include("markers/markers.jl")
 include("variance.jl")
 include("Pi.jl")
 
+include("misc/misc.jl")
 include("pipeline/LOOCV.jl")
 include("pipeline/adjust_phenotype.jl")
 
