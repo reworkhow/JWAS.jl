@@ -18,30 +18,6 @@ function MCMC_BayesC(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     solMean     = zero(sol)
-
-    if methods == "conventional (no markers)"
-        if mme.M!=0
-            error("Conventional analysis runs without genotypes!")
-        elseif estimatePi == true
-            error("conventional (no markers) analysis runs with estimatePi = false.")
-        end
-    elseif methods=="RR-BLUP"
-        if mme.M == 0
-            error("RR-BLUP runs with genotypes")
-        elseif π != 0.0
-            error("RR-BLUP runs with π=0.")
-        elseif estimatePi == true
-            error("RR-BLUP runs with estimatePi = false.")
-        end
-    elseif methods=="BayesC"
-        if mme.M == 0
-            error("BayesC runs with genotypes.")
-        end
-    elseif methods=="BayesB"
-        if mme.M==0
-            error("BayesB runs with genotypes.")
-        end
-    end
     ############################################################################
     # PRIORS
     ############################################################################
@@ -70,9 +46,9 @@ function MCMC_BayesC(nIter,mme,df;
         dfEffectVar = mme.df.marker
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
-        #println("Init scaleVar to ",scaleVar)                        
+        #println("Init scaleVar to ",scaleVar)
         meanVara     = 0.0 #variable to save variance for marker effect
-        meanScaleVar = 0.0 #variable to save Scale parameter for prior of marker effect variance                        
+        meanScaleVar = 0.0 #variable to save Scale parameter for prior of marker effect variance
         #vectors to save solutions for marker effects
         α           = zeros(nMarkers)#starting values for marker effeccts are zeros
         δ           = zeros(nMarkers)#inclusion indicator for marker effects
@@ -169,7 +145,7 @@ function MCMC_BayesC(nIter,mme,df;
         if mme.M != 0
             if methods != "BayesB" && mme.MCMCinfo.estimate_variance
                 vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
-            elseif methods == "BayesB"   
+            elseif methods == "BayesB"
                 for j=1:nMarkers
                     vEff[j] = sample_variance(β[j],1,dfEffectVar, scaleVar)
                 end
@@ -192,7 +168,7 @@ function MCMC_BayesC(nIter,mme,df;
             scaleRes    =  meanVare*(nuRes-2)/nuRes
             println("\n Update priors from posteriors.")
         end
-                                            
+
         ########################################################################
         # 2.6 Estimate Scale parameter in prior for variance of marker effects
         ########################################################################
@@ -201,10 +177,10 @@ function MCMC_BayesC(nIter,mme,df;
             b = sum(dfEffectVar ./ (2vEff )) + 1
             scaleVar = rand(Gamma(a,1/b))
             #println("scaleVar = ",scaleVar)
-            if iter > burnin                                    
-                meanScaleVar += (scaleVar - meanScaleVar)/(iter-burnin) 
-            end                                        
-        end                                                                           
+            if iter > burnin
+                meanScaleVar += (scaleVar - meanScaleVar)/(iter-burnin)
+            end
+        end
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################

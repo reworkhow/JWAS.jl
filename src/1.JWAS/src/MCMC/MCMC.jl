@@ -50,11 +50,11 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 #methods
-                methods                         = "conventional (no markers)", 
-                Pi                              = 0.0, 
+                methods                         = "conventional (no markers)",
+                Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
-                missing_phenotypes              = true, 
+                missing_phenotypes              = true,
                 constraint                      = false,
                 estimate_variance               = true,
                 update_priors_frequency::Int64  =0,
@@ -89,7 +89,7 @@ function runMCMC(mme::MME,df;
                             output_heritability,
                             output_PEV)
     #check errors in function arguments
-    errors_args(mme,methods,Pi)
+    errors_args(mme,methods,Pi,estimatePi)
     #users need to provide high-quality pedigree file
     check_pedigree(mme,df,pedigree)
     #user-defined IDs to return genetic values (EBVs)

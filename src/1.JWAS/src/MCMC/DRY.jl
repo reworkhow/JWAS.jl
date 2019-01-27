@@ -1,12 +1,35 @@
 ################################################################################
 # Pre-Check
 ################################################################################
-function errors_args(mme,methods,Pi)
-    if methods == "conventional (no markers)" && mme.M!=0
-        error("Conventional analysis runs without genotypes!")
-    end
-    if mme.M!=0 && methods=="GBLUP" && mme.M.genetic_variance == false
-        error("Please provide values for the genetic variance for GBLUP analysis")
+function errors_args(mme,methods,Pi,estimatePi)
+    if methods == "conventional (no markers)"
+        if mme.M!=0
+            error("Conventional analysis runs without genotypes!")
+        elseif estimatePi == true
+            error("conventional (no markers) analysis runs with estimatePi = false.")
+        end
+    elseif methods=="RR-BLUP"
+        if mme.M == 0
+            error("RR-BLUP runs with genotypes")
+        elseif Pi != 0.0
+            error("RR-BLUP runs with π=0.")
+        elseif estimatePi == true
+            error("RR-BLUP runs with estimatePi = false.")
+        end
+    elseif methods=="BayesC"
+        if mme.M == 0
+            error("BayesC runs with genotypes.")
+        end
+    elseif methods=="BayesB"
+        if mme.M==0
+            error("BayesB runs with genotypes.")
+        end
+    elseif methods=="GBLUP"
+        if mme.M == 0
+            error("GBLUP runs with genotypes.")
+        elseif mme.M.genetic_variance == false
+            error("Please provide values for the genetic variance for GBLUP analysis")
+        end
     end
     if mme.nModels > 1 && mme.M!=0
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0

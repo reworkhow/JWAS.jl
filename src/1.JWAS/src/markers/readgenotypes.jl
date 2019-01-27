@@ -56,7 +56,7 @@ function readgenotypes(file::AbstractString;separator=',',header=true,center=tru
     #df = CSV.read(file, types=etv, delim = separator, header=header)
     df = readtable(file, eltypes=etv, separator = separator, header=header)
     obsID     = map(String,df[1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
-    genotypes = map(Float64,convert(Array,df[2:end]))
+    genotypes = map(Float64,convert(Matrix,df[2:end]))
     nObs,nMarkers = size(genotypes)
 
     ##readdlm

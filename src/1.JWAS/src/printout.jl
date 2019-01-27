@@ -114,7 +114,7 @@ function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_freq
     if !(methods in ["conventional (no markers)", "GBLUP"])
       @printf("%-30s %20s\n","estimatePi",estimatePi ? "true" : "false")
     end
-    @printf("%-30s %20s\n","estimateScale",estimateScale ? "true" : "false")            
+    @printf("%-30s %20s\n","estimateScale",estimateScale ? "true" : "false")
     @printf("%-30s %20s\n","starting_value",starting_value ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",output_samples_frequency)
@@ -166,10 +166,12 @@ function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_freq
             Base.print_matrix(stdout,round.(mme.M.G,digits=3))
             println()
             println("\nΠ: (Y(yes):included; N(no):excluded)\n")
-            @printf("%-20s %12s\n",string.(mme.lhsVec),"probability")
+            print(string.(mme.lhsVec))
+            @printf("%20s\n","probability")
             for (i,j) in Pi
                 i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                @printf("%-20s %12s\n",i,j)
+                print(i)
+                @printf("%20s\n",j)
             end
         end
     end
