@@ -18,23 +18,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
     #starting values for location parameters(no marker) are sol
     solMean     = zero(sol)
 
-    if methods == "conventional (no markers)"
-        if mme.M!=0
-            error("Conventional analysis runs without genotypes!")
-        elseif estimatePi == true
-            error("conventional (no markers) analysis runs with estimatePi = false.")
-        end
-    elseif methods in ["RR-BLUP","BayesL"]
-        if mme.M == 0
-            error("RR-BLUP runs with genotypes")
-        elseif estimatePi == true
-            error("RR-BLUP and BayesL run with estimatePi = false.")
-        end
+    if methods in ["RR-BLUP","BayesL"]
         BigPi = copy(Pi) #temporary for output_MCMC_samples function
     elseif methods in ["BayesC","BayesB"]
-        if mme.M == 0
-            error("BayesB or BayesC runs with genotypes")
-        end
         BigPi = copy(Pi)
         BigPiMean = copy(Pi)
         for key in keys(BigPiMean)

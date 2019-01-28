@@ -24,6 +24,12 @@ function errors_args(mme,methods,Pi,estimatePi)
         if mme.M==0
             error("BayesB runs with genotypes.")
         end
+    elseif methods=="BayesL"
+        if mme.M == 0
+            error("BayesL runs with genotypes.")
+        elseif estimatePi == true
+            error("BayesL runs with estimatePi = false.")
+        end
     elseif methods=="GBLUP"
         if mme.M == 0
             error("GBLUP runs with genotypes.")
