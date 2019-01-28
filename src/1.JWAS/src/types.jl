@@ -168,8 +168,6 @@ mutable struct MME
     mmePos::Int64                                 #temporary value to record term position (start from 1)
 
                                                   #MCMC SAMPLES
-    samples4R::Array{Float64,2}                   #residual variance  (ndim^2 * niter)
-    samples4G::Array{Float64,2}                   #polygenic variance (matrix -> vector)
     outputSamplesVec::Array{MCMCSamples,1}        #location parameters
 
     df::DF                                        #prior degree of freedom
@@ -191,7 +189,7 @@ mutable struct MME
                    zeros(1,1),0,0,R,R,
                    0,
                    1,
-                   zeros(1,1),zeros(1,1),[],
+                   [],
                    DF(ν,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
@@ -204,7 +202,7 @@ mutable struct MME
                    R,0,0,0.0,0.0,
                    0,
                    1,
-                   zeros(1,1),zeros(1,1),[],
+                   [],
                    DF(ν,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
