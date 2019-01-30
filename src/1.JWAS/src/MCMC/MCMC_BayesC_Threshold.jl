@@ -1,7 +1,7 @@
 ################################################################################
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
 ################################################################################
-function MCMC_BayesC(nIter,mme,df;
+function MCMC_BayesC_threshold(nIter,mme,df;
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,
@@ -17,15 +17,34 @@ function MCMC_BayesC(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
+    #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
+    # where t1=0 and t_{#category-1}<1.
+    #Then liabilities are sampled and stored in mme.ySparse
+    categories = copy(mme.ySparse) # categories (1,2,2,3,1...)
+    thresholds = collect(range(0, length=length(unique(mme.categories)),
+                         stop=1))[1:(end-1)]  #t1,t2,...,t_{#c-1}
+
+    cmean      = mme.X*sol #maker effects all zeros
+    for i in 1:length(categories) #1,2,2,3,1...
+        cmeani = cmean[i]
+        while true
+            liability = cmean[i] + randn()
+            if sum(liability .> thresholds)+1 == categories[i]
+                mme.ySparse[i] = liability
+                break
+            end
+        end
+    end
     solMean     = zero(sol)
     ############################################################################
     # PRIORS
     ############################################################################
     #prior for residual variance
-    vRes        = mme.RNew
-    nuRes       = mme.df.residual
-    scaleRes    = vRes*(nuRes-2)/nuRes
-    meanVare    = 0.0
+    # vRes        = mme.RNew
+    # nuRes       = mme.df.residual
+    # scaleRes    = vRes*(nuRes-2)/nuRes
+    # meanVare    = 0.0
+    vRes = 1.0
 
     #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.pedTrmVec != 0
@@ -84,19 +103,22 @@ function MCMC_BayesC(nIter,mme,df;
         # 0.1 liabilities
         ########################################################################
         cmean = mme.ySparse - ycorr #liabilities - residuals
-        for i in 1:length(mme.categories) #1,2,2,4,3,4
-            liability = cmean[i] + randn()
-            while liability < thresholds[i-1] || liability > thresholds[i]
-                liability = cmean + randn()
+        for i in 1:length(categories) #1,2,2,3,1...
+            cmeani = cmean[i]
+            while true
+                liability = cmean[i] + randn()
+                if sum(liability .> thresholds)+1 == categories[i]
+                    mme.ySparse[i] = liability
+                    break
+                end
             end
-            mme.ySparse[i] = liability
         end
 
         ########################################################################
         # 0. Categorical traits
         # 0.2 Thresholds
         ########################################################################
-        for i in 1:length(unique(mme.categories)) #1,2,3,4
+        for i in 1:length(thresholds) #e.g., t1, t2 for categories 1,2,3
             lowerboundry  = max(mme.ySparse[mme.categories .== i])
             upperboundry  = min(mme.ySparse[mme.categories .== (i+1)])
             thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
@@ -155,12 +177,12 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
-        mme.ROld = mme.RNew
-        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
-        mme.RNew = vRes
-        if iter > burnin
-            meanVare += (vRes - meanVare)/(iter-burnin)
-        end
+        # mme.ROld = mme.RNew
+        # vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
+        # mme.RNew = vRes
+        # if iter > burnin
+        #     meanVare += (vRes - meanVare)/(iter-burnin)
+        # end
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
