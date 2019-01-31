@@ -74,12 +74,6 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
     names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
 end
 
-#MCMC samplers for location parameters
-mutable struct MCMCSamples
-    term::ModelTerm
-    sampleArray::Array{Float64,2}
-end
-
 mutable struct Genotypes
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
@@ -167,10 +161,7 @@ mutable struct MME
 
     mmePos::Int64                                 #temporary value to record term position (start from 1)
 
-                                                  #MCMC SAMPLES
-    samples4R::Array{Float64,2}                   #residual variance  (ndim^2 * niter)
-    samples4G::Array{Float64,2}                   #polygenic variance (matrix -> vector)
-    outputSamplesVec::Array{MCMCSamples,1}        #location parameters
+    outputSamplesVec::Array{ModelTerm,1}          #for which location parameters to save MCMC samples
 
     df::DF                                        #prior degree of freedom
 
@@ -191,7 +182,7 @@ mutable struct MME
                    zeros(1,1),0,0,R,R,
                    0,
                    1,
-                   zeros(1,1),zeros(1,1),[],
+                   [],
                    DF(ν,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
@@ -204,7 +195,7 @@ mutable struct MME
                    R,0,0,0.0,0.0,
                    0,
                    1,
-                   zeros(1,1),zeros(1,1),[],
+                   [],
                    DF(ν,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,

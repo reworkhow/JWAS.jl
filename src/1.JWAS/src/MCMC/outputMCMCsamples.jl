@@ -27,22 +27,17 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
 
     for trmStr in res
         trm     = mme.modelTermDict[trmStr]
-        samples = MCMCSamples(trm,Array{Float64}(undef,1,1))
-        push!(mme.outputSamplesVec,samples)
+        push!(mme.outputSamplesVec,trm)
     end
 end
 
 ################################################################################
-#Set-Up files and arrays to save MCMC Samples
+#Set-Up files to save MCMC Samples
 ################################################################################
 function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name="MCMC_samples")
-  #initialize arrays to save MCMC samples
   ntraits     = size(mme.lhsVec,1)
-  num_samples = Int(floor(nIter/output_samples_frequency))
-  init_sample_arrays(mme,num_samples)
-  out_i = 1
 
-  outfile=Dict{String,IOStream}()
+  outfile = Dict{String,IOStream}()
 
   outvar = ["residual_variance"]
   if mme.pedTrmVec != 0
@@ -55,6 +50,13 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       push!(outvar,"marker_effects_variances")
       push!(outvar,"pi")
   end
+
+  #non-marker location parameters
+  for trmi in  mme.outputSamplesVec
+      trmStr = trmi.trmStr
+      push!(outvar,trmStr)
+  end
+
   #non-marker random effects variances
   for i in  mme.rndTrmVec
       trmStri   = split(i.term_array[1],':')[end]
@@ -87,6 +89,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
   writedlm(outfile["residual_variance"],transubstrarr(varheader),',')
 
+  for trmi in  mme.outputSamplesVec
+      trmStr = trmi.trmStr
+      writedlm(outfile[trmStr],transubstrarr(getNames(trmi)),',')
+  end
+
   for effect in  mme.rndTrmVec
     trmStri   = split(effect.term_array[1],':')[end]                  #x2
     thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
@@ -114,33 +121,32 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
   end
 
-  return out_i,outfile
+  return outfile
 end
 
-#init sample arrays
-function init_sample_arrays(mme::MME,niter)
-    #location parameters for fixed and random effects except markers
-    for i in  mme.outputSamplesVec #resize
-        trmi = i.term
-        i.sampleArray = zeros(niter,trmi.nLevels)
+#output samples for location parameers
+function output_location_parameters_samples(mme::MME,sol,outfile)
+    for trmi in  mme.outputSamplesVec
+        trmStr = trmi.trmStr
+        startPosi  = trmi.startPos
+        endPosi    = startPosi + trmi.nLevels - 1
+        samples4locations = sol[startPosi:endPosi]
+        writedlm(outfile[trmStr],samples4locations',',')
     end
-    #WRITE to FILES
-    #variance components for iid random effects
-    #for i in  mme.rndTrmVec #resize to be size of nTraits
-    #    i.sampleArray = zeros(niter,length(i.term_array)^2)
-    #end
 end
+
 
 ################################################################################
 #Output MCMC Samples every output_samples_frequency steps
 ################################################################################
-function output_MCMC_samples(mme,out_i,sol,vRes,G0,
+function output_MCMC_samples(mme,sol,vRes,G0,
                              π=false,
                              α=false,
                              locusEffectVar=false,
                              outfile=false)
   ntraits     = size(mme.lhsVec,1)
-  outputSamples(mme,sol,out_i)
+  #location parameters
+  output_location_parameters_samples(mme,sol,outfile)
   #random effects variances
   for effect in  mme.rndTrmVec
     trmStri   = split(effect.term_array[1],':')[end]
@@ -195,20 +201,7 @@ function output_MCMC_samples(mme,out_i,sol,vRes,G0,
           end
        end
   end
-  out_i +=1
-  return out_i
 end
-
-#output samples for location parameers
-function outputSamples(mme::MME,sol,iter::Int64)
-    for i in  mme.outputSamplesVec
-        trmi = i.term
-        startPosi  = trmi.startPos
-        endPosi    = startPosi + trmi.nLevels - 1
-        i.sampleArray[iter,:] = sol[startPosi:endPosi]
-    end
-end
-
 
 # for vec::Array{AbstractString,1} and vec::Array{String,1}
 # and Array{SubString{String} for issue 8

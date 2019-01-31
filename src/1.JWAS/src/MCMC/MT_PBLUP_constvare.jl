@@ -47,7 +47,7 @@ function MT_MCMC_PBLUP_constvare(nIter,mme,df;
     # SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-          out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
+          outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
     end
 
     ############################################################################
@@ -125,7 +125,7 @@ function MT_MCMC_PBLUP_constvare(nIter,mme,df;
         # OUTPUT
         ########################################################################
         if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
-            out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+            output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
         end
 
         if iter%outFreq==0 && iter>burnin

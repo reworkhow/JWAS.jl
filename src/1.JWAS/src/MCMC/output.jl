@@ -25,19 +25,11 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
     end
   end
 
-  #samples for non-marker effects
-  if output_samples_frequency != 0
-      for i in  mme.outputSamplesVec
-          trmi   = i.term
-          trmStr = trmi.trmStr
-          writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
-                                                  i.sampleArray],',')
-      end
-  end
-
   if mme.M != 0
     if mme.nModels == 1
-        meanAlpha=[meanAlpha] # make st array of array
+        #make single-trait estimated marker effects as type
+        #*array of array* (same to multi-trait) for coding simplicity
+        meanAlpha=[meanAlpha]
     end
     markerout        = []
     if mme.M.markerID[1]!="NA"

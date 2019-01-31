@@ -138,7 +138,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-          out_i,outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
+          outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
     end
 
     ############################################################################
@@ -345,15 +345,15 @@ function MT_MCMC_BayesC(nIter,mme,df;
         if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
+                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
                 elseif methods in ["RR-BLUP","BayesL"]
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
+                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
                     #res=hcat([x for x in arrayG]...)
-                    out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in arrayG]...),outfile)
+                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in arrayG]...),outfile)
                 end
             else
-                out_i=output_MCMC_samples(mme,out_i,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
+                output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
             end
         end
 
@@ -409,66 +409,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
         output["Model frequency"] = meanDeltaArray
       end
     end
-
-    # output = Dict()
-    #
-    # #OUTPUT Conventional Effects
-    # output["Posterior mean of location parameters"]    = reformat2DataFrame([getNames(mme) solMean])
-    # output["Posterior mean of residual covariance matrix"] = R0Mean
-    # if output_samples_frequency != 0
-    #
-    #   for i in  mme.outputSamplesVec
-    #       trmi   = i.term
-    #       trmStr = trmi.trmStr
-    #       writedlm(output_file*"_"*trmStr*".txt",[transubstrarr(getNames(trmi))
-    #                                        i.sampleArray])
-    #   end
-    # end
-    #
-    # #OUTPUT Polygetic Effects
-    # if mme.pedTrmVec != 0
-    #   output["Posterior mean of polygenic effects covariance matrix"] = G0Mean
-    # end
-    #
-    # #OUTPUT Marker Effects
-    # if output_samples_frequency != 0
-    #   for (key,value) in outfile
-    #     close(value)
-    #   end
-    # end
-    # if mme.M != 0
-    #   if mme.M.markerID[1]!="NA"
-    #     markerout        = []
-    #     if methods in ["BayesC","BayesCC","BayesB"]
-    #       for markerArray in meanuArray
-    #         push!(markerout,[mme.M.markerID markerArray])
-    #       end
-    #     elseif methods == "BayesC0"
-    #       for markerArray in meanAlphaArray
-    #         push!(markerout,[mme.M.markerID markerArray])
-    #       end
-    #     end
-    #   else
-    #     if methods in ["BayesC","BayesCC","BayesB"]
-    #       markerout        = meanuArray
-    #     elseif methods == "BayesC0"
-    #       markerout        = meanAlphaArray
-    #     end
-    #   end
-    #
-    #   output["Posterior mean of marker effects"] = markerout
-    #   if methods != "BayesB"
-    #       output["Posterior mean of marker effects covariance matrix"] = GMMean
-    #   end
-    #
-    #   if methods=="BayesC"||methods=="BayesCC"
-    #     output["Model frequency"] = meanDeltaArray
-    #   end
-    #
-    #   if estimatePi == true
-    #     output["Posterior mean of Pi"] = BigPiMean
-    #   end
-    # end
 
     return output
 end
