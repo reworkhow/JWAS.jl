@@ -225,7 +225,7 @@ function MCMC_BayesC(nIter,mme,df;
                              meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file)
     else
         output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             false,false,false,false,output_file)
+                             false,false,false,false,false,false,output_file)
     end
     return output
 end
