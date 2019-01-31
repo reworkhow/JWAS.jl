@@ -18,7 +18,7 @@ function MCMC_BayesC_threshold(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
-    # where t1=0 and t_{#category-1}<1.
+    # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
     #Then liabilities are sampled and stored in mme.ySparse
     categories = copy(mme.ySparse) # categories (1,2,2,3,1...)
     thresholds = collect(range(0, length=length(unique(mme.categories)),
@@ -118,7 +118,8 @@ function MCMC_BayesC_threshold(nIter,mme,df;
         # 0. Categorical traits
         # 0.2 Thresholds
         ########################################################################
-        for i in 1:length(thresholds) #e.g., t1, t2 for categories 1,2,3
+        #the first threshold t1=0 must be fixed to center the distribution
+        for i in 2:length(thresholds) #e.g., t1, t2 for categories 1,2,3
             lowerboundry  = max(mme.ySparse[mme.categories .== i])
             upperboundry  = min(mme.ySparse[mme.categories .== (i+1)])
             thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
