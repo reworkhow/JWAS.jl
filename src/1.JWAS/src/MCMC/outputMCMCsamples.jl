@@ -85,7 +85,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   #add headers
-  mytraits=map(String,mme.lhsVec)
+  mytraits=map(string,mme.lhsVec)
   varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
   writedlm(outfile["residual_variance"],transubstrarr(varheader),',')
 
@@ -117,7 +117,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
-          writedlm(outfile["heritability"],transubstrarr(map(String,mme.lhsVec)),',')
+          writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
   end
 
@@ -158,7 +158,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
   if mme.pedTrmVec != 0
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
   end
-  if α != false && outfile != false
+  if mme.M != 0 && outfile != false
       if ntraits == 1
           writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α',',')
       else
@@ -176,7 +176,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
   end
 
   if mme.MCMCinfo.outputEBV == true
-      if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 || α != false)
+      if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
              myEBV = getEBV(mme,sol,α,1)
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')

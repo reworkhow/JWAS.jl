@@ -3,7 +3,7 @@ using DelimitedFiles
 using DataFrames,CSV
 using SparseArrays
 using LinearAlgebra
-using ProgressMeter,Plots
+using ProgressMeter
 using .PedModule
 using .misc
 

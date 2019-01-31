@@ -353,7 +353,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
                     output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in arrayG]...),outfile)
                 end
             else
-                output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+                output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
             end
         end
 

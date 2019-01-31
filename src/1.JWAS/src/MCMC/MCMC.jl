@@ -89,13 +89,13 @@ function runMCMC(mme::MME,df;
                             output_heritability,
                             output_PEV)
     #check errors in function arguments
-    errors_args(mme,methods,Pi,estimatePi)
+    errors_args(mme,methods)
     #users need to provide high-quality pedigree file
     check_pedigree(mme,df,pedigree)
     #user-defined IDs to return genetic values (EBVs)
-    check_outputID(outputEBV,mme)
+    check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
-    check_phenotypes(mme,df,single_step_analysis)
+    check_phenotypes(mme,df)
     ############################################################################
     # Single-Step
     ############################################################################

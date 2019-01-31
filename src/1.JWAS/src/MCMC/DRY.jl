@@ -1,7 +1,9 @@
 ################################################################################
 # Pre-Check
 ################################################################################
-function errors_args(mme,methods,Pi,estimatePi)
+function errors_args(mme,methods)
+    Pi         = mme.MCMCinfo.Pi
+    estimatePi = mme.MCMCinfo.estimatePi
     if methods == "conventional (no markers)"
         if mme.M!=0
             error("Conventional analysis runs without genotypes!")
@@ -64,21 +66,26 @@ function check_pedigree(mme,df,pedigree)
     end
 end
 
-function check_outputID(outputEBV,mme)
+function check_outputID(mme)
     #Genotyped individuals are usaully not many, and are used in GWAS (complete
     #and incomplete), thus are used as default output_ID if not provided
-    if outputEBV == false
+    if mme.M == 0 && mme.pedTrmVec == 0
+        mme.MCMCinfo.outputEBV = false #no EBV in non-genetic analysis
+    end
+
+    if mme.MCMCinfo.outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0
         mme.output_ID = mme.M.obsID
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0
         #output EBV for all individuals in the pedigree for PBLUP
-        pedID=map(String,collect(keys(mme.ped.idMap)))
+        pedID=map(string,collect(keys(mme.ped.idMap)))
         mme.output_ID = pedID
     end
 end
 
-function check_phenotypes(mme,df,single_step_analysis=false)
+function check_phenotypes(mme,df)
+    single_step_analysis = mme.MCMCinfo.single_step_analysis
     phenoID = map(string,df[1])#same to df[:,1] in deprecated CSV
     if mme.M == 0
         return

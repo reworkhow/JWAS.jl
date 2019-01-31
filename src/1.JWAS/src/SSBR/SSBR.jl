@@ -1,5 +1,5 @@
 function SSBRrun(mme,ped::PedModule.Pedigree,df)
-    obsID    = map(String,df[1]) #phenotyped ID
+    obsID    = map(string,df[1]) #phenotyped ID
 
     mme.ped  = ped #alias (pointer),require same pedigree in polygenic effects and SSBR
     geno     = mme.M
@@ -11,7 +11,7 @@ function SSBRrun(mme,ped::PedModule.Pedigree,df)
     add_term(mme,"J") #centering
     #add data for ϵ and J
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
-    data_ϵ    = deepcopy(map(String,df[1]))
+    data_ϵ    = deepcopy(map(string,df[1]))
     data_ϵ[.!isnongeno].="0"
     df[Symbol("ϵ")]=data_ϵ
 
@@ -68,7 +68,7 @@ end
 # Fixed effects (J)
 ############################################################################
 function make_JVecs(mme,df,Ai_nn,Ai_ng)
-    mme.obsID =  map(String,df[1])
+    mme.obsID =  map(string,df[1])
     Jg = -ones(size(Ai_ng,2))
     Jn = Ai_nn\(-Ai_ng*Jg)
     J  = [Jn;
