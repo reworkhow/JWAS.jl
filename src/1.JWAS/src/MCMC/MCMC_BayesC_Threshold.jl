@@ -28,7 +28,7 @@ function MCMC_BayesC_threshold(nIter,mme,df;
     for i in 1:length(categories) #1,2,2,3,1...
         cmeani = cmean[i]
         while true
-            liability = cmean[i] + randn()
+            liability = cmeani + randn()
             if sum(liability .> thresholds)+1 == categories[i]
                 mme.ySparse[i] = liability
                 break
@@ -106,7 +106,7 @@ function MCMC_BayesC_threshold(nIter,mme,df;
         for i in 1:length(categories) #1,2,2,3,1...
             cmeani = cmean[i]
             while true
-                liability = cmean[i] + randn()
+                liability = cmeani + randn()
                 if sum(liability .> thresholds)+1 == categories[i]
                     mme.ySparse[i] = liability
                     break

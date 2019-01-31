@@ -57,14 +57,16 @@ function runMCMC(mme::MME,df;
                 missing_phenotypes              = true,
                 constraint                      = false,
                 estimate_variance               = true,
-                update_priors_frequency::Int64  =0,
+                update_priors_frequency::Int64  = 0,
                 #parameters for single-step analysis
                 single_step_analysis            = false,
                 pedigree                        = false,
                 #output
                 outputEBV                       = true,
                 output_heritability             = false, #complete or incomplete genomic data
-                output_PEV                      = false)
+                output_PEV                      = false,
+                #categorical trait
+                categorical_trait               = false)
 
     ############################################################################
     # Pre-Check
@@ -128,7 +130,19 @@ function runMCMC(mme::MME,df;
     end
 
     if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
+        if categorical_trait == true && methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
+            res = MCMC_BayesC_threshold(chain_length,mme,df,
+                                        burnin                   = burnin,
+                                        π                        = Pi,
+                                        methods                  = methods,
+                                        estimatePi               = estimatePi,
+                                        estimateScale            = estimateScale,
+                                        sol                      = starting_value,
+                                        outFreq                  = printout_frequency,
+                                        output_samples_frequency = output_samples_frequency,
+                                        output_file              = output_samples_file,
+                                        update_priors_frequency  = update_priors_frequency)
+        elseif methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
