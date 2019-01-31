@@ -95,7 +95,7 @@ function runMCMC(mme::MME,df;
     #user-defined IDs to return genetic values (EBVs)
     check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
-    check_phenotypes(mme,df)
+    df = check_phenotypes(mme,df)
     ############################################################################
     # Single-Step
     ############################################################################

@@ -118,6 +118,7 @@ function check_phenotypes(mme,df)
             mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
+    return df
 end
 
 function init_mixed_model_equations(mme,df,sol)
