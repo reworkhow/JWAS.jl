@@ -191,7 +191,7 @@ function getEBV(model::MME,genotypefile::AbstractString;header=true,separator=',
     etv[1]=String
     close(myfile)
     df = readtable(genotypefile, eltypes=etv, separator = separator, header=header)
-    obsID     = map(String,df[1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
+    obsID     = map(string,df[1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
     genotypes = map(Float64,convert(Array,df[2:end]))
     genotypes = genotypes .- model.M.alleleFreq
 

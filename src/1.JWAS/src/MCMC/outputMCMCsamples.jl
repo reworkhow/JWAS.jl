@@ -85,7 +85,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   #add headers
-  mytraits=map(String,mme.lhsVec)
+  mytraits=map(string,mme.lhsVec)
   varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
   writedlm(outfile["residual_variance"],transubstrarr(varheader),',')
 
@@ -117,7 +117,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
-          writedlm(outfile["heritability"],transubstrarr(map(String,mme.lhsVec)),',')
+          writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
   end
 
