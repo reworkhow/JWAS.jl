@@ -20,20 +20,14 @@ function MCMC_BayesC_threshold(nIter,mme,df;
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
     # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
     #Then liabilities are sampled and stored in mme.ySparse
-    categories = copy(mme.ySparse) # categories (1,2,2,3,1...)
-    thresholds = collect(range(0, length=length(unique(mme.categories)),
-                         stop=1))[1:(end-1)]  #t1,t2,...,t_{#c-1}
+    categories  = copy(mme.ySparse) # categories (1,2,2,3,1...)
+    ncategories = length(unique(mme.categories))
+    #-Inf,t1,t2,...,t_{#c-1},Inf
+    thresholds = [-Inf;range(0, length=4,stop=1)[1:(end-1)];Inf]
 
-    cmean      = mme.X*sol #maker effects all zeros
+    cmean      = mme.X*sol #assume maker effects all zeros
     for i in 1:length(categories) #1,2,2,3,1...
-        cmeani = cmean[i]
-        while true
-            liability = cmeani + randn()
-            if sum(liability .> thresholds)+1 == categories[i]
-                mme.ySparse[i] = liability
-                break
-            end
-        end
+        mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[i],thresholds[i+1]))
     end
     solMean     = zero(sol)
     ############################################################################
@@ -104,16 +98,8 @@ function MCMC_BayesC_threshold(nIter,mme,df;
         ########################################################################
         cmean = mme.ySparse - ycorr #liabilities - residuals
         for i in 1:length(categories) #1,2,2,3,1...
-            cmeani = cmean[i]
-            while true
-                liability = cmeani + randn()
-                if sum(liability .> thresholds)+1 == categories[i]
-                    mme.ySparse[i] = liability
-                    break
-                end
-            end
+            mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[i],thresholds[i+1]))
         end
-
         ########################################################################
         # 0. Categorical traits
         # 0.2 Thresholds
