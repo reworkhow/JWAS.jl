@@ -97,6 +97,8 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
+            printstyled("The number of individuals with both genotypes and phenotypes used\n",
+            "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         elseif mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
             printstyled("Testing individuals are not a subset of \n",
             "genotyped individuals (complete genomic data,non-single-step).\n",
@@ -111,6 +113,8 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
+            printstyled("The number of individuals with both phenotype and pedigree information\n",
+            "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         elseif mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
             printstyled("Testing individuals are not a subset of \n",
             "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
@@ -118,6 +122,7 @@ function check_phenotypes(mme,df)
             mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
+    return df
 end
 
 function init_mixed_model_equations(mme,df,sol)
