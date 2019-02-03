@@ -6,6 +6,7 @@ include("MT_MCMC_BayesC.jl")
 include("MT_PBLUP_constvare.jl")
 include("../SSBR/SSBR.jl")
 include("output.jl")
+include("MCMC_BayesC_threshold.jl")
 
 """
     runMCMC(model::MME,df::DataFrame;

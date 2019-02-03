@@ -20,14 +20,15 @@ function MCMC_BayesC_threshold(nIter,mme,df;
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
     # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
     #Then liabilities are sampled and stored in mme.ySparse
-    categories  = copy(mme.ySparse) # categories (1,2,2,3,1...)
-    ncategories = length(unique(mme.categories))
+    category_obs  = map(Int,mme.ySparse) # categories (1,2,2,3,1...)
+    ncategories = length(unique(category_obs))
     #-Inf,t1,t2,...,t_{#c-1},Inf
-    thresholds = [-Inf;range(0, length=4,stop=1)[1:(end-1)];Inf]
+    thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
 
     cmean      = mme.X*sol #assume maker effects all zeros
-    for i in 1:length(categories) #1,2,2,3,1...
-        mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[i],thresholds[i+1]))
+    for i in 1:length(category_obs) #1,2,2,3,1...
+        whichcategory = category_obs[i]
+        mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
     end
     solMean     = zero(sol)
     ############################################################################
@@ -38,7 +39,8 @@ function MCMC_BayesC_threshold(nIter,mme,df;
     # nuRes       = mme.df.residual
     # scaleRes    = vRes*(nuRes-2)/nuRes
     # meanVare    = 0.0
-    vRes = 1.0
+    vRes        = 1.0
+    meanVare    = 1.0
 
     #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.pedTrmVec != 0
@@ -97,19 +99,22 @@ function MCMC_BayesC_threshold(nIter,mme,df;
         # 0.1 liabilities
         ########################################################################
         cmean = mme.ySparse - ycorr #liabilities - residuals
-        for i in 1:length(categories) #1,2,2,3,1...
-            mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[i],thresholds[i+1]))
+        for i in 1:length(category_obs) #1,2,2,3,1...
+            whichcategory = category_obs[i]
+            mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
         end
         ########################################################################
         # 0. Categorical traits
         # 0.2 Thresholds
         ########################################################################
-        #the first threshold t1=0 must be fixed to center the distribution
-        for i in 2:length(thresholds) #e.g., t1, t2 for categories 1,2,3
-            lowerboundry  = max(mme.ySparse[mme.categories .== i])
-            upperboundry  = min(mme.ySparse[mme.categories .== (i+1)])
+        #thresholds -∞,t1,t2,...,t_{categories-1},+∞
+        #the threshold t1=0 must be fixed to center the distribution
+        for i in 3:(length(thresholds)-1) #e.g., t2 between categories 2 and 3
+            lowerboundry  = maximum(mme.ySparse[category_obs .== (i-1)])
+            upperboundry  = minimum(mme.ySparse[category_obs .== i])
             thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
         end
+        ycorr = mme.ySparse - cmean
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
