@@ -11,21 +11,42 @@ function MCMC_BayesC(nIter,mme,df;
                      methods                    = "BayesC",
                      output_samples_frequency   = 0,
                      update_priors_frequency    = 0,
-                     output_file                = "MCMC_samples")
+                     output_file                = "MCMC_samples"
+                     categorical_trait          = false)
 
     ############################################################################
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
+    if categorical_trait == true
+        #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
+        # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
+        #Then liabilities are sampled and stored in mme.ySparse
+        category_obs  = map(Int,mme.ySparse) # categories (1,2,2,3,1...)
+        ncategories = length(unique(category_obs))
+        #-Inf,t1,t2,...,t_{#c-1},Inf
+        thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
+
+        cmean      = mme.X*sol #assume maker effects all zeros
+        for i in 1:length(category_obs) #1,2,2,3,1...
+            whichcategory = category_obs[i]
+            mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
+        end
+    end
     solMean     = zero(sol)
     ############################################################################
     # PRIORS
     ############################################################################
     #prior for residual variance
-    vRes        = mme.RNew
-    nuRes       = mme.df.residual
-    scaleRes    = vRes*(nuRes-2)/nuRes
-    meanVare    = 0.0
+    if categorical_trait == false
+        vRes        = mme.RNew
+        nuRes       = mme.df.residual
+        scaleRes    = vRes*(nuRes-2)/nuRes
+        meanVare    = 0.0
+    else
+        vRes        = 1.0
+        meanVare    = 1.0
+    end
 
     #priors for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.pedTrmVec != 0
@@ -79,6 +100,29 @@ function MCMC_BayesC(nIter,mme,df;
     ############################################################################
     @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
 
+        if categorical_trait == true
+            ########################################################################
+            # 0. Categorical traits
+            # 0.1 liabilities
+            ########################################################################
+            cmean = mme.ySparse - ycorr #liabilities - residuals
+            for i in 1:length(category_obs) #1,2,2,3,1...
+                whichcategory = category_obs[i]
+                mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
+            end
+            ########################################################################
+            # 0. Categorical traits
+            # 0.2 Thresholds
+            ########################################################################
+            #thresholds -∞,t1,t2,...,t_{categories-1},+∞
+            #the threshold t1=0 must be fixed to center the distribution
+            for i in 3:(length(thresholds)-1) #e.g., t2 between categories 2 and 3
+                lowerboundry  = maximum(mme.ySparse[category_obs .== (i-1)])
+                upperboundry  = minimum(mme.ySparse[category_obs .== i])
+                thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
+            end
+            ycorr = mme.ySparse - cmean
+        end
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
@@ -133,11 +177,13 @@ function MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
-        mme.ROld = mme.RNew
-        vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
-        mme.RNew = vRes
-        if iter > burnin
-            meanVare += (vRes - meanVare)/(iter-burnin)
+        if categorical_trait == false
+            mme.ROld = mme.RNew
+            vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
+            mme.RNew = vRes
+            if iter > burnin
+                meanVare += (vRes - meanVare)/(iter-burnin)
+            end
         end
         ########################################################################
         # 2.4 Marker Effects Variance
