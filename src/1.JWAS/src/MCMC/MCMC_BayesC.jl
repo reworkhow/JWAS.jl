@@ -11,7 +11,7 @@ function MCMC_BayesC(nIter,mme,df;
                      methods                    = "BayesC",
                      output_samples_frequency   = 0,
                      update_priors_frequency    = 0,
-                     output_file                = "MCMC_samples"
+                     output_file                = "MCMC_samples",
                      categorical_trait          = false)
 
     ############################################################################
