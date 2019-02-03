@@ -90,7 +90,8 @@ function runMCMC(mme::MME,df;
                             update_priors_frequency,
                             outputEBV,
                             output_heritability,
-                            output_PEV)
+                            output_PEV,
+                            categorical_trait)
     #check errors in function arguments
     errors_args(mme,methods)
     #users need to provide high-quality pedigree file
@@ -131,19 +132,7 @@ function runMCMC(mme::MME,df;
     end
 
     if mme.nModels ==1
-        if categorical_trait == true && methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
-            res = MCMC_BayesC_threshold(chain_length,mme,df,
-                                        burnin                   = burnin,
-                                        π                        = Pi,
-                                        methods                  = methods,
-                                        estimatePi               = estimatePi,
-                                        estimateScale            = estimateScale,
-                                        sol                      = starting_value,
-                                        outFreq                  = printout_frequency,
-                                        output_samples_frequency = output_samples_frequency,
-                                        output_file              = output_samples_file,
-                                        update_priors_frequency  = update_priors_frequency)
-        elseif methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
+        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
@@ -154,7 +143,8 @@ function runMCMC(mme::MME,df;
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file,
-                            update_priors_frequency  = update_priors_frequency)
+                            update_priors_frequency  = update_priors_frequency,
+                            categorical_trait        = categorical_trait)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
