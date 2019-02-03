@@ -115,6 +115,7 @@ mutable struct MCMCinfo
     outputEBV
     output_heritability
     output_PEV
+    categorical_trait
 end
 
 #@warn Too frequent will slow down the computation

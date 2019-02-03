@@ -86,11 +86,11 @@ end
 
 function check_phenotypes(mme,df)
     single_step_analysis = mme.MCMCinfo.single_step_analysis
-    phenoID = map(string,df[1])#same to df[:,1] in deprecated CSV
-    if mme.M == 0
-        return
+    phenoID = map(string,df[1])   #same to df[:,1] in deprecated CSV
+    if mme.M == 0 && mme.ped == 0 #non-genetic analysis
+        return df
     end
-    if single_step_analysis == false
+    if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
             printstyled("Phenotyped individuals are not a subset of\n",
             "genotyped individuals (complete genomic data,non-single-step).\n",
@@ -105,7 +105,7 @@ function check_phenotypes(mme,df)
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
-    else
+    else #incomplete genomic data , PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",

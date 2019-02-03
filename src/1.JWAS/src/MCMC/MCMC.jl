@@ -57,14 +57,16 @@ function runMCMC(mme::MME,df;
                 missing_phenotypes              = true,
                 constraint                      = false,
                 estimate_variance               = true,
-                update_priors_frequency::Int64  =0,
+                update_priors_frequency::Int64  = 0,
                 #parameters for single-step analysis
                 single_step_analysis            = false,
                 pedigree                        = false,
                 #output
                 outputEBV                       = true,
                 output_heritability             = false, #complete or incomplete genomic data
-                output_PEV                      = false)
+                output_PEV                      = false,
+                #categorical trait
+                categorical_trait               = false)
 
     ############################################################################
     # Pre-Check
@@ -87,7 +89,8 @@ function runMCMC(mme::MME,df;
                             update_priors_frequency,
                             outputEBV,
                             output_heritability,
-                            output_PEV)
+                            output_PEV,
+                            categorical_trait)
     #check errors in function arguments
     errors_args(mme,methods)
     #users need to provide high-quality pedigree file
@@ -139,7 +142,8 @@ function runMCMC(mme::MME,df;
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file,
-                            update_priors_frequency  = update_priors_frequency)
+                            update_priors_frequency  = update_priors_frequency,
+                            categorical_trait        = categorical_trait)
         elseif methods =="GBLUP"
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
