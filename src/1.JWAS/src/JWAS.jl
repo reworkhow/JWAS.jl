@@ -22,8 +22,15 @@ include("misc/misc.jl")
 include("pipeline/LOOCV.jl")
 include("pipeline/adjust_phenotype.jl")
 
-export build_model,set_covariate,set_random
-export add_genotypes,add_markers,get_pedigree
-export outputMCMCsamples,solve,runMCMC
+export build_model,set_covariate,set_random,add_genotypes,add_markers
+export outputMCMCsamples,outputEBV,getEBV
+export solve,runMCMC
 export showMME,getinfo
+#Pedmodule
+export get_pedigree
+#misc
+export GWAS,QC
+export get_additive_genetic_variances,get_breeding_values
+export get_correlations,get_heritability
+#others
 export adjust_phenotypes,LOOCV

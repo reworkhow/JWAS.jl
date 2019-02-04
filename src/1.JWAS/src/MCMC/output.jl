@@ -237,9 +237,6 @@ function getEBV(model::MME,genotypes::Array{Float64,2})
     return EBV
 end
 
-
-export outputEBV,getEBV
-
 function getEBV(mme,sol,α,traiti)
     EBV=zeros(length(mme.output_ID))
 
