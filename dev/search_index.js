@@ -433,6 +433,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/public/#JWAS.outputEBV",
+    "page": "Public",
+    "title": "JWAS.outputEBV",
+    "category": "function",
+    "text": "outputEBV(model,IDs::Array;PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/public/#JWAS.outputMCMCsamples",
     "page": "Public",
     "title": "JWAS.outputMCMCsamples",
@@ -457,11 +465,59 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/public/#JWAS.misc.GWAS",
+    "page": "Public",
+    "title": "JWAS.misc.GWAS",
+    "category": "function",
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile\nmap_file has the marker position information\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/public/#JWAS.misc.get_additive_genetic_variances",
+    "page": "Public",
+    "title": "JWAS.misc.get_additive_genetic_variances",
+    "category": "function",
+    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples for marker effects stored in files.\nReturn a vector for single-trait analysis and an array of matrices for multi-trait analysis\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/public/#JWAS.misc.get_heritability",
+    "page": "Public",
+    "title": "JWAS.misc.get_heritability",
+    "category": "function",
+    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_variances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for multi-trait analysis\n\n\n\n\n\nget_heritability(samples_for_genetic_variances::Array{Float64,1},samples_for_residual_variances::Array{Float64,1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for single-trait analysis\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/public/#JWAS.misc.get_correlations",
+    "page": "Public",
+    "title": "JWAS.misc.get_correlations",
+    "category": "function",
+    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations using MCMC samples for covariance matrces\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/public/#JWAS.misc.get_breeding_values",
+    "page": "Public",
+    "title": "JWAS.misc.get_breeding_values",
+    "category": "function",
+    "text": "get_breeding_values(model)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files   for individuals defined by outputEBV(model,IDs::Array{String,1}), defaulting to all phenotyped individuals.\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/public/#JWAS.misc.QC",
+    "page": "Public",
+    "title": "JWAS.misc.QC",
+    "category": "function",
+    "text": "QC(infile,outfile;separator=\' \',header=true,missing=false,MAF=0.1)\n\nQuality control for input file infile, then write out to output file: outfile.\nDelete loci with minor allele frequency < MAF.\nmissing genotypes are replaced by column means.\nFile format (header=true,separator=\',\',missing=9):\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,9,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/public/#Public-Interface-1",
     "page": "Public",
     "title": "Public Interface",
     "category": "section",
-    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\nrunMCMC\noutputMCMCsamples\nshowMME\nsolveJWAS.misc.GWAS\nJWAS.misc.get_additive_genetic_variances\nJWAS.misc.get_heritability\nJWAS.misc.get_correlations\nJWAS.misc.get_breeding_values\nJWAS.misc.reformat\nJWAS.misc.report\nJWAS.misc.QC"
+    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\nrunMCMC\noutputEBV\noutputMCMCsamples\nshowMME\nsolveGWAS\nget_additive_genetic_variances\nget_heritability\nget_correlations\nget_breeding_values\nQC"
 },
 
 {
