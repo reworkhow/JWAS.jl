@@ -36,15 +36,12 @@ JWAS.jl
 
 ├──────── Datasets.jl
 
-├──────── SSBR.jl
-
 ├──────── misc.jl
            ├── get_breeding_values
            ├── get_additive_genetic_variances
            ├── get_heritability
            ├── get_correlations
            └── report
-
 
 ```
 
