@@ -713,7 +713,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/examples/#Bayesian-Linear-Mixed-Models-(conventional)-1",
+    "location": "examples/examples/#[Bayesian-Linear-Mixed-Models-(conventional)](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/1_Conventional_Linear_Mixed_Model.ipynb)-1",
     "page": "Examples",
     "title": "Bayesian Linear Mixed Models (conventional)",
     "category": "section",
