@@ -709,7 +709,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Examples",
     "title": "Examples",
     "category": "section",
-    "text": "link to Jupyter Notebook for this example"
+    "text": "link to Jupyter Notebook for all the examples"
 },
 
 {
@@ -721,7 +721,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/examples/#Bayesian-Linear-Additive-Genetic-Model-1",
+    "location": "examples/examples/#[Bayesian-Linear-Additive-Genetic-Model](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/2_Linear_Additive_Genetic_Model.ipynb)-1",
     "page": "Examples",
     "title": "Bayesian Linear Additive Genetic Model",
     "category": "section",
@@ -729,7 +729,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/examples/#Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
+    "location": "examples/examples/#[Bayesian-Linear-Mixed-Models-(Genomic-Data)](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/3_Genomic_Linear_Mixed_Model.ipynb)-1",
     "page": "Examples",
     "title": "Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
@@ -737,7 +737,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "examples/examples/#Single-step-Bayesian-Linear-Mixed-Models-(Genomic-Data)-1",
+    "location": "examples/examples/#[Single-step-Bayesian-Linear-Mixed-Models-(Genomic-Data)](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/4_SSBR.ipynb)-1",
     "page": "Examples",
     "title": "Single-step Bayesian Linear Mixed Models (Genomic Data)",
     "category": "section",
