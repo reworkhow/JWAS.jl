@@ -6,14 +6,14 @@
 * Univariate Linear Mixed Model (conventional)
 * Multivariate Linear Mixed Model (conventional)
 
-## Bayesian Linear Additive Genetic Model
+## [Bayesian Linear Additive Genetic Model](2_Linear_Additive_Genetic_Model.ipynb)
 * Univariate Linear Additive Genetic Model
 * Multivariate Linear Additive Genetic Model
 
-## Bayesian Linear Mixed Models (Genomic Data)
+## [Bayesian Linear Mixed Models (Genomic Data)](3_Genomic_Linear_Mixed_Model.ipynb)
 * Univariate Linear Mixed Model (Genomic data)
 * Multivariate Linear Mixed Model (Genomic data)
 
-## Single-step Bayesian Linear Mixed Models (Genomic Data)
+## [Single-step Bayesian Linear Mixed Models (Genomic Data)](4_SSBR.ipynb)
 * Univariate Single-step Bayesian Linear Mixed Models (Genomic Data)
 * Multivariate Single-step Bayesian Linear Mixed Models (Genomic Data)
