@@ -1,6 +1,6 @@
 # Examples
 
-* link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/0_index.ipynb) for this example
+* link to [Jupyter Notebook](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/1_Conventional_Linear_Mixed_Model.ipynb) for this example
 
 ## [Bayesian Linear Mixed Models (conventional)](http://nbviewer.jupyter.org/github/reworkhow/JWAS.jl/blob/master/docs/notebooks/0_index.ipynb)
 * Univariate Linear Mixed Model (conventional)
