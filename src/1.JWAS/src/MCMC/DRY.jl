@@ -49,6 +49,8 @@ end
 function check_pedigree(mme,df,pedigree)
     if mme.ped == 0 && pedigree == false
         return
+    elseif pedigree == true
+        mme.ped = pedigree
     end
     if pedigree!=false
         pedID=map(string,collect(keys(pedigree.idMap)))
