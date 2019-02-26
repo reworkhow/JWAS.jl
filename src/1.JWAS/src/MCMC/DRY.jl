@@ -2,6 +2,10 @@
 # Pre-Check
 ################################################################################
 function errors_args(mme,methods)
+    if mme.mmePos != 1
+      error("Please build your model again using the function build_model().")
+    end
+
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
     if methods == "conventional (no markers)"
