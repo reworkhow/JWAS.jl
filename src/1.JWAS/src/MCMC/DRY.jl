@@ -49,7 +49,7 @@ end
 function check_pedigree(mme,df,pedigree)
     if mme.ped == 0 && pedigree == false
         return
-    elseif pedigree == true
+    elseif pedigree != false
         mme.ped = pedigree
     end
     if pedigree!=false
