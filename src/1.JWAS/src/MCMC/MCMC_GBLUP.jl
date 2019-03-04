@@ -54,7 +54,7 @@ function MCMC_GBLUP(nIter,mme,df;
     D           = eigenG.values#eigenvalues
 
     dfEffectVar = mme.df.marker                #actually for genetic effect here
-    vEff        = mme.M.G                      #genetic variance
+    vEff        = mme.M.genetic_variance             #genetic variance
     scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar   #scale factor for locus effects
     meanVara    = 0.0
     meanVarg    = 0.0
@@ -104,7 +104,6 @@ function MCMC_GBLUP(nIter,mme,df;
         if iter > burnin
             meanAlpha += (α - meanAlpha)/(iter-burnin)
         end
-
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
@@ -158,7 +157,7 @@ function MCMC_GBLUP(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,digits=6))
             if mme.pedTrmVec !=0
-              println("Polygenic effects covariance matrix \n",round(G0Mean,digits=3))
+              println("Polygenic effects covariance matrix \n",round.(G0Mean,digits=3))
             end
             println("Genetic variance (G matrix): ",round(meanVara,digits=6))
             println("Genetic variance (GenSel): ",round(meanVarg,digits=6))

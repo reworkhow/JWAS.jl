@@ -150,8 +150,7 @@ function runMCMC(mme::MME,df;
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
-                            output_file              = output_samples_file,
-                            update_priors_frequency  = update_priors_frequency)
+                            output_file              = output_samples_file)
         else
             error("No options!!!")
         end
