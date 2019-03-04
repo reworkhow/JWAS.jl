@@ -76,14 +76,26 @@ end
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
 """
-    GWAS(marker_effects_file,map_file,model;header=false,window_size="1 Mb",threshold=0.001)
+    GWAS(marker_effects_file,map_file,model;header=true,window_size="1 Mb",threshold=0.001)
 
 run genomic window-based GWAS
 
-* MCMC samples of marker effects are stored in **marker_effects_file**
-* **map_file** has the marker position information
+* MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
+* **map_file** has the (sorted) marker position information with delimiter ','
+* File format:
+
+```
+markerID,chromosome,position
+m1,1,16977
+m2,1,434311
+m3,1,1025513
+m4,2,70350
+m5,2,101135
+```
+
+
 """
-function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",threshold=0.001,output_winVarProps=false)
+function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",threshold=0.001,output_winVarProps=false)
 
     if window_size=="1 Mb"
         window_size_Mb = 1_000_000
@@ -91,7 +103,11 @@ function GWAS(marker_effects_file,map_file,mme;header=false,window_size="1 Mb",t
         window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
     end
 
-    mapfile = readdlm(map_file,',')
+    if header == true
+        mapfile = readdlm(map_file,',')[1]
+    else
+        mapfile = readdlm(map_file,',')
+    end
     chr     = map(string,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
 
