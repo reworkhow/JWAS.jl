@@ -469,7 +469,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.GWAS",
     "category": "function",
-    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=false,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile\nmap_file has the marker position information\n\n\n\n\n\n"
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nmap_file has the (sorted) marker position information with delimiter \',\'\nFile format:\n\nmarkerID,chromosome,position\nm1,1,16977\nm2,1,434311\nm3,1,1025513\nm4,2,70350\nm5,2,101135\n\n\n\n\n\n"
 },
 
 {
