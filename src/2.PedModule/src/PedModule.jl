@@ -19,7 +19,8 @@ d,a,c
 ```
 """
 function get_pedigree(pedfile::AbstractString;header=false,separator=',')
-  mkPed(pedfile,header=header,separator=separator)
+    printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
+    mkPed(pedfile,header=header,separator=separator)
 end
 
 mutable struct PedNode
