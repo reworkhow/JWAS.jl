@@ -70,8 +70,8 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
       G=reshape([G],1,1)
     end
     mme.Gi    = inv(G) #multi-trait
-    mme.GiOld = inv(G) #single-trait (maybe multiple genetic effects in single-trait)
-    mme.GiNew = inv(G) #single-trait (maybe multiple genetic effects in single-trait)
+    mme.GiOld = inv(G) #single-trait (maybe multiple correlated genetic effects
+    mme.GiNew = inv(G) #single-trait (in single-trait
 
     mme.df.polygenic=Float64(df)
 
@@ -132,7 +132,7 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
           mtrm= string(m)*":"*trm
           res = [res;mtrm]
           #*********************
-          #e.g.,phenotypes ⊂ names (subset)
+          #phenotype IDs is a subset of names (Vinv)
           mme.modelTermDict[mtrm].names=names
           #*********************
         else
@@ -146,8 +146,8 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
         G=reshape([G],1,1)
       end
       Gi    = inv(G)    #multi-trait
-      GiOld = inv(G)    #single-trait (maybe multiple random effects
-      GiNew = inv(G)    #single-trait (same covariance structure in single-trait
+      GiOld = inv(G)    #single-trait (maybe multiple correlated random effects
+      GiNew = inv(G)    #single-trait (thus G is a matrix
 
       term_array   = res
       df           = df+length(term_array)
