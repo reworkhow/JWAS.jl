@@ -1,6 +1,6 @@
 """
     add_genotypes(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
-* Get marker informtion from a genotype file.
+* Get marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 * File format:
 
