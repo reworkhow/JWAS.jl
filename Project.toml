@@ -1,6 +1,6 @@
 name = "JWAS"
 uuid = "c9a035f4-d403-5e6b-8649-6be755bc4798"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Hao Cheng <qtlcheng@ucdavis.edu>"]
 
 [deps]
