@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -469,7 +469,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.misc.GWAS",
     "category": "function",
-    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nmap_file has the (sorted) marker position information with delimiter \',\'\nFile format:\n\nmarkerID,chromosome,position\nm1,1,16977\nm2,1,434311\nm3,1,1025513\nm4,2,70350\nm5,2,101135\n\n\n\n\n\n"
+    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS without marker locations\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nwindow_size is either a constant (identical number of markers in each window) or an array of number of markers in each window\nmodel is either the model::MME used in analysis or the genotypic cavariate matrix M::Array\nFile format:\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nmodel is either the model::MME used in analysis or the genotypic cavariate matrix M::Array\nmap_file has the (sorted) marker position information with delimiter \',\'.\nFile format:\n\nmarkerID,chromosome,position\nm1,1,16977\nm2,1,434311\nm3,1,1025513\nm4,2,70350\nm5,2,101135\n\n\n\n\n\n"
 },
 
 {
@@ -549,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "method",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
