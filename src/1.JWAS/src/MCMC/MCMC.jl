@@ -10,7 +10,7 @@ include("output.jl")
 """
     runMCMC(model::MME,df::DataFrame;
             chain_length=1000,starting_value=false,burnin = 0,
-            output_samples_frequency = 0,output_file="MCMC_samples",
+            output_samples_frequency = 0,output_samples_file="MCMC_samples",
             printout_model_info=true,printout_frequency=100,
             methods="conventional (no markers)",Pi=0.0,estimatePi=false,
             single_step_analysis= false,pedigree = false,
