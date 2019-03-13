@@ -1,0 +1,1 @@
+include("getinfo.jl")

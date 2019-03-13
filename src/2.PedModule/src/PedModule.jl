@@ -256,6 +256,16 @@ function getIDs(ped::Pedigree)
     return ids
 end
 
+function getInbreeding(ped::Pedigree)
+    n = length(ped.idMap)
+    inbreeding = Array{AbstractFloat}(undef,n)
+    for i in ped.idMap
+      inbreeding[i[2].seqID] = i[2].f
+    end
+    return inbreeding
+end
+
+
 include("forSSBR.jl")
 
 end # of PedModule

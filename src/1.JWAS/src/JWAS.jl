@@ -19,8 +19,7 @@ include("variance.jl")
 include("Pi.jl")
 
 include("misc/misc.jl")
-include("pipeline/LOOCV.jl")
-include("pipeline/adjust_phenotype.jl")
+include("pipeline/pipeline.jl")
 
 export build_model,set_covariate,set_random,add_genotypes,add_markers
 export outputMCMCsamples,outputEBV,getEBV
