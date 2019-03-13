@@ -1,3 +1,4 @@
+#update
 function getinfo(pedigree::PedModule.Pedigree)
     Ai   = PedModule.AInverse(pedigree)
     IDs = PedModule.getIDs(pedigree)
