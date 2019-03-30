@@ -1,3 +1,22 @@
+function add_genotypes(mme::MME,M::Array{Float64,2},G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
+    if length(rowID) != size(M,1)
+            rowID = string.(1:size(M,1))
+    end
+    idM = [rowID M];
+    if length(header) != size(idM,2)
+        header = ["id"; string.(1:size(M,2))]
+    end
+    mme.M   = readgenotypes(idM;header=header, center=center)
+    if G_is_marker_variance == true
+        mme.M.G = G
+    else
+        mme.M.genetic_variance = G
+    end
+    mme.df.marker = Float64(df)
+
+    println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
+end
+
 """
     add_genotypes(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
 * Get marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.
@@ -80,7 +99,7 @@ function readgenotypes(file::AbstractString;separator=',',header=true,center=tru
 end
 
 #load genotypes from Array or DataFrames (individual IDs in the 1st column,
-function readgenotypes(df::Union{Array{Float64,2},DataFrames.DataFrame};header=false,separator=false,center=true)
+function readgenotypes(df::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFrame};header=false,separator=false,center=true)
     if header==true
         error("The header (marker IDs) must be false or provided as an array when the input is not a file.")
     end
@@ -112,3 +131,5 @@ function readgenotypes(df::Union{Array{Float64,2},DataFrames.DataFrame};header=f
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
+                        
+                            
