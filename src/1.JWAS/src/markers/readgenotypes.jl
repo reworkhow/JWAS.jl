@@ -105,7 +105,7 @@ function readgenotypes(df::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFr
     end
 
     if length(header)==size(df,2)
-        markerID = header
+        markerID = header[2:end]
     elseif header==false
         markerID = ["NA"]
     else
