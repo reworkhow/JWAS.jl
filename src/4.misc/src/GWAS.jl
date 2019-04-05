@@ -27,13 +27,43 @@ run genomic window-based GWAS without marker locations
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **window_size** is either a constant (identical number of markers in each window) or an array of number of markers in each window
-* **model** is either the model::MME used in analysis or the genotypic cavariate matrix M::Array
+* **model** is either the model::MME used in analysis or the genotypic covariate matrix M::Array
 * File format:
 
 """
-function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001)
+function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001,output_winVarProps=false)
+            
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance")
+            
+    winVarProps, window_mrk_start, window_mrk_end = getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold)         
 
+    winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
+    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
+    prop_genvar = round.(prop_genvar*100,digits=2)
+            
+    out1 = ["window";1:length(WPPA)] 
+    if typeof(mme) <: Array
+        out2 = [["pos_start"; window_mrk_start] ["pos_end"; window_mrk_end]]
+        nMarkers = size(mme,2)        
+    else
+        out2 = [["mrk_start"; window_mrk_start] ["mrk_end"; window_mrk_end]]
+        nMarkers = size(mme.M.markerID,1)            
+    end
+    if length(window_size)==1
+        nWindows    = ceil(Int64,nMarkers/window_size)
+        window_size = fill(window_size,nWindows) 
+    end
+                
+    out3 = [["Size"; window_size] ["%genetic variance";prop_genvar] ["WPPA"; WPPA]]
+    out  = [out1 out2 out3]
+    if output_winVarProps == false
+        return out
+    else
+        return out,winVarProps
+    end
+end
+                    
+function getWinVarProps(marker_effect_file,mme;header=true,window_size=100,threshold=0.001) 
     if header==true
         output=readdlm(marker_effect_file,',',header=true)[1]
     else
@@ -51,11 +81,29 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
     winVarProps = zeros(nsamples,nWindows)
     if typeof(mme) <: Array
         X = mme
+        window_mrk_start = Array{Int64,1}()
+        window_mrk_end   = Array{Int64,1}()                     
     else
         X = mme.output_genotypes
+        window_mrk_start = Array{String,1}()
+        window_mrk_end   = Array{String,1}()                         
+    end                            
+    
+    wEnd    = 0                            
+    @showprogress  for i in window_size
+        wStart = wEnd + 1  
+        wEnd  += i 
+        wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd            
+        if typeof(mme) <: Array
+            push!(window_mrk_start,wStart)
+            push!(window_mrk_end  ,wEnd)
+        else
+            push!(window_mrk_start,mme.M.markerID[wStart])
+            push!(window_mrk_end  ,mme.M.markerID[wEnd]) 
+        end
     end
-
-    @showprogress for i=1:nsamples
+        
+    for i=1:nsamples
         α = output[i,:]
         genVar = var(X*α)
 
@@ -65,15 +113,13 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
           wStart = wEnd + 1
           wEnd  += window_size[windowi]
           wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
-          winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
-
+          winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar                                 
           windowi +=1
         end
     end
-    return winVarProps
-end
-
-
+    return winVarProps, window_mrk_start, window_mrk_end 
+end                                           
+                        
 #Chen, C., Steibel, J. P., & Tempelman, R. J. (2017). Genome-Wide Association
 #Analyses Based on Broadly Different Specifications for Prior Distributions,
 #Genomic Windows, and Estimation Methods. Genetics, 206(4), 1791–1806.
@@ -150,7 +196,7 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
         end
       end
     end
-    winVarProps = GWAS(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
+    winVarProps, window_mrk_start, window_mrk_end = getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold) 
     winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
     WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
     prop_genvar = round.(prop_genvar*100,digits=2)
@@ -165,7 +211,7 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
         return out
     else
         return out,winVarProps
-    end
+    end                                    
 end
 
 export GWAS
