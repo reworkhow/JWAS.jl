@@ -1,9 +1,11 @@
 """
-add_genotypes(mme::MME,M,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
+ add_genotypes(mme::MME,M,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
 * Get marker informtion from a genotype Matrix, M. This matrix needs to be column-wise sorted by marker positions.
 * rowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n
 * header is a header vector such as ["id"; "mrk1"; "mrk2";...]. 
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.If it is omitted, marker names will be set to 1:p
+
+"""
 
 function add_genotypes(mme::MME,M::Array{Float64,2},G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
     if length(rowID) != size(M,1)
