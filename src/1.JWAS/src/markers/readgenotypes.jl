@@ -1,5 +1,5 @@
 """
- add_genotypes(mme::MME,M,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
+   add_genotypes(mme::MME,M,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
 * Get marker informtion from a genotype Matrix, M. This matrix needs to be column-wise sorted by marker positions.
 * rowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n
 * header is a header vector such as ["id"; "mrk1"; "mrk2";...]. 
