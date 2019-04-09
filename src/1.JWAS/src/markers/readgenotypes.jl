@@ -6,7 +6,6 @@
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.If it is omitted, marker names will be set to 1:p
 
 """
-
 function add_genotypes(mme::MME,M::Array{Float64,2},G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
     if length(rowID) != size(M,1)
             rowID = string.(1:size(M,1))
