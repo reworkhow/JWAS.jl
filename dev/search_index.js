@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "addgenotypes(mme::MME,M,G;separator=\' \',header=true,center=true,Gismarkervariance=false,df=4.0)\n\nGet marker informtion from a genotype Matrix, M. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...]. \nG defaults to the genetic variance with degree of freedom df=4.0.If it is omitted, marker names will be set to 1:p\n\n\n\n\n\nadd_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -550,6 +550,14 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.add_genotypes",
     "category": "method",
     "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.add_genotypes-Tuple{JWAS.MME,Array{Float64,2},Any}",
+    "page": "Internals",
+    "title": "JWAS.add_genotypes",
+    "category": "method",
+    "text": "addgenotypes(mme::MME,M,G;separator=\' \',header=true,center=true,Gismarkervariance=false,df=4.0)\n\nGet marker informtion from a genotype Matrix, M. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...]. \nG defaults to the genetic variance with degree of freedom df=4.0.If it is omitted, marker names will be set to 1:p\n\n\n\n\n\n"
 },
 
 {
