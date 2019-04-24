@@ -1,3 +1,11 @@
+"""
+   add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
+* Get marker informtion from an nxp Matrix M of genotypes. This matrix needs to be column-wise sorted by marker positions.
+* rowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n
+* header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p 
+* **G** defaults to the genetic variance with degree of freedom **df**=4.0.
+
+"""
 function add_genotypes(mme::MME,M::Array{Float64,2},G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
     if length(rowID) != size(M,1)
             rowID = string.(1:size(M,1))
