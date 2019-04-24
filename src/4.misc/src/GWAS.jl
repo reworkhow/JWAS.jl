@@ -50,13 +50,13 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
         nWindows    = ceil(Int64,nMarkers/window_size)
         window_size = fill(window_size,nWindows)
     end
-    #out  = DataFrame([out1 out2 out3], [:win, :start, :end, :nSNPS, :prGenVar, :WPPA])
-    out = DataFrame(win = collect(1:length(WPPA)),
-                    wStart = window_mrk_start,
-                    wEnd   = window_mrk_end,
-                    wSize  = window_size,
-                    prGenVar = prop_genvar,
-                    WPPA     = WPPA
+    srtIndx = sortperm(WPPA,rev=true)
+    out = DataFrame(wStart = window_mrk_start[srtIndx],
+                    wEnd   = window_mrk_end[srtIndx],
+                    wSize  = window_size[srtIndx],
+                    prGenVar = prop_genvar[srtIndx],
+                    WPPA     = WPPA[srtIndx],
+                    meanPPA  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
                    )                        
     if output_winVarProps == false
         return out
