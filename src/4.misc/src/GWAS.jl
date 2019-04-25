@@ -56,7 +56,7 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
                     wSize  = window_size[srtIndx],
                     prGenVar = prop_genvar[srtIndx],
                     WPPA     = WPPA[srtIndx],
-                    meanPPA  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
+                    PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
                    )                        
     if output_winVarProps == false
         return out
