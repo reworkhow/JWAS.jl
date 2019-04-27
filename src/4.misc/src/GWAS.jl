@@ -32,8 +32,11 @@ run genomic window-based GWAS without marker locations
 
 """
 function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001,output_winVarProps=false)
+    if !(typeof(window_size) <: Int)
+        error("Window size is the number of markers in each window if marker map postions are not provided. It has to be integers.")
+    end
 
-    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance")
+    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
 
     winVarProps, window_mrk_start, window_mrk_end = getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold)
 
@@ -41,10 +44,10 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
     WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
     prop_genvar = round.(prop_genvar*100,digits=2)
     if typeof(mme) <: Array
-        nMarkers = size(mme,2)        
+        nMarkers = size(mme,2)
     else
-        nMarkers = size(mme.M.markerID,1)            
-    end        
+        nMarkers = size(mme.M.markerID,1)
+    end
 
     if length(window_size)==1
         nWindows    = ceil(Int64,nMarkers/window_size)
@@ -57,69 +60,12 @@ function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001
                     prGenVar = prop_genvar[srtIndx],
                     WPPA     = WPPA[srtIndx],
                     PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
-                   )                        
+                   )
     if output_winVarProps == false
         return out
     else
         return out,winVarProps
     end
-end
-
-function getWinVarProps(marker_effect_file,mme;header=true,window_size=100,threshold=0.001)
-    if header==true
-        output=readdlm(marker_effect_file,',',header=true)[1]
-    else
-        output=readdlm(marker_effect_file,',')
-    end
-
-    nsamples,nMarkers=size(output)
-    if length(window_size)==1
-        nWindows    = ceil(Int64,nMarkers/window_size)
-        window_size = fill(window_size,nWindows)
-    else
-        nWindows    = length(window_size)
-    end
-
-    winVarProps = zeros(nsamples,nWindows)
-    if typeof(mme) <: Array
-        X = mme
-        window_mrk_start = Array{Int64,1}()
-        window_mrk_end   = Array{Int64,1}()
-    else
-        X = mme.output_genotypes
-        window_mrk_start = Array{String,1}()
-        window_mrk_end   = Array{String,1}()
-    end
-
-    wEnd    = 0
-    @showprogress  for i in window_size
-        wStart = wEnd + 1
-        wEnd  += i
-        wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
-        if typeof(mme) <: Array
-            push!(window_mrk_start,wStart)
-            push!(window_mrk_end  ,wEnd)
-        else
-            push!(window_mrk_start,mme.M.markerID[wStart])
-            push!(window_mrk_end  ,mme.M.markerID[wEnd])
-        end
-    end
-
-    for i=1:nsamples
-        α = output[i,:]
-        genVar = var(X*α)
-
-        wEnd    = 0
-        windowi = 1
-        for win=1:nWindows
-          wStart = wEnd + 1
-          wEnd  += window_size[windowi]
-          wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
-          winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
-          windowi +=1
-        end
-    end
-    return winVarProps, window_mrk_start, window_mrk_end
 end
 
 #Chen, C., Steibel, J. P., & Tempelman, R. J. (2017). Genome-Wide Association
@@ -198,23 +144,88 @@ function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",th
         end
       end
     end
-    winVarProps, window_mrk_start, window_mrk_end =  
-    getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold)
+    winVarProps, window_mrk_start, window_mrk_end =
+    getWinVarProps(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
     winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
     WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
     prop_genvar = round.(prop_genvar*100,digits=2)
-    #bug in Julia, vcat too long
-    #out  = [["window";1:length(WPPA)] ["chr"; window_chr] ["start"; window_pos_start] ["end"; window_pos_end]["WPPA"; WPPA]]
-    out1 = [["window";1:length(WPPA)] ["chr"; window_chr]]
-    out2 = [["start"; window_pos_start] ["end"; window_pos_end]]
-    out3 = [["start_SNP"; window_snp_start] ["end_SNP"; window_snp_end] ["#SNPS"; window_size]]
-    out4 = [["%genetic variance";prop_genvar] ["WPPA"; WPPA]]
-    out  = [out1 out2 out3 out4]
+
+    srtIndx = sortperm(WPPA,rev=true)
+    out = DataFrame(window = (1:length(WPPA))[srtIndx],
+                    chr    = window_chr[srtIndx],
+                    wStart = window_pos_start[srtIndx],
+                    wEnd   = window_pos_end[srtIndx],
+                    start_SNP = window_snp_start[srtIndx],
+                    end_SNP   = window_snp_end[srtIndx],
+                    numSNP  = window_size[srtIndx],
+                    prGenVar = prop_genvar[srtIndx],
+                    WPPA     = WPPA[srtIndx],
+                    PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
+                   )
+
     if output_winVarProps == false
         return out
     else
         return out,winVarProps
     end
 end
+
+function getWinVarProps(marker_effect_file,mme;header=true,window_size=100,threshold=0.001)
+    if header==true
+        output=readdlm(marker_effect_file,',',header=true)[1]
+    else
+        output=readdlm(marker_effect_file,',')
+    end
+
+    nsamples,nMarkers=size(output)
+    if length(window_size)==1
+        nWindows    = ceil(Int64,nMarkers/window_size)
+        window_size = fill(window_size,nWindows)
+    else
+        nWindows    = length(window_size)
+    end
+
+    winVarProps = zeros(nsamples,nWindows)
+    if typeof(mme) <: Array
+        X = mme
+        window_mrk_start = Array{Int64,1}()
+        window_mrk_end   = Array{Int64,1}()
+    else
+        X = mme.output_genotypes
+        window_mrk_start = Array{String,1}()
+        window_mrk_end   = Array{String,1}()
+    end
+
+    wEnd    = 0
+    @showprogress  for i in window_size
+        wStart = wEnd + 1
+        wEnd  += i
+        wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
+        if typeof(mme) <: Array
+            push!(window_mrk_start,wStart)
+            push!(window_mrk_end  ,wEnd)
+        else
+            push!(window_mrk_start,mme.M.markerID[wStart])
+            push!(window_mrk_end  ,mme.M.markerID[wEnd])
+        end
+    end
+
+    for i=1:nsamples
+        α = output[i,:]
+        genVar = var(X*α)
+
+        wEnd    = 0
+        windowi = 1
+        for win=1:nWindows
+          wStart = wEnd + 1
+          wEnd  += window_size[windowi]
+          wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
+          winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
+          windowi +=1
+        end
+    end
+    return winVarProps, window_mrk_start, window_mrk_end
+end
+
 
 export GWAS
