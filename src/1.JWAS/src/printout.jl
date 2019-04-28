@@ -160,7 +160,9 @@ function getMCMCinfo(methods,Pi,chain_length,burnin,starting_value,printout_freq
         end
         if !(methods in ["conventional (no markers)", "GBLUP"])
             @printf("%-30s\n","genetic variances (genomic):")
-            Base.print_matrix(stdout,round.(mme.M.genetic_variance,digits=3))
+            if mme.M.genetic_variance != false
+                Base.print_matrix(stdout,round.(mme.M.genetic_variance,digits=3))
+            end
             println()
             @printf("%-30s\n","marker effect variances:")
             Base.print_matrix(stdout,round.(mme.M.G,digits=3))
