@@ -4,7 +4,7 @@ phenofile       = Datasets.dataset("example","phenotypes.txt")
 phenofile_ssbr  = Datasets.dataset("example","phenotypes_ssbr.txt")
 pedfile    = Datasets.dataset("example","pedigree.txt")
 genofile   = Datasets.dataset("example","genotypes.txt")
-phenotypes = CSV.read(phenofile,delim = ',',header=true)
+phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true)
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
