@@ -12,7 +12,7 @@ include("output.jl")
             chain_length=1000,starting_value=false,burnin = 0,
             output_samples_frequency = 0,output_samples_file="MCMC_samples",
             printout_model_info=true,printout_frequency=100,
-            methods="conventional (no markers)",Pi=0.0,estimatePi=false,
+            methods="conventional (no markers)",Pi=0.0,estimatePi=false, estimateScale=false,
             single_step_analysis= false,pedigree = false,
             missing_phenotypes=false,constraint=false,
             update_priors_frequency::Int64=0,
@@ -33,6 +33,7 @@ include("output.jl")
   a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
   have effects (0.0)` in single-trait analysis and `all markers have effects on all traits` in multi-trait analysis. **Pi** is
   estimated if **estimatePi** = true
+* Scale parameter for prior of marker effect variance is estimated if **estimateScale** = true
 * In multi-trait analysis, **missing_phenotypes**, defaulting to `true`, and **constraint** variance components, defaulting to `false`, are allowed.
   If **constraint**=true, constrain residual covariances between traits to be zeros.
 * Print out the model information in REPL if `printout_model_info=true`; print out the monte carlo mean in REPL with **printout_frequency**,
