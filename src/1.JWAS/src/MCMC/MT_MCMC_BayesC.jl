@@ -240,7 +240,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # -- Position: between new Ri and new Ai
         ########################################################################
         X          = mme.X
-        mme.mmeLhs = X'Ri*X
+        mme.mmeLhs = X'Ri*X #LHS for normal equation (no random effects)
         if mme.M != 0
           ycorr[:]   = ycorr[:] + X*sol
           #same to ycorr[:]=resVec+X*sol

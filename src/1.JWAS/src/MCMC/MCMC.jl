@@ -67,11 +67,16 @@ function runMCMC(mme::MME,df;
                 output_heritability             = false, #complete or incomplete genomic data
                 output_PEV                      = false,
                 #categorical trait
-                categorical_trait               = false)
+                categorical_trait               = false,
+                #random number generator seed
+                seed                            = false)
 
     ############################################################################
     # Pre-Check
     ############################################################################
+    if seee != false
+        Random.seed!(seed)
+    end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
                             burnin,

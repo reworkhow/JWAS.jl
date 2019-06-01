@@ -1,4 +1,4 @@
-using Distributions,Printf
+using Distributions,Printf,Random
 using DelimitedFiles
 using DataFrames,CSV
 using SparseArrays
