@@ -74,7 +74,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
-    if seee != false
+    if seed != false
         Random.seed!(seed)
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
