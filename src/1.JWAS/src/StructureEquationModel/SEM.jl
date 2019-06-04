@@ -1,4 +1,5 @@
 
+#Devloped by Zigui Wang (zigwang97@gmail.com) and Hao Cheng (qtlcheng@ucdavis.edu)
 #Code based on
 #Gianola, D., & Sorensen, D. (2004). Quantitative Genetic Models for Describing
 #Simultaneous and Recursive Relationships Between Phenotypes. Genetics, 167(3),
@@ -100,8 +101,9 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
     #formula calculation
     Y_R_product = Y'bigR
 
-    λ_σ2  = 1.0
-    λ_μ   = 0.0
+    #λ~N(1μ,Iσ2)
+    λ_σ2     = 1.0
+    λ_μ      = 0.0
     first    = Y_R_product*Y
     first   += 1/λ_σ2*sparse(I,size(first))
 
@@ -113,10 +115,14 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
     mu        = vec(first_inv*second)
     var       = Symmetric(first_inv)
 
-    Λ_vec = rand(MvNormal(mu,var))
-    Λ_mat = tranform_lambda(Λ_vec,causal_structure)
+    # λ =  [λ12;λ21]
+    # Λ =  [1 -λ12
+    #      -λ21 1]
+    λ = rand(MvNormal(mu,var))
+    Λ = I - tranform_lambda(λ,causal_structure)
 
-    Λy[:]      = kron(Λ_mat,sparse(1.0I,nind,nind))*Y
+
+    Λy[:]      = kron(Λ,sparse(1.0I,nind,nind))*Y
     Λycorr[:]  = ycorr - y + Λy #add new Λy
 end
 
