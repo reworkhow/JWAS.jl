@@ -10,7 +10,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
                         missing_phenotypes         = false,
                         constraint                 = false,
                         update_priors_frequency    = 0,
-                        output_file                = "MCMC_samples")
+                        output_file                = "MCMC_samples",
+                        causal_structure           = false)
 
     ############################################################################
     # Pre-Check
@@ -132,6 +133,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
            gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale paramenter of the Gamma distribution (1/8 is the rate parameter)
            gammaArray = rand(gammaDist,nMarkers)
         end
+    end
+
+    if causal_structure != false #starting values
+        #starting values for causal structure is zeros(ntrait,ntrait),thus
+        #no ycorr = Λycorr, later variable "ycorr" is used for Λycorr for
+        #coding convinience
+        Λy = kron(Λ,sparse(1.0I,nind,nind))*Y
     end
 
     ############################################################################
@@ -338,7 +346,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
             PRes    = R0Mean*(νR0 - nTraits - 1)
             println("\n Update priors from posteriors.")
         end
-
+        ########################################################################
+        # 3.2 Causal Structure (Structure Equation Models)
+        ########################################################################
+        if causal_structure != false
+            Y=get_sparse_Y_FRM(wArray,causal_structure=causal_structure)
+            get_Λ(Y,mme.R,ycorr,Λy,mme.Sparsey,causal_structure)
+        end
         ########################################################################
         # OUTPUT
         ########################################################################
