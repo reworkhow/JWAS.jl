@@ -135,11 +135,15 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
     end
 
+    ############################################################################
+    # Starting values for SEM
+    ############################################################################
     if causal_structure != false #starting values
-        #starting values for causal structure is zeros(ntrait,ntrait),thus
-        #no ycorr = Λycorr, later variable "ycorr" is used for Λycorr for
-        #coding convinience
-        Λy = kron(Λ,sparse(1.0I,nind,nind))*Y
+        #starting values for 1) causal structure is zeros(ntrait,ntrait),thus
+        #now ycorr = Λycorr, later variable "ycorr" actually denotes Λycorr for
+        #coding convinience 2)missing phenotypes are zeros
+        Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
+        Λy = kron(Λ,sparse(1.0I,nind,nind))*mme.ySparse
     end
 
     ############################################################################
@@ -337,8 +341,10 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
         ########################################################################
         if causal_structure != false
-            Y = get_sparse_Y_FRM(wArray,causal_structure)
-            get_Λ(Y,R,ycorr,Λy,y,causal_structure)
+            if missing_phenotypes==true
+                Y = get_sparse_Y_FRM(wArray,causal_structure) #Not wArray shoulnd by yArray
+            end
+            get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
         # 3.2 Update priors using posteriors (empirical)
@@ -352,13 +358,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
             end
             PRes    = R0Mean*(νR0 - nTraits - 1)
             println("\n Update priors from posteriors.")
-        end
-        ########################################################################
-        # 3.2 Causal Structure (Structure Equation Models)
-        ########################################################################
-        if causal_structure != false
-            Y=get_sparse_Y_FRM(wArray,causal_structure=causal_structure)
-            get_Λ(Y,mme.R,ycorr,Λy,mme.Sparsey,causal_structure)
         end
         ########################################################################
         # OUTPUT
