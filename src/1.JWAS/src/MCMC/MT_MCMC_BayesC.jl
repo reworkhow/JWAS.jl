@@ -326,7 +326,14 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
         ########################################################################
-        # 2.4 Update priors using posteriors (empirical)
+        # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
+        ########################################################################
+        if causal_structure != false
+            Y = get_sparse_Y_FRM(wArray,causal_structure)
+            get_Λ(Y,R,ycorr,Λy,y,causal_structure)
+        end
+        ########################################################################
+        # 3.2 Update priors using posteriors (empirical)
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0
