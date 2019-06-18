@@ -79,6 +79,10 @@ function runMCMC(mme::MME,df;
     if seed != false
         Random.seed!(seed)
     end
+    if causal_structure != false
+        missing_phenotypes = false
+        constraint         = true
+    end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
                             burnin,

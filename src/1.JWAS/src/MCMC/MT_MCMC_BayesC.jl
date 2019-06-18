@@ -139,11 +139,12 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # Starting values for SEM
     ############################################################################
     if causal_structure != false #starting values
-        #starting values for 1) causal structure is zeros(ntrait,ntrait),thus
-        #now ycorr = Λycorr, later variable "ycorr" actually denotes Λycorr for
-        #coding convinience 2)missing phenotypes are zeros
+        #starting values for 1) structural coefficient λij (i≂̸j) is zero,thus
+        #now Λycorr = ycorr, later variable "ycorr" actually denotes Λycorr for
+        #coding convinience 2)no missing phenotypes
         Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
-        Λy = kron(Λ,sparse(1.0I,nind,nind))*mme.ySparse
+        Λ  = Matrix{Float64}(I,nTraits,nTraits) #structural coefficient λij (i≂̸j) is zero
+        Λy = kron(Λ,sparse(1.0I,nObs,nObs))*mme.ySparse
     end
 
     ############################################################################
@@ -341,9 +342,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
         ########################################################################
         if causal_structure != false
-            if missing_phenotypes==true
-                Y = get_sparse_Y_FRM(wArray,causal_structure) #Not wArray shoulnd by yArray
-            end
             get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
