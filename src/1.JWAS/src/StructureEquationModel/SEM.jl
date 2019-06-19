@@ -135,7 +135,7 @@ function tranform_lambda(lambda,causal_structure)
    row_index = findnz(causal_structure)[1]
    col_index = findnz(causal_structure)[2]
    Lambda    = zeros(size(causal_structure))
-   for j in 1:length(row_index)
+   for j in 1:length(lambda)
        Lambda[row_index[j],col_index[j]] = lambda[j]
    end
    return Lambda
