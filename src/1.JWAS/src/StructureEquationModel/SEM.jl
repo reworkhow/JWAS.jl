@@ -71,7 +71,7 @@ function get_sparse_Y_FSM(wArray)
 end
 
 # Get Y for all individuals ordered as individuals within traits (fully recursive model)
-function get_sparse_Y_FRM(wArray,causal_structure=zeros(length(wArray),length(wArray)))
+function get_sparse_Y_FRM(wArray,causal_structure)
     Y        = get_sparse_Y_FSM(wArray)
     ntraits  = length(wArray)
     keep_col = Array{Bool}(undef,0)

@@ -82,6 +82,7 @@ function runMCMC(mme::MME,df;
     if causal_structure != false
         missing_phenotypes = false
         constraint         = true
+        #warning 1)be lower triangular
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
