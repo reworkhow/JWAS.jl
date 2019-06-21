@@ -238,15 +238,18 @@ function getEBV(model::MME,genotypes::Array{Float64,2})
 end
 
 function getEBV(mme,sol,α,traiti)
+    traiti = string(traiti)
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2DataFrame([getNames(mme) sol])
     if mme.pedTrmVec != 0
         for pedtrm in mme.pedTrmVec
-            traiti, effect = split(pedtrm,':')
-            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
-            EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-            EBV += EBV_pedtrm
+            mytrait, effect = split(pedtrm,':')
+            if mytrait == traiti
+                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+                EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
+                EBV += EBV_pedtrm
+            end
         end
     end
 
