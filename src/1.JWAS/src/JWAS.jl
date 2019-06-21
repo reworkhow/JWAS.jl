@@ -18,6 +18,8 @@ include("markers/markers.jl")
 include("variance.jl")
 include("Pi.jl")
 
+include("StructureEquationModel/SEM.jl")
+
 include("misc/misc.jl")
 include("pipeline/pipeline.jl")
 

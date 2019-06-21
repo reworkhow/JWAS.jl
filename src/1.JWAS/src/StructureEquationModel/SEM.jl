@@ -71,7 +71,7 @@ function get_sparse_Y_FSM(wArray)
 end
 
 # Get Y for all individuals ordered as individuals within traits (fully recursive model)
-function get_sparse_Y_FRM(wArray,causal_structure=zeros(length(wArray),length(wArray)))
+function get_sparse_Y_FRM(wArray,causal_structure)
     Y        = get_sparse_Y_FSM(wArray)
     ntraits  = length(wArray)
     keep_col = Array{Bool}(undef,0)
@@ -94,9 +94,9 @@ end
 function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
 
     ntraits = size(R,1)
-    nind    = div(ycorr,ntraits)
+    nind    = div(length(Λycorr),ntraits)
     #Define residual matrix
-    bigR = kron(sparse(1:ntraits,1:ntraits,diag(R).^(-1)),sparse(1.0I,ntraits,ntraits))
+    bigR = kron(sparse(1:ntraits,1:ntraits,diag(R).^(-1)),sparse(1.0I,nind,nind))
 
     #formula calculation
     Y_R_product = Y'bigR
@@ -107,6 +107,10 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
     first    = Y_R_product*Y
     first   += 1/λ_σ2*sparse(I,size(first))
 
+    #ycor   is y  - Xβ - Zu
+    #Λycorr is Λy - Xβ - Zu
+    #Λycorr is used in smaplings for all other parameters. However,
+    #ycor, instead of Λycorr,is used for sampling Λ.
     ycorr  = Λycorr - Λy + y  #subtract old Λy
     second = Y_R_product*ycorr
     second += ones(length(second))*(λ_μ/λ_σ2)
@@ -122,7 +126,7 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
     Λ = I - tranform_lambda(λ,causal_structure)
 
 
-    Λy[:]      = kron(Λ,sparse(1.0I,nind,nind))*Y
+    Λy[:]      = kron(Λ,sparse(1.0I,nind,nind))*y
     Λycorr[:]  = ycorr - y + Λy #add new Λy
 end
 
@@ -131,7 +135,7 @@ function tranform_lambda(lambda,causal_structure)
    row_index = findnz(causal_structure)[1]
    col_index = findnz(causal_structure)[2]
    Lambda    = zeros(size(causal_structure))
-   for j in 1:length(row_index)
+   for j in 1:length(lambda)
        Lambda[row_index[j],col_index[j]] = lambda[j]
    end
    return Lambda

@@ -10,7 +10,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
                         missing_phenotypes         = false,
                         constraint                 = false,
                         update_priors_frequency    = 0,
-                        output_file                = "MCMC_samples")
+                        output_file                = "MCMC_samples",
+                        causal_structure           = false)
 
     ############################################################################
     # Pre-Check
@@ -132,6 +133,18 @@ function MT_MCMC_BayesC(nIter,mme,df;
            gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale paramenter of the Gamma distribution (1/8 is the rate parameter)
            gammaArray = rand(gammaDist,nMarkers)
         end
+    end
+
+    ############################################################################
+    # Starting values for SEM
+    ############################################################################
+    if causal_structure != false #starting values
+        #starting values for 1) structural coefficient λij (i≂̸j) is zero,thus
+        #now Λycorr = ycorr, later variable "ycorr" actually denotes Λycorr for
+        #coding convinience 2)no missing phenotypes
+        Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
+        Λ  = Matrix{Float64}(I,nTraits,nTraits) #structural coefficient λij (i≂̸j) is zero
+        Λy = kron(Λ,sparse(1.0I,nObs,nObs))*mme.ySparse
     end
 
     ############################################################################
@@ -326,7 +339,13 @@ function MT_MCMC_BayesC(nIter,mme,df;
         end
 
         ########################################################################
-        # 2.4 Update priors using posteriors (empirical)
+        # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
+        ########################################################################
+        if causal_structure != false
+            get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+        end
+        ########################################################################
+        # 3.2 Update priors using posteriors (empirical)
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0
@@ -338,7 +357,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
             PRes    = R0Mean*(νR0 - nTraits - 1)
             println("\n Update priors from posteriors.")
         end
-
         ########################################################################
         # OUTPUT
         ########################################################################

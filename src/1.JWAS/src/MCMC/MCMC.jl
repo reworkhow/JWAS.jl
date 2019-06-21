@@ -69,13 +69,20 @@ function runMCMC(mme::MME,df;
                 #categorical trait
                 categorical_trait               = false,
                 #random number generator seed
-                seed                            = false)
+                seed                            = false,
+                #causal structure
+                causal_structure                = false)
 
     ############################################################################
     # Pre-Check
     ############################################################################
     if seed != false
         Random.seed!(seed)
+    end
+    if causal_structure != false
+        missing_phenotypes = false
+        constraint         = true
+        #warning 1)be lower triangular
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
@@ -182,7 +189,8 @@ function runMCMC(mme::MME,df;
                           methods    = methods,
                           output_samples_frequency=output_samples_frequency,
                           output_file=output_samples_file,
-                          update_priors_frequency=update_priors_frequency)
+                          update_priors_frequency=update_priors_frequency,
+                          causal_structure = causal_structure)
         else
             error("No methods options!!!")
         end
