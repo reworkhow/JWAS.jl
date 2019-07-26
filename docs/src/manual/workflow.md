@@ -23,7 +23,7 @@ denotes the type of available data, and "Y<=A" denotes that Y individuals is a s
 | :-----------------------: |:-------------:|:-----------:|:------------:|:---------:|
 | Conventional LMM          |              X|             |              |           |
 | Pedigree-based LMM        |              X|         X   |              | Y<=A      |
-| Complete Genomic LMM      |              X|     maybe   |             X| Y<=G      |
+| Complete Genomic LMM      |              X|     optional|             X| Y<=G      |
 | Incomplete Genomic LMM    |              X|         X   |             X| Y<=A,G<=A |
 
 
