@@ -128,6 +128,7 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
 
     Λy[:]      = kron(Λ,sparse(1.0I,nind,nind))*y
     Λycorr[:]  = ycorr - y + Λy #add new Λy
+    return λ
 end
 
 function tranform_lambda(lambda,causal_structure)

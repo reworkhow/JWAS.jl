@@ -145,6 +145,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
         Λ  = Matrix{Float64}(I,nTraits,nTraits) #structural coefficient λij (i≂̸j) is zero
         Λy = kron(Λ,sparse(1.0I,nObs,nObs))*mme.ySparse
+
+        causal_structure_filename = "strcuture_coefficient_MCMC_samples.txt"
+        causal_structure_outfile  = open(filename,"w")   #write MCMC samples for Λ to a txt file
     end
 
     ############################################################################
@@ -342,7 +345,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
         ########################################################################
         if causal_structure != false
-            get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+            sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
         # 3.2 Update priors using posteriors (empirical)
@@ -372,6 +375,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
                 end
             else
                 output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
+            end
+            if causal_structure == true
+                writedlm(causal_structure_outfile,sample4λ',',')
             end
         end
 
@@ -404,6 +410,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
     if output_samples_frequency != 0
       for (key,value) in outfile
         close(value)
+      end
+      if causal_structure == true
+        close(causal_structure_outfile)
       end
     end
     if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
