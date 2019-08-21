@@ -9,69 +9,96 @@ include("output.jl")
 
 """
     runMCMC(model::MME,df::DataFrame;
-            chain_length=1000,starting_value=false,burnin = 0,
-            output_samples_frequency = 0,output_samples_file="MCMC_samples",
-            printout_model_info=true,printout_frequency=100,
-            methods="conventional (no markers)",Pi=0.0,estimatePi=false, estimateScale=false,
-            single_step_analysis= false,pedigree = false,
-            missing_phenotypes=false,constraint=false,
-            update_priors_frequency::Int64=0,
-            outputEBV=true,output_PEV=false,output_heritability=false)
-
+            ### MCMC
+            chain_length             = 1000,
+            starting_value           = false,
+            burnin                   = 0,
+            output_samples_frequency = 0,
+            output_samples_file      = "MCMC_samples",
+            update_priors_frequency  = 0,
+            ### Methods
+            methods                  = "conventional (no markers)",
+            estimate_variance        = true,
+            Pi                       = 0.0,
+            estimatePi               = false,
+            estimateScale            = false,
+            single_step_analysis     = false,
+            pedigree                 = false,
+            categorical_trait        = false,
+            missing_phenotypes       = false,
+            constraint               = false,
+            causal_structure         = false,
+            ### Genomic Prediction
+            outputEBV                = true,
+            output_PEV               = false,
+            output_heritability      = false,
+            ### MISC
+            seed                     = false,
+            printout_model_info      = true,
+            printout_frequency       = 0)
 
 **Run MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.**
 
-* Available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
-* Single step analysis is allowed if **single_step_analysis** = `true` and **pedigree** is provided.
-* The **starting_value** can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to `0.0`s.
-* The first **burnin** iterations are discarded at the beginning of a MCMC chain of length **chain_length**.
-* Save MCMC samples every **output_samples_frequency** iterations, defaulting to `false`, to
-  files **output_samples_file**, defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets)
-  and marker effects are saved by default if **output_samples_frequency** is provided. MCMC samples for location parametes can be
-  saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows down the computation.
-* In Bayesian variable selection methods, **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is
-  a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
-  have effects (0.0)` in single-trait analysis and `all markers have effects on all traits` in multi-trait analysis. **Pi** is
-  estimated if **estimatePi** = true
-* Scale parameter for prior of marker effect variance is estimated if **estimateScale** = true
-* In multi-trait analysis, **missing_phenotypes**, defaulting to `true`, and **constraint** variance components, defaulting to `false`, are allowed.
-  If **constraint**=true, constrain residual covariances between traits to be zeros.
-* Print out the model information in REPL if `printout_model_info=true`; print out the monte carlo mean in REPL with **printout_frequency**,
-  defaulting to `false`.
-* Individual estimted breeding values (EBVs) are returned if **outputEBV**=`true`, defaulting to `true`. Heritability and genetic variances are returned if
-  **output_heritability**=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
+* Markov chain Monte Carlo
+    * The first **burnin** iterations are discarded at the beginning of a MCMC chain of length **chain_length**.
+    * The **starting_value** can be provided as a vector of numbers for all location parameteres and marker effects, defaulting to `0.0`s.
+    * Save MCMC samples every **output_samples_frequency** iterations, defaulting to `chain_length/1000`, to files **output_samples_file**,
+      defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
+      MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
+      down the computation.
+    * Miscellaneous Options
+        * Priors are updated every **update_priors_frequency** iterations, defaulting to `0`.
+* Methods
+    * Available **methods** include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
+    * Single step analysis is allowed if **single_step_analysis** = `true` and **pedigree** is provided.
+    * In Bayesian variable selection methods, **Pi** for single-trait analyses is a number; **Pi** for multi-trait analyses is
+      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
+      have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
+      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. **Pi** is estimated if **estimatePi** = true
+    * Variance components are estimated if **estimate_variance**=true, defaulting to `true`.
+    * Scale parameter for prior of marker effect variance is estimated if **estimateScale** = true
+    * Miscellaneous Options
+        * Missing phenotypes are allowed in multi-trait analysis with **missing_phenotypes**=true, defaulting to `true`.
+        * Catogorical Traits are allowed if **categorical_trait**=true, defaulting to false.
+        * If **constraint**=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
+        * If **causal_structure** is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
+          trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
+* Genomic Prediction
+    * Individual estimted breeding values (EBVs) are returned if **outputEBV**=`true`, defaulting to `true`. Heritability and genetic
+    variances are returned if **output_heritability**=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
+* Miscellaneous Options
+  * Print out the model information in REPL if `printout_model_info=true`; print out the monte carlo mean in REPL with **printout_frequency**,
+    defaulting to `false`.
+  * If **seed**, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
 """
 function runMCMC(mme::MME,df;
-                #chain
-                chain_length                    = 100,
+                #MCMC
+                chain_length::Int64             = 100,
                 starting_value                  = false,
                 burnin                          = 0,
+                output_samples_frequency::Int64 = chain_length>1000 ? div(chain_length,1000) : 1,
                 output_samples_file             = "MCMC_samples",
-                output_samples_frequency::Int64 = 0,
-                printout_model_info             = true,
-                printout_frequency              = chain_length+1,
-                #methods
+                update_priors_frequency::Int64  = 0,
+                #Methods
                 methods                         = "conventional (no markers)",
+                estimate_variance               = true,
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
+                single_step_analysis            = false, #parameters for single-step analysis
+                pedigree                        = false, #parameters for single-step analysis
+                categorical_trait               = false,
                 missing_phenotypes              = true,
                 constraint                      = false,
-                estimate_variance               = true,
-                update_priors_frequency::Int64  = 0,
-                #parameters for single-step analysis
-                single_step_analysis            = false,
-                pedigree                        = false,
-                #output
+                causal_structure                = false,
+                #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = false, #complete or incomplete genomic data
                 output_PEV                      = false,
-                #categorical trait
-                categorical_trait               = false,
-                #random number generator seed
+                #MISC
                 seed                            = false,
-                #causal structure
-                causal_structure                = false)
+                printout_model_info             = true,
+                printout_frequency              = chain_length+1)
 
     ############################################################################
     # Pre-Check
