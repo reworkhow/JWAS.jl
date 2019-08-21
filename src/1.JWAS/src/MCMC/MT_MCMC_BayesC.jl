@@ -147,7 +147,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         Λy = kron(Λ,sparse(1.0I,nObs,nObs))*mme.ySparse
 
         causal_structure_filename = "strcuture_coefficient_MCMC_samples.txt"
-        causal_structure_outfile  = open(filename,"w")   #write MCMC samples for Λ to a txt file
+        causal_structure_outfile  = open(causal_structure_filename,"w")   #write MCMC samples for Λ to a txt file
     end
 
     ############################################################################
