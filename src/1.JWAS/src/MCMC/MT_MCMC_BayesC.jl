@@ -411,7 +411,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
       for (key,value) in outfile
         close(value)
       end
-      if causal_structure == true
+      if causal_structure != false
         close(causal_structure_outfile)
       end
     end
