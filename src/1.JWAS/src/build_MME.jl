@@ -95,12 +95,12 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
   else                            #for ModelTerm e.g. "1:A*B" (or "1:A")
-    myDf = df[trm.factors]                          #:A,:B
+    myDf = df[!,trm.factors]                          #:A,:B
     if trm.factors[1] in mme.covVec                 #if A is a covariate
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
-      val = df[trm.factors[1]]                      #df[:A]
+      val = df[!,trm.factors[1]]                      #df[:A]
     else                                            #if A is a factor (animal or maternal effects)
-      str = [string(i) for i in df[trm.factors[1]]] #["A1","A3","A2","A3",...]
+      str = [string(i) for i in df[!,trm.factors[1]]] #["A1","A3","A2","A3",...]
       val = fill(1.0,nObs)
     end
 
@@ -109,10 +109,10 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
       if trm.factors[i] in mme.covVec
         #["A * B","A * B",...] or ["A1 * B","A2 * B",...]
         str = str .* fill(" * "*string(trm.factors[i]),nObs)
-        val = val .* df[trm.factors[i]]
+        val = val .* df[!,trm.factors[i]]
       else
         #["A * B1","A * B2",...] or ["A1 * B1","A2 * B2",...]
-        str = str .* fill(" * ",nObs) .* [string(j) for j in df[trm.factors[i]]]
+        str = str .* fill(" * ",nObs) .* [string(j) for j in df[!,trm.factors[i]]]
         val = val .* fill(1.0,nObs)
       end
     end
@@ -218,7 +218,7 @@ left-hand side  : mmeLhs ;
 right-hand side : mmeLhs ;
 """
 function getMME(mme::MME, df::DataFrame)
-    df[1]=map(string,df[1]) ##same to df[:,1] in deprecated CSV
+    df[!,1]=map(string,df[!,1]) ##same to df[:,1] in deprecated CSV
     if mme.mmePos != 1
       error("Please build your model again using the function build_model().")
     end
@@ -235,10 +235,10 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    obsID = map(string,df[1])
-    y   = recode(df[mme.lhsVec[1]], missing => 0.0)
+    obsID = map(string,df[!,1])
+    y   = recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
-      y   = [y; recode(df[mme.lhsVec[i]],missing=>0.0)]
+      y   = [y; recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
     ii    = 1:length(y)
     jj    = ones(length(y))

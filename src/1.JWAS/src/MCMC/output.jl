@@ -18,7 +18,7 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
     if mme.output_ID != 0
         for pedtrm in mme.pedTrmVec
             traiti, effect = split(pedtrm,':')
-            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[:Effect].==effect).&(location_parameters[:Trait].==traiti),:Estimate])
+            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti),:Estimate])
             EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
             output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
         end
