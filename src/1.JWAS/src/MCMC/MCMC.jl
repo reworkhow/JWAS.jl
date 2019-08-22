@@ -41,8 +41,7 @@ include("output.jl")
 
 * Markov chain Monte Carlo
     * The first **burnin** iterations are discarded at the beginning of a MCMC chain of length **chain_length**.
-    * The **starting_value** can be provided as a matrix with two coulmns with variable names (and marker IDs) as 1st column
-      and numbers for all location parameteres and marker effects, defaulting to `0.0`s, as 2nd column.
+    * The **starting_value** can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
     * Save MCMC samples every **output_samples_frequency** iterations, defaulting to `chain_length/1000`, to files **output_samples_file**,
       defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
       MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows

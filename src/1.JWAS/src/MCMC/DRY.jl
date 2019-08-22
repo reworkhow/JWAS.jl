@@ -139,6 +139,13 @@ function init_mixed_model_equations(mme,df,sol)
     if sol == false #no starting values
         sol = zeros(size(mme.mmeLhs,1))
     else            #besure type is Float64
+        nsol = mme.M!=0 ? size(mme.mmeLhs,1)+mme.M.nMarkers : size(mme.mmeLhs,1)
+        if length(sol) != nsol || typeof(sol) <: AbstractString
+            error("length or type of starting values is wrong.")
+        end
+        printstyled("Starting values are provided. The order of starting values for location parameters and\n",
+        "marker effects should be the order of the Mixed Model Equation (This can be\n",
+        "obtained by getNames(model)) and markers\n",bold=false,color=:red)
         sol = map(Float64,sol)
     end
     return sol,df
