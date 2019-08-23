@@ -93,7 +93,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
 
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      error("Missing values are found in dependent variables.")
+      error("Missing values are found in dependent variables: ",trm.factors[i])
     end
   end
 

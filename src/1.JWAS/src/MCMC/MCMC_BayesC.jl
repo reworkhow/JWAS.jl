@@ -88,8 +88,10 @@ function MCMC_BayesC(nIter,mme,df;
     #  WORKING VECTORS (ycor, saving values)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol-M*α)
-
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
+    if mme.M != 0
+        ycorr = ycorr - M*α
+    end
     ############################################################################
     #  SET UP OUTPUT MCMC samples
     ############################################################################
