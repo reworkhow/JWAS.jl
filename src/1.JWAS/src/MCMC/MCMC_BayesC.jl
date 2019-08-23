@@ -33,6 +33,7 @@ function MCMC_BayesC(nIter,mme,df;
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
         end
     end
+    sol,α       = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
     solMean     = zero(sol)
     ############################################################################
     # PRIORS
@@ -71,12 +72,13 @@ function MCMC_BayesC(nIter,mme,df;
         meanVara     = 0.0 #variable to save variance for marker effect
         meanScaleVar = 0.0 #variable to save Scale parameter for prior of marker effect variance
         #vectors to save solutions for marker effects
-        α           = zeros(nMarkers)#starting values for marker effeccts are zeros
-        δ           = zeros(nMarkers)#inclusion indicator for marker effects
+        #α           = zeros(nMarkers)#starting values for marker effeccts are zeros
+        #δ           = zeros(nMarkers)#inclusion indicator for marker effects
+        δ           = ones(nMarkers)#inclusion indicator for marker effects
         meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
         mean_pi     = 0.0
         if methods=="BayesB" #α=β.*δ
-            β              = zeros(nMarkers) ##partial marker effeccts
+            β              = copy(α)  ##partial marker effeccts
             locusEffectVar = fill(vEff,nMarkers)
             vEff           = locusEffectVar #vEff is scalar for BayesC but a vector for BayeB
         end
@@ -86,7 +88,7 @@ function MCMC_BayesC(nIter,mme,df;
     #  WORKING VECTORS (ycor, saving values)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol-M*α)
 
     ############################################################################
     #  SET UP OUTPUT MCMC samples
