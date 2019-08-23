@@ -91,6 +91,12 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   trm.str = Array{AbstractString}(undef,nObs)
   trm.val = Array{Float64}(undef,nObs)
 
+  for i = 1:trm.nFactors
+    if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]]
+      error("Missing values are found in dependent variables.")
+    end
+  end
+
   if trm.factors[1] == :intercept #for intercept
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
