@@ -33,8 +33,8 @@ function MCMC_BayesC(nIter,mme,df;
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
         end
     end
-    sol,α       = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
-    solMean     = zero(sol)
+    sol,α              = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
+    solMean, solMean2  = zero(sol),zero(sol)
     ############################################################################
     # PRIORS
     ############################################################################
@@ -43,7 +43,7 @@ function MCMC_BayesC(nIter,mme,df;
         vRes        = mme.RNew
         nuRes       = mme.df.residual
         scaleRes    = vRes*(nuRes-2)/nuRes
-        meanVare    = 0.0
+        meanVare,meanVare2 = 0.0, 0.0
     else
         vRes        = 1.0
         meanVare    = 1.0
@@ -58,7 +58,7 @@ function MCMC_BayesC(nIter,mme,df;
        G0        = inv(mme.GiNew)
        P         = G0*(νG0 - k - 1)
        S         = zeros(Float64,k,k)
-       G0Mean    = zeros(Float64,k,k)
+       G0Mean,G0Mean2    = zeros(Float64,k,k),zeros(Float64,k,k)
     end
 
     #priors for marker effect variance
@@ -69,14 +69,14 @@ function MCMC_BayesC(nIter,mme,df;
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
         #println("Init scaleVar to ",scaleVar)
-        meanVara     = 0.0 #variable to save variance for marker effect
-        meanScaleVar = 0.0 #variable to save Scale parameter for prior of marker effect variance
+        meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
+        meanScaleVar,meanScaleVar2 = 0.0,0.0 #variable to save Scale parameter for prior of marker effect variance
         #vectors to save solutions for marker effects
         #α           = zeros(nMarkers)#starting values for marker effeccts are zeros
         #δ           = zeros(nMarkers)#inclusion indicator for marker effects
         δ           = ones(nMarkers)#inclusion indicator for marker effects
-        meanAlpha   = zeros(nMarkers)#vectors to save solutions for marker effects
-        mean_pi     = 0.0
+        meanAlpha,meanAlpha2 = zeros(nMarkers),zeros(nMarkers)#vectors to save solutions for marker effects
+        mean_pi,mean_pi2     = 0.0,0.0
         if methods=="BayesB" #α=β.*δ
             β              = copy(α)  ##partial marker effeccts
             locusEffectVar = fill(vEff,nMarkers)
@@ -136,9 +136,6 @@ function MCMC_BayesC(nIter,mme,df;
         Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
         ycorr = ycorr - mme.X*sol
-        if iter > burnin
-            solMean += (sol - solMean)/(iter-burnin)
-        end
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
@@ -151,16 +148,9 @@ function MCMC_BayesC(nIter,mme,df;
             elseif methods=="BayesB"
                 nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,vRes,locusEffectVar,π)
             end
-            if iter > burnin
-                meanAlpha += (α - meanAlpha)/(iter-burnin)
-            end
-
             #sample Pi
             if estimatePi == true
                 π = samplePi(nLoci, nMarkers)
-                if iter > burnin
-                    mean_pi += (π-mean_pi)/(iter-burnin)
-                end
             end
         end
         ########################################################################
@@ -169,9 +159,6 @@ function MCMC_BayesC(nIter,mme,df;
         if mme.pedTrmVec != 0
             G0=sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
             addA(mme)
-            if iter > burnin
-                G0Mean  += (G0  - G0Mean )/(iter-burnin)
-            end
         end
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
@@ -185,9 +172,6 @@ function MCMC_BayesC(nIter,mme,df;
             mme.ROld = mme.RNew
             vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
             mme.RNew = vRes
-            if iter > burnin
-                meanVare += (vRes - meanVare)/(iter-burnin)
-            end
         end
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -200,11 +184,7 @@ function MCMC_BayesC(nIter,mme,df;
                     vEff[j] = sample_variance(β[j],1,dfEffectVar, scaleVar)
                 end
             end
-            if iter > burnin && methods != "BayesB"
-                meanVara += (vEff - meanVara)/(iter-burnin)
-            end
         end
-
         ########################################################################
         # 2.5 Update priors using posteriors (empirical)
         ########################################################################
@@ -226,19 +206,43 @@ function MCMC_BayesC(nIter,mme,df;
             a = size(vEff,1)*dfEffectVar/2   + 1
             b = sum(dfEffectVar ./ (2vEff )) + 1
             scaleVar = rand(Gamma(a,1/b))
-            #println("scaleVar = ",scaleVar)
-            if iter > burnin
-                meanScaleVar += (scaleVar - meanScaleVar)/(iter-burnin)
-            end
         end
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
+        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
                 output_MCMC_samples(mme,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),π,α,vEff,outfile)
             else
                 output_MCMC_samples(mme,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+            end
+
+            nsamples = (iter-burnin)/output_samples_frequency
+            solMean += (sol - solMean)/nsamples
+            solMean2 += (sol .^2 - solMean2)/nsamples
+            if mme.pedTrmVec != 0
+                G0Mean  += (G0  - G0Mean )/nsamples
+                G0Mean2  += (G0 .^2  - G0Mean2 )/nsamples
+            end
+            if categorical_trait == false
+                meanVare += (vRes - meanVare)/nsamples
+                meanVare2 += (vRes .^2 - meanVare2)/nsamples
+            end
+            if mme.M != 0
+                meanAlpha += (α - meanAlpha)/nsamples
+                meanAlpha2 += (α .^2 - meanAlpha2)/nsamples
+                if estimatePi == true
+                    mean_pi += (π-mean_pi)/nsamples
+                    mean_pi2 += (π .^2-mean_pi2)/nsamples
+                end
+                if methods != "BayesB"
+                    meanVara += (vEff - meanVara)/nsamples
+                    meanVara2 += (vEff .^2 - meanVara2)/nsamples
+                end
+                if estimateScale == true
+                    meanScaleVar += (scaleVar - meanScaleVar)/nsamples
+                    meanScaleVar2 += (scaleVar .^2 - meanScaleVar2)/nsamples
+                end
             end
         end
 

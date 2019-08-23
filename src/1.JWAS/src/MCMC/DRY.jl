@@ -6,6 +6,10 @@ function errors_args(mme,methods)
       error("Please build your model again using the function build_model().")
     end
 
+    if mme.MCMCinfo.output_samples_frequency <= 0
+        error("output_samples_frequency should be an integer > 0.")
+    end
+
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
     if methods == "conventional (no markers)"
