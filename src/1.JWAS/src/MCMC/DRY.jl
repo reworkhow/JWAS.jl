@@ -136,7 +136,7 @@ end
 function init_mixed_model_equations(mme,df,sol)
     getMME(mme,df)
     #starting value for sol can be provided
-    nsol = mme.M!=0 ? size(mme.mmeLhs,1)+mme.M.nMarkers : size(mme.mmeLhs,1)
+    nsol = mme.M!=0 ? size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels : size(mme.mmeLhs,1)
     if sol == false #no starting values
         sol = zeros(nsol)
     else            #besure type is Float64

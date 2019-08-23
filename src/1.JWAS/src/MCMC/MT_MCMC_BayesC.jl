@@ -17,6 +17,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     # Pre-Check
     ############################################################################
     #starting values for location parameters(no marker) are sol
+    sol,α       = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
     solMean     = zero(sol)
 
     if methods in ["RR-BLUP","BayesL"]
@@ -114,11 +115,11 @@ function MT_MCMC_BayesC(nIter,mme,df;
             #wArray[traiti]         = pointer_to_array(ptr,nObs)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
 
-            alphaArray[traiti]     = zeros(nMarkers)
+            alphaArray[traiti]     = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanAlphaArray[traiti] = zeros(nMarkers)
             deltaArray[traiti]     = ones(nMarkers)
             meanDeltaArray[traiti] = zeros(nMarkers)
-            uArray[traiti]         = zeros(nMarkers)
+            uArray[traiti]         = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanuArray[traiti]     = zeros(nMarkers)
         end
 
