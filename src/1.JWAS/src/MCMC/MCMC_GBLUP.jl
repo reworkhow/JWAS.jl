@@ -19,7 +19,8 @@ function MCMC_GBLUP(nIter,mme,df;
     # Pre-Check
     #############################################################################
     #starting values for location parameters(no marker) are sol
-    solMean     = zero(sol)
+    sol,marker_effects = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
+    solMean            = zero(sol)
 
     #######################################################
     # PRIORS
@@ -60,14 +61,16 @@ function MCMC_GBLUP(nIter,mme,df;
     meanVarg    = 0.0
     meanh2      = 0.0
 
-    α           = zeros(nObs) #starting values for pseudo breeding values are zeros
+    #α           = zeros(nObs) #starting values for pseudo breeding values are zeros
+    α           = L'M*marker_effects #starting values for pseudo breeding values are zeros
     meanAlpha   = zeros(nObs) #vectors to save solutions for pseudo breeding values
 
     ############################################################################
     #  WORKING VECTORS (ycor)
     ############################################################################
     #adjust y for starting values
-    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
+    println(size(α)," ",size(M))
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol-M*marker_effects)
 
     ############################################################################
     #  SET UP OUTPUT MCMC samples
