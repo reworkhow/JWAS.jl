@@ -1,5 +1,6 @@
 using Distributions,Printf,Random
 using DelimitedFiles
+using InteractiveUtils #for versioninfo
 using DataFrames,CSV
 using SparseArrays
 using LinearAlgebra

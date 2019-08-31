@@ -103,6 +103,9 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
+    printstyled("\n\n The version of Julia and Platform in use:\n",bold=true)
+    versioninfo()
+
     if seed != false
         Random.seed!(seed)
     end
