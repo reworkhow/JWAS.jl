@@ -26,6 +26,12 @@ function center!(X)
     return colMeans
 end
 
+function center(X)
+    nrow,ncol = size(X)
+    colMeans = mean(X,dims=1)
+    return colMeans
+end
+
 function getXpRinvX(X, Rinv)
     ncol = size(X)[2]
     XpRinvX = [((X[:,i].*Rinv)'X[:,i])[1]::Float64 for i=1:ncol]

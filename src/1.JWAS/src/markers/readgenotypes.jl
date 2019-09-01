@@ -1,12 +1,13 @@
 """
    add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
-* Get marker informtion from an nxp Matrix M of genotypes. This matrix needs to be column-wise sorted by marker positions.
+* Get marker informtion from an nxp Matrix M of genotypes (Array or DataFrame),
+  where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.
 * rowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n
 * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 
 """
-function add_genotypes(mme::MME,M::Array{Float64,2},G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
+function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G;rowID=false,header=false,center=true,G_is_marker_variance=false,df=4)
     if length(rowID) != size(M,1)
         rowID = string.(1:size(M,1))
     end
@@ -50,85 +51,68 @@ function add_genotypes(mme::MME,file,G;separator=',',header=true,center=true,G_i
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 
-#load genotypes from a text file (individual IDs in the 1st column)
+#load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
 function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
     printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
     printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:red)
 
+    #get marker IDs
     myfile = open(file)
-    #get number of columns
     row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
-
     if header==true
-      markerID=row1[2:end]  #skip header
+      markerID=string.(row1[2:end])  #skip header
     else
-      markerID= ["NA"]
+      markerID=string.(1:length(row1[2:end]))
     end
-    #set types for each column and get number of markers
+    #set type for each column
     ncol= length(row1)
     etv = Array{DataType}(undef,ncol)
     fill!(etv,Float64)
     etv[1]=String
     close(myfile)
-    #
-    # #read genotypes
-    #df = CSV.read(file, types=etv, delim = separator, header=header)
-    df = readtable(file, eltypes=etv, separator = separator, header=header)
-    obsID     = map(string,df[!,1]) #convert from Array{Union{String, Missings.Missing},1} to String #redundant actually
+    #read a large genotype file
+    df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
+    obsID     = map(string,df[!,1])
     genotypes = map(Float64,convert(Matrix,df[!,2:end]))
-    nObs,nMarkers = size(genotypes)
-
-    ##readdlm
-    #df            = readdlm(file,separator,Any,header=header)
-    #if header == true
-    #    df=df[1]
-    #end
-    #obsID         = map(string,df[:,1]) #map(String,df[:,1]) not work, if df[:,1] are integers
-    #genotypes     = map(Float64,df[:,2:end])
-    #nObs,nMarkers = size(genotypes)
-
-    if center==true
-        markerMeans = center!(genotypes) #centering
-    else
-        markerMeans = center!(copy(genotypes))  #get marker means
-    end
-    p             = markerMeans/2.0
-    sum2pq        = (2*p*(1 .- p)')[1,1] #(1x1 matrix)[1,1]
+    #preliminary summary of genotype
+    nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
+    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
+    p             = markerMeans/2.0       #allele frequency
+    sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
 
     return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
 
-#load genotypes from Array or DataFrames (individual IDs in the 1st column,
+#load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
 function readgenotypes(df::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFrame};rowID=false,header=false,separator=false,center=true)
+    #get marker ID
     if header==true
-        error("The header (marker IDs) must be false or provided as an array when the input is not a file.")
+        error("The header (marker IDs) needs to be provided as an array when the input is not a text file or set header=false.")
     elseif header==false
-        markerIDs = ["NA"]
+        markerID = string.(1:size(df,2))
     else
-        markerIDs = header
+        markerID = string.(header[2:end])
     end
-
-    if rowID == false
-        if typeof(df) == DataFrames.DataFrame
-            obsID     = map(string,df[1])
-            genotypes = map(Float64,convert(Array,df[2:end]))
-        else
-            obsID         = map(string,view(df,:,1))
-            genotypes     = map(Float64,convert(Array,view(df,:,2:size(df,2))))
-        end
+    #get observation IDs and genotypes
+    if rowID == false #1st column: obsID
+        error("Individual IDs need to be provided using rowID,e.g.,rowID=[\"a1\",\"b2\",\"c1\"].")
     else
         obsID = map(string,rowID)
-        genotypes = map(Float64,convert(Array,df))
+        genotypes = map(Float64,convert(Matrix,df))
     end
-    nObs,nMarkers = size(genotypes)
+    #preliminary summary of genotype (duplication of the function above)
+    nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
+    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
+    p             = markerMeans/2.0       #allele frequency
+    sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
 
-    if center==true
-        markerMeans = center!(genotypes) #centering
-    else
-        markerMeans = center!(copy(genotypes))  #get marker means
-    end
-    p             = markerMeans/2.0
-    sum2pq       = (2*p*(1 .- p)')[1,1]
-
-    return Genotypes(obsID,markerIDs,nObs,nMarkers,p,sum2pq,center,genotypes)
+    return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
 end
+
+# if typeof(df) == DataFrames.DataFrame
+#     obsID     = map(string,df[!,1])
+#     genotypes = map(Float64,convert(Matrix,df[!,2:end]))
+# else
+#     obsID     = map(string,view(df,:,1))
+#     genotypes = map(Float64,convert(Array,view(df,:,2:size(df,2))))
+# end
