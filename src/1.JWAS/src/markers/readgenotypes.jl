@@ -1,5 +1,5 @@
 """
-   add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
+    add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
 * Get marker informtion from an nxp Matrix M of genotypes (Array or DataFrame),
   where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.
 * rowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n
