@@ -585,6 +585,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals/#JWAS.getinfo-Tuple{Any}",
+    "page": "Internals",
+    "title": "JWAS.getinfo",
+    "category": "method",
+    "text": "getinfo(model::MME)\n\nPrint out model information.\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/internals/#JWAS.outputEBV-Tuple{Any,Any}",
     "page": "Internals",
     "title": "JWAS.outputEBV",
