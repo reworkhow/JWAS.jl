@@ -417,14 +417,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public/#JWAS.add_markers",
-    "page": "Public",
-    "title": "JWAS.add_markers",
-    "category": "function",
-    "text": "same to add_genotypes\n\n\n\n\n\n"
-},
-
-{
     "location": "manual/public/#JWAS.runMCMC",
     "page": "Public",
     "title": "JWAS.runMCMC",
@@ -517,7 +509,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "Public Interface",
     "category": "section",
-    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nadd_markers\nrunMCMC\noutputEBV\noutputMCMCsamples\nshowMME\nsolveGWAS\nget_additive_genetic_variances\nget_heritability\nget_correlations\nget_breeding_values\nQC"
+    "text": "build_model\nset_covariate\nset_random\nget_pedigree\nadd_genotypes\nrunMCMC\noutputEBV\noutputMCMCsamples\nshowMME\nsolveGWAS\nget_additive_genetic_variances\nget_heritability\nget_correlations\nget_breeding_values\nQC"
 },
 
 {
@@ -558,14 +550,6 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.add_genotypes",
     "category": "method",
     "text": "addgenotypes(mme::MME,M,G;header=false,center=true,rowID=false,Gismarkervariance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.add_markers-Tuple{JWAS.MME,Any,Any}",
-    "page": "Internals",
-    "title": "JWAS.add_markers",
-    "category": "method",
-    "text": "same to add_genotypes\n\n\n\n\n\n"
 },
 
 {
