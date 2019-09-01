@@ -100,7 +100,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
     writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
   end
 
-  if mme.M !=0 && mme.M.markerID[1]!="NA"
+  if mme.M !=0
       for traiti in 1:ntraits
           writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID),',')
       end

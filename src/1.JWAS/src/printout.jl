@@ -42,8 +42,6 @@ end
 
 * Print out model information.
 """
-
-#more details later
 function getinfo(model;data=false)
   printstyled("A Linear Mixed Model was build using model equations:\n\n",bold=true)
   for i in model.modelVec

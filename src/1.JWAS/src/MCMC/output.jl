@@ -32,14 +32,8 @@ function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
         meanAlpha=[meanAlpha]
     end
     markerout        = []
-    if mme.M.markerID[1]!="NA"
-        for markerArray in meanAlpha
-          push!(markerout,[mme.M.markerID markerArray])
-        end
-    else
-        for markerArray in meanAlpha
-          push!(markerout,markerArray)
-        end
+    for markerArray in meanAlpha
+      push!(markerout,[mme.M.markerID markerArray])
     end
 
     output["Posterior mean of marker effects"] = (mme.nModels==1) ? markerout[1] : markerout
