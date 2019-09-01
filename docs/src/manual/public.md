@@ -24,7 +24,6 @@ set_covariate
 set_random
 get_pedigree
 add_genotypes
-add_markers
 runMCMC
 outputEBV
 outputMCMCsamples

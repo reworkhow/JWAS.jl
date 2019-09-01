@@ -50,13 +50,6 @@ function add_genotypes(mme::MME,file,G;separator=',',header=true,center=true,G_i
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 
-"""
-    same to add_genotypes
-"""
-function add_markers(mme::MME,file,G;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
-    add_genotypes(mme,file,G;separator=separator,header=header,center=center,G_is_marker_variance=G_is_marker_variance,df=df)
-end
-
 #load genotypes from a text file (individual IDs in the 1st column)
 function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
     printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)

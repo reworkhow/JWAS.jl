@@ -24,7 +24,7 @@ include("StructureEquationModel/SEM.jl")
 include("misc/misc.jl")
 include("pipeline/pipeline.jl")
 
-export build_model,set_covariate,set_random,add_genotypes,add_markers
+export build_model,set_covariate,set_random,add_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,getinfo
