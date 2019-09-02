@@ -30,7 +30,6 @@ include("output.jl")
             causal_structure         = false,
             ### Genomic Prediction
             outputEBV                = true,
-            output_PEV               = false,
             output_heritability      = false,
             ### MISC
             seed                     = false,
@@ -64,7 +63,7 @@ include("output.jl")
         * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
-    * Individual estimted breeding values (EBVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
+    * Individual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
     variances are returned if `output_heritability`=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
@@ -93,8 +92,7 @@ function runMCMC(mme::MME,df;
                 causal_structure                = false,
                 #Genomic Prediction
                 outputEBV                       = true,
-                output_heritability             = false, #complete or incomplete genomic data
-                output_PEV                      = false,
+                output_heritability             = true, #complete or incomplete genomic data
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
@@ -132,7 +130,6 @@ function runMCMC(mme::MME,df;
                             update_priors_frequency,
                             outputEBV,
                             output_heritability,
-                            output_PEV,
                             categorical_trait)
     #check errors in function arguments
     errors_args(mme,methods)
