@@ -274,12 +274,20 @@ function MCMC_BayesC(nIter,mme,df;
         close(value)
       end
     end
-    if mme.M != 0
-        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file)
-    else
-        output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),output_samples_frequency,
-                             false,false,false,false,false,false,output_file)
-    end
+    output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
+                         mme.M != 0 ? meanAlpha : false,
+                         mme.M != 0 ? meanVara : false,
+                         mme.M != 0 ? estimatePi : false,
+                         mme.M != 0 ? mean_pi : false,
+                         mme.M != 0 ? estimateScale : false,
+                         mme.M != 0 ? meanScaleVar : false,
+                         output_file,
+                         solMean2,
+                         mme.pedTrmVec!=0 ? G0Mean2 : false,
+                         meanVare2,
+                         mme.M != 0 ? meanAlpha2 : false,
+                         mme.M != 0 ? mean_pi2 : false,
+                         mme.M != 0 ? meanVara2 : false,
+                         mme.M != 0 ? meanScaleVar2 : false)
     return output
 end

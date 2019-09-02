@@ -1,87 +1,78 @@
 ################################################################################
 # Return Output Results (Dictionary)
+# Posterior mean and variance are calculated for all parameters in the model in
+# run; Other paramters which is a function of those are calculated from MCMC
+# samples file.
 ################################################################################
-function output_result(mme,solMean,meanVare,G0Mean,output_samples_frequency,
-                       meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file)
-  output = Dict()
-  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
-      for traiti in 1:mme.nModels
-          output["EBV"*"_"*string(mme.lhsVec[traiti])]=zeros(length(mme.output_ID))
-      end
-  end
+function matrix2dataframe(names,meanVare,meanVare2)
+    names     = repeat(names,inner=length(names)).*"_".*repeat(names,outer=length(names))
+    meanVare  = (typeof(meanVare) <: Union{Number,Missing}) ? meanVare : vec(meanVare)
+    meanVare2 = (typeof(meanVare2) <: Union{Number,Missing}) ? meanVare2 : vec(meanVare2)
+    stdVare   = sqrt.(meanVare2 .- meanVare .^2)
+    DataFrame([names meanVare stdVare],[:var1_var2,:Estimate,:Std_Error])
+end
 
-  location_parameters = reformat2DataFrame([getNames(mme) solMean])
+function output_result(mme,solMean,meanVare,G0Mean,
+                       meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file,
+                       solMean2      = missing,
+                       G0Mean2       = missing,
+                       meanVare2     = missing,
+                       meanAlpha2    = mme.nModels == 1 ? missing : fill(missing,mme.nModels),
+                       mean_pi2      = missing,
+                       meanVara2     = missing,
+                       meanScaleVar2 = missing)
+  output = Dict()
+  location_parameters = reformat2DataFrame([getNames(mme) solMean sqrt.(solMean2 .- solMean .^2)])
   output["Posterior mean of location parameters"] = location_parameters
-  output["Posterior mean of residual variance"]   = meanVare
+  output["Posterior mean of residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
+
+
   if mme.pedTrmVec != 0
-    output["Posterior mean of polygenic effects covariance matrix"]=G0Mean
-    if mme.output_ID != 0
-        for pedtrm in mme.pedTrmVec
-            traiti, effect = split(pedtrm,':')
-            sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti),:Estimate])
-            EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-            output["EBV"*"_"*string(mme.lhsVec[parse(Int64,traiti)])] += EBV_pedtrm
-        end
-    end
+    output["Posterior mean of polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
 
   if mme.M != 0
     if mme.nModels == 1
-        #make single-trait estimated marker effects as type
-        #*array of array* (same to multi-trait) for coding simplicity
         meanAlpha=[meanAlpha]
+        meanAlpha2=[meanAlpha2]
     end
-    markerout        = []
-    for markerArray in meanAlpha
-      push!(markerout,[mme.M.markerID markerArray])
+    traiti      = 1
+    whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
+    whichmarker = mme.M.markerID
+    whicheffect = meanAlpha[traiti]
+    whicheffectsd = sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)
+    for traiti in 2:mme.nModels
+        whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(mme.M.markerID)))
+        whichmarker    = vcat(whichmarker,mme.M.markerID)
+        whicheffect    = vcat(whicheffect,meanAlpha[traiti])
+        whicheffectsd  = vcat(whicheffectsd,sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
     end
+    output["Posterior mean of marker effects"]=
+    DataFrame([whichtrait whichmarker whicheffect whicheffectsd],[:trait,:marker_ID,:Estimate,:Std_Error])
 
-    output["Posterior mean of marker effects"] = (mme.nModels==1) ? markerout[1] : markerout
-    output["Posterior mean of marker effects variance"] = meanVara
-    if estimatePi == true
-        output["Posterior mean of Pi"] = mean_pi
+    output["Posterior mean of marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
+    if estimatePi == true && mme.nModels == 1
+        output["Posterior mean of Pi"] = matrix2dataframe(string.(mme.lhsVec),mean_pi,mean_pi2)
     end
     if estimateScale == true
-        output["Posterior mean of ScaleEffectVar"] = meanScaleVar
-    end
-
-    if mme.output_ID != 0
-        for traiti in 1:mme.nModels
-            EBV_markers  = mme.output_genotypes*meanAlpha[traiti] #fixed for mt
-            output["EBV"*"_"*string(mme.lhsVec[traiti])] += EBV_markers
-        end
+        output["Posterior mean of ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
     end
   end
-
-  if mme.output_ID != 0 && haskey(mme.output_X,"J") #single-step analyis
+  #Get EBV and PEV from MCMC samples text files
+  if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       for traiti in 1:mme.nModels
-          sol_J        = map(Float64,location_parameters[(location_parameters[:Effect].=="J").&(location_parameters[:Trait].==string(traiti)),:Estimate])[1]
-          sol_ϵ        = map(Float64,location_parameters[(location_parameters[:Effect].=="ϵ").&(location_parameters[:Trait].==string(traiti)),:Estimate])
-          EBV_J        = mme.output_X["J"]*sol_J
-          EBV_ϵ        = mme.output_X["ϵ"]*sol_ϵ
-          output["EBV"*"_"*string(mme.lhsVec[traiti])] += (EBV_J+EBV_ϵ)
-      end
-  end
-
-  if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0)
-      for traiti in 1:mme.nModels
-          EBV = output["EBV"*"_"*string(mme.lhsVec[traiti])]
-          if EBV != zeros(length(mme.output_ID))
-              myEBV = "EBV"*"_"*string(mme.lhsVec[traiti])
-              output[myEBV]= DataFrame([mme.output_ID EBV],[:ID,:Estimate])
-          end
-          if mme.MCMCinfo.output_PEV == true
-              EBVsamplesfile = output_file*"_"*myEBV*".txt"
-              EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
-              if vec(IDs) == mme.output_ID
-                  output[myEBV][:PEV]= vec(var(EBVsamples,dims=1))
-              else
-                  error("The EBV file is wrong.")
-              end
+          EBVkey         = "EBV"*"_"*string(mme.lhsVec[traiti])
+          EBVsamplesfile = output_file*"_"*EBVkey*".txt"
+          EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
+          EBV            = vec(mean(EBVsamples,dims=1))
+          PEV            = vec(var(EBVsamples,dims=1))
+          if vec(IDs) == mme.output_ID
+              output[EBVkey] = DataFrame([mme.output_ID EBV PEV],[:ID,:EBV,:PEV])
+          else
+              error("The EBV file is wrong.")
           end
       end
   end
-
   return output
 end
 
@@ -103,9 +94,10 @@ function reformat2DataFrame(res::Array)
         out_names = reshape(out_names,length(out_names),1)
     end
     #out_names=permutedims(out_names,[2,1]) #rotate
-    out_values=map(Float64,res[:,2])
-    out=[out_names out_values]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate])
+    out_values   = map(Float64,res[:,2])
+    out_variance = convert.(Union{Missing, Float64},res[:,3])
+    out =[out_names out_values out_variance]
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:Std_Error])
     return out
 end
 
@@ -235,7 +227,7 @@ function getEBV(mme,sol,α,traiti)
     traiti = string(traiti)
     EBV=zeros(length(mme.output_ID))
 
-    location_parameters = reformat2DataFrame([getNames(mme) sol])
+    location_parameters = reformat2DataFrame([getNames(mme) sol zero(sol)])
     if mme.pedTrmVec != 0
         for pedtrm in mme.pedTrmVec
             mytrait, effect = split(pedtrm,':')

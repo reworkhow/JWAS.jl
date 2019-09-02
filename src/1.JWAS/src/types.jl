@@ -113,7 +113,6 @@ mutable struct MCMCinfo
     update_priors_frequency
     outputEBV
     output_heritability
-    output_PEV
     categorical_trait
 end
 

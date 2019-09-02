@@ -101,9 +101,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
-    printstyled("\n\n The version of Julia and Platform in use:\n",bold=true)
-    versioninfo()
-
     if seed != false
         Random.seed!(seed)
     end
@@ -225,5 +222,11 @@ function runMCMC(mme::MME,df;
         error("No options!")
     end
   mme.output = res
+
+  printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
+  versioninfo()
+  printstyled("\n\nThe analysis has finished. Results are saved in the ",bold=true)
+  printstyled("returned variable. MCMC samples are saved in text files.\n\n\n",bold=true)
+
   return res
 end

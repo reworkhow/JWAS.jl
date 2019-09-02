@@ -1,5 +1,6 @@
+
 ################################################################################
-#User-interface to output MCMC Samples for specific variables
+# User-interface to output MCMC Samples for specific variables
 ################################################################################
 """
     outputMCMCsamples(mme::MME,trmStr::AbstractString...)
@@ -32,7 +33,7 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
 end
 
 ################################################################################
-#Set-Up files to save MCMC Samples
+# Set-Up files to save MCMC Samples
 ################################################################################
 function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name="MCMC_samples")
   ntraits     = size(mme.lhsVec,1)
@@ -124,20 +125,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   return outfile
 end
 
-#output samples for location parameers
-function output_location_parameters_samples(mme::MME,sol,outfile)
-    for trmi in  mme.outputSamplesVec
-        trmStr = trmi.trmStr
-        startPosi  = trmi.startPos
-        endPosi    = startPosi + trmi.nLevels - 1
-        samples4locations = sol[startPosi:endPosi]
-        writedlm(outfile[trmStr],samples4locations',',')
-    end
-end
-
-
 ################################################################################
-#Output MCMC Samples every output_samples_frequency steps
+# Output MCMC Samples every output_samples_frequency iterations
 ################################################################################
 function output_MCMC_samples(mme,sol,vRes,G0,
                              π=false,
@@ -175,7 +164,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
       end
   end
 
-  if mme.MCMCinfo.outputEBV == true
+  if mme.MCMCinfo.outputEBV == true #add error message
       if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
              myEBV = getEBV(mme,sol,α,1)
@@ -189,7 +178,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
               EBVmat = myEBV = getEBV(mme,sol,α[1],1)
               writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
               for traiti in 2:ntraits
-                  myEBV = getEBV(mme,sol,α[traiti],traiti)
+                  myEBV = getEBV(mme,sol,α[traiti],traiti) #actually BV
                   writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
                   EBVmat = [EBVmat myEBV]
               end
@@ -202,9 +191,17 @@ function output_MCMC_samples(mme,sol,vRes,G0,
        end
   end
 end
-
-# for vec::Array{AbstractString,1} and vec::Array{String,1}
-# and Array{SubString{String} for issue 8
+#output MCMC samples for location parameers
+function output_location_parameters_samples(mme::MME,sol,outfile)
+    for trmi in  mme.outputSamplesVec
+        trmStr = trmi.trmStr
+        startPosi  = trmi.startPos
+        endPosi    = startPosi + trmi.nLevels - 1
+        samples4locations = sol[startPosi:endPosi]
+        writedlm(outfile[trmStr],samples4locations',',')
+    end
+end
+#transpose a column vector of strings (vec' doesn't work)
 function transubstrarr(vec)
     lvec=length(vec)
     res =Array{String}(undef,1,lvec)
