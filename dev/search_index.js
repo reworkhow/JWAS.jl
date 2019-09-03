@@ -585,7 +585,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/internals/#JWAS.getinfo-Tuple{Any}",
+    "location": "manual/internals/#JWAS.getinfo-Tuple{JWAS.MME}",
     "page": "Internals",
     "title": "JWAS.getinfo",
     "category": "method",
