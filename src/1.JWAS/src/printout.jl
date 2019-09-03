@@ -42,7 +42,7 @@ end
 
 * Print out model information.
 """
-function getinfo(model;data=false)
+function getinfo(model::MME;data=false)
   printstyled("A Linear Mixed Model was build using model equations:\n\n",bold=true)
   for i in model.modelVec
     println(i)

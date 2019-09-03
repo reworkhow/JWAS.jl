@@ -5,7 +5,7 @@ using SparseArrays
 using ProgressMeter
 
 export get_pedigree
-
+export getinfo
 """
     get_pedigree(pedfile::AbstractString;header=false,separator=',')
 * Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
@@ -263,6 +263,25 @@ function getInbreeding(ped::Pedigree)
       inbreeding[i[2].seqID] = i[2].f
     end
     return inbreeding
+end
+
+function getinfo(pedigree::Pedigree)
+    println("#individuals: ",length(pedigree.idMap))
+    sires  = [pednode.sire for pednode in values(pedigree.idMap)]
+    dams = [pednode.dam for pednode in values(pedigree.idMap)]
+    println("#sires:       ",sum(unique(sires).!="0"))
+    println("#dams:        ",sum(unique(dams).!="0"))
+    println("#founders:    ",length(pedigree.idMap)-sum((sires .!= "0") .* (dams .!= "0")))
+
+    Ai   = PedModule.AInverse(pedigree)
+    IDs = PedModule.getIDs(pedigree)
+    inbreeding = PedModule.getInbreeding(pedigree)
+    #outID=string.(1:12)
+    #JWAS.mkmat_incidence_factor(outID,inID)
+    #mat=Matrix(JWAS.mkmat_incidence_factor(outID,inID))
+    #A=mat*A*mat'
+    println("Get individual IDs, inverse of numerator relationship matrix, and inbreeding coefficients.")
+    return IDs,Ai,inbreeding
 end
 
 
