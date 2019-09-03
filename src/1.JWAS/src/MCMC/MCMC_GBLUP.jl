@@ -69,7 +69,6 @@ function MCMC_GBLUP(nIter,mme,df;
     #  WORKING VECTORS (ycor)
     ############################################################################
     #adjust y for starting values
-    println(size(α)," ",size(M))
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol-M*marker_effects)
 
     ############################################################################

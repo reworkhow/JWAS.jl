@@ -76,6 +76,7 @@ function MCMC_BayesC(nIter,mme,df;
         #δ           = zeros(nMarkers)#inclusion indicator for marker effects
         δ           = ones(nMarkers)#inclusion indicator for marker effects
         meanAlpha,meanAlpha2 = zeros(nMarkers),zeros(nMarkers)#vectors to save solutions for marker effects
+        meanDelta            = zeros(nMarkers)
         mean_pi,mean_pi2     = 0.0,0.0
         if methods=="BayesB" #α=β.*δ
             β              = copy(α)  ##partial marker effeccts
@@ -229,8 +230,10 @@ function MCMC_BayesC(nIter,mme,df;
                 meanVare2 += (vRes .^2 - meanVare2)/nsamples
             end
             if mme.M != 0
-                meanAlpha += (α - meanAlpha)/nsamples
+                meanAlpha  += (α - meanAlpha)/nsamples
                 meanAlpha2 += (α .^2 - meanAlpha2)/nsamples
+                meanDelta  += (δ - meanDelta)/nsamples
+
                 if estimatePi == true
                     mean_pi += (π-mean_pi)/nsamples
                     mean_pi2 += (π .^2-mean_pi2)/nsamples
@@ -276,6 +279,7 @@ function MCMC_BayesC(nIter,mme,df;
     end
     output=output_result(mme,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
                          mme.M != 0 ? meanAlpha : false,
+                         mme.M != 0 ? meanDelta : false,
                          mme.M != 0 ? meanVara : false,
                          mme.M != 0 ? estimatePi : false,
                          mme.M != 0 ? mean_pi : false,

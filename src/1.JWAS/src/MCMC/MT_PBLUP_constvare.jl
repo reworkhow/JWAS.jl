@@ -149,6 +149,6 @@ function MT_MCMC_PBLUP_constvare(nIter,mme,df;
       end
     end
     output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             false,false,false,false,false,false,output_file)
+                             false,false,false,false,false,false,false,output_file)
     return output
 end

@@ -225,8 +225,12 @@ function runMCMC(mme::MME,df;
 
   printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
   versioninfo()
-  printstyled("\n\nThe analysis has finished. Results are saved in the ",bold=true)
-  printstyled("returned variable. MCMC samples are saved in text files.\n\n\n",bold=true)
-
+  printstyled("\n\nThe analysis has finished. Results are saved in the returned ",bold=true)
+  printstyled("variable and text files. MCMC samples are saved in text files.\n\n\n",bold=true)
+  if methods != "GBLUP"
+      for (key,value) in res
+          CSV.write(replace(key," "=>"_")*".txt",value)
+      end
+  end
   return res
 end

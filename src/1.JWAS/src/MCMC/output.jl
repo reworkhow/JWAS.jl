@@ -9,11 +9,23 @@ function matrix2dataframe(names,meanVare,meanVare2)
     meanVare  = (typeof(meanVare) <: Union{Number,Missing}) ? meanVare : vec(meanVare)
     meanVare2 = (typeof(meanVare2) <: Union{Number,Missing}) ? meanVare2 : vec(meanVare2)
     stdVare   = sqrt.(meanVare2 .- meanVare .^2)
-    DataFrame([names meanVare stdVare],[:var1_var2,:Estimate,:Std_Error])
+    DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:Std_Error])
+end
+
+function dict2dataframe(mean_pi,mean_pi2)
+    if typeof(mean_pi) <: Union{Number,Missing}
+        names = "π"
+    else
+        names = collect(keys(mean_pi))
+    end
+    mean_pi  = (typeof(mean_pi) <: Union{Number,Missing}) ? mean_pi : collect(values(mean_pi))
+    mean_pi2 = (typeof(mean_pi2) <: Union{Number,Missing}) ? mean_pi2 : collect(values(mean_pi2))
+    stdpi    = sqrt.(mean_pi2 .- mean_pi .^2)
+    DataFrame([names mean_pi stdpi],[:π,:Estimate,:Std_Error])
 end
 
 function output_result(mme,solMean,meanVare,G0Mean,
-                       meanAlpha,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file,
+                       meanAlpha,meanDelta,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file,
                        solMean2      = missing,
                        G0Mean2       = missing,
                        meanVare2     = missing,
@@ -33,26 +45,29 @@ function output_result(mme,solMean,meanVare,G0Mean,
 
   if mme.M != 0
     if mme.nModels == 1
-        meanAlpha=[meanAlpha]
+        meanAlpha =[meanAlpha]
         meanAlpha2=[meanAlpha2]
+        meanDelta = [meanDelta]
     end
     traiti      = 1
     whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
     whichmarker = mme.M.markerID
     whicheffect = meanAlpha[traiti]
     whicheffectsd = sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)
+    whichdelta    = meanDelta[traiti]
     for traiti in 2:mme.nModels
         whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(mme.M.markerID)))
         whichmarker    = vcat(whichmarker,mme.M.markerID)
         whicheffect    = vcat(whicheffect,meanAlpha[traiti])
         whicheffectsd  = vcat(whicheffectsd,sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
+        whichdelta     = vcat(whichdelta,meanDelta[traiti])
     end
     output["Posterior mean of marker effects"]=
-    DataFrame([whichtrait whichmarker whicheffect whicheffectsd],[:trait,:marker_ID,:Estimate,:Std_Error])
+    DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
 
     output["Posterior mean of marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
-    if estimatePi == true && mme.nModels == 1
-        output["Posterior mean of Pi"] = matrix2dataframe(string.(mme.lhsVec),mean_pi,mean_pi2)
+    if estimatePi == true
+        output["Posterior mean of Pi"] = dict2dataframe(mean_pi,mean_pi2)
     end
     if estimateScale == true
         output["Posterior mean of ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
