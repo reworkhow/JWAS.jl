@@ -35,12 +35,12 @@ function output_result(mme,solMean,meanVare,G0Mean,
                        meanScaleVar2 = missing)
   output = Dict()
   location_parameters = reformat2DataFrame([getNames(mme) solMean sqrt.(solMean2 .- solMean .^2)])
-  output["Posterior mean of location parameters"] = location_parameters
-  output["Posterior mean of residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
+  output["location parameters"] = location_parameters
+  output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
 
   if mme.pedTrmVec != 0
-    output["Posterior mean of polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
+    output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
 
   if mme.M != 0
@@ -62,15 +62,15 @@ function output_result(mme,solMean,meanVare,G0Mean,
         whicheffectsd  = vcat(whicheffectsd,sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
         whichdelta     = vcat(whichdelta,meanDelta[traiti])
     end
-    output["Posterior mean of marker effects"]=
+    output["marker effects"]=
     DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
 
-    output["Posterior mean of marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
+    output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
     if estimatePi == true
-        output["Posterior mean of Pi"] = dict2dataframe(mean_pi,mean_pi2)
+        output["Pi"] = dict2dataframe(mean_pi,mean_pi2)
     end
     if estimateScale == true
-        output["Posterior mean of ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
+        output["ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
     end
   end
   #Get EBV and PEV from MCMC samples text files
