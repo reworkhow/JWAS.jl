@@ -269,6 +269,13 @@ function getInbreeding(ped::Pedigree)
     return inbreeding
 end
 
+"""
+    get_info(pedigree::Pedigree)
+* Print summary informtion from a pedigree object including number of individulas, sires.
+  dams and founders. Return individual IDs, inverse of numerator relationship matrix,
+  and inbreeding coefficients.
+
+"""
 function getinfo(pedigree::Pedigree)
     println("#individuals: ",length(pedigree.idMap))
     sires  = [pednode.sire for pednode in values(pedigree.idMap)]
@@ -287,7 +294,6 @@ function getinfo(pedigree::Pedigree)
     println("Get individual IDs, inverse of numerator relationship matrix, and inbreeding coefficients.")
     return IDs,Ai,inbreeding
 end
-
 
 include("forSSBR.jl")
 
