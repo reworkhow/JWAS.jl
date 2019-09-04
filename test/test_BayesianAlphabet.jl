@@ -16,7 +16,7 @@ for single_step in [false,true]
                   test_estimatePi = false
             end
 
-            printstyled("\n\n\n\n\n\n\n\nTest single-trait Bayesian Alphabet analysis using complete genomic data\n\n\n",bold=true,color=:red)
+            printstyled("\n\n\n\n\n\n\n\nTest single-trait Bayesian Alphabet analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:red)
 
             model_equation1  ="y1 = intercept + x1*x3 + x2 + x3 + ID + dam";
             R      = 1.0
@@ -44,7 +44,7 @@ for single_step in [false,true]
                   out1=runMCMC(model1,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50);
             end
 
-            printstyled("\n\n\n\n\n\n\n\nTest multi-trait Bayesian Alphabet analysis using complete genomic data\n\n\n",bold=true,color=:red)
+            printstyled("\n\n\n\n\n\n\n\nTest multi-trait Bayesian Alphabet analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:red)
 
             model_equation2 ="y1 = intercept + x1 + x3 + ID + dam
                               y2 = intercept + x1 + x2 + x3 + ID
