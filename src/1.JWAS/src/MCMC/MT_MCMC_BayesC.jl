@@ -50,7 +50,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
     ############################################################################
     # PRIORS
     ############################################################################
-    #Priors for residual covariance matrix
+    ##Priors for residual covariance matrix
     ν       = mme.df.residual
     nObs    = size(df,1)
     nTraits = size(mme.lhsVec,1)
@@ -65,7 +65,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
     end
 
-    #Priors for polygenic effect covariance matrix
+    ##Priors for polygenic effect covariance matrix
     if mme.pedTrmVec != 0
       ν         = mme.df.polygenic
       pedTrmVec = mme.pedTrmVec
@@ -77,6 +77,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
       G0Mean    = zeros(Float64,k,k)
     end
 
+    ##Phenotypes adjusted for all effects (assuming zeros now)
+    ycorr          = vec(Matrix(mme.ySparse))
     ##SET UP MARKER PART
     if mme.M != 0
         ########################################################################
@@ -95,8 +97,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
         GMMean      = zeros(Float64,nTraits,nTraits)
         ########################################################################
         ##WORKING VECTORS
-        ########################################################################
-        ycorr          = vec(Matrix(mme.ySparse)) #ycorr for different traits
         wArray         = Array{Array{Float64,1}}(undef,nTraits)#wArray is list reference of ycor
         ########################################################################
         #Arrays to save solutions for marker effects
@@ -165,7 +165,9 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
+
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
+        ycorr[:] = ycorr[:] - mme.X*sol
 
         if iter > burnin
             solMean += (sol - solMean)/(iter-burnin)
@@ -174,7 +176,6 @@ function MT_MCMC_BayesC(nIter,mme,df;
         # 1.2 Marker Effects
         ########################################################################
         if mme.M != 0
-          ycorr[:] = ycorr[:] - mme.X*sol
           iR0      = inv(mme.R)
           iGM      = (methods!="BayesB" ? inv(mme.M.G) : [inv(G) for G in arrayG])
           #WILL ADD BURIN INSIDE
@@ -216,8 +217,7 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         # 2.1 Residual Covariance Matrix
         ########################################################################
-        resVec = (mme.M==0 ? (mme.ySparse - mme.X*sol) : ycorr)
-        #here resVec is alias for ycor ***
+        resVec = ycorr #here resVec is alias for ycor ***
 
         if missing_phenotypes==true
           resVec[:]=sampleMissingResiduals(mme,resVec)
@@ -258,11 +258,8 @@ function MT_MCMC_BayesC(nIter,mme,df;
         ########################################################################
         X          = mme.X
         mme.mmeLhs = X'Ri*X #LHS for normal equation (no random effects)
-        if mme.M != 0
-          ycorr[:]   = ycorr[:] + X*sol
-          #same to ycorr[:]=resVec+X*sol
-        end
-        mme.mmeRhs = (mme.M == 0 ? (X'Ri*mme.ySparse) : (X'Ri*ycorr))
+        ycorr[:]   = ycorr[:] + X*sol #same to ycorr[:]=resVec+X*sol
+        mme.mmeRhs = X'Ri*ycorr
         ########################################################################
         # 2.2 Genetic Covariance Matrix (Polygenic Effects)
         ########################################################################
