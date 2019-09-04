@@ -6,6 +6,7 @@ using ProgressMeter
 
 export get_pedigree
 export getinfo
+
 """
     get_pedigree(pedfile::AbstractString;header=false,separator=',')
 * Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
@@ -230,6 +231,9 @@ end
 function  mkPed(pedFile::AbstractString;header=false,separator=',')
     df  = CSV.read(pedFile,types=[String,String,String],
                     delim=separator,header=header)
+    df[!,1]=strip.(df[!,1])
+    df[!,2]=strip.(df[!,2])
+    df[!,3]=strip.(df[!,3])
     ped = Pedigree(1,Dict{AbstractString,PedNode}(),
                      Dict{Int64, Float64}(),
                      Set(),Set(),Set(),Set(),Array{String,1}())
