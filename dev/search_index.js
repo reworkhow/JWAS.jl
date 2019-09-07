@@ -689,6 +689,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals/#JWAS.PedModule.getinfo-Tuple{JWAS.PedModule.Pedigree}",
+    "page": "Internals",
+    "title": "JWAS.PedModule.getinfo",
+    "category": "method",
+    "text": "get_info(pedigree::Pedigree)\n\nPrint summary informtion from a pedigree object including number of individulas, sires. dams and founders. Return individual IDs, inverse of numerator relationship matrix, and inbreeding coefficients.\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/internals/#Internal-interface-1",
     "page": "Internals",
     "title": "Internal interface",
