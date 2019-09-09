@@ -49,7 +49,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
-          res = [res;string(m)*":"*trm]
+          res = [res;string(mme.lhsVec[m])*":"*trm]
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
         end
@@ -129,7 +129,7 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec || trm == "ϵ"
-          mtrm= string(m)*":"*trm
+          mtrm= string(mme.lhsVec[m])*":"*trm
           res = [res;mtrm]
           #*********************
           #phenotype IDs is a subset of names (Vinv)

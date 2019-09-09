@@ -10,6 +10,8 @@ pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
 for single_step in [false,true]
       for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","non_genomic"]
+            newdir = (single_step ? "SS" : "")*test_method*"/"
+            mkdir(newdir)
             if test_method in ["BayesC","BayesB"]
                   test_estimatePi = true
             else
@@ -36,12 +38,12 @@ for single_step in [false,true]
             outputMCMCsamples(model1,"x2")
 
             if single_step == false && test_method!="non_genomic"
-                  out1=runMCMC(model1,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50);
+                  out1=runMCMC(model1,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = newdir*"MCMC_samples");
             elseif single_step == true && test_method!="non_genomic"
                   out1=runMCMC(model1,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree);
+                              single_step_analysis=true,pedigree=pedigree,output_samples_file = newdir*"MCMC_samples");
             elseif test_method=="non_genomic"
-                  out1=runMCMC(model1,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50);
+                  out1=runMCMC(model1,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = newdir*"MCMC_samples");
             end
 
             printstyled("\n\n\n\n\n\n\n\nTest multi-trait Bayesian Alphabet analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:red)
@@ -76,12 +78,12 @@ for single_step in [false,true]
 
 
             if single_step == false && test_method!="non_genomic" && test_method!="GBLUP"
-                  out2=runMCMC(model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50);
+                  out2=runMCMC(model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = newdir*"MCMC_samples");
             elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree);
+                              single_step_analysis=true,pedigree=pedigree,output_samples_file = newdir*"MCMC_samples");
             elseif test_method=="non_genomic"
-                  out2=runMCMC(model2,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50);
+                  out2=runMCMC(model2,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = newdir*"MCMC_samples");
             end
       end
 end

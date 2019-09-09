@@ -88,7 +88,7 @@ add to model an extra term: imputation_residual
 """
 function add_term(mme,term::AbstractString)
     for m in 1:mme.nModels
-        modelterm = ModelTerm(term,m)
+        modelterm = ModelTerm(term,m,string(mme.lhsVec[m]))
         push!(mme.modelTerms,modelterm)
         mme.modelTermDict[modelterm.trmStr]=modelterm
     end

@@ -13,7 +13,7 @@ include("output.jl")
             chain_length             = 1000,
             starting_value           = false,
             burnin                   = 0,
-            output_samples_frequency = 0,
+            output_samples_frequency = chain_length/1000,
             output_samples_file      = "MCMC_samples",
             update_priors_frequency  = 0,
             ### Methods

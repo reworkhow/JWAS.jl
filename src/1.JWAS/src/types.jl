@@ -8,7 +8,7 @@
 ################################################################################
 mutable struct ModelTerm
     iModel::Int64                  # 1st or 2nd model_equation
-
+    iTrait::AbstractString         # trait 1 or trait 2
                                    # | trmStr | nFactors | factors |
                                    # |--------|----------|---------|
     trmStr::AbstractString         # | "1:A"  |    1     | :A      |
@@ -32,14 +32,15 @@ mutable struct ModelTerm
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
 
-    function ModelTerm(trmStr,m)
+    function ModelTerm(trmStr,m,whichtrait)
         iModel    = m
         trmStr    = strip(trmStr)
+        whichtrait= strip(whichtrait)
         factorVec = split(trmStr,"*")
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
-        trmStr    = string(m)*":"*trmStr
-        new(iModel,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
+        trmStr    = whichtrait*":"*trmStr
+        new(iModel,whichtrait,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
     end
     #e.g. animal*age, nLevels
 end

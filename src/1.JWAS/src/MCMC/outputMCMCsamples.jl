@@ -22,7 +22,7 @@ function outputSamplesFor(mme::MME,trmStr::AbstractString)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trmStr in strpVec || trmStr in ["J","ϵ"]
-            res = [res;string(m)*":"*trmStr]
+            res = [res;string(mme.lhsVec[m])*":"*trmStr]
         end
     end #"age"->"1:age","2:age"
 
