@@ -25,12 +25,12 @@ include("output.jl")
             single_step_analysis     = false,
             pedigree                 = false,
             categorical_trait        = false,
-            missing_phenotypes       = false,
+            missing_phenotypes       = true,
             constraint               = false,
             causal_structure         = false,
             ### Genomic Prediction
             outputEBV                = true,
-            output_heritability      = false,
+            output_heritability      = true,
             ### MISC
             seed                     = false,
             printout_model_info      = true,
