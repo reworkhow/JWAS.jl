@@ -68,7 +68,6 @@ function MCMC_BayesC(nIter,mme,df;
         dfEffectVar = mme.df.marker
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
-        #println("Init scaleVar to ",scaleVar)
         meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
         meanScaleVar,meanScaleVar2 = 0.0,0.0 #variable to save Scale parameter for prior of marker effect variance
         #vectors to save solutions for marker effects

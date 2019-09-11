@@ -1,5 +1,5 @@
 include("outputMCMCsamples.jl")
-include("DRY.jl")
+include("precheck.jl")
 include("MCMC_BayesC.jl")
 include("MCMC_GBLUP.jl")
 include("MT_MCMC_BayesC.jl")
@@ -53,9 +53,9 @@ include("output.jl")
     * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
       a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
       have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
-      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true
+      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
     * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
-    * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true
+    * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`.
@@ -64,7 +64,7 @@ include("output.jl")
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
     * Individual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
-    variances are returned if `output_heritability`=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
+    variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
@@ -74,7 +74,7 @@ function runMCMC(mme::MME,df;
                 #MCMC
                 chain_length::Int64             = 100,
                 starting_value                  = false,
-                burnin                          = 0,
+                burnin::Int64                   = 0,
                 output_samples_frequency::Int64 = chain_length>1000 ? div(chain_length,1000) : 1,
                 output_samples_file             = "MCMC_samples",
                 update_priors_frequency::Int64  = 0,
@@ -92,7 +92,7 @@ function runMCMC(mme::MME,df;
                 causal_structure                = false,
                 #Genomic Prediction
                 outputEBV                       = true,
-                output_heritability             = true, #complete or incomplete genomic data
+                output_heritability             = true,  #complete or incomplete genomic data
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
@@ -105,9 +105,11 @@ function runMCMC(mme::MME,df;
         Random.seed!(seed)
     end
     if causal_structure != false
-        missing_phenotypes = false
-        constraint         = true
-        #warning 1)be lower triangular
+        #no missing phenotypes and residual covariance for identifiability
+        missing_phenotypes, constraint = false, true
+        if istril(causal_structure)
+            error("The causal structue needs to be a lower triangular matrix.")
+        end
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
@@ -128,16 +130,21 @@ function runMCMC(mme::MME,df;
                             outputEBV,
                             output_heritability,
                             categorical_trait)
+    ############################################################################
+    # Check Arguments, Pedigree, Phenotypes, and output individual IDs
+    ############################################################################
     #check errors in function arguments
     errors_args(mme,methods)
     #users need to provide high-quality pedigree file
     check_pedigree(mme,df,pedigree)
-    #user-defined IDs to return genetic values (EBVs)
+    #user-defined IDs to return genetic values (EBVs), defaulting to all genotyped
+    #individuals in genomic analysis
     check_outputID(mme)
-    #check phenotypes, only use phenotypes for individuals in pedigree or genotyped
+    #check phenotypes, only use phenotypes for individuals in pedigree
+    #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
     df = check_phenotypes(mme,df)
     ############################################################################
-    # Single-Step
+    # Incomplete Genomic Data (Single-Step)
     ############################################################################
     #impute genotypes for non-genotyped individuals
     #add ϵ (imputation errors) and J as variables in data for non-genotyped individuals
@@ -147,6 +154,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
     ############################################################################
+    # initiate Mixed Model Equations and check starting values
     starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0

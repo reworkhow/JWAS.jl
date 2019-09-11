@@ -107,7 +107,7 @@ mutable struct MCMCinfo
     Pi
     estimatePi
     estimateScale
-    single_step_analysis #pedigree,
+    single_step_analysis
     missing_phenotypes
     constraint
     estimate_variance

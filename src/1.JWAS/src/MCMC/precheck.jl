@@ -94,6 +94,24 @@ function check_outputID(mme)
         pedID=map(string,collect(keys(mme.ped.idMap)))
         mme.output_ID = pedID
     end
+
+    single_step_analysis = mme.MCMCinfo.single_step_analysis
+    if single_step_analysis == false && mme.M != 0 #complete genomic data
+        if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
+            printstyled("Testing individuals are not a subset of \n",
+            "genotyped individuals (complete genomic data,non-single-step).\n",
+            "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
+            mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
+        end
+    else #1)incomplete genomic data 2)PBLUP
+        pedID = map(string,collect(keys(mme.ped.idMap)))
+        if mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
+            printstyled("Testing individuals are not a subset of \n",
+            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
+            "Only output EBV for tesing individuals in the pedigree.\n",bold=false,color=:red)
+            mme.output_ID = intersect(mme.output_ID,pedID)
+        end
+    end
 end
 
 function check_phenotypes(mme,df)
@@ -111,13 +129,8 @@ function check_phenotypes(mme,df)
             df    = df[index,:]
             printstyled("The number of individuals with both genotypes and phenotypes used\n",
             "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
-        elseif mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-            printstyled("Testing individuals are not a subset of \n",
-            "genotyped individuals (complete genomic data,non-single-step).\n",
-            "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
-            mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
-    else #incomplete genomic data , PBLUP
+    else #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",
@@ -127,11 +140,6 @@ function check_phenotypes(mme,df)
             df    = df[index,:]
             printstyled("The number of individuals with both phenotype and pedigree information\n",
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
-        elseif mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
-            printstyled("Testing individuals are not a subset of \n",
-            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
-            "Only output EBV for tesing individuals in the pedigree.\n",bold=false,color=:red)
-            mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
     return df

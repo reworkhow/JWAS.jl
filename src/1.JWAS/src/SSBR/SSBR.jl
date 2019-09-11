@@ -1,7 +1,5 @@
 function SSBRrun(mme,ped::PedModule.Pedigree,df)
     obsID    = map(string,df[!,1]) #phenotyped ID
-
-    mme.ped  = ped #alias (pointer),require same pedigree in polygenic effects and SSBR
     geno     = mme.M
     Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)
     impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
