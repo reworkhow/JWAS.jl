@@ -239,7 +239,7 @@ function getEBV(model::MME,genotypes::Array{Float64,2})
 end
 
 function getEBV(mme,sol,α,traiti)
-    traiti = string(traiti)
+    traiti = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2DataFrame([getNames(mme) sol zero(sol)])
