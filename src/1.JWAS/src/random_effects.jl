@@ -34,15 +34,15 @@ G               = [6.72   2.84
 set_random(model,"animal",ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4)
     if !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
 
     pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
 
-    #add model equation number to variables;
-    #"animal" => "1:animal"; "animal*age"=>"1:animal*age"
+    #add trait names to variables;
+    #"animal" => "y1:animal"; "animal*age"=>"y1:animal*age"
     res = []
     for trm in pedTrmVec
       for (m,model) = enumerate(mme.modelVec)
@@ -51,9 +51,12 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
         if trm in strpVec
           res = [res;string(mme.lhsVec[m])*":"*trm]
         else
-          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
+    end
+    if G == false
+      G = (length(res)==1 ? 1.0 : Matrix{Float64}(I,length(res),length(res)))
     end
     if length(res) != size(G,1)
       error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
@@ -64,17 +67,6 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
     else
         error("Pedigree information is already added.")
     end
-
-
-    if typeof(G)<:Number #single variable single-trait, convert scalar G to 1x1 matrix
-      G=reshape([G],1,1)
-    end
-    mme.Gi    = inv(G) #multi-trait
-    mme.GiOld = inv(G) #single-trait (maybe multiple correlated genetic effects
-    mme.GiNew = inv(G) #single-trait (in single-trait
-
-    mme.df.polygenic=Float64(df)
-
     nothing
 end
 ############################################################################
@@ -114,7 +106,7 @@ G               = 0.6
 set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
     if !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
@@ -136,8 +128,11 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
           mme.modelTermDict[mtrm].names=names
           #*********************
         else
-          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
+      end
+      if G == false
+        G = (length(res)==1 ? 1.0 : Matrix{Float64}(I,length(res),length(res)))
       end
       if length(res) != size(G,1)
         error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")

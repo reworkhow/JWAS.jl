@@ -17,7 +17,7 @@ function traceplot(file;header=true,separator=',',backend="pyplot",nplots=4)
     steps = 1:size(mychain,1)
     plot(mychain, layout=(nplots,1),title= reshape(mylabel,1,length(mylabel)),
          label="",title_location=:left)
-    plot!(cumsum(mychain,dims=1)./steps,layout=(nplots,1),label="",color=:red)
+    plot!(cumsum(mychain,dims=1)./steps,layout=(nplots,1),label="",color=:green)
     #title!("trace plot for "*split(file,['/','\\','.'])[end-1])
 
     # upscale = 8 #8x upscaling in resolution

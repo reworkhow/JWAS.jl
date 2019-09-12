@@ -20,7 +20,7 @@ d,a,c
 ```
 """
 function get_pedigree(pedfile::AbstractString;header=false,separator=',')
-    printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
+    printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
     mkPed(pedfile,header=header,separator=separator)
 end
 

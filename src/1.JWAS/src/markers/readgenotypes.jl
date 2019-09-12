@@ -7,7 +7,7 @@
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 
 """
-function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G;rowID=false,header=false,center=true,G_is_marker_variance=false,df=4)
+function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G=false;rowID=false,header=false,center=true,G_is_marker_variance=false,df=4)
     if length(rowID) != size(M,1)
         rowID = string.(1:size(M,1))
     end
@@ -39,7 +39,7 @@ O1,1,2,0,1,0
 O3,0,0,2,1,1
 ```
 """
-function add_genotypes(mme::MME,file,G;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
+function add_genotypes(mme::MME,file,G=false;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
     mme.M   = readgenotypes(file;separator=separator,header=header,center=center)
     if G_is_marker_variance == true
         mme.M.G = G
@@ -53,8 +53,8 @@ end
 
 #load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
 function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
-    printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:red)
-    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:red)
+    printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
+    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
 
     #get marker IDs
     myfile = open(file)

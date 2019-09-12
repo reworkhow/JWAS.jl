@@ -33,7 +33,7 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString,R;df=4)
+function build_model(model_equations::AbstractString,R=false;df=4)
   if !isposdef(map(Float64,R))
     error("The covariance matrix is not positive definite.")
   end
@@ -58,6 +58,9 @@ function build_model(model_equations::AbstractString,R;df=4)
   end
   for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
     dict[trm.trmStr] = modelTerms[i]
+  end
+  if R == false
+    R = (nModels==1 ? 1.0 : Matrix{Float64}(I,nModels,nModels))
   end
   return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
@@ -252,6 +255,8 @@ function getMME(mme::MME, df::DataFrame)
     vv    = y
     ySparse = sparse(ii,jj,vv)
 
+    #make default covariance matrices if not provided
+
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
@@ -291,4 +296,42 @@ function getMME(mme::MME, df::DataFrame)
 
     dropzeros!(mme.mmeLhs)
     dropzeros!(mme.mmeRhs)
+end
+
+function set_variance_components_priors(mme)
+  myvar = [var(skipmissing((d[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  phenovar = diagm(myvar)
+  npiece = 2
+  #genetic variance or marker effect variance
+  if mme.M.G == false && mme.M.genetic_variance == false
+    mme.M.genetic_variance = phenovar/npiece
+  end
+  #residual effects
+  mme.R = phenovar/npiece
+  #polyginic effects
+  if mme.pedTrmVec != 0
+    Gp = phenovar/npiece
+    if typeof(Gp)<:Number
+      G=reshape([G],1,1)
+    end
+    mme.Gi    = inv(Gp)
+    mme.GiOld = inv(Gp)
+    mme.GiNew = inv(Gp)
+  end
+  #other random effects
+  if length(mme.rndTrmVec) != 0
+    G = phenovar/npiece
+    if typeof(G)<:Number
+      G=reshape([G],1,1)
+    end
+    Gi    = inv(G)
+    GiOld = inv(G)
+    GiNew = inv(G)
+    for randomEffect in mme.rndTrmVec
+      randomEffect.Gi    = Gi
+      randomEffect.GiOld = GiOld
+      randomEffect.GiNew = GiNew
+      randomEffect.scale = G*(df-length(term_array)-1)
+    end
+  end
 end
