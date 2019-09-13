@@ -33,8 +33,8 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString,R=false;df=4)
-  if !isposdef(map(Float64,R))
+function build_model(model_equations::AbstractString,R = 0.0; df = 4)
+  if !isposdef(map(Float64,R)) && R != 0.0
     error("The covariance matrix is not positive definite.")
   end
 
@@ -59,8 +59,8 @@ function build_model(model_equations::AbstractString,R=false;df=4)
   for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
     dict[trm.trmStr] = modelTerms[i]
   end
-  if R == false
-    R = (nModels==1 ? 1.0 : Matrix{Float64}(I,nModels,nModels))
+  if R == 0.0
+    R = (nModels==1 ? 0.0 : Matrix{Float64}(I,nModels,nModels)*0.0)
   end
   return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
@@ -256,7 +256,7 @@ function getMME(mme::MME, df::DataFrame)
     ySparse = sparse(ii,jj,vv)
 
     #make default covariance matrices if not provided
-
+    set_variance_components_priors(mme,df)
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
@@ -298,40 +298,50 @@ function getMME(mme::MME, df::DataFrame)
     dropzeros!(mme.mmeRhs)
 end
 
-function set_variance_components_priors(mme)
-  myvar = [var(skipmissing((d[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
-  phenovar = diagm(myvar)
-  npiece = 2
+function set_variance_components_priors(mme,df)
+  myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  phenovar  = diagm(myvar)
+  var_piece = phenovar/2
+
   #genetic variance or marker effect variance
-  if mme.M.G == false && mme.M.genetic_variance == false
-    mme.M.genetic_variance = phenovar/npiece
+  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
+    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    if mme.nModels==1
+      mme.M.genetic_variance = var_piece[1,1]
+    elseif mme.nModels>1
+      mme.M.genetic_variance = var_piece
+    end
   end
   #residual effects
-  mme.R = phenovar/npiece
+  if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.RNew = mme.ROld = var_piece[1,1]
+  elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.R = var_piece
+  end
   #polyginic effects
-  if mme.pedTrmVec != 0
-    Gp = phenovar/npiece
-    if typeof(Gp)<:Number
-      G=reshape([G],1,1)
-    end
-    mme.Gi    = inv(Gp)
-    mme.GiOld = inv(Gp)
-    mme.GiNew = inv(Gp)
+  if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
+    printstyled("Prior information for polygenic effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    myvarout  = [split(i,":")[1] for i in mme.pedTrmVec]
+    myvarin   = string.(mme.lhsVec)
+    Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+    G         = diagm(Zdesign*diag(var_piece))
+    mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
   end
   #other random effects
   if length(mme.rndTrmVec) != 0
-    G = phenovar/npiece
-    if typeof(G)<:Number
-      G=reshape([G],1,1)
-    end
-    Gi    = inv(G)
-    GiOld = inv(G)
-    GiNew = inv(G)
     for randomEffect in mme.rndTrmVec
-      randomEffect.Gi    = Gi
-      randomEffect.GiOld = GiOld
-      randomEffect.GiNew = GiNew
-      randomEffect.scale = G*(df-length(term_array)-1)
+      if isposdef(randomEffect.Gi) == false
+        printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+        myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
+        myvarin   = string.(mme.lhsVec)
+        Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+        G         = diagm(Zdesign*diag(var_piece))
+
+        randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
+        randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+      end
     end
   end
 end
