@@ -87,12 +87,10 @@ function check_outputID(mme)
 
     if mme.MCMCinfo.outputEBV == false
         mme.output_ID = 0
-    elseif mme.output_ID == 0 && mme.M != 0
+    elseif mme.output_ID == 0 && mme.M != 0 #all genotyped inds if no output ID
         mme.output_ID = mme.M.obsID
-    elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0
-        #output EBV for all individuals in the pedigree for PBLUP
-        pedID=map(string,collect(keys(mme.ped.idMap)))
-        mme.output_ID = pedID
+    elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #all inds in PBLUP
+        mme.output_ID = mme.ped.IDs
     end
 
     single_step_analysis = mme.MCMCinfo.single_step_analysis
@@ -112,6 +110,11 @@ function check_outputID(mme)
             mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
+    #Set ouput IDs to all genotyped inds in complete genomic data analysis for h² estimation
+    if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+        mme.output_ID = mme.M.obsID
+    end
+
 end
 
 function check_phenotypes(mme,df)
@@ -157,7 +160,7 @@ function init_mixed_model_equations(mme,df,sol)
         end
         printstyled("Starting values are provided. The order of starting values for location parameters and\n",
         "marker effects should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
-        "obtained by getNames(model)) and then markers for all traits\n",bold=false,color=:green)
+        "obtained by getNames(model)) and then markers for all traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
         sol = map(Float64,sol)
     end
     return sol,df

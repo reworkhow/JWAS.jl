@@ -8,7 +8,7 @@
 ################################################################################
 mutable struct ModelTerm
     iModel::Int64                  # 1st or 2nd model_equation
-    iTrait::AbstractString         # trait 1 or trait 2
+    iTrait::AbstractString         # trait 1 or trait 2 (trait name)
                                    # | trmStr | nFactors | factors |
                                    # |--------|----------|---------|
     trmStr::AbstractString         # | "1:A"  |    1     | :A      |

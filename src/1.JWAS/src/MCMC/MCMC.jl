@@ -64,7 +64,7 @@ include("output.jl")
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
     * Individual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
-    variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
+    variances are returned if `output_heritability`=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
@@ -92,7 +92,7 @@ function runMCMC(mme::MME,df;
                 causal_structure                = false,
                 #Genomic Prediction
                 outputEBV                       = true,
-                output_heritability             = true,  #complete or incomplete genomic data
+                output_heritability             = false,  #complete or incomplete genomic data
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
@@ -131,7 +131,7 @@ function runMCMC(mme::MME,df;
                             output_heritability,
                             categorical_trait)
     ############################################################################
-    # Check Arguments, Pedigree, Phenotypes, and output individual IDs
+    # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
     #check errors in function arguments
     errors_args(mme,methods)
@@ -146,10 +146,11 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Incomplete Genomic Data (Single-Step)
     ############################################################################
-    #impute genotypes for non-genotyped individuals
-    #add ϵ (imputation errors) and J as variables in data for non-genotyped individuals
+    #1)reorder in A (pedigree) as ids for genotyped then non-genotyped inds
+    #2)impute genotypes for non-genotyped individuals
+    #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
-        SSBRrun(mme,pedigree,df)
+        SSBRrun(mme,df)
     end
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
