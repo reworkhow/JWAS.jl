@@ -1,13 +1,14 @@
-function SSBRrun(mme,ped::PedModule.Pedigree,df)
-    obsID    = map(string,df[!,1]) #phenotyped ID
-    geno     = mme.M
-    Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)
-    impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
+function SSBRrun(mme,df)
+    obsID    = map(string,df[!,1])          #phenotyped ID
+    geno     = mme.M                        #input genotyps
+    ped      = mme.ped                      #pedigree
+    Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
+    impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
 
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
-    add_term(mme,"J") #centering
-    #add data for ϵ and J
+    add_term(mme,"J") #centering parameter
+    #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
     data_ϵ    = deepcopy(map(string,df[!,1]))
     data_ϵ[.!isnongeno].="0"
@@ -32,7 +33,9 @@ end
 # Pedigree
 ############################################################################
 function calc_Ai(ped,geno,mme)
-    #reorder in A (ped) as genotyped id then non-genotyped id
+    #***********************************************************************
+    #***reorder in A (ped) as genotyped id then non-genotyped id
+    #***********************************************************************
     num_pedn = PedModule.genoSet!(geno.obsID,ped)
     #calculate Ai, Ai_nn, Ai_ng
     mme.Ai   = PedModule.AInverse(ped)
@@ -44,16 +47,10 @@ end
 # Genotypes
 ############################################################################
 function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
-    Mg   = Array{Float64,2}(undef,geno.nObs,geno.nMarkers)
-    MgID = Array{String,1}(undef,geno.nObs)
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
-    for i in 1:geno.nObs #Better to use Z matrix?
-      id        = geno.obsID[i]
-      row       = ped.idMap[id].seqID - num_pedn
-      Mg[row,:] = geno.genotypes[i,:]
-      MgID[row] = id
-    end
+    Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
+    Mg = Z*geno.genotypes
     #impute genotypes for non-genotyped inds
     Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg
 
