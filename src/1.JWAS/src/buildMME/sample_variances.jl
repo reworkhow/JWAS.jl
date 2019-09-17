@@ -48,9 +48,6 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
        random_term.Gi    = copy(inv(G0))
     end
 end
-
-
-
 ################################################################################
 # sample variances for Polygenic Effects (Genetic Covariance Matrix)           #
 ################################################################################

@@ -2,18 +2,18 @@
 # model__equations = "y1 = A + B
 #                     y2 = A + B + A*B"
 #
-# the class ModelTrem is shown below for one term in model_equations, such as
-# terms: 1:A,1:B,2:A,2:B,2:A*B
+# the class ModelTerm is shown below for one term in model_equations, such as
+# terms: y1:A, y1:B, y2:A, y2:B, y2:A*B
 #
 ################################################################################
 mutable struct ModelTerm
     iModel::Int64                  # 1st or 2nd model_equation
     iTrait::AbstractString         # trait 1 or trait 2 (trait name)
-                                   # | trmStr | nFactors | factors |
-                                   # |--------|----------|---------|
-    trmStr::AbstractString         # | "1:A"  |    1     | :A      |
-    nFactors::Int64                # | "2:A"  |    1     | :A      |
-    factors::Array{Symbol,1}       # | "1:A*B"|    2     | :A,:B   |
+                                   # | trmStr  | nFactors  | factors |
+                                   # |---------|-----------|---------|
+    trmStr::AbstractString         # | "y1:A"  |    y1     | :A      |
+    nFactors::Int64                # | "y2:A"  |    y1     | :A      |
+    factors::Array{Symbol,1}       # | "y1:A*B"|    y2     | :A,:B   |
 
                                    #DATA             |          str               |     val       |
                                    #                :|----------------------------|---------------|
@@ -32,15 +32,15 @@ mutable struct ModelTerm
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
 
-    function ModelTerm(trmStr,m,whichtrait)
+    function ModelTerm(trmStr,m,traitname)
         iModel    = m
         trmStr    = strip(trmStr)
-        whichtrait= strip(whichtrait)
+        traitname = strip(traitname)
         factorVec = split(trmStr,"*")
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
-        trmStr    = whichtrait*":"*trmStr
-        new(iModel,whichtrait,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
+        trmStr    = traitname*":"*trmStr
+        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
     end
     #e.g. animal*age, nLevels
 end
@@ -115,6 +115,7 @@ mutable struct MCMCinfo
     outputEBV
     output_heritability
     categorical_trait
+    seed
 end
 
 #@warn Too frequent will slow down the computation

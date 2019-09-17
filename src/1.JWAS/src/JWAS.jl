@@ -8,19 +8,44 @@ using ProgressMeter
 using .PedModule
 using .misc
 
-include("types.jl")
-include("printout.jl")
-include("solver.jl")
-include("random_effects.jl")
-include("build_MME.jl")
-include("residual.jl")
-include("MCMC/MCMC.jl")
-include("markers/markers.jl")
-include("variance.jl")
-include("Pi.jl")
+#Models
+include("buildMME/types.jl")
+include("buildMME/build_MME.jl")
+include("buildMME/random_effects.jl")
+include("buildMME/residual.jl")
+include("buildMME/sample_variances.jl")
+include("buildMME/solver.jl")
+include("buildMME/model_info.jl")
 
+#Markov chain Monte Carlo
+include("MCMC/runMCMC.jl")
+include("MCMC/outputMCMCsamples.jl")
+include("MCMC/precheck.jl")
+include("MCMC/MCMC_BayesC.jl")
+include("MCMC/MCMC_GBLUP.jl")
+include("MCMC/MT_MCMC_BayesC.jl")
+include("MCMC/MT_PBLUP_constvare.jl")
+include("MCMC/output.jl")
+
+#Genomic Markers
+include("markers/tools4genotypes.jl")
+include("markers/readgenotypes.jl")
+include("markers/BayesianAlphabet/BayesC0.jl")
+include("markers/BayesianAlphabet/BayesC.jl")
+include("markers/BayesianAlphabet/BayesB.jl")
+include("markers/BayesianAlphabet/MTBayesC.jl")
+include("markers/BayesianAlphabet/MTBayesCC.jl")
+include("markers/BayesianAlphabet/MTBayesB.jl")
+include("markers/BayesianAlphabet/MTBayesC0L.jl")
+include("markers/Pi.jl")
+
+#Incomplete Genomic Data (Single-step Methods)
+include("SSBR/SSBR.jl")
+
+#Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
+#MISC
 include("misc/misc.jl")
 include("pipeline/pipeline.jl")
 

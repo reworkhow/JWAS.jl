@@ -52,7 +52,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
     Mg = Z*geno.genotypes
     #impute genotypes for non-genotyped inds
-    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg
+    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg/ Float16
 
     mme.M.genotypes = Mfull
     mme.M.obsID     = ped.IDs

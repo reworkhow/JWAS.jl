@@ -160,9 +160,6 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     nothing
 end
-
-
-
 ################################################################################
 #ADD TO MIXED MODEL EQUATIONS FOR THE RANDOM EFFECTS PARTS
 ################################################################################

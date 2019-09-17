@@ -256,7 +256,7 @@ function getMME(mme::MME, df::DataFrame)
     ySparse = sparse(ii,jj,vv)
 
     #make default covariance matrices if not provided
-    set_variance_components_priors(mme,df)
+    set_default_priors_for_variance_components(mme,df)
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
@@ -298,7 +298,8 @@ function getMME(mme::MME, df::DataFrame)
     dropzeros!(mme.mmeRhs)
 end
 
-function set_variance_components_priors(mme,df)
+#set default covariance matrices for variance components if not provided
+function set_default_priors_for_variance_components(mme,df)
   myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
   phenovar  = diagm(myvar)
   var_piece = phenovar/2
@@ -344,4 +345,37 @@ function set_variance_components_priors(mme,df)
       end
     end
   end
+end
+################################################################################
+#Get left-hand side and right-hand side of the mixed model equation (no markers)
+################################################################################
+"""
+    showMME(mme::MME,df::DataFrame)
+
+* Show left-hand side and right-hand side of mixed model equations (no markers).
+"""
+function showMME(mme::MME,df::DataFrame)
+   if size(mme.mmeRhs)==()
+     getMME(mme,df)
+   end
+   return [getNames(mme) mme.mmeLhs],[getNames(mme) mme.mmeRhs]
+end
+
+#Get names for variables in Mixed Model Equations in order
+function getNames(mme::MME)
+    names = Array{AbstractString}(undef,0)
+    for trm in mme.modelTerms
+        for name in trm.names
+            push!(names,trm.trmStr*" : "*name)
+        end
+    end
+    return names
+end
+
+function getNames(trm::ModelTerm)
+    names = Array{AbstractString}(undef,0)
+    for name in trm.names
+        push!(names,trm.trmStr*" : "*name)
+    end
+    return names
 end

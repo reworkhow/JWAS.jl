@@ -1,12 +1,3 @@
-include("outputMCMCsamples.jl")
-include("precheck.jl")
-include("MCMC_BayesC.jl")
-include("MCMC_GBLUP.jl")
-include("MT_MCMC_BayesC.jl")
-include("MT_PBLUP_constvare.jl")
-include("../SSBR/SSBR.jl")
-include("output.jl")
-
 """
     runMCMC(model::MME,df::DataFrame;
             ### MCMC
@@ -129,7 +120,8 @@ function runMCMC(mme::MME,df;
                             update_priors_frequency,
                             outputEBV,
                             output_heritability,
-                            categorical_trait)
+                            categorical_trait,
+                            seed)
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -162,6 +154,7 @@ function runMCMC(mme::MME,df;
         #align genotypes with 1) phenotypes IDs; 2) output IDs.
         align_genotypes(mme,output_heritability,single_step_analysis)
         Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
+        mme.MCMCinfo.Pi = Pi
     end
 
     if mme.output_ID!=0
@@ -171,9 +164,7 @@ function runMCMC(mme::MME,df;
     #printout basic MCMC information
     if printout_model_info == true
       getinfo(mme)
-      getMCMCinfo(methods,Pi,chain_length,burnin,(starting_value!=zeros(size(mme.mmeLhs,1))),printout_frequency,
-                  output_samples_frequency,missing_phenotypes,constraint,estimatePi, estimateScale,
-                  update_priors_frequency,mme)
+      getMCMCinfo(mme)
     end
 
     if mme.nModels ==1
