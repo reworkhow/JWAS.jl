@@ -485,7 +485,7 @@ end
 * Print out model information.
 """
 function getinfo(model::MME;data=false)
-  printstyled("A Linear Mixed Model was build using model equations:\n\n",bold=true)
+  printstyled("\nA Linear Mixed Model was build using model equations:\n\n",bold=true)
   for i in model.modelVec
     println(i)
   end
@@ -545,9 +545,10 @@ function getMCMCinfo(mme)
     MCMCinfo = mme.MCMCinfo
     printstyled("MCMC Information:\n\n",bold=true)
 
-    @printf("%-30s %20s\n","methods",MCMCinfo.methods)
+    @printf("%-10s %40s\n","methods",MCMCinfo.methods)
     if !(MCMCinfo.methods in ["conventional (no markers)"])
-      @printf("%-30s %20s\n","genomic data",MCMCinfo.single_step_analysis ? "incomplete genomic data (single-step analysis)" : "complete genomic data (non-single-step analysis)")
+      @printf("%51s\n",MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
+      @printf("%51s\n",MCMCinfo.single_step_analysis ? "(i.e., single-step analysis)" : "(i.e., non-single-step analysis)")
     end
     @printf("%-30s %20s\n","chain_length",MCMCinfo.chain_length)
     @printf("%-30s %20s\n","burnin",MCMCinfo.burnin)

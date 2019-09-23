@@ -10,6 +10,8 @@ pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
 for single_step in [false,true]
       for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","non_genomic"]
+            mkdir("mytest/")
+            cd("mytest/")
             newdir = (single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             if test_method in ["BayesC","BayesB"]
