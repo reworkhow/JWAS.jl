@@ -301,7 +301,7 @@ end
 #set default covariance matrices for variance components if not provided
 function set_default_priors_for_variance_components(mme,df)
   myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
-  phenovar  = diagm(myvar)
+  phenovar  = diagm(0=>myvar)
   var_piece = phenovar/2
 
   #genetic variance or marker effect variance
