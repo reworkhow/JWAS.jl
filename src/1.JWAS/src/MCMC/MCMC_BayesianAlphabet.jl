@@ -1,7 +1,7 @@
 ################################################################################
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
 ################################################################################
-function MCMC_BayesC(nIter,mme,df;
+function MCMC_BayesianAlphabet(nIter,mme,df;
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,

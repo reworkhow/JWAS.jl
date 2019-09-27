@@ -18,9 +18,9 @@ include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/outputMCMCsamples.jl")
-include("MCMC/MCMC_BayesC.jl")
+include("MCMC/MCMC_BayesianAlphabet.jl")
 include("MCMC/MCMC_GBLUP.jl")
-include("MCMC/MT_MCMC_BayesC.jl")
+include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_PBLUP_constvare.jl")
 include("MCMC/output.jl")
 
@@ -230,7 +230,7 @@ function runMCMC(mme::MME,df;
 
     if mme.nModels ==1
         if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
-            res=MCMC_BayesC(chain_length,mme,df,
+            res=MCMC_BayesianAlphabet(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
                             methods                  = methods,
@@ -263,7 +263,7 @@ function runMCMC(mme::MME,df;
                             output_file=output_samples_file,
                             update_priors_frequency=update_priors_frequency)
         elseif methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
-          res=MT_MCMC_BayesC(chain_length,mme,df,
+          res=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
                           outFreq= printout_frequency,
