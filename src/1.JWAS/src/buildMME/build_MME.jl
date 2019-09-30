@@ -12,12 +12,13 @@ function mkDict(a)
 end
 
 """
-    build_model(model_equations::AbstractString,R;df::Float64=4.0)
+    build_model(model_equations::AbstractString,R=false; df::Float64=4.0)
 
-* Build models from **model equations** with residual varainces **R** and degree
-  of freedom for residual variance **df** defaulting to 4.0.
-* By default, all variabels in model_equations are fixed and factors. Set variables
-  to be covariates or random using functions `set_covariate()` or `set_random()`.
+* Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
+  is the mean for the prior assigned for the residual variance with degree of freedom **df** defaulting
+  to 4.0. If **R** is not provided, a value is calculate from responses (phenotypes).
+* By default, all variabels in model_equations are factors (categorical) and fixed. Set variables
+  to be covariates (continuous) or random using functions `set_covariate()` or `set_random()`.
 
 ```julia
 #single-trait
@@ -33,7 +34,7 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString,R = 0.0; df = 4)
+function build_model(model_equations::AbstractString, R = 0.0; df = 4)
   if !isposdef(map(Float64,R)) && R != 0.0
     error("The covariance matrix is not positive definite.")
   end
@@ -43,44 +44,45 @@ function build_model(model_equations::AbstractString,R = 0.0; df = 4)
       To find an example, type ?build_model and press enter.\n")
   end
 
+  #e.g., ""y2 = A+B+A*B""
   modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
   nModels    = size(modelVec,1)
   lhsVec     = Symbol[]    #:y, phenotypes
-  modelTerms = ModelTerm[] #initialization outside for loop
+  modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
   dict       = Dict{AbstractString,ModelTerm}()
   for (m,model) = enumerate(modelVec)
     lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-    lhs    = strip(lhsRhs[1])
-    lhsVec = [lhsVec;Symbol(lhs)] #:y2
+    lhs    = strip(lhsRhs[1])                  #"y2"
+    lhsVec = [lhsVec;Symbol(lhs)]              #:y2
     rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
     mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
-    modelTerms  = [modelTerms;mTrms]           #vector of ModelTerm
+    modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
   end
-  for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
-    dict[trm.trmStr] = modelTerms[i]
+  for trm in modelTerms          #make a dict for model terms
+    dict[trm.trmStr] = trm
   end
   if R == 0.0
-    R = (nModels==1 ? 0.0 : Matrix{Float64}(I,nModels,nModels)*0.0)
+    R = (nModels==1 ? 0.0 : zeros(nModels,nModels))
   end
   return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
 
 """
-    set_covariate(mme::MME,variables::AbstractString...)
+    set_covariate(model::MME,variables::AbstractString...)
 
-* set **variables** as covariates; **mme** is the output of function `build_model()`.
+* set **variables** as covariates; **model** is the output of function `build_model()`.
 
 ```julia
 #After running build_model, variabels age and year can be set to be covariates as
-set_covariate(models,"age","year")
+set_covariate(model,"age","year")
 #or
-set_covariate(models,"age year")
+set_covariate(model,"age year")
 ```
 """
 function set_covariate(mme::MME,covStr::AbstractString...)
   covVec=[]
   for i in covStr
-    covVec = [covVec;split(i," ",keepempty=false)]
+    covVec = [covVec;strip.(split(i," ",keepempty=false))]
   end
   mme.covVec = [mme.covVec;[Symbol(i) for i in covVec]]
 end

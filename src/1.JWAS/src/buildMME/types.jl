@@ -7,13 +7,13 @@
 #
 ################################################################################
 mutable struct ModelTerm
-    iModel::Int64                  # 1st or 2nd model_equation
-    iTrait::AbstractString         # trait 1 or trait 2 (trait name)
+    iModel::Int64                  # 1st (1) or 2nd (2) model_equation
+    iTrait::AbstractString         # trait 1 ("y1") or trait 2 ("y2") (trait name)
                                    # | trmStr  | nFactors  | factors |
                                    # |---------|-----------|---------|
-    trmStr::AbstractString         # | "y1:A"  |    y1     | :A      |
-    nFactors::Int64                # | "y2:A"  |    y1     | :A      |
-    factors::Array{Symbol,1}       # | "y1:A*B"|    y2     | :A,:B   |
+    trmStr::AbstractString         # | "y1:A"  |     1     | :A      |
+    nFactors::Int64                # | "y2:A"  |     1     | :A      |
+    factors::Array{Symbol,1}       # | "y1:A*B"|     2     | :A,:B   |
 
                                    #DATA             |          str               |     val       |
                                    #                :|----------------------------|---------------|
@@ -24,7 +24,7 @@ mutable struct ModelTerm
                                    #OUTPUT           | nLevels |     names        |
                                    #                 |---------|------------------|
     nLevels::Int64                 #covariate   :    | 1       | "A"              |
-    names::Array{Any,1}#for OUTPUT #factor      :    | nLevels | "A1", "A2", ...  |
+    names::Array{Any,1}            #factor      :    | nLevels | "A1", "A2", ...  |
                                    #animal (ped):    | nAnimals| ids              |
                                    #animal(ped)*age: | nAnimals| "A1*age","A2*age"|
                                    #factor*covariate:| nLevels | "A1*age","A2*age"|
@@ -42,7 +42,6 @@ mutable struct ModelTerm
         trmStr    = traitname*":"*trmStr
         new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
     end
-    #e.g. animal*age, nLevels
 end
 
 ################################################################################
