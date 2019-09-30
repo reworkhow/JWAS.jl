@@ -82,17 +82,34 @@ function missing2mean!(X::DataFrames.DataFrame;id4row=true,missing=9.0)
     end
 end
 
-function deleteMAF!(df;id4row=false,MAF=0.1)
-    start = 1
-    if id4row==true
-      start+=1
-    end
-
-    sel = MAF.<[mean(df[:,i])/2 for i in start:size(df,2)].< 1-MAF
-
-    df = df[:,sel]
-    return df
+#remove problematic loci: 1) minor allele frequence 2)fixed
+function deleteMAF!(M;MAF=0.01)
+    select1 = MAF.< vec(mean(M,1)/2) .< 1-MAF
+    fixed   = vec(var(df,1));
+    select2 = fixed.!=0;
+    select  = select1 .& select2
+    M       = M[:,select];
+    return M
 end
+# show distritbuion of allele frequencies
+
+
+#covert 3 parameters: 1)heritability; 2)genetic variance; 3)residual variance
+function H2GR(;heritability=false,genetic_variance=false,residual_variance=false)
+    if heritability == false
+        heritability=genetic_variance/(genetic_variance+residual_variance)
+    end
+    if genetic_variance == false
+        genetic_variance = residual_variance*heritability/(1-heritability)
+    end
+    if residual_variance == false
+        residual_variance= genetic_variance/heritability- genetic_variance
+    end
+    println("heritability      = ",heritability)
+    println("genetic variance  = ",genetic_variance)
+    println("residual variance = ",residual_variance)
+end
+
 
 export QC
 export checkFile

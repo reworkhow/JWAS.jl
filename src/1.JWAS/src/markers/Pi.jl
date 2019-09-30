@@ -1,3 +1,14 @@
+################################################################################
+#
+# Sample parameter for the indicator variable : π
+#
+################################################################################
+#single-trait
+function samplePi(nEffects, nTotal)
+    return rand(Beta(nTotal-nEffects+1, nEffects+1))
+end
+
+#multi-trait
 function samplePi(deltaArray,BigPi,BigPiMean,iter)
   temp = deltaArray[1]
   nTraits = size(deltaArray,1)
@@ -41,8 +52,4 @@ function samplePi(deltaArray,BigPi,BigPiMean,iter,labels)
 
   BigPi[:] = rand(Dirichlet(nLoci_array))
   BigPiMean[:] += (BigPi-BigPiMean)/iter
-end
-
-function samplePi(nEffects, nTotal)#for single trait
-    return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end

@@ -43,8 +43,7 @@ include("SSBR/SSBR.jl")
 include("StructureEquationModel/SEM.jl")
 
 #MISC
-include("misc/misc.jl")
-include("pipeline/pipeline.jl")
+#include("misc/misc.jl")
 
 export build_model,set_covariate,set_random,add_genotypes
 export outputMCMCsamples,outputEBV,getEBV
@@ -57,7 +56,7 @@ export GWAS,QC
 export get_additive_genetic_variances,get_breeding_values
 export get_correlations,get_heritability
 #others
-export adjust_phenotypes,LOOCV
+#export adjust_phenotypes,LOOCV
 
 """
     runMCMC(model::MME,df::DataFrame;
@@ -116,7 +115,7 @@ export adjust_phenotypes,LOOCV
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
     * Individual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
-    variances are returned if `output_heritability`=`true`, defaulting to `false`. Note that estimation of heritability is computaionally intensive.
+    variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
@@ -144,7 +143,7 @@ function runMCMC(mme::MME,df;
                 causal_structure                = false,
                 #Genomic Prediction
                 outputEBV                       = true,
-                output_heritability             = false,  #complete or incomplete genomic data
+                output_heritability             = true,  #complete or incomplete genomic data
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
@@ -417,7 +416,7 @@ function check_outputID(mme)
         end
     end
     #Set ouput IDs to all genotyped inds in complete genomic data analysis for h² estimation
-    if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+    if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.M != 0
         mme.output_ID = mme.M.obsID
     end
 

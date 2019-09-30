@@ -21,7 +21,7 @@ for single_step in [false,true]
                   test_estimatePi = false
             end
 
-            printstyled("\n\n\n\n\n\n\n\nTest single-trait Bayesian Alphabet analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:green)
+            printstyled("\n\n\n\n\n\n\n\nTest single-trait $test_method analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:green)
 
             model_equation1  ="y1 = intercept + x1*x3 + x2 + x3 + ID + dam";
             R      = 1.0

@@ -6,8 +6,7 @@ function get_column(X,j)
     end
     indx = 1 + (j-1)*nrow
     ptr = pointer(X,indx)
-    #pointer_to_array(ptr,nrow) #deprected in Julia 0.5
-    unsafe_wrap(Array,ptr,nrow)
+    unsafe_wrap(Array,ptr,nrow) #pointer_to_array(ptr,nrow) #deprected in Julia 0.5
 end
 
 function get_column_ref(X)
@@ -86,7 +85,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     end
 end
 
-#get an incidence matrix Z to recoder uID to yID by yID = Z*uID
+#get an incidence matrix Z to reorder uID to yID by yID = Z*uID
 function mkmat_incidence_factor(yID,uID)
     Z = spzeros(length(yID),length(uID))
 
@@ -100,7 +99,7 @@ function mkmat_incidence_factor(yID,uID)
         if haskey(uIDdict,id)
             index = uIDdict[id]
         else
-            error("IDs are wrong!")
+            error(id, " is not found!")
         end
         Z[rowi,index]=1
         rowi = rowi+1

@@ -87,6 +87,16 @@ function output_result(mme,solMean,meanVare,G0Mean,
               error("The EBV file is wrong.")
           end
       end
+      if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
+          for i in ["genetic_variance","heritability"]
+              samplesfile = output_file*"_"*i*".txt"
+              samples,names = readdlm(samplesfile,',',header=true)
+              samplemean    = vec(mean(samples,dims=1))
+              samplevar     = vec(std(samples,dims=1))
+              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
+          end
+      end
+
   end
   return output
 end

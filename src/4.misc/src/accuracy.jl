@@ -1,5 +1,3 @@
-
-
 #deal with the problem that some fixed effects are not estimated from ssBayes.
 #Because some fixed effects only appeared for observations without phenotypes.
 
