@@ -168,7 +168,7 @@ function runMCMC(mme::MME,df;
     end
 
     if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB"]
+        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB","BayesL"]
             res=MCMC_BayesC(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,

@@ -3,8 +3,13 @@ function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,meanAlpha,gam
     # function to sample effects
     # invR0 is inverse of R0
     # invG0 is inverse of G0
-
-    getGi(x,j,Gi) = size(gammaArray,1)>1 ? Gi ./ x[j] : Gi
+    
+    function getGiFunction(gammaArray)
+        f1(x,j,Gi)  = Gi ./ x[j]
+        f2(x,j,Gi)  = Gi 
+        size(gammaArray,1)>1 ? f1 : f2 
+    end
+    getGi = getGiFunction(gammaArray)   
     nEffects = length(xArray)
     nTraits  = length(alphaArray)
     Lhs = zeros(nTraits,nTraits)
