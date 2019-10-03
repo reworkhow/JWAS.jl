@@ -1,4 +1,4 @@
-using Printf 
+using Printf
 mutable struct InputParameters
   seed::Int64            # seed
   method::AbstractString # BaysABC
@@ -14,40 +14,6 @@ mutable struct InputParameters
   nuRes::Float64         # hyper parameter (degrees of freedom) for residual variance
   nuGen::Float64         # hyper parameter (degree of freedom) for genetic variance (for ϵ)
   centering::Bool        # center real genotype or not
-end
-
-InputParameters()=InputParameters(314,"BayesC",50000,1000,0.95,1.0,1.0,true,false,false,4,4,4,false)
-
-function MCMCinfo(input::InputParameters)
-    println("MCMC Information:")
-    @printf("%-20s %10s\n","seed",input.seed)
-    @printf("%-20s %10s\n","chainLength",input.chainLength)
-    @printf("%-20s %10s\n","method",input.method)
-    @printf("%-20s %10d\n","outFreq",input.outFreq)
-    @printf("%-20s %10.3f\n","probFixed",input.probFixed)
-    @printf("%-20s %10.3f\n","varGenotypic",input.varGenotypic)
-    @printf("%-20s %10.3f\n","varResidual",input.varResidual)
-    @printf("%-20s %10s\n","estimateVariance",input.estimateVariance)
-    @printf("%-20s %10s\n","estimatePi",input.estimatePi)
-    @printf("%-20s %10s\n","estimateScale",input.estimateScale)
-    @printf("%-20s %10.3f\n","dfEffectVar",input.dfEffectVar)
-    @printf("%-20s %10.3f\n","nuRes",input.nuRes)
-    @printf("%-20s %10.3f\n","nuGen",input.nuGen)
-    @printf("%-20s %10s\n","centering",input.centering)
-end
-
-mutable struct GibbsMats #in src/1.JWAS/markers/tools
-    X::Array{Float64,2}
-    nrows::Int64
-    ncols::Int64
-    xArray::Array{Array{Float64,1},1}
-    xpx::Array{Float64,1}
-    function GibbsMats(X::Array{Float64,2}) ###More
-        nrows,ncols = size(X)
-        xArray = get_column_ref(X)
-        XpX = getXpRinvX(X)
-        new(X,nrows,ncols,xArray,XpX)
-    end
 end
 
 mutable struct Current
@@ -128,9 +94,3 @@ mutable struct Output
           zeros(1))
     end
 end
-
-export InputParameters
-#export Output
-#export GibbsMats
-#export Current
-export MCMCinfo

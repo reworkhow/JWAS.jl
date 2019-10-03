@@ -12,12 +12,13 @@ function mkDict(a)
 end
 
 """
-    build_model(model_equations::AbstractString,R;df::Float64=4.0)
+    build_model(model_equations::AbstractString,R=false; df::Float64=4.0)
 
-* Build models from **model equations** with residual varainces **R** and degree
-  of freedom for residual variance **df** defaulting to 4.0.
-* By default, all variabels in model_equations are fixed and factors. Set variables
-  to be covariates or random using functions `set_covariate()` or `set_random()`.
+* Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
+  is the mean for the prior assigned for the residual variance with degree of freedom **df** defaulting
+  to 4.0. If **R** is not provided, a value is calculate from responses (phenotypes).
+* By default, all variabels in model_equations are factors (categorical) and fixed. Set variables
+  to be covariates (continuous) or random using functions `set_covariate()` or `set_random()`.
 
 ```julia
 #single-trait
@@ -33,8 +34,8 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString,R;df=4)
-  if !isposdef(map(Float64,R))
+function build_model(model_equations::AbstractString, R = 0.0; df = 4)
+  if !isposdef(map(Float64,R)) && R != 0.0
     error("The covariance matrix is not positive definite.")
   end
 
@@ -43,40 +44,45 @@ function build_model(model_equations::AbstractString,R;df=4)
       To find an example, type ?build_model and press enter.\n")
   end
 
+  #e.g., ""y2 = A+B+A*B""
   modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
   nModels    = size(modelVec,1)
   lhsVec     = Symbol[]    #:y, phenotypes
-  modelTerms = ModelTerm[] #initialization outside for loop
+  modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
   dict       = Dict{AbstractString,ModelTerm}()
   for (m,model) = enumerate(modelVec)
     lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-    lhsVec = [lhsVec;Symbol(strip(lhsRhs[1]))] #:y2
+    lhs    = strip(lhsRhs[1])                  #"y2"
+    lhsVec = [lhsVec;Symbol(lhs)]              #:y2
     rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
-    mTrms  = [ModelTerm(strip(trmStr),m) for trmStr in rhsVec]
-    modelTerms  = [modelTerms;mTrms]           #vector of ModelTerm
+    mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
+    modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
   end
-  for (i,trm) = enumerate(modelTerms)          #make a dict for model terms
-    dict[trm.trmStr] = modelTerms[i]
+  for trm in modelTerms          #make a dict for model terms
+    dict[trm.trmStr] = trm
+  end
+  if R == 0.0
+    R = (nModels==1 ? 0.0 : zeros(nModels,nModels))
   end
   return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
 end
 
 """
-    set_covariate(mme::MME,variables::AbstractString...)
+    set_covariate(model::MME,variables::AbstractString...)
 
-* set **variables** as covariates; **mme** is the output of function `build_model()`.
+* set **variables** as covariates; **model** is the output of function `build_model()`.
 
 ```julia
 #After running build_model, variabels age and year can be set to be covariates as
-set_covariate(models,"age","year")
+set_covariate(model,"age","year")
 #or
-set_covariate(models,"age year")
+set_covariate(model,"age year")
 ```
 """
 function set_covariate(mme::MME,covStr::AbstractString...)
   covVec=[]
   for i in covStr
-    covVec = [covVec;split(i," ",keepempty=false)]
+    covVec = [covVec;strip.(split(i," ",keepempty=false))]
   end
   mme.covVec = [mme.covVec;[Symbol(i) for i in covVec]]
 end
@@ -93,7 +99,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
 
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      error("Missing values are found in dependent variables: ",trm.factors[i])
+      error("Missing values are found in independent variables: ",trm.factors[i])
     end
   end
 
@@ -101,13 +107,13 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
   else                            #for ModelTerm e.g. "1:A*B" (or "1:A")
-    myDf = df[!,trm.factors]                          #:A,:B
+    myDf = df[!,trm.factors]                        #:A,:B
     if trm.factors[1] in mme.covVec                 #if A is a covariate
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
-      val = df[!,trm.factors[1]]                      #df[:A]
-    else                                            #if A is a factor (animal or maternal effects)
+      val = df[!,trm.factors[1]]                    #df[:A]
+    else                                              #if A is a factor (animal or maternal effects)
       str = [string(i) for i in df[!,trm.factors[1]]] #["A1","A3","A2","A3",...]
-      val = fill(1.0,nObs)
+      val = fill(1.0,nObs)                            #1.0,1.0...
     end
 
     #for ModelTerm object e.g. "A*B" whose nFactors>1
@@ -127,7 +133,6 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   trm.val = val
 end
 
-#getFactor1(str) = [strip(i) for i in split(str,"*")][1] #Bug:only for animal*age, not age*animal
 getFactor(str) = [strip(i) for i in split(str,"*")]
 
 ################################################################################
@@ -155,13 +160,13 @@ function getX(trm::ModelTerm,mme::MME)
          for animalstr in getFactor(i) #two ways:animal*age;age*animal
            if haskey(mme.ped.idMap, animalstr)   #"animal" ID not "age"
              xj = [xj; mme.ped.idMap[animalstr].seqID]
-           elseif animalstr=="0" #founders "0" are not effects (fitting maternal effects)
+           elseif animalstr=="0" #founders "0" are not fitted effect (e.g, fitting maternal effects)
                                  #all non-founder animals in pedigree are effects
              xj = [xj; 1]        #put 1<=any interger<=nAnimal is okay)
              xv[whichobs]=0      #thus add one row of zeros in X
            end
-           whichobs    += 1
          end
+         whichobs    += 1
        end
        xj        = round.(Int64,xj)
 
@@ -251,6 +256,8 @@ function getMME(mme::MME, df::DataFrame)
     vv    = y
     ySparse = sparse(ii,jj,vv)
 
+    #make default covariance matrices if not provided
+    set_default_priors_for_variance_components(mme,df)
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
@@ -290,4 +297,86 @@ function getMME(mme::MME, df::DataFrame)
 
     dropzeros!(mme.mmeLhs)
     dropzeros!(mme.mmeRhs)
+end
+
+#set default covariance matrices for variance components if not provided
+function set_default_priors_for_variance_components(mme,df)
+  myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  phenovar  = diagm(0=>myvar)
+  var_piece = phenovar/2
+
+  #genetic variance or marker effect variance
+  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
+    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    if mme.nModels==1
+      mme.M.genetic_variance = var_piece[1,1]
+    elseif mme.nModels>1
+      mme.M.genetic_variance = var_piece
+    end
+  end
+  #residual effects
+  if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.RNew = mme.ROld = var_piece[1,1]
+  elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.R = var_piece
+  end
+  #polyginic effects
+  if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
+    printstyled("Prior information for polygenic effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    myvarout  = [split(i,":")[1] for i in mme.pedTrmVec]
+    myvarin   = string.(mme.lhsVec)
+    Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+    G         = diagm(Zdesign*diag(var_piece))
+    mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
+  end
+  #other random effects
+  if length(mme.rndTrmVec) != 0
+    for randomEffect in mme.rndTrmVec
+      if isposdef(randomEffect.Gi) == false
+        printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+        myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
+        myvarin   = string.(mme.lhsVec)
+        Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+        G         = diagm(Zdesign*diag(var_piece))
+
+        randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
+        randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+      end
+    end
+  end
+end
+################################################################################
+#Get left-hand side and right-hand side of the mixed model equation (no markers)
+################################################################################
+"""
+    showMME(mme::MME,df::DataFrame)
+
+* Show left-hand side and right-hand side of mixed model equations (no markers).
+"""
+function showMME(mme::MME,df::DataFrame)
+   if size(mme.mmeRhs)==()
+     getMME(mme,df)
+   end
+   return [getNames(mme) mme.mmeLhs],[getNames(mme) mme.mmeRhs]
+end
+
+#Get names for variables in Mixed Model Equations in order
+function getNames(mme::MME)
+    names = Array{AbstractString}(undef,0)
+    for trm in mme.modelTerms
+        for name in trm.names
+            push!(names,trm.trmStr*" : "*name)
+        end
+    end
+    return names
+end
+
+function getNames(trm::ModelTerm)
+    names = Array{AbstractString}(undef,0)
+    for name in trm.names
+        push!(names,trm.trmStr*" : "*name)
+    end
+    return names
 end

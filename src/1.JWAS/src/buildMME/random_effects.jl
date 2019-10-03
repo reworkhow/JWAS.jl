@@ -34,29 +34,26 @@ G               = [6.72   2.84
 set_random(model,"animal",ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, G;df=4)
-    if !isposdef(G)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4)
+    if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
 
     pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
 
-    #add model equation number to variables;
-    #"animal" => "1:animal"; "animal*age"=>"1:animal*age"
+    #add trait names to variables;
+    #"animal" => "y1:animal"; "animal*age"=>"y1:animal*age"
     res = []
     for trm in pedTrmVec
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec
-          res = [res;string(m)*":"*trm]
+          res = [res;string(mme.lhsVec[m])*":"*trm]
         else
-          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
-    end
-    if length(res) != size(G,1)
-      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
     mme.pedTrmVec = res
     if mme.ped == 0
@@ -64,17 +61,20 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree, 
     else
         error("Pedigree information is already added.")
     end
-
-
-    if typeof(G)<:Number #single variable single-trait, convert scalar G to 1x1 matrix
+    if G == false #make G matrix of zeros to get prior from phenotypes later
+      G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
+    end
+    if typeof(G)<:Number  #single variable single-trait, convert scalar G to 1x1 matrix
       G=reshape([G],1,1)
     end
-    mme.Gi    = inv(G) #multi-trait
-    mme.GiOld = inv(G) #single-trait (maybe multiple correlated genetic effects
-    mme.GiNew = inv(G) #single-trait (in single-trait
-
-    mme.df.polygenic=Float64(df)
-
+    if length(res) != size(G,1)
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+    end
+    #Gi            : multi-trait;
+    #GiOld & GiNew : single-trait, allow multiple correlated genetic effects (e.g., additive+materna) even in single-trait
+    #isposdef(G) to test whether G is provided or not
+    mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+    mme.df.polygenic = Float64(df)
     nothing
 end
 ############################################################################
@@ -114,40 +114,43 @@ G               = 0.6
 set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
-    if !isposdef(G)
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
+    if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
     G = map(Float64,G)
     df= Float64(df)
     randTrmVec = split(randomStr," ",keepempty=false)  # "litter"
 
-    #add model equation number to variables; "litter"=>"1:litter";"ϵ"=>"1:ϵ"
+    #add model equation number to variables; "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
     for trm in randTrmVec
       res = []
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec || trm == "ϵ"
-          mtrm= string(m)*":"*trm
+          mtrm= string(mme.lhsVec[m])*":"*trm
           res = [res;mtrm]
           #*********************
           #phenotype IDs is a subset of names (Vinv)
           mme.modelTermDict[mtrm].names=names
           #*********************
         else
-          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:red)
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
-      if length(res) != size(G,1)
-        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+      if G == false #make G matrix of zeros to get prior from phenotypes later
+        G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
       end
       if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
         G=reshape([G],1,1)
       end
-      Gi    = inv(G)    #multi-trait
-      GiOld = inv(G)    #single-trait (maybe multiple correlated random effects
-      GiNew = inv(G)    #single-trait (thus G is a matrix
+      if length(res) != size(G,1)
+        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+      end
+      #Gi            : multi-trait;
+      #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
+      Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
 
       term_array   = res
       df           = df+length(term_array)
@@ -157,9 +160,6 @@ function set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4.0)
     end
     nothing
 end
-
-
-
 ################################################################################
 #ADD TO MIXED MODEL EQUATIONS FOR THE RANDOM EFFECTS PARTS
 ################################################################################

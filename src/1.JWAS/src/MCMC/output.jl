@@ -87,6 +87,16 @@ function output_result(mme,solMean,meanVare,G0Mean,
               error("The EBV file is wrong.")
           end
       end
+      if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
+          for i in ["genetic_variance","heritability"]
+              samplesfile = output_file*"_"*i*".txt"
+              samples,names = readdlm(samplesfile,',',header=true)
+              samplemean    = vec(mean(samples,dims=1))
+              samplevar     = vec(std(samples,dims=1))
+              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
+          end
+      end
+
   end
   return output
 end
@@ -239,7 +249,7 @@ function getEBV(model::MME,genotypes::Array{Float64,2})
 end
 
 function getEBV(mme,sol,α,traiti)
-    traiti = string(traiti)
+    traiti = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2DataFrame([getNames(mme) sol zero(sol)])
@@ -260,8 +270,8 @@ function getEBV(mme,sol,α,traiti)
 
     if haskey(mme.output_X,"J") #single-step analyis
         for traiti in 1:mme.nModels
-            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==string(traiti)),:Estimate])[1]
-            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==string(traiti)),:Estimate])
+            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])[1]
+            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])
             EBV_J  = mme.output_X["J"]*sol_J
             EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
             EBV   += (EBV_J+EBV_ϵ)

@@ -1,7 +1,7 @@
 ################################################################################
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
 ################################################################################
-function MCMC_BayesC(nIter,mme,df;
+function MCMC_BayesianAlphabet(nIter,mme,df;
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,
@@ -71,7 +71,6 @@ function MCMC_BayesC(nIter,mme,df;
         end            
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
-        #println("Init scaleVar to ",scaleVar)
         meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
         meanScaleVar,meanScaleVar2 = 0.0,0.0 #variable to save Scale parameter for prior of marker effect variance
         #vectors to save solutions for marker effects

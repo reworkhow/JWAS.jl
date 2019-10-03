@@ -1,4 +1,4 @@
-function MT_MCMC_BayesC(nIter,mme,df;
+function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                         burnin                     = 0,
                         Pi                         = 0.0,
                         estimatePi                 = false,
