@@ -19,7 +19,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     if categorical_trait == true
-        #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
+        #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞ 
         # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
         #Then liabilities are sampled and stored in mme.ySparse
         category_obs  = map(Int,mme.ySparse) # categories (1,2,2,3,1...)
@@ -66,6 +66,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         mGibbs      = GibbsMats(mme.M.genotypes)
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
         dfEffectVar = mme.df.marker
+        if methods=="BayesL"
+            mme.M.G /= 8 # in BayesL mme.M.G is the scale Matrix, Sigma, in the MTBayesLasso paper
+        end            
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
         meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
@@ -81,6 +84,10 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             β              = copy(α)  ##partial marker effeccts
             locusEffectVar = fill(vEff,nMarkers)
             vEff           = locusEffectVar #vEff is scalar for BayesC but a vector for BayeB
+        end
+        if methods=="BayesL"
+           gammaDist  = Gamma(1, 8) # 8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
+           gammaArray = rand(gammaDist,nMarkers)
         end
     end
 
@@ -135,7 +142,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
 
         Gibbs(mme.mmeLhs,sol,rhs,vRes)
 
-        ycorr = ycorr - mme.X*sol
+        ycorr = ycorr - mme.X*sol    
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
@@ -147,10 +154,13 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 nLoci = nMarkers
             elseif methods=="BayesB"
                 nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,vRes,locusEffectVar,π)
+            elseif methods == "BayesL"
+                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,vRes,vEff)
+                nLoci = nMarkers              
             end
             #sample Pi
             if estimatePi == true
-                π = samplePi(nLoci, nMarkers)
+                π = samplePi(nLoci, nMarkers)  
             end
         end
         ########################################################################
@@ -177,12 +187,20 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 2.4 Marker Effects Variance
         ########################################################################
         if mme.M != 0
-            if methods != "BayesB" && mme.MCMCinfo.estimate_variance
+            if !(methods in ["BayesB","BayesL"]) && mme.MCMCinfo.estimate_variance
                 vEff  = sample_variance(α, nLoci, dfEffectVar, scaleVar)
             elseif methods == "BayesB"
                 for j=1:nMarkers
                     vEff[j] = sample_variance(β[j],1,dfEffectVar, scaleVar)
                 end
+            elseif methods == "BayesL"
+                ssq = 0.0
+                for i=1:size(α,1)
+                    ssq += α[i]^2/gammaArray[i]
+                end
+                vEff = (ssq + dfEffectVar*scaleVar)/rand(Chisq(nLoci+dfEffectVar))
+               # MH sampler of gammaArray (Appendix C in paper)
+                sampleGammaArray!(gammaArray,α,vEff)                                         
             end
         end
         ########################################################################
@@ -198,7 +216,6 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             scaleRes    =  meanVare*(nuRes-2)/nuRes
             println("\n Update priors from posteriors.")
         end
-
         ########################################################################
         # 2.6 Estimate Scale parameter in prior for variance of marker effects
         ########################################################################

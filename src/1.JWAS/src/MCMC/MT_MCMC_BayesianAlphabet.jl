@@ -131,7 +131,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             nLoci = zeros(nTraits)
         end
         if methods=="BayesL"
-           gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale paramenter of the Gamma distribution (1/8 is the rate parameter)
+           gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
            gammaArray = rand(gammaDist,nMarkers)
         end
     end
@@ -405,7 +405,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     # After MCMC
     ############################################################################
-    if output_samples_frequency != 0
+    if output_samples_frequency != 0  
       for (key,value) in outfile
         close(value)
       end
@@ -426,18 +426,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     return output
 end
 
+                                                            
 function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     Gi = inv(mmeMG)
     nMarkers = size(gammaArray,1)
-    nTraits  = length(alphaArray)
+    nTraits  = length(alphaArray[1])==1 ? 1 : length(alphaArray)
+                                                                
     Q  = zeros(nMarkers)
-    for locus = 1:nMarkers
-        for traiti = 1:nTraits
-            for traitj = 1:nTraits
-                Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
-            end
-        end
-    end
+    nTraits > 1 ? calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)                                                             
     gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
     candidateArray = 1 ./ rand(gammaDist,nMarkers)
     uniformArray = rand(nMarkers)
@@ -445,3 +441,20 @@ function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     replace = uniformArray .< acceptProbArray
     gammaArray[replace] = 2 ./ candidateArray[replace]
 end
+                                                            
+function calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) 
+    for locus = 1:nMarkers         
+        for traiti = 1:nTraits
+            for traitj = 1:nTraits
+                Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
+            end
+        end
+    end                                                                    
+end
+
+function calcSTQ!(Q,nMarkers,alphaArray,Gi)
+        Q .= alphaArray.^2 ./Gi 
+end
+                                                            
+                                                            
+                                                                 
