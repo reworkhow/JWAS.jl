@@ -11,7 +11,7 @@ pedigree   = get_pedigree(pedfile,separator=",",header=true);
 mkdir("mytest/")
 cd("mytest/")
 for single_step in [false,true]
-      for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","non_genomic"]
+      for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","BayesL","non_genomic"]
             newdir = "ST_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             cd(newdir)
@@ -50,7 +50,7 @@ for single_step in [false,true]
             end
             cd("..")
 
-            printstyled("\n\n\n\n\n\n\n\nTest multi-trait Bayesian Alphabet analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:green)
+            printstyled("\n\n\n\n\n\n\n\nTest multi-trait $test_method analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:green)
 
             newdir = "MT_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)

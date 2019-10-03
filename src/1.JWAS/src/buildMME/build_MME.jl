@@ -99,7 +99,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
 
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      error("Missing values are found in dependent variables: ",trm.factors[i])
+      error("Missing values are found in independent variables: ",trm.factors[i])
     end
   end
 
@@ -107,13 +107,13 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
   else                            #for ModelTerm e.g. "1:A*B" (or "1:A")
-    myDf = df[!,trm.factors]                          #:A,:B
+    myDf = df[!,trm.factors]                        #:A,:B
     if trm.factors[1] in mme.covVec                 #if A is a covariate
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
-      val = df[!,trm.factors[1]]                      #df[:A]
-    else                                            #if A is a factor (animal or maternal effects)
+      val = df[!,trm.factors[1]]                    #df[:A]
+    else                                              #if A is a factor (animal or maternal effects)
       str = [string(i) for i in df[!,trm.factors[1]]] #["A1","A3","A2","A3",...]
-      val = fill(1.0,nObs)
+      val = fill(1.0,nObs)                            #1.0,1.0...
     end
 
     #for ModelTerm object e.g. "A*B" whose nFactors>1
@@ -133,7 +133,6 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   trm.val = val
 end
 
-#getFactor1(str) = [strip(i) for i in split(str,"*")][1] #Bug:only for animal*age, not age*animal
 getFactor(str) = [strip(i) for i in split(str,"*")]
 
 ################################################################################
@@ -161,13 +160,13 @@ function getX(trm::ModelTerm,mme::MME)
          for animalstr in getFactor(i) #two ways:animal*age;age*animal
            if haskey(mme.ped.idMap, animalstr)   #"animal" ID not "age"
              xj = [xj; mme.ped.idMap[animalstr].seqID]
-           elseif animalstr=="0" #founders "0" are not effects (fitting maternal effects)
+           elseif animalstr=="0" #founders "0" are not fitted effect (e.g, fitting maternal effects)
                                  #all non-founder animals in pedigree are effects
              xj = [xj; 1]        #put 1<=any interger<=nAnimal is okay)
              xv[whichobs]=0      #thus add one row of zeros in X
            end
-           whichobs    += 1
          end
+         whichobs    += 1
        end
        xj        = round.(Int64,xj)
 
