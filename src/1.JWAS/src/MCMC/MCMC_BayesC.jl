@@ -151,7 +151,7 @@ function MCMC_BayesC(nIter,mme,df;
             if methods=="BayesC"
                 nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
             elseif methods=="RR-BLUP"
-                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
+                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,[1.0],vRes,vEff)
                 nLoci = nMarkers
             elseif methods=="BayesB"
                 nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,vRes,locusEffectVar,π)
