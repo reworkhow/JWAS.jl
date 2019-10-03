@@ -20,7 +20,7 @@ function sampleEffectsBayesL!(xArray,xpx,yCorr,α,gammaArray,vRes,vEff) # sample
     end
 end
 
-function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,gammaArray,vRes,vEff)
+function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,vRes,vEff)
     sampleEffectsBayesL!(xArray,xpx,yCorr,α,[1.0],vRes,vEff)   
 end
 
