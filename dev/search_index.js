@@ -381,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.build_model",
     "category": "function",
-    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in modelequations are fixed and factors. Set variables to be covariates or random using functions `setcovariate()orset_random()`.\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n\n\n"
+    "text": "build_model(model_equations::AbstractString,R=false; df::Float64=4.0)\n\nBuild a model from model equations with the residual variance R. In Bayesian analysis, R is the mean for the prior assigned for the residual variance with degree of freedom df defaulting to 4.0. If R is not provided, a value is calculate from responses (phenotypes).\nBy default, all variabels in modelequations are factors (categorical) and fixed. Set variables to be covariates (continuous) or random using functions `setcovariate()orset_random()`.\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n\n\n"
 },
 
 {
@@ -389,7 +389,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.set_covariate",
     "category": "function",
-    "text": "set_covariate(mme::MME,variables::AbstractString...)\n\nset variables as covariates; mme is the output of function build_model().\n\n#After running build_model, variabels age and year can be set to be covariates as\nset_covariate(models,\"age\",\"year\")\n#or\nset_covariate(models,\"age year\")\n\n\n\n\n\n"
+    "text": "set_covariate(model::MME,variables::AbstractString...)\n\nset variables as covariates; model is the output of function build_model().\n\n#After running build_model, variabels age and year can be set to be covariates as\nset_covariate(model,\"age\",\"year\")\n#or\nset_covariate(model,\"age year\")\n\n\n\n\n\n"
 },
 
 {
@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\nadd_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\nadd_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -421,7 +421,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.runMCMC",
     "category": "function",
-    "text": "runMCMC(model::MME,df::DataFrame;\n        ### MCMC\n        chain_length             = 1000,\n        starting_value           = false,\n        burnin                   = 0,\n        output_samples_frequency = 0,\n        output_samples_file      = \"MCMC_samples\",\n        update_priors_frequency  = 0,\n        ### Methods\n        methods                  = \"conventional (no markers)\",\n        estimate_variance        = true,\n        Pi                       = 0.0,\n        estimatePi               = false,\n        estimateScale            = false,\n        single_step_analysis     = false,\n        pedigree                 = false,\n        categorical_trait        = false,\n        missing_phenotypes       = false,\n        constraint               = false,\n        causal_structure         = false,\n        ### Genomic Prediction\n        outputEBV                = true,\n        output_heritability      = false,\n        ### MISC\n        seed                     = false,\n        printout_model_info      = true,\n        printout_frequency       = 0)\n\nRun MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.\n\nMarkov chain Monte Carlo\nThe first burnin iterations are discarded at the beginning of a MCMC chain of length chain_length.\nThe starting_value can be provided as a vector for all location parameteres and marker effects, defaulting to 0.0s.\nSave MCMC samples every output_samples_frequency iterations, defaulting to chain_length/1000, to files output_samples_file, defaulting to MCMC_samples.txt. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default. MCMC samples for location parametes can be saved using output_MCMC_samples(). Note that saving MCMC samples too frequently slows down the computation.\nMiscellaneous Options\nPriors are updated every update_priors_frequency iterations, defaulting to 0.\nMethods\nAvailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nSingle step analysis is allowed if single_step_analysis = true and pedigree is provided.\nIn Bayesian variable selection methods, Pi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects (Pi = 0.0) in single-trait analysis and all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0)) in multi-trait analysis. Pi is estimated if estimatePi = true\nVariance components are estimated if estimate_variance=true, defaulting to true.\nScale parameter for prior of marker effect variance is estimated if estimateScale = true\nMiscellaneous Options\nMissing phenotypes are allowed in multi-trait analysis with missing_phenotypes=true, defaulting to true.\nCatogorical Traits are allowed if categorical_trait=true, defaulting to false.\nIf constraint=true, defaulting to false, constrain residual covariances between traits to be zeros.\nIf causal_structure is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.\nGenomic Prediction\nIndividual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if outputEBV=true, defaulting to true. Heritability and genetic\nvariances are returned if output_heritability=true, defaulting to false. Note that estimation of heritability is computaionally intensive.\nMiscellaneous Options\nPrint out the model information in REPL if printout_model_info=true; print out the monte carlo mean in REPL with printout_frequency, defaulting to false.\nIf seed, defaulting to false, is provided, a reproducible sequence of numbers will be generated for random number generation.\n\n\n\n\n\n"
+    "text": "runMCMC(model::MME,df::DataFrame;\n        ### MCMC\n        chain_length             = 1000,\n        starting_value           = false,\n        burnin                   = 0,\n        output_samples_frequency = chain_length/1000,\n        output_samples_file      = \"MCMC_samples\",\n        update_priors_frequency  = 0,\n        ### Methods\n        methods                  = \"conventional (no markers)\",\n        estimate_variance        = true,\n        Pi                       = 0.0,\n        estimatePi               = false,\n        estimateScale            = false,\n        single_step_analysis     = false,\n        pedigree                 = false,\n        categorical_trait        = false,\n        missing_phenotypes       = true,\n        constraint               = false,\n        causal_structure         = false,\n        ### Genomic Prediction\n        outputEBV                = true,\n        output_heritability      = true,\n        ### MISC\n        seed                     = false,\n        printout_model_info      = true,\n        printout_frequency       = 0)\n\nRun MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.\n\nMarkov chain Monte Carlo\nThe first burnin iterations are discarded at the beginning of a MCMC chain of length chain_length.\nThe starting_value can be provided as a vector for all location parameteres and marker effects, defaulting to 0.0s.\nSave MCMC samples every output_samples_frequency iterations, defaulting to chain_length/1000, to files output_samples_file, defaulting to MCMC_samples.txt. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default. MCMC samples for location parametes can be saved using output_MCMC_samples(). Note that saving MCMC samples too frequently slows down the computation.\nMiscellaneous Options\nPriors are updated every update_priors_frequency iterations, defaulting to 0.\nMethods\nAvailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nSingle step analysis is allowed if single_step_analysis = true and pedigree is provided.\nIn Bayesian variable selection methods, Pi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects (Pi = 0.0) in single-trait analysis and all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0)) in multi-trait analysis. Pi is estimated if estimatePi = true, , defaulting to false.\nVariance components are estimated if estimate_variance=true, defaulting to true.\nScale parameter for prior of marker effect variance is estimated if estimateScale = true, defaulting to false.\nMiscellaneous Options\nMissing phenotypes are allowed in multi-trait analysis with missing_phenotypes=true, defaulting to true.\nCatogorical Traits are allowed if categorical_trait=true, defaulting to false.\nIf constraint=true, defaulting to false, constrain residual covariances between traits to be zeros.\nIf causal_structure is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.\nGenomic Prediction\nIndividual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if outputEBV=true, defaulting to true. Heritability and genetic\nvariances are returned if output_heritability=true, defaulting to true. Note that estimation of heritability is computaionally intensive.\nMiscellaneous Options\nPrint out the model information in REPL if printout_model_info=true; print out the monte carlo mean in REPL with printout_frequency, defaulting to false.\nIf seed, defaulting to false, is provided, a reproducible sequence of numbers will be generated for random number generation.\n\n\n\n\n\n"
 },
 
 {
@@ -457,54 +457,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/public/#JWAS.misc.GWAS",
-    "page": "Public",
-    "title": "JWAS.misc.GWAS",
-    "category": "function",
-    "text": "GWAS(marker_effects_file;header=false)\n\nCompute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in markereffectsfile.\n\n\n\n\n\nGWAS(marker_effects_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS without marker locations\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nwindow_size is either a constant (identical number of markers in each window) or an array of number of markers in each window\nmodel is either the model::MME used in analysis or the genotypic covariate matrix M::Array\nFile format:\n\n\n\n\n\nGWAS(marker_effects_file,map_file,model;header=true,window_size=\"1 Mb\",threshold=0.001)\n\nrun genomic window-based GWAS\n\nMCMC samples of marker effects are stored in markereffectsfile with delimiter \',\'.\nmodel is either the model::MME used in analysis or the genotypic cavariate matrix M::Array\nmap_file has the (sorted) marker position information with delimiter \',\'.\nFile format:\n\nmarkerID,chromosome,position\nm1,1,16977\nm2,1,434311\nm3,1,1025513\nm4,2,70350\nm5,2,101135\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/public/#JWAS.misc.get_additive_genetic_variances",
-    "page": "Public",
-    "title": "JWAS.misc.get_additive_genetic_variances",
-    "category": "function",
-    "text": "get_additive_genetic_variances(model::MME,files...;header=true)\n\nGet MCMC samples for additive genetic variances using samples for marker effects stored in files.\nReturn a vector for single-trait analysis and an array of matrices for multi-trait analysis\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/public/#JWAS.misc.get_heritability",
-    "page": "Public",
-    "title": "JWAS.misc.get_heritability",
-    "category": "function",
-    "text": "get_heritability(samples_for_genetic_variances::Array{Array{Float64,2},1},samples_for_residual_variances::Array{Array{Float64,2},1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for multi-trait analysis\n\n\n\n\n\nget_heritability(samples_for_genetic_variances::Array{Float64,1},samples_for_residual_variances::Array{Float64,1}))\n\nGet MCMC samples for heritabilities using MCMC samples for genetic variances and residual variances for single-trait analysis\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/public/#JWAS.misc.get_correlations",
-    "page": "Public",
-    "title": "JWAS.misc.get_correlations",
-    "category": "function",
-    "text": "get_correlations(samples_for_genetic_variances::Array{Array{Float64,2},1})\n\nGet MCMC samples for correlations using MCMC samples for covariance matrces\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/public/#JWAS.misc.get_breeding_values",
-    "page": "Public",
-    "title": "JWAS.misc.get_breeding_values",
-    "category": "function",
-    "text": "get_breeding_values(model)\n\nGet esitimated breeding values and prediction error variances using samples of marker effects stored in files   for individuals defined by outputEBV(model,IDs::Array{String,1}), defaulting to all phenotyped individuals.\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/public/#JWAS.misc.QC",
-    "page": "Public",
-    "title": "JWAS.misc.QC",
-    "category": "function",
-    "text": "QC(infile,outfile;separator=\' \',header=true,missing=false,MAF=0.1)\n\nQuality control for input file infile, then write out to output file: outfile.\nDelete loci with minor allele frequency < MAF.\nmissing genotypes are replaced by column means.\nFile format (header=true,separator=\',\',missing=9):\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,9,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
-},
-
-{
     "location": "manual/public/#Public-Interface-1",
     "page": "Public",
     "title": "Public Interface",
@@ -537,27 +489,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/internals/#JWAS.add_genotypes-Tuple{JWAS.MME,Any,Any}",
+    "location": "manual/internals/#JWAS.add_genotypes",
     "page": "Internals",
     "title": "JWAS.add_genotypes",
-    "category": "method",
+    "category": "function",
     "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
-    "location": "manual/internals/#JWAS.add_genotypes-Tuple{JWAS.MME,Union{Array{Float64,2}, DataFrame},Any}",
+    "location": "manual/internals/#JWAS.add_genotypes",
     "page": "Internals",
     "title": "JWAS.add_genotypes",
-    "category": "method",
-    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
+    "category": "function",
+    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
 },
 
 {
-    "location": "manual/internals/#JWAS.build_model-Tuple{AbstractString,Any}",
+    "location": "manual/internals/#JWAS.build_model",
     "page": "Internals",
     "title": "JWAS.build_model",
-    "category": "method",
-    "text": "build_model(model_equations::AbstractString,R;df::Float64=4.0)\n\nBuild models from model equations with residual varainces R and degree of freedom for residual variance df defaulting to 4.0.\nBy default, all variabels in modelequations are fixed and factors. Set variables to be covariates or random using functions `setcovariate()orset_random()`.\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n\n\n"
+    "category": "function",
+    "text": "build_model(model_equations::AbstractString,R=false; df::Float64=4.0)\n\nBuild a model from model equations with the residual variance R. In Bayesian analysis, R is the mean for the prior assigned for the residual variance with degree of freedom df defaulting to 4.0. If R is not provided, a value is calculate from responses (phenotypes).\nBy default, all variabels in modelequations are factors (categorical) and fixed. Set variables to be covariates (continuous) or random using functions `setcovariate()orset_random()`.\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n\n\n"
 },
 
 {
@@ -613,7 +565,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.runMCMC",
     "category": "method",
-    "text": "runMCMC(model::MME,df::DataFrame;\n        ### MCMC\n        chain_length             = 1000,\n        starting_value           = false,\n        burnin                   = 0,\n        output_samples_frequency = 0,\n        output_samples_file      = \"MCMC_samples\",\n        update_priors_frequency  = 0,\n        ### Methods\n        methods                  = \"conventional (no markers)\",\n        estimate_variance        = true,\n        Pi                       = 0.0,\n        estimatePi               = false,\n        estimateScale            = false,\n        single_step_analysis     = false,\n        pedigree                 = false,\n        categorical_trait        = false,\n        missing_phenotypes       = false,\n        constraint               = false,\n        causal_structure         = false,\n        ### Genomic Prediction\n        outputEBV                = true,\n        output_heritability      = false,\n        ### MISC\n        seed                     = false,\n        printout_model_info      = true,\n        printout_frequency       = 0)\n\nRun MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.\n\nMarkov chain Monte Carlo\nThe first burnin iterations are discarded at the beginning of a MCMC chain of length chain_length.\nThe starting_value can be provided as a vector for all location parameteres and marker effects, defaulting to 0.0s.\nSave MCMC samples every output_samples_frequency iterations, defaulting to chain_length/1000, to files output_samples_file, defaulting to MCMC_samples.txt. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default. MCMC samples for location parametes can be saved using output_MCMC_samples(). Note that saving MCMC samples too frequently slows down the computation.\nMiscellaneous Options\nPriors are updated every update_priors_frequency iterations, defaulting to 0.\nMethods\nAvailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nSingle step analysis is allowed if single_step_analysis = true and pedigree is provided.\nIn Bayesian variable selection methods, Pi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects (Pi = 0.0) in single-trait analysis and all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0)) in multi-trait analysis. Pi is estimated if estimatePi = true\nVariance components are estimated if estimate_variance=true, defaulting to true.\nScale parameter for prior of marker effect variance is estimated if estimateScale = true\nMiscellaneous Options\nMissing phenotypes are allowed in multi-trait analysis with missing_phenotypes=true, defaulting to true.\nCatogorical Traits are allowed if categorical_trait=true, defaulting to false.\nIf constraint=true, defaulting to false, constrain residual covariances between traits to be zeros.\nIf causal_structure is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.\nGenomic Prediction\nIndividual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if outputEBV=true, defaulting to true. Heritability and genetic\nvariances are returned if output_heritability=true, defaulting to false. Note that estimation of heritability is computaionally intensive.\nMiscellaneous Options\nPrint out the model information in REPL if printout_model_info=true; print out the monte carlo mean in REPL with printout_frequency, defaulting to false.\nIf seed, defaulting to false, is provided, a reproducible sequence of numbers will be generated for random number generation.\n\n\n\n\n\n"
+    "text": "runMCMC(model::MME,df::DataFrame;\n        ### MCMC\n        chain_length             = 1000,\n        starting_value           = false,\n        burnin                   = 0,\n        output_samples_frequency = chain_length/1000,\n        output_samples_file      = \"MCMC_samples\",\n        update_priors_frequency  = 0,\n        ### Methods\n        methods                  = \"conventional (no markers)\",\n        estimate_variance        = true,\n        Pi                       = 0.0,\n        estimatePi               = false,\n        estimateScale            = false,\n        single_step_analysis     = false,\n        pedigree                 = false,\n        categorical_trait        = false,\n        missing_phenotypes       = true,\n        constraint               = false,\n        causal_structure         = false,\n        ### Genomic Prediction\n        outputEBV                = true,\n        output_heritability      = true,\n        ### MISC\n        seed                     = false,\n        printout_model_info      = true,\n        printout_frequency       = 0)\n\nRun MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.\n\nMarkov chain Monte Carlo\nThe first burnin iterations are discarded at the beginning of a MCMC chain of length chain_length.\nThe starting_value can be provided as a vector for all location parameteres and marker effects, defaulting to 0.0s.\nSave MCMC samples every output_samples_frequency iterations, defaulting to chain_length/1000, to files output_samples_file, defaulting to MCMC_samples.txt. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default. MCMC samples for location parametes can be saved using output_MCMC_samples(). Note that saving MCMC samples too frequently slows down the computation.\nMiscellaneous Options\nPriors are updated every update_priors_frequency iterations, defaulting to 0.\nMethods\nAvailable methods include \"conventional (no markers)\", \"RR-BLUP\", \"BayesB\", \"BayesC\", \"Bayesian Lasso\", and \"GBLUP\".\nSingle step analysis is allowed if single_step_analysis = true and pedigree is provided.\nIn Bayesian variable selection methods, Pi for single-trait analyses is a number; Pi for multi-trait analyses is a dictionary such as Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1), defaulting to all markers have effects (Pi = 0.0) in single-trait analysis and all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0)) in multi-trait analysis. Pi is estimated if estimatePi = true, , defaulting to false.\nVariance components are estimated if estimate_variance=true, defaulting to true.\nScale parameter for prior of marker effect variance is estimated if estimateScale = true, defaulting to false.\nMiscellaneous Options\nMissing phenotypes are allowed in multi-trait analysis with missing_phenotypes=true, defaulting to true.\nCatogorical Traits are allowed if categorical_trait=true, defaulting to false.\nIf constraint=true, defaulting to false, constrain residual covariances between traits to be zeros.\nIf causal_structure is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.\nGenomic Prediction\nIndividual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if outputEBV=true, defaulting to true. Heritability and genetic\nvariances are returned if output_heritability=true, defaulting to true. Note that estimation of heritability is computaionally intensive.\nMiscellaneous Options\nPrint out the model information in REPL if printout_model_info=true; print out the monte carlo mean in REPL with printout_frequency, defaulting to false.\nIf seed, defaulting to false, is provided, a reproducible sequence of numbers will be generated for random number generation.\n\n\n\n\n\n"
 },
 
 {
@@ -621,23 +573,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.set_covariate",
     "category": "method",
-    "text": "set_covariate(mme::MME,variables::AbstractString...)\n\nset variables as covariates; mme is the output of function build_model().\n\n#After running build_model, variabels age and year can be set to be covariates as\nset_covariate(models,\"age\",\"year\")\n#or\nset_covariate(models,\"age year\")\n\n\n\n\n\n"
+    "text": "set_covariate(model::MME,variables::AbstractString...)\n\nset variables as covariates; model is the output of function build_model().\n\n#After running build_model, variabels age and year can be set to be covariates as\nset_covariate(model,\"age\",\"year\")\n#or\nset_covariate(model,\"age year\")\n\n\n\n\n\n"
 },
 
 {
-    "location": "manual/internals/#JWAS.set_random-Tuple{JWAS.MME,AbstractString,Any}",
+    "location": "manual/internals/#JWAS.set_random",
     "page": "Internals",
     "title": "JWAS.set_random",
-    "category": "method",
-    "text": "set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)\n\nset variables as random effects, defaulting to i.i.d effects, with variances G with degree of freedom df, defaulting to 4.0.\nthe random effects are assumed to be i.i.d by default and it can be defined with any (inverse of) covariance structure Vinv with its index (row names) provided by names.\n\n#single-trait (i.i.d randome effects)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nG               = 0.6\nset_random(model,\"litter\",G)\n\n#multi-trait (i.i.d randome effects)\nmodel_equations = \"BW = intercept + litter + sex\n                   CW = intercept + litter + sex\"\nmodel           = build_model(model_equations,R);\nG               = [3.72  1.84\n                   1.84  3.41]\nset_random(model,\"litter\",G)\n\n#single-trait (randome effects with specific covariance structures)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nV               = [1.0  0.5 0.25\n                   0.5  1.0 0.5\n                   0.25 0.5 1.0]\nG               = 0.6\nset_random(model,\"litter\",G,Vinv=inv(V),names=[a1;a2;a3])\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.set_random-Tuple{JWAS.MME,AbstractString,JWAS.PedModule.Pedigree,Any}",
-    "page": "Internals",
-    "title": "JWAS.set_random",
-    "category": "method",
+    "category": "function",
     "text": "set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)\n\nset variables as random polygenic effects with pedigree information ped and variances G with degree of freedom df, defaulting to 4.0.\n\n#single-trait (example 1)\nmodel_equation  = \"y = intercept + age + animal\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = 1.6\nset_random(model,\"animal\", ped, G)\n\n#single-trait (example 2)\nmodel_equation  = \"y = intercept + age + animal + animal*age\"\nmodel           = build_model(model_equation,R)\nped             = get_pedigree(pedfile)\nG               = [1.6   0.2\n                   0.2  1.0]\nset_random(model,\"animal animal*age\", ped,G)\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex + animal\n                   CW = intercept + age + sex + animal\"\nmodel           = build_model(model_equations,R);\nped             = get_pedigree(pedfile);\nG               = [6.72   2.84\n                   2.84  8.41]\nset_random(model,\"animal\",ped,G)\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.set_random",
+    "page": "Internals",
+    "title": "JWAS.set_random",
+    "category": "function",
+    "text": "set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)\n\nset variables as random effects, defaulting to i.i.d effects, with variances G with degree of freedom df, defaulting to 4.0.\nthe random effects are assumed to be i.i.d by default and it can be defined with any (inverse of) covariance structure Vinv with its index (row names) provided by names.\n\n#single-trait (i.i.d randome effects)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nG               = 0.6\nset_random(model,\"litter\",G)\n\n#multi-trait (i.i.d randome effects)\nmodel_equations = \"BW = intercept + litter + sex\n                   CW = intercept + litter + sex\"\nmodel           = build_model(model_equations,R);\nG               = [3.72  1.84\n                   1.84  3.41]\nset_random(model,\"litter\",G)\n\n#single-trait (randome effects with specific covariance structures)\nmodel_equation  = \"y = intercept + litter + sex\"\nmodel           = build_model(model_equation,R)\nV               = [1.0  0.5 0.25\n                   0.5  1.0 0.5\n                   0.25 0.5 1.0]\nG               = 0.6\nset_random(model,\"litter\",G,Vinv=inv(V),names=[a1;a2;a3])\n\n\n\n\n\n"
 },
 
 {
@@ -662,6 +614,14 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.add_term",
     "category": "method",
     "text": "add to model an extra term: imputation_residual\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.getMCMCinfo-Tuple{Any}",
+    "page": "Internals",
+    "title": "JWAS.getMCMCinfo",
+    "category": "method",
+    "text": "getMCMCinfo(model::MME)\n\nPrint out MCMC information.\n\n\n\n\n\n"
 },
 
 {
