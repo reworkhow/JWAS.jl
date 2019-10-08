@@ -157,6 +157,7 @@ mutable struct MME
     resVar                                        #for impuation of missing residual
     ROld::Float64                                 #residual variance (single-trait) for
     RNew::Float64                                 #lambda version of MME (single-trait)
+    scaleRes                                      #scale parameters
 
     M                                             #GENOTYPES
 

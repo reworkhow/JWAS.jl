@@ -19,7 +19,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     if categorical_trait == true
-        #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞ 
+        #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
         # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
         #Then liabilities are sampled and stored in mme.ySparse
         category_obs  = map(Int,mme.ySparse) # categories (1,2,2,3,1...)
@@ -40,12 +40,12 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #prior for residual variance
     if categorical_trait == false
-        vRes        = mme.RNew
-        nuRes       = mme.df.residual
-        scaleRes    = vRes*(nuRes-2)/nuRes
+        #vRes        = mme.RNew
+        #nuRes       = mme.df.residual
+        scaleRes    = mme.RNew*(mme.df.residual-2)/mme.df.residual
         meanVare,meanVare2 = 0.0, 0.0
     else
-        vRes        = 1.0
+        mme.RNew    = 1.0
         meanVare    = 1.0
     end
 
@@ -68,7 +68,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         dfEffectVar = mme.df.marker
         if methods=="BayesL"
             mme.M.G /= 8 # in BayesL mme.M.G is the scale Matrix, Sigma, in the MTBayesLasso paper
-        end            
+        end
         vEff        = mme.M.G
         scaleVar    = vEff*(dfEffectVar-2)/dfEffectVar #scale factor for locus effects
         meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
@@ -140,27 +140,27 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ycorr = ycorr + mme.X*sol
         rhs = mme.X'ycorr
 
-        Gibbs(mme.mmeLhs,sol,rhs,vRes)
+        Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
 
-        ycorr = ycorr - mme.X*sol    
+        ycorr = ycorr - mme.X*sol
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
         if mme.M !=0
             if methods=="BayesC"
-                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,vRes, vEff, π)
+                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,mme.RNew, vEff, π)
             elseif methods=="RR-BLUP"
-                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,vRes,vEff)
+                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,mme.RNew,vEff)
                 nLoci = nMarkers
             elseif methods=="BayesB"
-                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,vRes,locusEffectVar,π)
+                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,locusEffectVar,π)
             elseif methods == "BayesL"
-                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,vRes,vEff)
-                nLoci = nMarkers              
+                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,vEff)
+                nLoci = nMarkers
             end
             #sample Pi
             if estimatePi == true
-                π = samplePi(nLoci, nMarkers)  
+                π = samplePi(nLoci, nMarkers)
             end
         end
         ########################################################################
@@ -180,8 +180,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if categorical_trait == false
             mme.ROld = mme.RNew
-            vRes     = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
-            mme.RNew = vRes
+            mme.RNew = sample_variance(ycorr, length(ycorr), nuRes, scaleRes)
         end
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -200,7 +199,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 end
                 vEff = (ssq + dfEffectVar*scaleVar)/rand(Chisq(nLoci+dfEffectVar))
                # MH sampler of gammaArray (Appendix C in paper)
-                sampleGammaArray!(gammaArray,α,vEff)                                         
+                sampleGammaArray!(gammaArray,α,vEff)
             end
         end
         ########################################################################
@@ -229,9 +228,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
-                output_MCMC_samples(mme,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),π,α,vEff,outfile)
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),π,α,vEff,outfile)
             else
-                output_MCMC_samples(mme,sol,vRes,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
             end
 
             nsamples = (iter-burnin)/output_samples_frequency
@@ -242,8 +241,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 G0Mean2  += (G0 .^2  - G0Mean2 )/nsamples
             end
             if categorical_trait == false
-                meanVare += (vRes - meanVare)/nsamples
-                meanVare2 += (vRes .^2 - meanVare2)/nsamples
+                meanVare += (mme.RNew - meanVare)/nsamples
+                meanVare2 += (mme.RNew .^2 - meanVare2)/nsamples
             end
             if mme.M != 0
                 meanAlpha  += (α - meanAlpha)/nsamples
