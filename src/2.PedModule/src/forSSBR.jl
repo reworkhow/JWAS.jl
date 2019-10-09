@@ -27,7 +27,7 @@ end
 
 function genoSet!(genoID::Array{AbstractString,1},ped::Pedigree)
     if !issubset(genoID,map(string,collect(keys(ped.idMap))))
-        error("Not all genotyped individuals are found in pedigree! Please use genotyped individuals in the pedigree only")
+        error("Not all genotyped individuals are in the pedigree! Please only use genotyped individuals that are in the pedigree")
     end
 
     for i in genoID

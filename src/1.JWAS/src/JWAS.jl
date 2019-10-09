@@ -188,12 +188,15 @@ function runMCMC(mme::MME,df;
     #check errors in function arguments
     errors_args(mme,methods)
     #users need to provide high-quality pedigree file
+    #println("calling check_pedigree(mme,df,pedigree)")
     check_pedigree(mme,df,pedigree)
     #user-defined IDs to return genetic values (EBVs), defaulting to all genotyped
     #individuals in genomic analysis
+    #println("calling check_outputID(mme)")
     check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
+    #println("calling check_phenotypes(mme,df)")
     df = check_phenotypes(mme,df)
     ############################################################################
     # Incomplete Genomic Data (Single-Step)
@@ -202,6 +205,7 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
+        #println("calling SSBRrun(mme,df)")
         SSBRrun(mme,df)
     end
     ############################################################################
