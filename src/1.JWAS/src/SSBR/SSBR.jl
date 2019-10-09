@@ -3,8 +3,10 @@ function SSBRrun(mme,df)
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
+    flush(stdout)
     @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
     println("imputing missing genotypes")
+    flush(stdout)
     @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
