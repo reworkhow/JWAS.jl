@@ -51,7 +51,11 @@ end
 ################################################################################
 # sample variances for Polygenic Effects (Genetic Covariance Matrix)           #
 ################################################################################
-function sample_variance_pedigree(mme,pedTrmVec,sol,P,S,νG0)
+function sample_variance_pedigree(mme,sol)
+    pedTrmVec = mme.pedTrmVec
+    νG0       = mme.df.polygenic
+    P         = mme.scalePed
+    S         = zero(P)
     for (i,trmi) = enumerate(pedTrmVec)
         pedTrmi   = mme.modelTermDict[trmi]
         startPosi = pedTrmi.startPos

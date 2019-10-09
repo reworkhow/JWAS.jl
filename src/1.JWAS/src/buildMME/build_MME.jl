@@ -312,12 +312,13 @@ function set_default_priors_for_variance_components(mme,df)
       mme.M.genetic_variance = var_piece[1,1]
     elseif mme.nModels>1
       mme.M.genetic_variance = var_piece
-    end
+    end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
   end
   #residual effects
   if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.RNew = mme.ROld = var_piece[1,1]
+    mme.scaleRes = mme.RNew*(ν-2)/ν
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = var_piece
@@ -330,6 +331,7 @@ function set_default_priors_for_variance_components(mme,df)
     Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
     G         = diagm(Zdesign*diag(var_piece))
     mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
+    mme.scalePed = G*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
   end
   #other random effects
   if length(mme.rndTrmVec) != 0

@@ -24,14 +24,15 @@ function dict2dataframe(mean_pi,mean_pi2)
     DataFrame([names mean_pi stdpi],[:π,:Estimate,:Std_Error])
 end
 
-function output_result(mme,solMean,meanVare,G0Mean,
-                       meanAlpha,meanDelta,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,output_file,
+function output_result(mme,output_file,
+                       solMean,meanVare,
+                       G0Mean,meanAlpha,meanDelta,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,
                        solMean2      = missing,
-                       G0Mean2       = missing,
                        meanVare2     = missing,
+                       G0Mean2       = missing,
                        meanAlpha2    = mme.nModels == 1 ? missing : fill(missing,mme.nModels),
-                       mean_pi2      = missing,
                        meanVara2     = missing,
+                       mean_pi2      = missing,
                        meanScaleVar2 = missing)
   output = Dict()
   location_parameters = reformat2DataFrame([getNames(mme) solMean sqrt.(solMean2 .- solMean .^2)])

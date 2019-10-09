@@ -405,7 +405,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     # After MCMC
     ############################################################################
-    if output_samples_frequency != 0  
+    if output_samples_frequency != 0
       for (key,value) in outfile
         close(value)
       end
@@ -414,26 +414,26 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
       end
     end
     if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             meanAlphaArray,meanDeltaArray,GMMean,estimatePi,false,false,false,output_file)
+        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+                             meanAlphaArray,meanDeltaArray,GMMean,estimatePi,false,false,false)
     elseif mme.M != 0
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             meanuArray,meanDeltaArray,GMMean,estimatePi,BigPiMean,false,false,output_file)
+        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+                             meanuArray,meanDeltaArray,GMMean,estimatePi,BigPiMean,false,false)
     else
-        output=output_result(mme,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             false,false,false,false,false,false,false,output_file)
+        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+                             false,false,false,false,false,false,false)
     end
     return output
 end
 
-                                                            
+
 function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     Gi = inv(mmeMG)
     nMarkers = size(gammaArray,1)
     nTraits  = length(alphaArray[1])==1 ? 1 : length(alphaArray)
-                                                                
+
     Q  = zeros(nMarkers)
-    nTraits > 1 ? calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)                                                             
+    nTraits > 1 ? calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)
     gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
     candidateArray = 1 ./ rand(gammaDist,nMarkers)
     uniformArray = rand(nMarkers)
@@ -441,20 +441,17 @@ function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     replace = uniformArray .< acceptProbArray
     gammaArray[replace] = 2 ./ candidateArray[replace]
 end
-                                                            
-function calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) 
-    for locus = 1:nMarkers         
+
+function calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi)
+    for locus = 1:nMarkers
         for traiti = 1:nTraits
             for traitj = 1:nTraits
                 Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
             end
         end
-    end                                                                    
+    end
 end
 
 function calcSTQ!(Q,nMarkers,alphaArray,Gi)
-        Q .= alphaArray.^2 ./Gi 
+        Q .= alphaArray.^2 ./Gi
 end
-                                                            
-                                                            
-                                                                 

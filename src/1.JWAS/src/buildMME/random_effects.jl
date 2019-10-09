@@ -75,6 +75,12 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G
     #isposdef(G) to test whether G is provided or not
     mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
     mme.df.polygenic = Float64(df)
+
+    ν, k  = Float64(df), size(mme.pedTrmVec,1)
+    νG0   = ν + k
+    mme.df.polygenic = ν + k #final df for this inverse wisahrt
+    mme.scalePed     = G*(mme.df.polygenic - k - 1)
+
     nothing
 end
 ############################################################################
@@ -157,6 +163,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
       randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names)
       push!(mme.rndTrmVec,randomEffect)
+      mme.df.random = Float64(df)
     end
     nothing
 end
