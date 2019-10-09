@@ -82,14 +82,15 @@ mutable struct Genotypes
   sum2pq::Float64
   centered::Bool
   genotypes::Array{Float64,2}
-  G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
   genetic_variance  #genetic variance
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,false,false)
+  G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
+  scale             #scale parameter for marker effect variance (G)
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,false,false,false)
 end
 
 mutable struct DF
     residual::Float64
-    polygenic::Float64
+    polygenic::Float64  #df+size(mme.pedTrmVec,1)
     marker::Float64
     random::Float64
 end
@@ -116,14 +117,20 @@ mutable struct MCMCinfo
     categorical_trait
     seed
 end
-
-#@warn Too frequent will slow down the computation
-
 ################################################################################
-# the class MME is shown below with members for models, mixed model equations...
+#the class MME is shown below with members for models, mixed model equations...
 #
-# single-trait analyses: lambda version of MME
-#  multi-trait analysis: formal version of MME
+#Single-trait analysis: lambda version of MME
+#Multi-trait analysis : formal version of MME
+#
+#Details:
+#Scale parameters:
+#Scale parameters for variance components are computed when variances are added
+#i.e., build_model() for residual variance; set_random() for non-marker random
+#effects except scale parameter for marker effect variance, which is computed in
+#the function set_marker_hyperparameters_variances_and_pi() where marker effect
+#variance is computed based genetic varaince and pi.
+#
 ################################################################################
 mutable struct MME
     nModels::Int64                                #number of model equations
@@ -147,6 +154,7 @@ mutable struct MME
     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
     GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+    scalePed
 
     rndTrmVec::Array{RandomEffect,1}              #General (including i.i.d.) random effects
                                                   #may merge pedTrmVec here
@@ -179,9 +187,9 @@ mutable struct MME
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
-                   zeros(1,1),0,0,R,R,
+                   zeros(1,1),0,0,R,R,R*(ν-2)/ν,
                    0,
                    1,
                    [],
@@ -192,9 +200,9 @@ mutable struct MME
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
-                   R,0,0,0.0,0.0,
+                   R,0,0,0.0,0.0,0,
                    0,
                    1,
                    [],
