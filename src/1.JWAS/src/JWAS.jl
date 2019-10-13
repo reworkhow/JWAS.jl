@@ -196,7 +196,6 @@ function runMCMC(mme::MME,df;
     check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
-    #println("calling check_phenotypes(mme,df)")
     df = check_phenotypes(mme,df)
     ############################################################################
     # Incomplete Genomic Data (Single-Step)
@@ -427,8 +426,26 @@ function check_outputID(mme)
 end
 
 function check_phenotypes(mme,df)
+    printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
+    df[!,1] = strip.(map(string,df[!,1])) #make IDs stripped string
+    printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
+
+    missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+    allmissing = fill(true,mme.nModels)
+    nonmissingindex = Array{Int64,1}()
+    for i in 1:size(missingdf,1)
+        if missingdf[i,:] != allmissing
+            push!(nonmissingindex,i)
+        else
+            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted\n" ,bold=false,color=:red)
+        end
+    end
+    if length(nonmissingindex) != 0
+        df = df[nonmissingindex,:]
+    end
+
+    phenoID = df[!,1]
     single_step_analysis = mme.MCMCinfo.single_step_analysis
-    phenoID = strip.(map(string,df[!,1]))
     if mme.M == 0 && mme.ped == 0 #non-genetic analysis
         return df
     end
@@ -439,10 +456,11 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of individuals with both genotypes and phenotypes used\n",
+            printstyled("The number of observations with both genotypes and phenotypes used\n",
             "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
-    elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
+    end
+    if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",
@@ -450,7 +468,7 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of individuals with both phenotype and pedigree information\n",
+            printstyled("The number of observations with both phenotype and pedigree information\n",
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
     end

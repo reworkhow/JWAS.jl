@@ -1,5 +1,5 @@
 function SSBRrun(mme,df)
-    obsID    = strip.(map(string,df[!,1]))  #phenotyped ID
+    obsID    = df[!,1]                      #phenotyped ID
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -14,7 +14,7 @@ function SSBRrun(mme,df)
     add_term(mme,"J") #centering parameter
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
-    data_ϵ    = deepcopy(map(string,df[!,1]))
+    data_ϵ    = deepcopy(obsID)
     data_ϵ[.!isnongeno].="0"
     df[!,Symbol("ϵ")]=data_ϵ
 
