@@ -410,7 +410,7 @@ function check_outputID(mme)
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
-    else #1)incomplete genomic data 2)PBLUP
+    elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
             printstyled("Testing individuals are not a subset of \n",
@@ -442,7 +442,7 @@ function check_phenotypes(mme,df)
             printstyled("The number of individuals with both genotypes and phenotypes used\n",
             "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
-    else #1)incomplete genomic data 2)PBLUP
+    elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",
