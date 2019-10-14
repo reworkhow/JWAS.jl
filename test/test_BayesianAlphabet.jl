@@ -4,6 +4,8 @@ phenofile       = Datasets.dataset("example","phenotypes.txt")
 phenofile_ssbr  = Datasets.dataset("example","phenotypes_ssbr.txt")
 pedfile    = Datasets.dataset("example","pedigree.txt")
 genofile   = Datasets.dataset("example","genotypes.txt")
+mapfile    = Datasets.dataset("example","map.txt")
+
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true)
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
@@ -42,11 +44,18 @@ for single_step in [false,true]
 
             if single_step == false && test_method!="non_genomic"
                   out1=runMCMC(model1,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
-            elseif single_step == true && test_method!="non_genomic"
+            elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
                   out1=runMCMC(model1,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples");
             elseif test_method=="non_genomic"
                   out1=runMCMC(model1,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
+            end
+            if test_method != "non_genomic" && test_method!="GBLUP"
+                  gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
+                  show(gwas1)
+                  println()
+                  gwas2=GWAS("MCMC_samples_marker_effects_y1.txt",mapfile,model1)
+                  show(gwas2)
             end
             cd("..")
 
@@ -92,6 +101,13 @@ for single_step in [false,true]
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples");
             elseif test_method=="non_genomic"
                   out2=runMCMC(model2,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
+            end
+            if test_method != "non_genomic" && test_method!="GBLUP"
+                  gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
+                  show(gwas1)
+                  println()
+                  gwas2=GWAS("MCMC_samples_marker_effects_y1.txt",mapfile,model2)
+                  show(gwas2)
             end
             cd("..")
       end

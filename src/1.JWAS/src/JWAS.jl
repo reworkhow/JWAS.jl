@@ -244,15 +244,13 @@ function runMCMC(mme::MME,df;
                             output_file              = output_samples_file,
                             update_priors_frequency  = update_priors_frequency,
                             categorical_trait        = categorical_trait)
-        elseif methods =="GBLUP"
+        elseif methods =="GBLUP" && single_step_analysis != true
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file)
-        else
-            error("No options!!!")
         end
     elseif mme.nModels > 1
         if methods == "conventional (no markers)" && estimate_variance == false
@@ -278,11 +276,7 @@ function runMCMC(mme::MME,df;
                           output_file=output_samples_file,
                           update_priors_frequency=update_priors_frequency,
                           causal_structure = causal_structure)
-        else
-            error("No methods options!!!")
         end
-    else
-        error("No options!")
     end
   mme.output = res
 
@@ -320,6 +314,10 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
+    if !(methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+        error(methods," is not available in JWAS. Please read the documentation.")
+    end
+
     if methods == "conventional (no markers)"
         if mme.M!=0
             error("Conventional analysis runs without genotypes!")

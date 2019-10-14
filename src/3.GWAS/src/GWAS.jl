@@ -1,29 +1,26 @@
 """
-    GWAS(marker_effects_file;header=false)
+    GWAS(marker_effects_file;header=true)
 
 Compute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in **marker_effects_file**.
 """
 function GWAS(marker_effects_file;header=true)
+    println("Compute the model frequency for each marker (the probability the marker is included in the model).")
     file = marker_effects_file
     if header==true
         samples,markerID =readdlm(file,',',header=true)
     else
         samples=readdlm(file,',')
+        markerID = 1:size(samples,1)
     end
-
     modelfrequency = vec(mean(samples .!= 0.0,dims=1))
-    if header==true
-        out = [vec(markerID) modelfrequency]
-    else
-        out = modelfrequency
-    end
+    out = DataFrame(marker_ID = vec(markerID), modelfrequency = modelfrequency)
     return out
 end
 
 """
-    GWAS(marker_effects_file,model;header=true,window_size="1 Mb",threshold=0.001)
+    GWAS(marker_effects_file,model;header=true,window_size=100,threshold=0.001)
 
-run genomic window-based GWAS without marker locations
+run genomic window-based GWAS without a map file
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **window_size** is either a constant (identical number of markers in each window) or an array of number of markers in each window
@@ -32,10 +29,6 @@ run genomic window-based GWAS without marker locations
 
 """
 function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001,output_winVarProps=false)
-    if !(typeof(window_size) <: Int)
-        error("Window size is the number of markers in each window if marker map postions are not provided. It has to be integers.")
-    end
-
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
 
     winVarProps, window_mrk_start, window_mrk_end = getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold)
@@ -101,7 +94,7 @@ m5,2,101135
 
 """
 function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",threshold=0.001,output_winVarProps=false)
-
+    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
     if window_size=="1 Mb"
         window_size_Mb = 1_000_000
     else
