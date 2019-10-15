@@ -1,16 +1,20 @@
 function SSBRrun(mme,df)
-    obsID    = map(string,df[!,1])          #phenotyped ID
+    obsID    = df[!,1]                      #phenotyped ID
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
-    Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
-    impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
-
+    println("calculating A inverse")
+    flush(stdout)
+    @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
+    println("imputing missing genotypes")
+    flush(stdout)
+    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
+    println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
     add_term(mme,"J") #centering parameter
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
-    data_ϵ    = deepcopy(map(string,df[!,1]))
+    data_ϵ    = deepcopy(obsID)
     data_ϵ[.!isnongeno].="0"
     df[!,Symbol("ϵ")]=data_ϵ
 

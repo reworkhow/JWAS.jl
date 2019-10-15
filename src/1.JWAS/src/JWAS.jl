@@ -188,9 +188,11 @@ function runMCMC(mme::MME,df;
     #check errors in function arguments
     errors_args(mme,methods)
     #users need to provide high-quality pedigree file
+    #println("calling check_pedigree(mme,df,pedigree)")
     check_pedigree(mme,df,pedigree)
     #user-defined IDs to return genetic values (EBVs), defaulting to all genotyped
     #individuals in genomic analysis
+    #println("calling check_outputID(mme)")
     check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
@@ -202,6 +204,7 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
+        #println("calling SSBRrun(mme,df)")
         SSBRrun(mme,df)
     end
     ############################################################################
@@ -241,15 +244,13 @@ function runMCMC(mme::MME,df;
                             output_file              = output_samples_file,
                             update_priors_frequency  = update_priors_frequency,
                             categorical_trait        = categorical_trait)
-        elseif methods =="GBLUP"
+        elseif methods =="GBLUP" && single_step_analysis != true
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
                             sol                      = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file)
-        else
-            error("No options!!!")
         end
     elseif mme.nModels > 1
         if methods == "conventional (no markers)" && estimate_variance == false
@@ -275,11 +276,7 @@ function runMCMC(mme::MME,df;
                           output_file=output_samples_file,
                           update_priors_frequency=update_priors_frequency,
                           causal_structure = causal_structure)
-        else
-            error("No methods options!!!")
         end
-    else
-        error("No options!")
     end
   mme.output = res
 
@@ -317,6 +314,10 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
+    if !(methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+        error(methods," is not available in JWAS. Please read the documentation.")
+    end
+
     if methods == "conventional (no markers)"
         if mme.M!=0
             error("Conventional analysis runs without genotypes!")
@@ -406,7 +407,7 @@ function check_outputID(mme)
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
-    else #1)incomplete genomic data 2)PBLUP
+    elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
             printstyled("Testing individuals are not a subset of \n",
@@ -423,8 +424,26 @@ function check_outputID(mme)
 end
 
 function check_phenotypes(mme,df)
+    printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
+    df[!,1] = strip.(map(string,df[!,1])) #make IDs stripped string
+    printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
+
+    missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+    allmissing = fill(true,mme.nModels)
+    nonmissingindex = Array{Int64,1}()
+    for i in 1:size(missingdf,1)
+        if missingdf[i,:] != allmissing
+            push!(nonmissingindex,i)
+        else
+            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted\n" ,bold=false,color=:red)
+        end
+    end
+    if length(nonmissingindex) != 0
+        df = df[nonmissingindex,:]
+    end
+
+    phenoID = df[!,1]
     single_step_analysis = mme.MCMCinfo.single_step_analysis
-    phenoID = strip.(map(string,df[!,1]))
     if mme.M == 0 && mme.ped == 0 #non-genetic analysis
         return df
     end
@@ -435,10 +454,11 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of individuals with both genotypes and phenotypes used\n",
+            printstyled("The number of observations with both genotypes and phenotypes used\n",
             "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
-    else #1)incomplete genomic data 2)PBLUP
+    end
+    if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
             printstyled("Phenotyped individuals are not a subset of\n",
@@ -446,7 +466,7 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of individuals with both phenotype and pedigree information\n",
+            printstyled("The number of observations with both phenotype and pedigree information\n",
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
     end
