@@ -402,17 +402,17 @@ function check_outputID(mme)
     single_step_analysis = mme.MCMCinfo.single_step_analysis
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-            printstyled("Testing individuals are not a subset of \n",
-            "genotyped individuals (complete genomic data,non-single-step).\n",
+            printstyled("Testing individuals are not a subset of ",
+            "genotyped individuals (complete genomic data,non-single-step). ",
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
     elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
-            printstyled("Testing individuals are not a subset of \n",
-            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
-            "Only output EBV for tesing individuals in the pedigree.\n",bold=false,color=:red)
+            printstyled("Testing individuals are not a subset of ",
+            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP). ",
+            "Only output EBV for tesing individuals in the pedigree.",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
@@ -435,7 +435,7 @@ function check_phenotypes(mme,df)
         if missingdf[i,:] != allmissing
             push!(nonmissingindex,i)
         else
-            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted\n" ,bold=false,color=:red)
+            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted.\n" ,bold=false,color=:red)
         end
     end
     if length(nonmissingindex) != 0
@@ -449,9 +449,9 @@ function check_phenotypes(mme,df)
     end
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
-            printstyled("Phenotyped individuals are not a subset of\n",
-            "genotyped individuals (complete genomic data,non-single-step).\n",
-            "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
+            printstyled("Phenotyped individuals are not a subset of ",
+            "genotyped individuals (complete genomic data,non-single-step). ",
+            "Only use phenotype information for genotyped individuals.",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
             printstyled("The number of observations with both genotypes and phenotypes used\n",
@@ -461,12 +461,12 @@ function check_phenotypes(mme,df)
     if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
-            printstyled("Phenotyped individuals are not a subset of\n",
-            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
-            "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
+            printstyled("Phenotyped individuals are not a subset of ",
+            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP). ",
+            "Only use phenotype information for individuals in the pedigree.",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of observations with both phenotype and pedigree information\n",
+            printstyled("The number of observations with both phenotype and pedigree information ",
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
     end
