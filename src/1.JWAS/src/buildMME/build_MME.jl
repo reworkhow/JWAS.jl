@@ -193,7 +193,7 @@ function getX(trm::ModelTerm,mme::MME)
            if thisnames!=mme.modelTermDict[trm.trmStr].names
                error("errors in SSBR")
            end
-           if !issubset(trm.str,thisnames)
+           if !issubset(filter(x->x≠"0",trm.str),thisnames)
              error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
              trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
            end
