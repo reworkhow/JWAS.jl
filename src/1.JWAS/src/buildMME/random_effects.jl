@@ -124,6 +124,9 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
+    if names != []
+      names = string.(names)
+    end
     G = map(Float64,G)
     df= Float64(df)
     randTrmVec = split(randomStr," ",keepempty=false)  # "litter"
