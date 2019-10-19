@@ -1,3 +1,5 @@
+#get BV using different samples
+
 function get_BV_samples(M::Array{Float64,2},marker_file;header=true)
     if header==true
         alpha=readdlm(marker_file,',',header=true)[1]
