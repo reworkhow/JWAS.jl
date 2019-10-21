@@ -1,5 +1,5 @@
-#This file is used for functions to output, including results (posterior mean and
-#varainces) and MCMC samples.
+#This file is used for output, including results (posterior mean and varainces)
+#and MCMC samples.
 #1.public function
 #2.return point estimates as returned values (a dictionary) from runMCMC
 #3.return MCMC samples as text files
@@ -14,8 +14,7 @@
 Output estimated breeding values and prediction error variances for IDs.
 """
 function outputEBV(model,IDs)
-    #print("Estimated breeding values and prediction error variances will be included in the output.")
-    IDs = map(string,vec(IDs)) #Array{String,1}
+    IDs = map(string,vec(IDs))
     model.output_ID=IDs
 end
 

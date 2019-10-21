@@ -17,12 +17,10 @@ include("buildMME/sample_variances.jl")
 include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
-include("MCMC/outputMCMCsamples.jl")
 include("MCMC/MCMC_BayesianAlphabet.jl")
 include("MCMC/MCMC_GBLUP.jl")
 include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_PBLUP_constvare.jl")
-include("MCMC/output.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")
@@ -42,8 +40,8 @@ include("SSBR/SSBR.jl")
 #Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
-#MISC
-#include("misc/misc.jl")
+#output
+include("output.jl")
 
 export build_model,set_covariate,set_random,add_genotypes
 export outputMCMCsamples,outputEBV,getEBV

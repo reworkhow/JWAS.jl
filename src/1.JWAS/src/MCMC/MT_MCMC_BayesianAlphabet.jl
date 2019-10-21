@@ -18,7 +18,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #starting values for location parameters(no marker) are sol
     sol,α       = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
-    solMean     = zero(sol)
+    solMean, solMean2  = zero(sol),zero(sol)
 
     if methods in ["RR-BLUP","BayesL"]
         BigPi = copy(Pi) #temporary for output_MCMC_samples function
