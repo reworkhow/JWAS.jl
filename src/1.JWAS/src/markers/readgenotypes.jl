@@ -22,8 +22,12 @@ function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},
     else
         mme.M.genetic_variance = G
     end
-    mme.df.marker = Float64(df)
-
+    if mme.nModel == 1 #?move to set_marker_hyperparameters_variances_and_pi?
+        mme.df.marker = Float64(df)
+    else
+        νG0   = Float64(df) + mme.nModels
+        mme.df.marker = νG0 #final df for inverse wisahrt
+    end
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 

@@ -78,7 +78,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G
 
     ν, k  = Float64(df), size(mme.pedTrmVec,1)
     νG0   = ν + k
-    mme.df.polygenic = ν + k #final df for this inverse wisahrt
+    mme.df.polygenic = νG0 #final df for this inverse wisahrt
     mme.scalePed     = G*(mme.df.polygenic - k - 1)
 
     nothing

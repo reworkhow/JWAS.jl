@@ -58,16 +58,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
     end
 
-    ##Priors for residual covariance matrix
-    R0Mean  = zeros(Float64,nTraits,nTraits)
-    meanVare = meanVare2 = zeros(Float64,nTraits,nTraits)
-
-
-    ##Priors for polygenic effect covariance matrix
+    #save posterior mean for residual variance
+    meanVare  = zeros(Float64,nTraits,nTraits)
+    meanVare2 = zeros(Float64,nTraits,nTraits)
+    #save poseterior mean for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.pedTrmVec != 0
         G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
-    ##SET UP MARKER PART
+    #priors for marker effect variance
     if mme.M != 0
         ########################################################################
         #Priors for marker covaraince matrix
@@ -75,13 +73,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         mGibbs      = GibbsMats(mme.M.genotypes)
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
         dfEffectVar = mme.df.marker
-        if methods=="BayesL"
-            mme.M.G /= 4*(nTraits+1) # in BayesL mme.M.G is the scale Matrix, Sigma, in the MTBayesLasso paper
+        if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
+            mme.M.G /= 4*(nTraits+1)
         end
         vEff        = mme.M.G
-        νGM         = dfEffectVar + nTraits
-        PM          = vEff*(νGM - nTraits - 1)
-        SM          = zeros(Float64,nTraits,nTraits)
+        meanVara  = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
+        meanVara2 = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
+        meanScaleVara  =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
+        meanScaleVara2 =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
         GMMean      = zeros(Float64,nTraits,nTraits)
         ########################################################################
         ##WORKING VECTORS
@@ -100,9 +99,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
-            #wArray[traiti]         = pointer_to_array(ptr,nObs)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
-
             alphaArray[traiti]     = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanAlphaArray[traiti] = zeros(nMarkers)
             deltaArray[traiti]     = ones(nMarkers)
@@ -112,11 +109,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         end
 
         if methods=="BayesB"
-            arrayG  = Array{Array{Float64,2}}(undef,nMarkers)#locus specific covaraince matrix
-            for markeri = 1:nMarkers
-              arrayG[markeri]= vEff
-            end
-            nLoci = zeros(nTraits)
+            arrayG  = fill(mme.M.G,nMarkers)#locus specific covaraince matrix
+            mme.M.G = arrayG
+            nLoci   = zeros(nTraits)
         end
         if methods=="BayesL"
            gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
@@ -156,16 +151,12 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
         ycorr[:] = ycorr[:] - mme.X*sol
-
-        if iter > burnin
-            solMean += (sol - solMean)/(iter-burnin)
-        end
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
         if mme.M != 0
           iR0      = inv(mme.R)
-          iGM      = (methods!="BayesB" ? inv(mme.M.G) : [inv(G) for G in arrayG])
+          iGM      = inv.(mme.M.G) #an array in BayesB
           #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
@@ -214,12 +205,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         if estimate_variance == true
             sample_variance(mme,resVec,constraint=constraint)
         end
-        R0 = mme.R
-        Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
-
-        if iter > burnin
-            R0Mean  += (R0  - R0Mean )/(iter-burnin)
-        end
+        Ri = kron(inv(mme.R),SparseMatrixCSC{Float64}(I, nObs, nObs))
         ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
@@ -247,29 +233,24 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
 
         if mme.M != 0 && estimate_variance == true
+            SM    = zero(mme.M.scale)
             if !(methods in ["BayesB","BayesL"])
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
-                        SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])[1]
+                        SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end
-                mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
-                if iter > burnin
-                    GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
-                end
+                mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
             elseif methods == "BayesL"
                 for traiti = 1:nTraits
                     alphai = alphaArray[traiti]./gammaArray
                     for traitj = traiti:nTraits
-                        SM[traiti,traitj]   = (alphai'alphaArray[traitj])[1]
+                        SM[traiti,traitj]   = (alphai'alphaArray[traitj])
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end
-                mme.M.G = rand(InverseWishart(νGM + nMarkers, convert(Array,Symmetric(PM + SM))))
-                if iter > burnin
-                    GMMean  += (mme.M.G  - GMMean)/(iter-burnin)
-                end
+                mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
                 # MH sampler of gammaArray (Appendix C in paper)
                 sampleGammaArray!(gammaArray,alphaArray,mme.M.G)
             else
@@ -283,48 +264,75 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                          for i=1:size(marker_effects_matrix,2)]
 
                 for markeri = 1:nMarkers
-                  arrayG[markeri] = rand(InverseWishart(νGM + 1, convert(Array,Symmetric(PM + alpha2[markeri]))))
+                  mme.M.G[markeri] = rand(InverseWishart(mme.df.marker + 1, convert(Array,Symmetric(mme.M.scale + alpha2[markeri]))))
                 end
             end
         end
 
         ########################################################################
-        # 3.1 Causal Relationships among phenotypes (Structure Equation Model)
+        # 2.4 Causal Relationships among phenotypes (Structure Equation Model)
         ########################################################################
         if causal_structure != false
             sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
-        # 3.2 Update priors using posteriors (empirical)
+        # 2.5 Update priors using posteriors (empirical)
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0
-                PM = GMMean*(νGM - nTraits - 1)
+                mme.M.scale = meanVara*(mme.df.marker-nTraits-1)
             end
             if mme.pedTrmVec != 0
-                P  = G0Mean*(νG0 - k - 1)
+                mme.scalePed  = G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
             end
-            PRes    = R0Mean*(νR0 - nTraits - 1)
+            mme.scaleRes  =  meanVare*(mme.df.residual-2)/mme.df.residual
             println("\n Update priors from posteriors.")
         end
         ########################################################################
-        # OUTPUT
+        # 3.1 Save MCMC samples
         ########################################################################
         if output_samples_frequency != 0 && (iter-burnin)%output_samples_frequency==0 && iter>burnin
+        end
+
+        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
                 if methods in ["BayesC","BayesCC"]
-                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
+                    output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,vec(mme.M.G),outfile)
                 elseif methods in ["RR-BLUP","BayesL"]
-                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
+                    output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? G0 : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
-                    #res=hcat([x for x in arrayG]...)
-                    output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in arrayG]...),outfile)
+                    output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? G0 : false),BigPi,uArray,hcat([x for x in mme.M.G]...),outfile)
                 end
             else
-                output_MCMC_samples(mme,sol,R0,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
+                output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? G0 : false),false,fill(false,nTraits),false,outfile)
             end
             if causal_structure != false
                 writedlm(causal_structure_outfile,sample4λ',',')
+            end
+
+            nsamples = (iter-burnin)/output_samples_frequency
+            solMean   += (sol - solMean)/nsamples
+            solMean2  += (sol .^2 - solMean2)/nsamples
+            meanVare  += (mme.R - meanVare)/nsamples
+            meanVare2 += (mme.R .^2 - meanVare2)/nsamples
+
+            if mme.pedTrmVec != 0
+                G0Mean  += (G0  - G0Mean )/nsamples
+                G0Mean2 += (G0 .^2  - G0Mean2 )/nsamples
+            end
+            if mme.M != 0
+                # meanAlpha  += (α - meanAlpha)/nsamples
+                # meanAlpha2 += (α .^2 - meanAlpha2)/nsamples
+                # meanDelta  += (δ - meanDelta)/nsamples
+                # 
+                # if estimatePi == true
+                #     mean_pi += (π-mean_pi)/nsamples
+                #     mean_pi2 += (π .^2-mean_pi2)/nsamples
+                # end
+                if methods != "BayesB"
+                    meanVara += (mme.M.G - meanVara)/nsamples
+                    meanVara2 += (mme.M.G .^2 - meanVara2)/nsamples
+                end
             end
         end
         ########################################################################
@@ -332,7 +340,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
-            println("Residual covariance matrix: \n",round.(R0Mean,digits=6))
+            println("Residual covariance matrix: \n",round.(meanVare,digits=6))
 
             if mme.pedTrmVec !=0
               println("Polygenic effects covariance matrix \n",round.(G0Mean,digits=6))
@@ -340,16 +348,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
             if mme.M != 0
               if methods != "BayesB"
-                  println("Marker effects covariance matrix: \n",round.(GMMean,digits=6))
-              end
-              if methods in ["BayesC","BayesB"] && estimatePi == true
-                println("π: \n",BigPiMean)
-              elseif methods=="BayesCC" && estimatePi == true
-                println("π for ", labels)
-                println(round.(BigPiMean,3))
+                  println("Marker effects covariance matrix: \n",round.(meanVara,digits=6))
               end
             end
-            println()
         end
     end
 
@@ -365,13 +366,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
       end
     end
     if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
-        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
                              meanAlphaArray,meanDeltaArray,GMMean,estimatePi,false,false,false)
     elseif mme.M != 0
-        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
                              meanuArray,meanDeltaArray,GMMean,estimatePi,BigPiMean,false,false)
     else
-        output=output_result(mme,output_file,solMean,R0Mean,(mme.pedTrmVec!=0 ? G0Mean : false),
+        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
                              false,false,false,false,false,false,false)
     end
     return output
