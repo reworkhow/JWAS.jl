@@ -10,6 +10,33 @@ function sample_variance(x, n, df, scale)
     return (dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
 
+function sample_variance(mme,resVec;constraint=false)
+    νR0     = mme.df.residual
+    PRes    = mme.scaleRes
+    SRes    = zero(PRes)
+
+    nTraits = mme.nModels
+    nObs    = div(length(resVec),nTraits)
+    for traiti = 1:nTraits
+        startPosi = (traiti-1)*nObs + 1
+        endPosi   = startPosi + nObs - 1
+        for traitj = traiti:nTraits
+            startPosj = (traitj-1)*nObs + 1
+            endPosj   = startPosj + nObs - 1
+            SRes[traiti,traitj] = resVec[startPosi:endPosi]'resVec[startPosj:endPosj]
+            SRes[traitj,traiti] = SRes[traiti,traitj]
+        end
+    end
+    if constraint == false
+        mme.R  = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
+    else     #for constraint R, chisq
+        ν        = νR0 - nTraits
+        scaleRes = diag(mme.scaleRes/(νR0 - nTraits - 1))*(ν-2)/ν #diag(R_prior)*(ν-2)/ν
+        for traiti = 1:nTraits
+            mme.R[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+        end
+    end
+end
 ################################################################################
 #  SAMPLE VARIANCES FOR OTHER RANDOM EFFECTS (GIBBS SAMPLER)                   #
 #*******************************************************************************

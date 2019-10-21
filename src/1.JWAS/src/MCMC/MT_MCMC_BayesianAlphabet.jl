@@ -50,35 +50,23 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     # PRIORS
     ############################################################################
-    ##Priors for residual covariance matrix
-    ν       = mme.df.residual
-    nObs    = size(df,1)
-    nTraits = size(mme.lhsVec,1)
-    νR0     = ν + nTraits
-    R0      = mme.R
-    PRes    = R0*(νR0 - nTraits - 1)
-    SRes    = zeros(Float64,nTraits,nTraits)
-    R0Mean  = zeros(Float64,nTraits,nTraits)
-    scaleRes= diag(mme.R)*(ν-2)/ν #only for chisq for constraint diagonal R
-
+    ##Phenotypes adjusted for all effects (assuming zeros now)
+    ycorr          = vec(Matrix(mme.ySparse))
+    nTraits        = mme.nModels
+    nObs           = div(length(ycorr),nTraits)
     if missing_phenotypes==true
         RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
     end
 
+    ##Priors for residual covariance matrix
+    R0Mean  = zeros(Float64,nTraits,nTraits)
+    meanVare = meanVare2 = zeros(Float64,nTraits,nTraits)
+
+
     ##Priors for polygenic effect covariance matrix
     if mme.pedTrmVec != 0
-      ν         = mme.df.polygenic
-      pedTrmVec = mme.pedTrmVec
-      k         = size(pedTrmVec,1)
-      νG0       = ν + k
-      G0        = inv(mme.Gi)
-      P         = G0*(νG0 - k - 1)
-      S         = zeros(Float64,k,k)
-      G0Mean    = zeros(Float64,k,k)
+        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
-
-    ##Phenotypes adjusted for all effects (assuming zeros now)
-    ycorr          = vec(Matrix(mme.ySparse))
     ##SET UP MARKER PART
     if mme.M != 0
         ########################################################################
@@ -224,29 +212,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         end
 
         if estimate_variance == true
-            for traiti = 1:nTraits
-                startPosi = (traiti-1)*nObs + 1
-                endPosi   = startPosi + nObs - 1
-                for traitj = traiti:nTraits
-                    startPosj = (traitj-1)*nObs + 1
-                    endPosj   = startPosj + nObs - 1
-                    SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
-                    SRes[traitj,traiti] = SRes[traiti,traitj]
-                end
-            end
-
-            R0      = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
-
-            #for constraint R, chisq
-            if constraint == true
-                R0 = zeros(nTraits,nTraits)
-                for traiti = 1:nTraits
-                    R0[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
-                end
-            end
+            sample_variance(mme,resVec,constraint=constraint)
         end
-
-        mme.R = R0
+        R0 = mme.R
         Ri    = kron(inv(R0),SparseMatrixCSC{Float64}(I, nObs, nObs))
 
         if iter > burnin
@@ -261,31 +229,12 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ycorr[:]   = ycorr[:] + X*sol #same to ycorr[:]=resVec+X*sol
         mme.mmeRhs = X'Ri*ycorr
         ########################################################################
-        # 2.2 Genetic Covariance Matrix (Polygenic Effects)
+        # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
-        if mme.pedTrmVec != 0 && estimate_variance == true #will optimize taking advantage of symmetry
-            for (i,trmi) = enumerate(pedTrmVec)
-                pedTrmi   = mme.modelTermDict[trmi]
-                startPosi = pedTrmi.startPos
-                endPosi   = startPosi + pedTrmi.nLevels - 1
-                for (j,trmj) = enumerate(pedTrmVec)
-                    pedTrmj    = mme.modelTermDict[trmj]
-                    startPosj  = pedTrmj.startPos
-                    endPosj    = startPosj + pedTrmj.nLevels - 1
-                    S[i,j]     = (sol[startPosi:endPosi]'*mme.Ai*sol[startPosj:endPosj])[1,1]
-                end
-            end
-            pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
-            q = pedTrm1.nLevels
-
-            G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
-            mme.Gi = inv(G0)
+        if mme.pedTrmVec != 0 && estimate_variance == true
+            G0=sample_variance_pedigree(mme,sol)
             addA(mme)
-            if iter > burnin
-                G0Mean  += (G0  - G0Mean )/(iter-burnin)
-            end
         end
-
         ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
@@ -378,7 +327,20 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                 writedlm(causal_structure_outfile,sample4λ',',')
             end
         end
+        ########################################################################
+        # 3.1 Save MCMC samples
+        ########################################################################
+        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+            if mme.M != 0
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),π,α,mme.M.G,outfile)
+            else
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+            end
+        end
 
+        ########################################################################
+        # 3.2 Printout
+        ########################################################################
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",round.(R0Mean,digits=6))

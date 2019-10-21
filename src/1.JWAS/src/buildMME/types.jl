@@ -198,15 +198,18 @@ mutable struct MME
                    0,
                    0)
       elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
+        ν,k      = ν, nModels
+        νR0      = ν + k
+        scaleRes = R*(νR0 - k - 1)
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
                    0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
-                   R,0,0,0.0,0.0,0,
+                   R,0,0,0.0,0.0,scaleRes,
                    0,
                    1,
                    [],
-                   DF(ν,4,4,4),
+                   DF(νR0,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
                    0)
