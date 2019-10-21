@@ -328,17 +328,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             end
         end
         ########################################################################
-        # 3.1 Save MCMC samples
-        ########################################################################
-        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            if mme.M != 0
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),π,α,mme.M.G,outfile)
-            else
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
-            end
-        end
-
-        ########################################################################
         # 3.2 Printout
         ########################################################################
         if iter%outFreq==0 && iter>burnin
