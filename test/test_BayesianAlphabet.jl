@@ -10,6 +10,9 @@ phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true)
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
+if ispath("mytest") == true
+      rm("mytest", recursive=true)
+end
 mkdir("mytest/")
 cd("mytest/")
 for single_step in [false,true]

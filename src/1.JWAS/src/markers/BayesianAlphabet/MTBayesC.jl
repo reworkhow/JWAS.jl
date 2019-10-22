@@ -1,7 +1,7 @@
 
-function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
-                                    deltaArray,meanDeltaArray,
-                                    uArray,meanuArray,
+function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,
+                                    deltaArray,
+                                    uArray,
                                     invR0,invG0,iIter,BigPi,burnin)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
@@ -66,12 +66,6 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
             alphaArray[trait][marker]      = α[trait]
             deltaArray[trait][marker]      = δ[trait]
             uArray[trait][marker]          = newu[trait]
-
-            if iIter>burnin
-                meanAlphaArray[trait][marker] += (α[trait] - meanAlphaArray[trait][marker])/(iIter-burnin)
-                meanDeltaArray[trait][marker] += (δ[trait] - meanDeltaArray[trait][marker])/(iIter-burnin)
-                meanuArray[trait][marker]     += (newu[trait] - meanuArray[trait][marker])/(iIter-burnin)
-            end
         end
     end
 end

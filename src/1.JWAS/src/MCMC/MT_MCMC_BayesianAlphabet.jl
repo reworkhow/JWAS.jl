@@ -91,10 +91,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #starting values for marker effects(zeros) and location parameters (sol)
         alphaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
         meanAlphaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
+        meanAlphaArray2 = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
         deltaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         meanDeltaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meanDeltaArray2 = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         uArray         = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         meanuArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meanuArray2     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
 
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
@@ -102,10 +105,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
             alphaArray[traiti]     = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanAlphaArray[traiti] = zeros(nMarkers)
+            meanAlphaArray2[traiti]= zeros(nMarkers)
             deltaArray[traiti]     = ones(nMarkers)
             meanDeltaArray[traiti] = zeros(nMarkers)
+            meanDeltaArray2[traiti]= zeros(nMarkers)
             uArray[traiti]         = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanuArray[traiti]     = zeros(nMarkers)
+            meanuArray2[traiti]    = zeros(nMarkers)
         end
 
         if methods=="BayesB"
@@ -160,24 +166,24 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
           #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
-                                      alphaArray,meanAlphaArray,
-                                      deltaArray,meanDeltaArray,
-                                      uArray,meanuArray,
+                                      alphaArray,
+                                      deltaArray,
+                                      uArray,
                                       iR0,iGM,iter,BigPi,burnin)
           elseif methods == "RR-BLUP"
             sampleMarkerEffectsMTBayesC0!(mArray,mpm,wArray,alphaArray,
                                meanAlphaArray,iR0,iGM,iter,burnin)
           elseif methods == "BayesCC"
             sampleMarkerEffectsBayesCC!(mArray,mpm,wArray,
-                                        alphaArray,meanAlphaArray,
-                                        deltaArray,meanDeltaArray,
-                                        uArray,meanuArray,
+                                        alphaArray,
+                                        deltaArray,
+                                        uArray,
                                         iR0,iGM,iter,BigPi,labels,burnin)
           elseif methods == "BayesB"
             sampleMarkerEffectsBayesB!(mArray,mpm,wArray,
-                                       alphaArray,meanAlphaArray,
-                                       deltaArray,meanDeltaArray,
-                                       uArray,meanuArray,
+                                       alphaArray,
+                                       deltaArray,
+                                       uArray,
                                        iR0,iGM,iter,BigPi,burnin)
           elseif methods == "BayesL"
             sampleMarkerEffectsMTBayesL!(mArray,mpm,wArray,alphaArray,
@@ -191,8 +197,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             end
           end
         end
-
-
         ########################################################################
         # 2.1 Residual Covariance Matrix
         ########################################################################
@@ -262,7 +266,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
                 alpha2 = [marker_effects_matrix[:,i]*marker_effects_matrix[:,i]'
                          for i=1:size(marker_effects_matrix,2)]
-
                 for markeri = 1:nMarkers
                   mme.M.G[markeri] = rand(InverseWishart(mme.df.marker + 1, convert(Array,Symmetric(mme.M.scale + alpha2[markeri]))))
                 end
@@ -317,14 +320,18 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             meanVare2 += (mme.R .^2 - meanVare2)/nsamples
 
             if mme.pedTrmVec != 0
-                G0Mean  += (G0  - G0Mean )/nsamples
-                G0Mean2 += (G0 .^2  - G0Mean2 )/nsamples
+                G0Mean  += (G0  - G0Mean)/nsamples
+                G0Mean2 += (G0 .^2  - G0Mean2) /nsamples
             end
             if mme.M != 0
-                # meanAlpha  += (α - meanAlpha)/nsamples
-                # meanAlpha2 += (α .^2 - meanAlpha2)/nsamples
-                # meanDelta  += (δ - meanDelta)/nsamples
-                # 
+                for trait in 1:nTraits
+                    meanAlphaArray[trait] += (alphaArray[trait] - meanAlphaArray[trait])/nsamples
+                    meanAlphaArray2[trait] += (alphaArray[trait].^2 - meanAlphaArray2[trait])/nsamples
+                    meanDeltaArray[trait] += (deltaArray[trait] - meanDeltaArray[trait])/nsamples
+                    meanuArray[trait]     += (uArray[trait] - meanuArray[trait])/nsamples
+                    meanuArray2[trait]     += (uArray[trait].^2 - meanuArray2[trait])/nsamples
+                end
+
                 # if estimatePi == true
                 #     mean_pi += (π-mean_pi)/nsamples
                 #     mean_pi2 += (π .^2-mean_pi2)/nsamples
