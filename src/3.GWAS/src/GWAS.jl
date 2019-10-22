@@ -10,7 +10,7 @@ function GWAS(marker_effects_file;header=true)
         samples,markerID =readdlm(file,',',header=true)
     else
         samples=readdlm(file,',')
-        markerID = 1:size(samples,1)
+        markerID = 1:size(samples,2)
     end
     modelfrequency = vec(mean(samples .!= 0.0,dims=1))
     out = DataFrame(marker_ID = vec(markerID), modelfrequency = modelfrequency)
