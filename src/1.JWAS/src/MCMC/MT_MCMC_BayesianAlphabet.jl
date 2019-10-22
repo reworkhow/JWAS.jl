@@ -3,6 +3,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                         Pi                         = 0.0,
                         estimatePi                 = false,
                         estimate_variance          = true,
+                        estimateScale              = false,
                         sol                        = false,
                         outFreq                    = 1000,
                         output_samples_frequency   = 0,
@@ -20,9 +21,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     sol,α       = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
     solMean, solMean2  = zero(sol),zero(sol)
 
-    if methods in ["RR-BLUP","BayesL"]
-        BigPi = copy(Pi) #temporary for output_MCMC_samples function
-    elseif methods in ["BayesC","BayesB"]
+    if methods in ["RR-BLUP","BayesL","BayesC","BayesB"]
         BigPi = copy(Pi)
         BigPiMean = copy(Pi)
         for key in keys(BigPiMean)
@@ -81,7 +80,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         meanVara2 = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
         meanScaleVara  =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
         meanScaleVara2 =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
-        GMMean      = zeros(Float64,nTraits,nTraits)
         ########################################################################
         ##WORKING VECTORS
         wArray         = Array{Array{Float64,1}}(undef,nTraits)#wArray is list reference of ycor
@@ -255,8 +253,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                     end
                 end
                 mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
-                # MH sampler of gammaArray (Appendix C in paper)
-                sampleGammaArray!(gammaArray,alphaArray,mme.M.G)
+                sampleGammaArray!(gammaArray,alphaArray,mme.M.G)# MH sampler of gammaArray (Appendix C in paper)
             else
                 marker_effects_matrix = alphaArray[1]
                 for traiti = 2:nTraits
@@ -372,16 +369,33 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         close(causal_structure_outfile)
       end
     end
-    if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
-        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             meanAlphaArray,meanDeltaArray,GMMean,estimatePi,false,false,false)
-    elseif mme.M != 0
-        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             meanuArray,meanDeltaArray,GMMean,estimatePi,BigPiMean,false,false)
-    else
-        output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
-                             false,false,false,false,false,false,false)
-    end
+    output=output_result(mme,output_file,
+                         solMean,meanVare,
+                         mme.pedTrmVec!=0 ? G0Mean : false,
+                         mme.M != 0 ? meanuArray : false,
+                         mme.M != 0 ? meanDeltaArray : false,
+                         mme.M != 0 ? meanVara : false,
+                         mme.M != 0 ? estimatePi : false,
+                         mme.M != 0 ? BigPiMean : false,
+                         mme.M != 0 ? estimateScale : false,
+                         mme.M != 0 ? meanScaleVara : false,
+                         solMean2,meanVare2,
+                         mme.pedTrmVec!=0 ? G0Mean2 : false,
+                         mme.M != 0 ? meanuArray2 : false,
+                         mme.M != 0 ? meanVara2 : false,
+                         mme.M != 0 ? BigPiMean : false,
+                         mme.M != 0 ? meanScaleVara2 : false)
+
+    # if mme.M != 0 && methods in ["RR-BLUP","BayesL"]
+    #     output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
+    #                          meanAlphaArray,meanDeltaArray,GMMean,estimatePi,false,false,false)
+    # elseif mme.M != 0
+    #     output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
+    #                          meanuArray,meanDeltaArray,GMMean,estimatePi,BigPiMean,false,false)
+    # else
+    #     output=output_result(mme,output_file,solMean,meanVare,(mme.pedTrmVec!=0 ? G0Mean : false),
+    #                          false,false,false,false,false,false,false)
+    # end
     return output
 end
 

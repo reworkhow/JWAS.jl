@@ -269,6 +269,7 @@ function runMCMC(mme::MME,df;
                           constraint = constraint,
                           estimatePi = estimatePi,
                           estimate_variance = estimate_variance,
+                          estimateScale     = estimateScale,
                           methods    = methods,
                           output_samples_frequency=output_samples_frequency,
                           output_file=output_samples_file,
