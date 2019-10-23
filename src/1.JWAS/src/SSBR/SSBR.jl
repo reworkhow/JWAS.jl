@@ -1,4 +1,4 @@
-function SSBRrun(mme,df)
+function SSBRrun(mme,df,big_memory=false)
     obsID    = mme.obsID                    #phenotyped ID
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
@@ -7,7 +7,7 @@ function SSBRrun(mme,df)
     @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
     println("imputing missing genotypes")
     flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
+    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
@@ -50,7 +50,7 @@ end
 ############################################################################
 # Genotypes
 ############################################################################
-function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
+function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
@@ -76,21 +76,24 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
                block22];
     #genotypes are imputed for all individuals in pedigree and aligned to
     #phenotyped individuals by genotype chunks to avoid memory issues.
-    Mpheno         = zeros(length(mme.obsID),length(ped.IDs[(num_pedn+1):end]))
-    markerperchunk = 1000
-    nchunks        = div(size(genotypes,2),markerperchunk)
-
-    Z = mkmat_incidence_factor(mme.obsID,ped.IDs[(num_pedn+1):end])
-    for i=1:nchunks
-        if i != ngroups
-            myrange = (1+(i-1)*markeringroup):(i*markeringroup)
-        else
-            myrange = (1+(i-1)*markeringroup):size(genotypes,2)
+    Z              = mkmat_incidence_factor(mme.obsID,ped.IDs)
+    if big_memory == false
+        nmarkers       = size(Mg,2)
+        Mpheno         = zeros(length(mme.obsID),nmarkers)
+        markerperchunk = 1000
+        nchunks        = div(nmarkers,markerperchunk)
+        @showprogress "imputing genotypes for non-genotyped individuals" for i=1:nchunks
+            if i != nchunks
+                myrange = (1+(i-1)*markerperchunk):(i*markerperchunk)
+            else
+                myrange = (1+(i-1)*markerperchunk):nmarkers
+            end
+            Mped_chunk        = lhs\(rhs*Mg[:,myrange])
+            Mpheno[:,myrange] = Z*Mped_chunk
         end
-        Mped_chunk        = lhs\(rhs*Mg[:,myrange])
-        Mpheno[:,myrange] = Z*Mped_chunk
+    else
+         Mpheno = Z*(lhs\(rhs*Mg))
     end
-
     mme.M.genotypes = Mpheno
     mme.M.obsID     = mme.obsID
     mme.M.nObs      = length(mme.M.obsID)
@@ -107,7 +110,7 @@ function make_JVecs(mme,df,Ai_nn,Ai_ng)
           Jg]
     Z  = mkmat_incidence_factor(mme.obsID,mme.ped.IDs)
     if mme.output_ID != 0
-        Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+        Zo  = mkmat_incidence_factor(mme.output_ID,mme.ped.IDs)
         ZoJ = Zo*J
     else
         ZoJ=0

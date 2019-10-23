@@ -147,7 +147,8 @@ function runMCMC(mme::MME,df;
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
-                printout_frequency              = chain_length+1)
+                printout_frequency              = chain_length+1,
+                big_memory                      = false)
 
     ############################################################################
     # Pre-Check
@@ -198,6 +199,10 @@ function runMCMC(mme::MME,df;
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
     df = check_phenotypes(mme,df)
     ############################################################################
+    #align genotypes with 1) phenotypes IDs; 2) output IDs.
+    ############################################################################
+    align_genotypes(mme,output_heritability,single_step_analysis)
+    ############################################################################
     # Incomplete Genomic Data (Single-Step)
     ############################################################################
     #1)reorder in A (pedigree) as ids for genotyped then non-genotyped inds
@@ -205,7 +210,7 @@ function runMCMC(mme::MME,df;
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
         #println("calling SSBRrun(mme,df)")
-        SSBRrun(mme,df)
+        SSBRrun(mme,df,big_memory)
     end
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
@@ -214,8 +219,6 @@ function runMCMC(mme::MME,df;
     starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
-        #align genotypes with 1) phenotypes IDs; 2) output IDs.
-        align_genotypes(mme,output_heritability,single_step_analysis)
         Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
         mme.MCMCinfo.Pi = Pi
     end
