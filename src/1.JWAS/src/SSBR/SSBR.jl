@@ -1,5 +1,5 @@
 function SSBRrun(mme,df)
-    obsID    = df[!,1]                      #phenotyped ID
+    obsID    = mme.obsID                    #phenotyped ID
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -55,11 +55,44 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
     #reorder genotypes to get Mg with the same order as Ai_gg
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
     Mg = Z*geno.genotypes
+    #**********************************************************
     #impute genotypes for non-genotyped inds
-    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg/ Float16
+    #**********************************************************
+    #two approached are available with similar speed and memory
+    #appraoch 1
+    #Ai_nn*Mn = -Ai_ng*Mg => [Ai_nn\(-Ai_ng*Mg)
+    #                         Mg];
+    #
+    #appraoch 2
+    #[Ai_nn 0 [Mn    [-Ai_ng
+    #    0 I]* Mg] =       I]*Mg
+    ngeno   = size(Ai_ng,2)
+    block12 = spzeros(num_pedn, ngeno)
+    block21 = spzeros(ngeno,num_pedn)
+    block22 = sparse(I, ngeno, ngeno)
+    lhs     = [Ai_nn block12
+               block21 block22];
+    rhs     = [-Ai_ng
+               block22];
+    #genotypes are imputed for all individuals in pedigree and aligned to
+    #phenotyped individuals by genotype chunks to avoid memory issues.
+    Mpheno         = zeros(length(mme.obsID),length(ped.IDs[(num_pedn+1):end]))
+    markerperchunk = 1000
+    nchunks        = div(size(genotypes,2),markerperchunk)
 
-    mme.M.genotypes = Mfull
-    mme.M.obsID     = ped.IDs
+    Z = mkmat_incidence_factor(mme.obsID,ped.IDs[(num_pedn+1):end])
+    for i=1:nchunks
+        if i != ngroups
+            myrange = (1+(i-1)*markeringroup):(i*markeringroup)
+        else
+            myrange = (1+(i-1)*markeringroup):size(genotypes,2)
+        end
+        Mped_chunk        = lhs\(rhs*Mg[:,myrange])
+        Mpheno[:,myrange] = Z*Mped_chunk
+    end
+
+    mme.M.genotypes = Mpheno
+    mme.M.obsID     = mme.obsID
     mme.M.nObs      = length(mme.M.obsID)
     GC.gc()
 end

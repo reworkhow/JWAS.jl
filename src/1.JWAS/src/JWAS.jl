@@ -470,6 +470,10 @@ function check_phenotypes(mme,df)
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
     end
+    #***************************************************************************
+    # set IDs for phenotypes
+    #***************************************************************************
+    mme.obsID  = map(string,df[!,1])
     return df
 end
 

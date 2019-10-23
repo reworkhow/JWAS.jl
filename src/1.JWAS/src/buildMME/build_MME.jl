@@ -250,7 +250,6 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    obsID = map(string,df[!,1])
     y   = recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; recode(df[!,mme.lhsVec[i]],missing=>0.0)]
@@ -265,7 +264,6 @@ function getMME(mme::MME, df::DataFrame)
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
-    mme.obsID   = obsID
 
     if mme.nModels==1     #single-trait (lambda version)
       mme.mmeLhs = X'X
