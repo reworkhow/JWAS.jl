@@ -2,7 +2,7 @@
 function sampleMarkerEffectsBayesB!(xArray,xpx,wArray,alphaArray,
                                     deltaArray,
                                     uArray,
-                                    invR0,invG0,iIter,BigPi,burnin)
+                                    invR0,invG0,BigPi)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
     Ginv     = invG0 #vector

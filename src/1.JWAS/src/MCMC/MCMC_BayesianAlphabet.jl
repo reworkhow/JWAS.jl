@@ -152,7 +152,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         ########################################################################
         if mme.pedTrmVec != 0
-            G0=sample_variance_pedigree(mme,sol)
+            sample_variance_pedigree(mme,sol)
             addA(mme)
         end
         ########################################################################
@@ -213,9 +213,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),π,α,mme.M.G,outfile)
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),π,α,mme.M.G,outfile)
             else
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? G0 : false),false,false,false,outfile)
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),false,false,false,outfile)
             end
 
             nsamples = (iter-burnin)/output_samples_frequency
@@ -225,8 +225,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             meanVare2 += (mme.RNew .^2 - meanVare2)/nsamples
 
             if mme.pedTrmVec != 0
-                G0Mean  += (G0  - G0Mean )/nsamples
-                G0Mean2 += (G0 .^2  - G0Mean2 )/nsamples
+                G0Mean  += (inv(mme.Gi)  - G0Mean )/nsamples
+                G0Mean2 += (inv(mme.Gi) .^2  - G0Mean2 )/nsamples
             end
             if mme.M != 0
                 meanAlpha  += (α - meanAlpha)/nsamples

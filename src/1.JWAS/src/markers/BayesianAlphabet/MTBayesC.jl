@@ -1,16 +1,17 @@
-
-function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,
+#MTBayesC requires the support for prior for delta for d is the set
+#of all 2^ntrait outcomes of dj:
+function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
                                     deltaArray,
-                                    uArray,
-                                    invR0,invG0,iIter,BigPi,burnin)
+                                    alphaArray,
+                                    invR0,invG0,BigPi)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
     Ginv     = invG0
     Rinv     = invR0
 
-    α        = zeros(nTraits)
-    newu     = zeros(nTraits)
-    oldu     = zeros(nTraits)
+    β        = zeros(nTraits)
+    newα     = zeros(nTraits)
+    oldα     = zeros(nTraits)
     δ        = zeros(nTraits)
     w        = zeros(nTraits) #for rhs
 
@@ -19,10 +20,10 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,
         x    = xArray[marker]
 
         for trait = 1:nTraits
-            α[trait]  = alphaArray[trait][marker]
-         oldu[trait]  = newu[trait] = uArray[trait][marker]
+            β[trait]  = betaArray[trait][marker]
+         oldα[trait]  = newα[trait] = alphaArray[trait][marker]
             δ[trait]  = deltaArray[trait][marker]
-            w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldu[trait]
+            w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldα[trait]
         end
 
         for k=1:nTraits
@@ -34,11 +35,11 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,
             #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
 
             invLhs0  = 1/Ginv11
-            rhs0     = - Ginv12'α[nok]
+            rhs0     = - Ginv12'β[nok]
             gHat0    = (rhs0*invLhs0)[1,1]
 
             invLhs1  = 1/C11
-            rhs1     = w'*Rinv[:,k]-C12'α[nok] #w transpose
+            rhs1     = w'*Rinv[:,k]-C12'β[nok] #w transpose
             gHat1    = (rhs1*invLhs1)[1,1]
 
             d0 = copy(δ)
@@ -52,20 +53,20 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,
             probDelta1 =  1.0/(1.0+exp(logDelta0-logDelta1))
             if(rand()<probDelta1)
                 δ[k] = 1
-                α[k] = newu[k] = gHat1 + randn()*sqrt(invLhs1)
+                β[k] = newα[k] = gHat1 + randn()*sqrt(invLhs1)
             else
-                α[k] = gHat0 + randn()*sqrt(invLhs0)
+                β[k] = gHat0 + randn()*sqrt(invLhs0)
                 δ[k] = 0
-                newu[k] = 0
+                newα[k] = 0
             end
         end
 
         # adjust for locus j
         for trait = 1:nTraits
-            BLAS.axpy!(oldu[trait]-newu[trait],x,wArray[trait])
-            alphaArray[trait][marker]      = α[trait]
+            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])
+            betaArray[trait][marker]       = β[trait]
             deltaArray[trait][marker]      = δ[trait]
-            uArray[trait][marker]          = newu[trait]
+            alphaArray[trait][marker]      = newα[trait]
         end
     end
 end

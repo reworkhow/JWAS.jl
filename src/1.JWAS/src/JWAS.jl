@@ -29,7 +29,6 @@ include("markers/BayesianAlphabet/BayesC0.jl")
 include("markers/BayesianAlphabet/BayesC.jl")
 include("markers/BayesianAlphabet/BayesB.jl")
 include("markers/BayesianAlphabet/MTBayesC.jl")
-include("markers/BayesianAlphabet/MTBayesCC.jl")
 include("markers/BayesianAlphabet/MTBayesB.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
@@ -265,7 +264,7 @@ function runMCMC(mme::MME,df;
                             output_samples_frequency=output_samples_frequency,
                             output_file=output_samples_file,
                             update_priors_frequency=update_priors_frequency)
-        elseif methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
+        elseif methods in ["BayesL","BayesC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -318,7 +317,7 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
         error(methods," is not available in JWAS. Please read the documentation.")
     end
 

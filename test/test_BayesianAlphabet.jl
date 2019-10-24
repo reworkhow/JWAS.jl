@@ -95,12 +95,10 @@ for single_step in [false,true]
             end
             outputMCMCsamples(model2,"x2")
 
-
-
             if single_step == false && test_method!="non_genomic" && test_method!="GBLUP"
-                  out2=runMCMC(model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
+                  out2=runMCMC(estimate_variance=false,model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
             elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
-                  out2=runMCMC(model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
+                  out2=runMCMC(estimate_variance=false,model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples");
             elseif test_method=="non_genomic"
                   out2=runMCMC(model2,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
@@ -115,3 +113,4 @@ for single_step in [false,true]
             cd("..")
       end
 end
+cd("..")
