@@ -59,10 +59,12 @@ end
 ################################################################################
 #align genotypes with phenotyps given IDs #MAY USE TOO MUCH MEMORY
 ################################################################################
-#input: mme.M.genotypes (1) complete genomic data  --> all genotyped individuals
-#                       (2) incomplete genomic data --> all pedigree individuals
+#input: mme.M.genotypes (1) complete genomic data  -> all genotyped individuals
+#                       (2)* incomplete genomic data -> all pedigree individuals
 #output:mme.M.genotypes (1) subset
 #
+#Note that Aligning genotypes with phenotypes in single-step analysis
+#(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
     if mme.output_ID != 0
         if mme.output_ID == mme.M.obsID #save memory
@@ -73,11 +75,12 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
         end
     end
     #***************************************************************************
-    #Align (imputed) genotypes with phenotypes
+    #Align genotypes with phenotypes
     #Change mme.M.genotypes to phenotyped individuals to accommodate
     #individuals with repeated records or individuals without records
+    #
     #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M.obsID
+    if mme.obsID != mme.M.obsID && single_step_analysis==false
         Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
         mme.M.genotypes = Z*mme.M.genotypes
         mme.M.obsID     = mme.obsID

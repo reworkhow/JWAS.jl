@@ -1,5 +1,5 @@
-function SSBRrun(mme,df)
-    obsID    = df[!,1]                      #phenotyped ID
+function SSBRrun(mme,df,big_memory=false)
+    obsID    = mme.obsID                    #phenotyped ID
     geno     = mme.M                        #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -7,7 +7,7 @@ function SSBRrun(mme,df)
     @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
     println("imputing missing genotypes")
     flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng) #impute genotypes for non-genotyped inds
+    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
@@ -50,16 +50,52 @@ end
 ############################################################################
 # Genotypes
 ############################################################################
-function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng)
+function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
     Mg = Z*geno.genotypes
+    #**********************************************************
     #impute genotypes for non-genotyped inds
-    Mfull = [Ai_nn\(-Ai_ng*Mg);Mg]; #May use big memory, solve it using chunks of Mg/ Float16
-
-    mme.M.genotypes = Mfull
-    mme.M.obsID     = ped.IDs
+    #**********************************************************
+    #two approached are available with similar speed and memory
+    #appraoch 1
+    #Ai_nn*Mn = -Ai_ng*Mg => [Ai_nn\(-Ai_ng*Mg)
+    #                         Mg];
+    #
+    #appraoch 2
+    #[Ai_nn 0 [Mn    [-Ai_ng
+    #    0 I]* Mg] =       I]*Mg
+    ngeno   = size(Ai_ng,2)
+    block12 = spzeros(num_pedn, ngeno)
+    block21 = spzeros(ngeno,num_pedn)
+    block22 = sparse(I, ngeno, ngeno)
+    lhs     = [Ai_nn block12
+               block21 block22];
+    rhs     = [-Ai_ng
+               block22];
+    #genotypes are imputed for all individuals in pedigree and aligned to
+    #phenotyped individuals by genotype chunks to avoid memory issues.
+    Z              = mkmat_incidence_factor(mme.obsID,ped.IDs)
+    if big_memory == false
+        nmarkers       = size(Mg,2)
+        Mpheno         = zeros(length(mme.obsID),nmarkers)
+        markerperchunk = 1000
+        nchunks        = div(nmarkers,markerperchunk)
+        @showprogress "imputing genotypes for non-genotyped individuals" for i=1:nchunks
+            if i != nchunks
+                myrange = (1+(i-1)*markerperchunk):(i*markerperchunk)
+            else
+                myrange = (1+(i-1)*markerperchunk):nmarkers
+            end
+            Mped_chunk        = lhs\(rhs*Mg[:,myrange])
+            Mpheno[:,myrange] = Z*Mped_chunk
+        end
+    else
+         Mpheno = Z*(lhs\(rhs*Mg))
+    end
+    mme.M.genotypes = Mpheno
+    mme.M.obsID     = mme.obsID
     mme.M.nObs      = length(mme.M.obsID)
     GC.gc()
 end
@@ -74,7 +110,7 @@ function make_JVecs(mme,df,Ai_nn,Ai_ng)
           Jg]
     Z  = mkmat_incidence_factor(mme.obsID,mme.ped.IDs)
     if mme.output_ID != 0
-        Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+        Zo  = mkmat_incidence_factor(mme.output_ID,mme.ped.IDs)
         ZoJ = Zo*J
     else
         ZoJ=0
