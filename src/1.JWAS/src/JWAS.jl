@@ -201,7 +201,9 @@ function runMCMC(mme::MME,df;
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
-    align_genotypes(mme,output_heritability,single_step_analysis)
+    if mme.M!=0
+        align_genotypes(mme,output_heritability,single_step_analysis)
+    end
     ############################################################################
     # Incomplete Genomic Data (Single-Step)
     ############################################################################
