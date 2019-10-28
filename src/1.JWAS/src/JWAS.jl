@@ -195,6 +195,9 @@ function runMCMC(mme::MME,df;
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
     df = check_phenotypes(mme,df)
+    #check priors
+    #make default covariance matrices if not provided
+    set_default_priors_for_variance_components(mme,df)
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
@@ -479,6 +482,59 @@ function check_phenotypes(mme,df)
     mme.obsID  = map(string,df[!,1])
     return df
 end
+
+#set default covariance matrices for variance components if not provided
+function set_default_priors_for_variance_components(mme,df)
+  myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  phenovar  = diagm(0=>myvar)
+  var_piece = phenovar/2
+
+  #genetic variance or marker effect variance
+  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
+    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    if mme.nModels==1
+      mme.M.genetic_variance = var_piece[1,1]
+    elseif mme.nModels>1
+      mme.M.genetic_variance = var_piece
+    end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+  end
+  #residual effects
+  if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.RNew = mme.ROld = var_piece[1,1]
+    mme.scaleRes = mme.RNew*(mme.df.residual-2)/mme.df.residual
+  elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.R = var_piece
+    mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
+  end
+  #polyginic effects
+  if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
+    printstyled("Prior information for polygenic effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    myvarout  = [split(i,":")[1] for i in mme.pedTrmVec]
+    myvarin   = string.(mme.lhsVec)
+    Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+    G         = diagm(Zdesign*diag(var_piece))
+    mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
+    mme.scalePed = G*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
+  end
+  #other random effects
+  if length(mme.rndTrmVec) != 0
+    for randomEffect in mme.rndTrmVec
+      if isposdef(randomEffect.Gi) == false
+        printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+        myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
+        myvarin   = string.(mme.lhsVec)
+        Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+        G         = diagm(Zdesign*diag(var_piece))
+
+        randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
+        randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+      end
+    end
+  end
+end
+
 
 function init_mixed_model_equations(mme,df,sol)
     getMME(mme,df)
