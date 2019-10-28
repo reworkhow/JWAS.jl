@@ -320,10 +320,11 @@ function set_default_priors_for_variance_components(mme,df)
   if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.RNew = mme.ROld = var_piece[1,1]
-    mme.scaleRes = mme.RNew*(ν-2)/ν
+    mme.scaleRes = mme.RNew*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = var_piece
+    mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
   end
   #polyginic effects
   if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
