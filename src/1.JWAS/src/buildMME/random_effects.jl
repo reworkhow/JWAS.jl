@@ -132,8 +132,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     randTrmVec = split(randomStr," ",keepempty=false)  # "litter"
 
     #add model equation number to variables; "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
+    res = []
     for trm in randTrmVec
-      res = []
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
@@ -148,26 +148,27 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
-      if G == false #make G matrix of zeros to get prior from phenotypes later
-        G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
-      end
-      if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
-        G=reshape([G],1,1)
-      end
-      if length(res) != size(G,1)
-        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
-      end
-      #Gi            : multi-trait;
-      #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-      Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
-
-      term_array   = res
-      df           = df+length(term_array)
-      scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-      randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names)
-      push!(mme.rndTrmVec,randomEffect)
-      mme.df.random = Float64(df)
     end
+
+    if G == false #make G matrix of zeros to get prior from phenotypes later
+      G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
+    end
+    if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
+      G=reshape([G],1,1)
+    end
+    if length(res) != size(G,1)
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+    end
+    #Gi            : multi-trait;
+    #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
+    Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+
+    term_array   = res
+    df           = df+length(term_array)
+    scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+    randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names)
+    push!(mme.rndTrmVec,randomEffect)
+    mme.df.random = Float64(df)
     nothing
 end
 
