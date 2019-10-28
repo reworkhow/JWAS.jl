@@ -37,7 +37,6 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
             invLhs0  = 1/Ginv11
             rhs0     = - Ginv12'β[nok]
             gHat0    = (rhs0*invLhs0)[1,1]
-
             invLhs1  = 1/C11
             rhs1     = w'*Rinv[:,k]-C12'β[nok] #w transpose
             gHat1    = (rhs1*invLhs1)[1,1]
@@ -60,7 +59,6 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
                 newα[k] = 0
             end
         end
-
         # adjust for locus j
         for trait = 1:nTraits
             BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])

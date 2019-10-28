@@ -81,7 +81,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
-            betaArray[traiti]     = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
+            betaArray[traiti]      = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             deltaArray[traiti]     = ones(nMarkers)
             meandeltaArray[traiti] = zeros(nMarkers)
             alphaArray[traiti]         = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
@@ -137,7 +137,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if mme.M != 0
           iR0      = inv(mme.R)
-          iGM      = inv.(mme.M.G) #an array in BayesB
+          iGM      = (methods!="BayesB" ? inv(mme.M.G) : inv.(mme.M.G)) #an array in BayesB
           #WILL ADD BURIN INSIDE
           if methods == "BayesC"
             sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
