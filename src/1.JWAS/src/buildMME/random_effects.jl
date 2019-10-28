@@ -207,7 +207,7 @@ end
 #Construct MME for random effects with specific covariance structures (including iid )
 #Single-trait:
 #lamda version, e.g., litter and groups
-#1) use `set_random(model,"1:A 1:B",G)` to estimate cov(1:A,1:B) unless A.names == B.names,
+#1) use `set_random(model,"1:A 1:B",G)` to estimate cov(1:A,1:B) (requirement: A.names == B.names; similar to ped)
 #2) use `set_random(model,"1:A",G1);`set_random(model,"1:B",G2)` to make 1:A and 1:B independent.
 #
 #Multi-trait:
