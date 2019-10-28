@@ -170,6 +170,90 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     nothing
 end
+
+"""
+    set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
+
+* set variables as random effects, defaulting to i.i.d effects, with variances **G** with
+  degree of freedom **df**, defaulting to 4.0.
+* the random effects are assumed to be i.i.d by default and it can be defined with any
+  (inverse of) covariance structure **Vinv** with its index (row names) provided by **names**.
+
+```julia
+#single-trait (i.i.d randome effects)
+model_equation  = "y = intercept + litter + sex"
+model           = build_model(model_equation,R)
+G               = 0.6
+set_random(model,"litter",G)
+
+#multi-trait (i.i.d randome effects)
+model_equations = "BW = intercept + litter + sex
+                   CW = intercept + litter + sex"
+model           = build_model(model_equations,R);
+G               = [3.72  1.84
+                   1.84  3.41]
+set_random(model,"litter",G)
+
+#single-trait (randome effects with specific covariance structures)
+model_equation  = "y = intercept + litter + sex"
+model           = build_model(model_equation,R)
+V               = [1.0  0.5 0.25
+                   0.5  1.0 0.5
+                   0.25 0.5 1.0]
+G               = 0.6
+set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
+```
+"""
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
+    if  G != false && !isposdef(G)
+        error("The covariance matrix is not positive definite.")
+    end
+    if names != []
+      names = string.(names)
+    end
+    G = map(Float64,G)
+    df= Float64(df)
+    randTrmVec = split(randomStr," ",keepempty=false)  # "litter"
+
+    #add model equation number to variables; "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
+    for trm in randTrmVec
+      res = []
+      for (m,model) = enumerate(mme.modelVec)
+        strVec  = split(model,['=','+'])
+        strpVec = [strip(i) for i in strVec]
+        if trm in strpVec || trm == "ϵ"
+          mtrm= string(mme.lhsVec[m])*":"*trm
+          res = [res;mtrm]
+          #*********************
+          #phenotype IDs is a subset of names (Vinv)
+          mme.modelTermDict[mtrm].names=names
+          #*********************
+        else
+          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
+        end
+      end
+      if G == false #make G matrix of zeros to get prior from phenotypes later
+        G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
+      end
+      if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
+        G=reshape([G],1,1)
+      end
+      if length(res) != size(G,1)
+        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+      end
+      #Gi            : multi-trait;
+      #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
+      Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+
+      term_array   = res
+      df           = df+length(term_array)
+      scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+      randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names)
+      push!(mme.rndTrmVec,randomEffect)
+      mme.df.random = Float64(df)
+    end
+    nothing
+end
 ################################################################################
 #ADD TO MIXED MODEL EQUATIONS FOR THE RANDOM EFFECTS PARTS
 ################################################################################
