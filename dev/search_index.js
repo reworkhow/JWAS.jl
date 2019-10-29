@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Some Theory",
     "title": "Complete Genomic Data",
     "category": "section",
-    "text": "The general form of the multivariate (univariate) mixed effects model for individual i from n individuals with complete genomic data in JWAS is\nmathbfy_i\n =sum_j=1^p_betaX_ijboldsymbolbeta_j+sum_k=1^p_uZ_ikmathbfu_k\n +sum_l=1^pM_ilboldsymbolalpha_l+mathbfe_i(1)where mathbfy_i is a vector of phenotypes of t traits for individual i; X_ij is the incidence matrix covariate corresponding to the jth fixed effect for individual i; boldsymbolbeta_j is a vector of jth fixed effects for the t traits; Z_ik is the incidence matrix covariate corresponding to the kth random effect for individual i; boldsymbolu_k is a vector of the kth random effects of t traits; M_il is the genotype covariate at locus l for individual i, p is the number of genotyped loci (each coded as 0,1,2), boldsymbolalpha_l is a vector of allele substitution effects or marker effects of t traits for locus j, and mathbfe_i is the vector of random residual effects of t traits for individual i. The JWAS implementation of this model involves missing phenotypes being imputed at each iteration of MCMC \\cite{sorensenGianolaBook} so that all individuals have observations for all traits. Note that when the number of traits t=1, the general form above simplifies to the single-trait  mixed effects model, and all vectors of effects in equation (1) become scalars."
+    "text": "The general form of the multivariate (univariate) mixed effects model for individual i from n individuals with complete genomic data in JWAS is\nmathbfy_i\n =sum_j=1^p_bX_ijmathbfb_j+sum_k=1^p_uZ_ikmathbfu_k\n +sum_l=1^pM_ilboldsymbolalpha_l+mathbfe_i(1)where mathbfy_i is a vector of phenotypes of t traits for individual i; X_ij is the incidence matrix covariate corresponding to the jth fixed effect for individual i; mathbfb_j is a vector of jth fixed effects for the t traits; Z_ik is the incidence matrix covariate corresponding to the kth random effect for individual i; boldsymbolu_k is a vector of the kth random effects of t traits; M_il is the genotype covariate at locus l for individual i, p is the number of genotyped loci (each coded as 0,1,2), boldsymbolalpha_l is a vector of allele substitution effects or marker effects of t traits for locus j, and mathbfe_i is the vector of random residual effects of t traits for individual i. The JWAS implementation of this model involves missing phenotypes being imputed at each iteration of MCMC \\cite{sorensenGianolaBook} so that all individuals have observations for all traits. Note that when the number of traits t=1, the general form above simplifies to the single-trait  mixed effects model, and all vectors of effects in equation (1) become scalars."
 },
 
 {
@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Some Theory",
     "title": "Incomplete Genomic Data",
     "category": "section",
-    "text": "The general form of the multivariate (univariate) mixed effects model with incomplete genomic data (\"single-step\" methods) for non-genotyped individuals ismathbfy_i\n=sum_j=1^p_betaX_ijboldsymbolbeta_j+sum_k=1^p_uZ_ikmathbfu_k+\nsum_l=1^phatM_ilboldsymbolalpha_l+sum_m=1^p_epsilonZ_nimboldsymbolepsilon_m+boldsymbole_i (2)where mathbfy_i is a vector of phenotypes of t traits for non-genotyped individual i;  hatM_il is the imputed genotype covariate at locus l for non-genotyped individual i, Z_nim is the incidence matrix covariate corresponding to the mth imputation residual for individual i and boldsymbolepsilon_i is a vector of imputation residuals. W_im is the incidence matrix covariate corresponding to the mth random effect for individual i. That vector of imputation residuals, boldsymbolepsilon=beginbmatrixboldsymbolepsilon_1^T  boldsymbolepsilon_2^T  ldots  endbmatrix^T, are a priori assumed to be Nleft(0(mathbfA_nn-mathbfA_ngmathbfA_gg^-1mathbfA_gn)otimesmathbfG_gright), where mathbfA_nn is the partition of the numerator relationship matrix  mathbfA that corresponds to non-genotyped individuals, mathbfA_ng or its transpose mathbfA_gn are partitions of mathbfA corresponding to relationships between non-genotyped and genotyped individuals or vice versa,  mathbfA_gg is the  partition of mathbfA that corresponds to genotyped animals, and mathbfG_g is the additive genetic covariance matrix. All the other variables are the same as in equation (1)."
+    "text": "The general form of the multivariate (univariate) mixed effects model with incomplete genomic data (\"single-step\" methods) for non-genotyped individuals ismathbfy_i\n=sum_j=1^p_bX_ijmathbfb_j+sum_k=1^p_uZ_ikmathbfu_k+\nsum_l=1^phatM_ilboldsymbolalpha_l+sum_m=1^p_epsilonZ_nimboldsymbolepsilon_m+boldsymbole_i (2)where mathbfy_i is a vector of phenotypes of t traits for non-genotyped individual i;  hatM_il is the imputed genotype covariate at locus l for non-genotyped individual i, Z_nim is the incidence matrix covariate corresponding to the mth imputation residual for individual i and boldsymbolepsilon_i is a vector of imputation residuals. W_im is the incidence matrix covariate corresponding to the mth random effect for individual i. That vector of imputation residuals, boldsymbolepsilon=beginbmatrixboldsymbolepsilon_1^T  boldsymbolepsilon_2^T  ldots  endbmatrix^T, are a priori assumed to be Nleft(0(mathbfA_nn-mathbfA_ngmathbfA_gg^-1mathbfA_gn)otimesmathbfG_gright), where mathbfA_nn is the partition of the numerator relationship matrix  mathbfA that corresponds to non-genotyped individuals, mathbfA_ng or its transpose mathbfA_gn are partitions of mathbfA corresponding to relationships between non-genotyped and genotyped individuals or vice versa,  mathbfA_gg is the  partition of mathbfA that corresponds to genotyped animals, and mathbfG_g is the additive genetic covariance matrix. All the other variables are the same as in equation (1)."
 },
 
 {
@@ -429,7 +429,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.outputEBV",
     "category": "function",
-    "text": "outputEBV(model,IDs::Array;PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n\n\n"
+    "text": "outputEBV(model,IDs::Array)\n\nOutput estimated breeding values and prediction error variances for IDs.\n\n\n\n\n\n"
 },
 
 {
@@ -437,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Public",
     "title": "JWAS.outputMCMCsamples",
     "category": "function",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStrs::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n\n\n"
 },
 
 {
@@ -517,7 +517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
 },
 
 {
@@ -525,7 +525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
@@ -537,27 +537,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME,AbstractString}",
+    "location": "manual/internals/#JWAS.getEBV-NTuple{4,Any}",
     "page": "Internals",
     "title": "JWAS.getEBV",
     "category": "method",
-    "text": "getEBV(model::MME,genotypefile::AbstractString;header=true,separator=\',\')\n\nGet estimated breeding values for individuals with genotypes defined by genotypefile. The genotype file format is same to that used in add_genotypes(). The same order for markers (columns) in  genotypefile as in add_genotypes() is assumed for simplicity now. The file format is as follows,\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nA1,1,0,1,1,1\nC3,1,2,0,1,0\nB2,0,0,2,1,1\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME,Array{Float64,2}}",
-    "page": "Internals",
-    "title": "JWAS.getEBV",
-    "category": "method",
-    "text": "getEBV(model::MME,genotypes::Array{Float64,2})\n\nGet estimated breeding values for individuals with genotypes. The genotypes are provided as an Array. The same order for markers (columns)in genotypes::Array{Float64,2} as in add_genotypes() is assumed for simplicity now.\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.getEBV-Tuple{JWAS.MME}",
-    "page": "Internals",
-    "title": "JWAS.getEBV",
-    "category": "method",
-    "text": "getEBV(model::MME)\n\nGet estimated breeding values for individuals defined by outputEBV() (defaulting to all genotyped individuals).\n\n\n\n\n\n"
+    "text": "getEBV(model::MME,sol,α,traiti)\n\n(internal function) Get breeding values for individuals defined by outputEBV(), defaulting to all genotyped individuals. This function is used inside MCMC functions for one MCMC samples from posterior distributions.\n\n\n\n\n\n"
 },
 
 {
@@ -573,7 +557,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.outputEBV",
     "category": "method",
-    "text": "outputEBV(model,IDs::Array;PEV=false)\n\nOutput estimated breeding values and prediction error variances (defaulting to false) for IDs.\n\n\n\n\n\n"
+    "text": "outputEBV(model,IDs::Array)\n\nOutput estimated breeding values and prediction error variances for IDs.\n\n\n\n\n\n"
 },
 
 {
@@ -581,7 +565,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.outputMCMCsamples",
     "category": "method",
-    "text": "outputMCMCsamples(mme::MME,trmStr::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n\n\n"
+    "text": "outputMCMCsamples(mme::MME,trmStrs::AbstractString...)\n\nGet MCMC samples for specific location parameters.\n\n\n\n\n\n"
 },
 
 {
@@ -661,7 +645,39 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.get_outputX_others",
     "category": "method",
-    "text": "get_outputX_others(model)\n\nMake incidence matrices for effects involved in calculation of EBV including J, ϵ, pedTrmVec except marker covariates.\n\n\n\n\n\n"
+    "text": "get_outputX_others(model)\n\n(internal function) Make incidence matrices for effects involved in calculation of EBV including J, ϵ, pedTrmVec except marker covariates.\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.output_MCMC_samples",
+    "page": "Internals",
+    "title": "JWAS.output_MCMC_samples",
+    "category": "function",
+    "text": "output_MCMC_samples(mme,sol,vRes,G0,π=false,α=false,locusEffectVar=false,outfile=false)\n\n(internal function) Save MCMC samples every outputsamplesfrequency iterations to the text file.\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.output_MCMC_samples_setup",
+    "page": "Internals",
+    "title": "JWAS.output_MCMC_samples_setup",
+    "category": "function",
+    "text": "output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=\"MCMC_samples\")\n\n(internal function) Set up text files to save MCMC samples.\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.output_location_parameters_samples-Tuple{JWAS.MME,Any,Any}",
+    "page": "Internals",
+    "title": "JWAS.output_location_parameters_samples",
+    "category": "method",
+    "text": "output_location_parameters_samples(mme::MME,sol,outfile)\n\n(internal function) Save MCMC samples for location parameers\n\n\n\n\n\n"
+},
+
+{
+    "location": "manual/internals/#JWAS.transubstrarr-Tuple{Any}",
+    "page": "Internals",
+    "title": "JWAS.transubstrarr",
+    "category": "method",
+    "text": "transubstrarr(vec)\n\n(internal function) Transpose a column vector of strings (vec\' doesn\'t work here)\n\n\n\n\n\n"
 },
 
 {
