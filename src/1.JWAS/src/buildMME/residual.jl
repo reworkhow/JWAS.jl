@@ -66,7 +66,7 @@ function sampleMissingResiduals(mme,resVec)
             #create cov and var matrices for BLP imputation
             Ri  = inv(Symmetric(mme.R[notmissing,notmissing]))
             Rc  = mme.R[.!notmissing,notmissing]
-            L   = (cholesky(Symmetric(mme.R[.!notmissing,.!notmissing] - Rc*Ri*Rc')).U)
+            L   = (cholesky(Symmetric(mme.R[.!notmissing,.!notmissing] - Rc*Ri*Rc')).U)#scalar cholesky
             #imputation
             mydata[mybool,.!notmissing]= mydata[mybool,notmissing]*Ri*Rc' + randn(sum(mybool),sum(.!notmissing))*L
         end

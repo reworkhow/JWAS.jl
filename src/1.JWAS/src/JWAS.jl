@@ -17,12 +17,10 @@ include("buildMME/sample_variances.jl")
 include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
-include("MCMC/outputMCMCsamples.jl")
 include("MCMC/MCMC_BayesianAlphabet.jl")
 include("MCMC/MCMC_GBLUP.jl")
 include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_PBLUP_constvare.jl")
-include("MCMC/output.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")
@@ -31,7 +29,6 @@ include("markers/BayesianAlphabet/BayesC0.jl")
 include("markers/BayesianAlphabet/BayesC.jl")
 include("markers/BayesianAlphabet/BayesB.jl")
 include("markers/BayesianAlphabet/MTBayesC.jl")
-include("markers/BayesianAlphabet/MTBayesCC.jl")
 include("markers/BayesianAlphabet/MTBayesB.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
@@ -42,8 +39,8 @@ include("SSBR/SSBR.jl")
 #Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
-#MISC
-#include("misc/misc.jl")
+#output
+include("output.jl")
 
 export build_model,set_covariate,set_random,add_genotypes
 export outputMCMCsamples,outputEBV,getEBV
@@ -198,6 +195,9 @@ function runMCMC(mme::MME,df;
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
     df = check_phenotypes(mme,df)
+    #check priors
+    #make default covariance matrices if not provided
+    set_default_priors_for_variance_components(mme,df)
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
@@ -267,7 +267,7 @@ function runMCMC(mme::MME,df;
                             output_samples_frequency=output_samples_frequency,
                             output_file=output_samples_file,
                             update_priors_frequency=update_priors_frequency)
-        elseif methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","conventional (no markers)"]
+        elseif methods in ["BayesL","BayesC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                           Pi     = Pi,
                           sol    = starting_value,
@@ -276,6 +276,7 @@ function runMCMC(mme::MME,df;
                           constraint = constraint,
                           estimatePi = estimatePi,
                           estimate_variance = estimate_variance,
+                          estimateScale     = estimateScale,
                           methods    = methods,
                           output_samples_frequency=output_samples_frequency,
                           output_file=output_samples_file,
@@ -319,7 +320,7 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesCC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
         error(methods," is not available in JWAS. Please read the documentation.")
     end
 
@@ -407,17 +408,17 @@ function check_outputID(mme)
     single_step_analysis = mme.MCMCinfo.single_step_analysis
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
-            printstyled("Testing individuals are not a subset of \n",
-            "genotyped individuals (complete genomic data,non-single-step).\n",
+            printstyled("Testing individuals are not a subset of ",
+            "genotyped individuals (complete genomic data,non-single-step). ",
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
         end
     elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if mme.output_ID!=0 && !issubset(mme.output_ID,pedID)
-            printstyled("Testing individuals are not a subset of \n",
-            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
-            "Only output EBV for tesing individuals in the pedigree.\n",bold=false,color=:red)
+            printstyled("Testing individuals are not a subset of ",
+            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP). ",
+            "Only output EBV for tesing individuals in the pedigree.",bold=false,color=:red)
             mme.output_ID = intersect(mme.output_ID,pedID)
         end
     end
@@ -440,7 +441,7 @@ function check_phenotypes(mme,df)
         if missingdf[i,:] != allmissing
             push!(nonmissingindex,i)
         else
-            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted\n" ,bold=false,color=:red)
+            printstyled("Phenotypes for all traits included in the model for individual ",df[!,1][i], " in the row ",i," are missing. This record is deleted.\n" ,bold=false,color=:red)
         end
     end
     if length(nonmissingindex) != 0
@@ -454,9 +455,9 @@ function check_phenotypes(mme,df)
     end
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
-            printstyled("Phenotyped individuals are not a subset of\n",
-            "genotyped individuals (complete genomic data,non-single-step).\n",
-            "Only use phenotype information for genotyped individuals.\n",bold=false,color=:red)
+            printstyled("Phenotyped individuals are not a subset of ",
+            "genotyped individuals (complete genomic data,non-single-step). ",
+            "Only use phenotype information for genotyped individuals.",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
             printstyled("The number of observations with both genotypes and phenotypes used\n",
@@ -466,12 +467,12 @@ function check_phenotypes(mme,df)
     if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
-            printstyled("Phenotyped individuals are not a subset of\n",
-            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP).\n",
-            "Only use phenotype information for individuals in the pedigree.\n",bold=false,color=:red)
+            printstyled("Phenotyped individuals are not a subset of ",
+            "individuals in pedigree (incomplete genomic data (single-step) or PBLUP). ",
+            "Only use phenotype information for individuals in the pedigree.",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of observations with both phenotype and pedigree information\n",
+            printstyled("The number of observations with both phenotype and pedigree information ",
             "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
     end
@@ -481,6 +482,59 @@ function check_phenotypes(mme,df)
     mme.obsID  = map(string,df[!,1])
     return df
 end
+
+#set default covariance matrices for variance components if not provided
+function set_default_priors_for_variance_components(mme,df)
+  myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  phenovar  = diagm(0=>myvar)
+  var_piece = phenovar/2
+
+  #genetic variance or marker effect variance
+  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
+    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    if mme.nModels==1
+      mme.M.genetic_variance = var_piece[1,1]
+    elseif mme.nModels>1
+      mme.M.genetic_variance = var_piece
+    end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+  end
+  #residual effects
+  if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.RNew = mme.ROld = var_piece[1,1]
+    mme.scaleRes = mme.RNew*(mme.df.residual-2)/mme.df.residual
+  elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
+    printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    mme.R = var_piece
+    mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
+  end
+  #polyginic effects
+  if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
+    printstyled("Prior information for polygenic effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    myvarout  = [split(i,":")[1] for i in mme.pedTrmVec]
+    myvarin   = string.(mme.lhsVec)
+    Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+    G         = diagm(Zdesign*diag(var_piece))
+    mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
+    mme.scalePed = G*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
+  end
+  #other random effects
+  if length(mme.rndTrmVec) != 0
+    for randomEffect in mme.rndTrmVec
+      if isposdef(randomEffect.Gi) == false
+        printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
+        myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
+        myvarin   = string.(mme.lhsVec)
+        Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+        G         = diagm(Zdesign*diag(var_piece))
+
+        randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
+        randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+      end
+    end
+  end
+end
+
 
 function init_mixed_model_equations(mme,df,sol)
     getMME(mme,df)

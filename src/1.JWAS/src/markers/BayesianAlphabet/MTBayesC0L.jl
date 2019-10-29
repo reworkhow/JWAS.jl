@@ -1,15 +1,16 @@
-function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,meanAlpha,gammaArray,invR0,invG0,
-                               iIter,burnin)
+function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,
+                                      alphaArray,gammaArray,
+                                      invR0,invG0)
     # function to sample effects
     # invR0 is inverse of R0
     # invG0 is inverse of G0
-    
+
     function getGiFunction(gammaArray)
         f1(x,j,Gi)  = Gi ./ x[j]
-        f2(x,j,Gi)  = Gi 
-        size(gammaArray,1)>1 ? f1 : f2 
+        f2(x,j,Gi)  = Gi
+        size(gammaArray,1)>1 ? f1 : f2
     end
-    getGi = getGiFunction(gammaArray)   
+    getGi = getGiFunction(gammaArray)
     nEffects = length(xArray)
     nTraits  = length(alphaArray)
     Lhs = zeros(nTraits,nTraits)
@@ -27,11 +28,8 @@ function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,meanAlpha,gam
             #Rhs[trait] = dot(x,wArray[trait])
             Rhs[trait] = dot(x,wArray[trait])+xpx[j]*alphaArray[trait][j]
         end
-        #println(wArray[1])
         Rhs = invR0*Rhs
         Lhs = dot(x,x)*invR0 + getGi(gammaArray,j,invG0)
-        #println("Rhs",Rhs)
-        #println("Lhs",Lhs)
         for trait = 1:nTraits
             lhs  = Lhs[trait,trait]
             ilhs = 1/lhs
@@ -44,15 +42,10 @@ function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,meanAlpha,gam
         for trait = 1:nTraits
             #wArray[trait][:] = wArray[trait][:] - x*alphaArray[trait][j]
             BLAS.axpy!(oldβ[trait]-β[trait],x,wArray[trait])
-            if iIter>burnin
-                meanAlpha[trait][j] += (β[trait] - meanAlpha[trait][j])/(iIter-burnin)
-            end
         end
-
     end
 end
 
-sampleMarkerEffectsMTBayesC0!(xArray,xpx,wArray,alphaArray,meanAlpha,invR0,invG0,
-                               iIter,burnin) =
-  sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,meanAlpha,[1.0],invR0,invG0,
-                                                              iIter,burnin)
+sampleMarkerEffectsMTBayesC0!(xArray,xpx,wArray,
+                              alphaArray,invR0,invG0) =
+  sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,[1.0],invR0,invG0)

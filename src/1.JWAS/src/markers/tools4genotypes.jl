@@ -149,6 +149,11 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
       end
       print("\n\n\n")
   end
+  if mme.nModels == 1
+      mme.M.scale = mme.M.G*(mme.df.marker-2)/mme.df.marker #scale parameter for marker effect variance
+  else
+      mme.M.scale = mme.M.G*(mme.df.marker - mme.nModels - 1)
+  end
   return Pi
 end
 

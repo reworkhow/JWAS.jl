@@ -13,10 +13,10 @@ The general form of the multivariate (univariate) mixed effects model for indivi
 
 $$
 \mathbf{y}_{i}
- =\sum_{j=1}^{p_{\beta}}X_{ij}\boldsymbol{\beta}_{j}+\sum_{k=1}^{p_{u}}Z_{ik}\mathbf{u}_{k}
+ =\sum_{j=1}^{p_{b}}X_{ij}\mathbf{b}_{j}+\sum_{k=1}^{p_{u}}Z_{ik}\mathbf{u}_{k}
  +\sum_{l=1}^{p}M_{il}\boldsymbol{\alpha}_{l}+\mathbf{e}_{i}(1),$$
 
-where $\mathbf{y}_{i}$ is a vector of phenotypes of $t$ traits for individual $i$; $X_{ij}$ is the incidence matrix covariate corresponding to the $j$th fixed effect for individual $i$; $\boldsymbol{\beta}_{j}$ is a vector of $j$th fixed effects for the $t$ traits; $Z_{ik}$ is the incidence matrix covariate corresponding to the $k$th random effect for individual $i$; $\boldsymbol{u}_{k}$ is a vector of the $k$th random effects of $t$ traits; $M_{il}$ is the genotype covariate at locus $l$ for individual $i$, $p$ is the number of genotyped loci (each coded as 0,1,2), $\boldsymbol{\alpha}_{l}$ is a vector of allele substitution effects or marker effects of $t$ traits for locus $j$, and $\mathbf{e}_{i}$ is the vector of random residual effects of $t$ traits for individual $i$. The JWAS implementation of this model involves missing phenotypes being imputed at each iteration of MCMC \cite{sorensenGianolaBook} so that all individuals have observations for all traits. Note that when the number of traits $t=1$, the general form above simplifies to the single-trait  mixed effects model, and all vectors of effects in equation (1) become scalars.
+where $\mathbf{y}_{i}$ is a vector of phenotypes of $t$ traits for individual $i$; $X_{ij}$ is the incidence matrix covariate corresponding to the $j$th fixed effect for individual $i$; $\mathbf{b}_{j}$ is a vector of $j$th fixed effects for the $t$ traits; $Z_{ik}$ is the incidence matrix covariate corresponding to the $k$th random effect for individual $i$; $\boldsymbol{u}_{k}$ is a vector of the $k$th random effects of $t$ traits; $M_{il}$ is the genotype covariate at locus $l$ for individual $i$, $p$ is the number of genotyped loci (each coded as 0,1,2), $\boldsymbol{\alpha}_{l}$ is a vector of allele substitution effects or marker effects of $t$ traits for locus $j$, and $\mathbf{e}_{i}$ is the vector of random residual effects of $t$ traits for individual $i$. The JWAS implementation of this model involves missing phenotypes being imputed at each iteration of MCMC \cite{sorensenGianolaBook} so that all individuals have observations for all traits. Note that when the number of traits $t=1$, the general form above simplifies to the single-trait  mixed effects model, and all vectors of effects in equation (1) become scalars.
 
 ### Incomplete Genomic Data
 
@@ -24,7 +24,7 @@ The general form of the multivariate (univariate) mixed effects model with incom
 
 ```math
 \mathbf{y}_{i}
-=\sum_{j=1}^{p_{\beta}}X_{ij}\boldsymbol{\beta}_{j}+\sum_{k=1}^{p_{u}}Z_{ik}\mathbf{u}_{k}+
+=\sum_{j=1}^{p_{b}}X_{ij}\mathbf{b}_{j}+\sum_{k=1}^{p_{u}}Z_{ik}\mathbf{u}_{k}+
 \sum_{l=1}^{p}\hat{M_{il}}\boldsymbol{\alpha}_{l}+\sum_{m=1}^{p_{\epsilon}}Z_{n[i,m]}\boldsymbol{\epsilon}_{m}+\boldsymbol{e}_{i} (2),
 ```
 
