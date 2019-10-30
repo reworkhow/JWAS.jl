@@ -1,5 +1,9 @@
 ################################################################################
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
+#
+#in GBLUP, pseudo markers are used.
+#y = μ + a + e with mean(a)=0,var(a)=Gσ²=MM'σ² and G = LDL' <==>
+#y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
 ################################################################################
 function MCMC_BayesianAlphabet(nIter,mme,df;
                      burnin                     = 0,
@@ -15,9 +19,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                      categorical_trait          = false)
 
     ############################################################################
-    # Pre-Check
+    # Categorical Traits
     ############################################################################
-    #starting values for location parameters(no marker) are sol
     if categorical_trait == true
         #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
         # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
@@ -33,53 +36,56 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
         end
     end
+    #starting values for marker effeccts, defaulting to zeros
     sol,α              = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
     solMean, solMean2  = zero(sol),zero(sol)
     ############################################################################
-    # PRIORS / Working Variables
+    # Working Variables
+    # 1) samples at current iteration (starting values at the beginning)
+    # 2) posterior mean and variance at current iteration (zeros at the beginning)
+    # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
-    #save posterior mean for residual variance
+    #location parameters
+    sol                = sol[(size(mme.mmeLhs,1)+1):end]
+    solMean, solMean2  = zero(sol),zero(sol)
+    #residual variance
     if categorical_trait == false
         meanVare = meanVare2 = 0.0
     else
         mme.RNew = meanVare = meanVare2 = 1.0
     end
-    #save poseterior mean for variances explained by polygenic effects (A) e.g Animal+ Maternal
+    #polygenic effects (A), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
-    #priors for marker effect variance
+    #marker effects
     if mme.M != 0
-        mGibbs      = GibbsMats(mme.M.genotypes)
+        mGibbs                     = GibbsMats(mme.M.genotypes)
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-        dfEffectVar = mme.df.marker
-        if methods=="BayesL"
-            mme.M.G /= 8 # in BayesL mme.M.G is the scale Matrix, Sigma, in the MTBayesLasso paper
-        end
-        meanVara,meanVara2 = 0.0,0.0 #variable to save variance for marker effect
-        meanScaleVara,meanScaleVara2 = 0.0,0.0 #variable to save Scale parameter for prior of marker effect variance
-        #vectors to save solutions for marker effects
-        #α           = zeros(nMarkers)#starting values for marker effeccts are zeros
-        #δ           = zeros(nMarkers)#inclusion indicator for marker effects
-        δ           = ones(nMarkers)#inclusion indicator for marker effects
-        meanAlpha,meanAlpha2 = zeros(nMarkers),zeros(nMarkers)#vectors to save solutions for marker effects
-        meanDelta            = zeros(nMarkers)
-        mean_pi,mean_pi2     = 0.0,0.0
+        dfEffectVar                = mme.df.marker
+
+        α                    = sol[(size(mme.mmeLhs,1)+1):end]
+        δ                    = ones(nMarkers)#inclusion indicator for marker effects
         if methods=="BayesB" #α=β.*δ
             β              = copy(α)  ##partial marker effeccts
             locusEffectVar = fill(mme.M.G,nMarkers)
-            mme.M.G        = locusEffectVar #mme.M.G is scalar for BayesC but a vector for BayeB
+            mme.M.G        = locusEffectVar #a scalar in BayesC but a vector in BayeB
+        end
+        if methods=="BayesL"         #in the MTBayesLasso paper
+            mme.M.G   /= 8           #mme.M.G is the scale Matrix, Sigma
+            gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
+            gammaArray = rand(gammaDist,nMarkers)
         end
         if methods=="BayesL"
-           gammaDist  = Gamma(1, 8) # 8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
-           gammaArray = rand(gammaDist,nMarkers)
         end
-    end
 
-    ############################################################################
-    #  WORKING VECTORS (ycor, saving values)
-    ############################################################################
-    #adjust y for starting values
+        meanAlpha,meanAlpha2         = zeros(nMarkers),zeros(nMarkers)#marker effects
+        meanDelta                    = zeros(nMarkers)                #inclusion indicator
+        mean_pi,mean_pi2             = 0.0,0.0                        #inclusion probability
+        meanVara,meanVara2           = 0.0,0.0                        #marker effect variances
+        meanScaleVara,meanScaleVara2 = 0.0,0.0                        #scale parameter for prior of marker effect variance
+    end
+    #phenotypes corrected for all effects
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
     if mme.M != 0 && α!=zero(α)
         ycorr = ycorr - M*α
@@ -90,7 +96,6 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     if output_samples_frequency != 0
         outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
     end
-
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
