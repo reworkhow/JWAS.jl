@@ -517,7 +517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
 },
 
 {
@@ -525,7 +525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Internals",
     "title": "JWAS.add_genotypes",
     "category": "function",
-    "text": "add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)\n\nGet marker informtion from an nxp Matrix M of genotypes (Array or DataFrame), where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.\nrowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n\nheader is a header vector such as [\"id\"; \"mrk1\"; \"mrk2\";...;\"mrkp\"]. If omitted, marker names will be set to 1:p\nG defaults to the genetic variance with degree of freedom df=4.0.\n\n\n\n\n\n"
+    "text": "add_genotypes(mme::MME,file,G;separator=\' \',header=true,center=true,G_is_marker_variance=false,df=4.0)\n\nGet marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.\nG defaults to the genetic variance with degree of freedom df=4.0.\nFile format:\n\nAnimal,marker1,marker2,marker3,marker4,marker5\nS1,1,0,1,1,1\nD1,2,0,2,2,1\nO1,1,2,0,1,0\nO3,0,0,2,1,1\n\n\n\n\n\n"
 },
 
 {
