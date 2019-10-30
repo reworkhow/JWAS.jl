@@ -46,7 +46,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
     #location parameters
-    sol                = sol[(size(mme.mmeLhs,1)+1):end]
+    sol                = sol[1:size(mme.mmeLhs,1)]
     solMean, solMean2  = zero(sol),zero(sol)
     #residual variance
     if categorical_trait == false
