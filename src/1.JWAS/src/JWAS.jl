@@ -243,7 +243,7 @@ function runMCMC(mme::MME,df;
                             methods                  = methods,
                             estimatePi               = estimatePi,
                             estimateScale            = estimateScale,
-                            sol                      = starting_value,
+                            starting_value           = starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file,

@@ -10,7 +10,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                      π                          = 0.0,
                      estimatePi                 = false,
                      estimateScale              = false,
-                     sol                        = false,
+                     starting_value             = false,
                      outFreq                    = 1000,
                      methods                    = "BayesC",
                      output_samples_frequency   = 0,
@@ -30,7 +30,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         #-Inf,t1,t2,...,t_{#c-1},Inf
         thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
 
-        cmean      = mme.X*sol #assume maker effects all zeros
+        cmean      = mme.X*starting_value[1:size(mme.mmeLhs,1)] #assume maker effects all zeros
         for i in 1:length(category_obs) #1,2,2,3,1...
             whichcategory = category_obs[i]
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
@@ -43,7 +43,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
     #location parameters
-    sol                = sol[1:size(mme.mmeLhs,1)]
+    sol                = starting_value[1:size(mme.mmeLhs,1)]
     solMean, solMean2  = zero(sol),zero(sol)
     #residual variance
     if categorical_trait == false
@@ -61,7 +61,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
         dfEffectVar                = mme.df.marker
 
-        α                    = sol[(size(mme.mmeLhs,1)+1):end]
+        α                    = starting_value[(size(mme.mmeLhs,1)+1):end]
         δ                    = ones(nMarkers)#inclusion indicator for marker effects
         if methods=="BayesB" #α=β.*δ
             β              = copy(α)  ##partial marker effeccts
