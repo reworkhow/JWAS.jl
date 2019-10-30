@@ -81,7 +81,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #adjust y for starting values
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
-    if mme.M != 0
+    if mme.M != 0 && α!=zero(α)
         ycorr = ycorr - M*α
     end
     ############################################################################
