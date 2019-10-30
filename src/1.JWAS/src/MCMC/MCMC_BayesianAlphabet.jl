@@ -36,17 +36,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
         end
     end
-    #starting values for marker effeccts, defaulting to zeros
-    sol,α              = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
-    solMean, solMean2  = zero(sol),zero(sol)
     ############################################################################
     # Working Variables
-    # 1) samples at current iteration (starting values at the beginning)
+    # 1) samples at current iteration (starting values at the beginning, defaulting to zeros)
     # 2) posterior mean and variance at current iteration (zeros at the beginning)
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
     #location parameters
-    sol                = sol[(size(mme.mmeLhs,1)+1):end]
+    sol                = sol[1:size(mme.mmeLhs,1)]
     solMean, solMean2  = zero(sol),zero(sol)
     #residual variance
     if categorical_trait == false
