@@ -73,8 +73,6 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
             gammaArray = rand(gammaDist,nMarkers)
         end
-        if methods=="BayesL"
-        end
 
         meanAlpha,meanAlpha2         = zeros(nMarkers),zeros(nMarkers)#marker effects
         meanDelta                    = zeros(nMarkers)                #inclusion indicator
