@@ -45,7 +45,7 @@ include("output.jl")
 export build_model,set_covariate,set_random,add_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
-export showMME,getinfo
+export showMME,describe
 #Pedmodule
 export get_pedigree
 #misc
@@ -231,8 +231,7 @@ function runMCMC(mme::MME,df;
 
     #printout basic MCMC information
     if printout_model_info == true
-      getinfo(mme)
-      getMCMCinfo(mme)
+      describe(mme)
     end
 
     if mme.nModels ==1
@@ -562,11 +561,11 @@ end
 #
 ################################################################################
 """
-    getinfo(model::MME)
+    describe(model::MME)
 
 * Print out model information.
 """
-function getinfo(model::MME;data=false)
+function describe(model::MME;data=false)
   printstyled("\nA Linear Mixed Model was build using model equations:\n\n",bold=true)
   for i in model.modelVec
     println(i)
@@ -615,13 +614,13 @@ function getinfo(model::MME;data=false)
     @printf("%-15s %-12s %-10s %11s\n",term,factor,fixed,nLevels)
   end
   println()
-  #incidence matrix , #elements non-zero elements
+  getMCMCinfo(model)
 end
 
 """
     getMCMCinfo(model::MME)
 
-* Print out MCMC information.
+* (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
     MCMCinfo = mme.MCMCinfo
