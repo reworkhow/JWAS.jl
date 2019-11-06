@@ -8,6 +8,8 @@ using ProgressMeter
 using .PedModule
 using .misc
 
+import StatsBase: describe #a new describe is exported
+
 #Models
 include("buildMME/types.jl")
 include("buildMME/build_MME.jl")
@@ -218,7 +220,7 @@ function runMCMC(mme::MME,df;
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
     ############################################################################
     # initiate Mixed Model Equations and check starting values
-    starting_value,df = init_mixed_model_equations(mme,df,starting_value)
+    mme.MCMCinfo.starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
         Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
@@ -242,7 +244,7 @@ function runMCMC(mme::MME,df;
                             methods                  = methods,
                             estimatePi               = estimatePi,
                             estimateScale            = estimateScale,
-                            starting_value           = starting_value,
+                            starting_value           = mme.MCMCinfo.starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file,
@@ -251,7 +253,7 @@ function runMCMC(mme::MME,df;
         elseif methods =="GBLUP" && single_step_analysis != true
             res=MCMC_GBLUP(chain_length,mme,df;
                             burnin                   = burnin,
-                            sol                      = starting_value,
+                            sol                      = mme.MCMCinfo.starting_value,
                             outFreq                  = printout_frequency,
                             output_samples_frequency = output_samples_frequency,
                             output_file              = output_samples_file)
@@ -259,7 +261,7 @@ function runMCMC(mme::MME,df;
     elseif mme.nModels > 1
         if methods == "conventional (no markers)" && estimate_variance == false
           res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
-                            sol    = starting_value,
+                            sol    = mme.MCMCinfo.starting_value,
                             outFreq= printout_frequency,
                             missing_phenotypes=missing_phenotypes,
                             estimate_variance = estimate_variance,
@@ -269,7 +271,7 @@ function runMCMC(mme::MME,df;
         elseif methods in ["BayesL","BayesC","BayesB","RR-BLUP","conventional (no markers)"]
           res=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                           Pi     = Pi,
-                          sol    = starting_value,
+                          sol    = mme.MCMCinfo.starting_value,
                           outFreq= printout_frequency,
                           missing_phenotypes=missing_phenotypes,
                           constraint = constraint,
@@ -623,6 +625,10 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
+    if mme.MCMCinfo == 0
+        printstyled("MCMC information is not available\n\n",bold=true)
+        return
+    end
     MCMCinfo = mme.MCMCinfo
     printstyled("MCMC Information:\n\n",bold=true)
 
@@ -637,7 +643,7 @@ function getMCMCinfo(mme)
       @printf("%-30s %20s\n","estimatePi",MCMCinfo.estimatePi ? "true" : "false")
     end
     @printf("%-30s %20s\n","estimateScale",MCMCinfo.estimateScale ? "true" : "false")
-    @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value ? "true" : "false")
+    @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value != zero(MCMCinfo.starting_value) ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",MCMCinfo.printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
     @printf("%-30s %20s\n","constraint",MCMCinfo.constraint ? "true" : "false")
