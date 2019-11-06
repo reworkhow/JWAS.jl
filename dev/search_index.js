@@ -489,6 +489,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "manual/internals/#DataAPI.describe-Tuple{JWAS.MME}",
+    "page": "Internals",
+    "title": "DataAPI.describe",
+    "category": "method",
+    "text": "describe(model::MME)\n\nPrint out model information.\n\n\n\n\n\n"
+},
+
+{
     "location": "manual/internals/#JWAS.GWAS-Tuple{Any,Any,Any}",
     "page": "Internals",
     "title": "JWAS.GWAS",
@@ -534,14 +542,6 @@ var documenterSearchIndex = {"docs": [
     "title": "JWAS.build_model",
     "category": "function",
     "text": "build_model(model_equations::AbstractString,R=false; df::Float64=4.0)\n\nBuild a model from model equations with the residual variance R. In Bayesian analysis, R is the mean for the prior assigned for the residual variance with degree of freedom df defaulting to 4.0. If R is not provided, a value is calculate from responses (phenotypes).\nBy default, all variabels in modelequations are factors (categorical) and fixed. Set variables to be covariates (continuous) or random using functions `setcovariate()orset_random()`.\n\n#single-trait\nmodel_equations = \"BW = intercept + age + sex\"\nR               = 6.72\nmodels          = build_model(model_equations,R);\n\n#multi-trait\nmodel_equations = \"BW = intercept + age + sex\n                   CW = intercept + litter\";\nR               = [6.72   24.84\n                   24.84  708.41]\nmodels          = build_model(model_equations,R);\n\n\n\n\n\n"
-},
-
-{
-    "location": "manual/internals/#JWAS.describe-Tuple{JWAS.MME}",
-    "page": "Internals",
-    "title": "JWAS.describe",
-    "category": "method",
-    "text": "describe(model::MME)\n\nPrint out model information.\n\n\n\n\n\n"
 },
 
 {
