@@ -70,6 +70,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         end
         if methods=="BayesL"         #in the MTBayesLasso paper
             mme.M.G   /= 8           #mme.M.G is the scale Matrix, Sigma
+            mme.M.scale /= 8
             gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
             gammaArray = rand(gammaDist,nMarkers)
         end
