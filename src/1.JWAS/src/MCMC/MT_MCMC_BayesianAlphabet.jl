@@ -57,6 +57,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         dfEffectVar = mme.df.marker
         if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
             mme.M.G /= 4*(nTraits+1)
+            mme.M.scale /= 4*(nTraits+1)
         end
         vEff        = mme.M.G
         meanVara  = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
