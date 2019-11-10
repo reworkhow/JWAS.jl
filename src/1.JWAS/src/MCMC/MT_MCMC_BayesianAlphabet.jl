@@ -69,12 +69,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         wArray         = Array{Array{Float64,1}}(undef,nTraits)#wArray is list reference of ycor
         ########################################################################
         #Arrays to save solutions for marker effects
+        #In RR-BLUP and BayesL, only alphaArray is used.
+        #In BayesA, B and C, alphaArray,deltaArray, betaArray are used.
         ########################################################################
         #starting values for marker effects(zeros) and location parameters (sol)
-        betaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
+        betaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         deltaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         meandeltaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        alphaArray         = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        alphaArray         = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
         meanalphaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         meanalphaArray2     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
 
@@ -211,10 +213,18 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
         if mme.M != 0 && estimate_variance == true
             SM    = zero(mme.M.scale)
-            if !(methods in ["BayesB","BayesL"])
+            if !(methods in ["BayesB","BayesL","RR-BLUP"])
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
                         SM[traiti,traitj]   = (betaArray[traiti]'betaArray[traitj])
+                        SM[traitj,traiti]   = SM[traiti,traitj]
+                    end
+                end
+                mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
+            elseif methods == "RR-BLUP"
+                for traiti = 1:nTraits
+                    for traitj = traiti:nTraits
+                        SM[traiti,traitj]   = (alphaArray[traiti]'alphaArray[traitj])
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end
