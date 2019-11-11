@@ -237,7 +237,7 @@ function runMCMC(mme::MME,df;
     end
 
     if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB","BayesL"]
+        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB","BayesL","GBLUP2"]
             res=MCMC_BayesianAlphabet(chain_length,mme,df,
                             burnin                   = burnin,
                             π                        = Pi,
@@ -321,7 +321,7 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","GBLUP2","conventional (no markers)"])
         error(methods," is not available in JWAS. Please read the documentation.")
     end
 
@@ -401,9 +401,9 @@ function check_outputID(mme)
     if mme.MCMCinfo.outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0 #all genotyped inds if no output ID
-        mme.output_ID = mme.M.obsID
+        mme.output_ID = copy(mme.M.obsID)
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #all inds in PBLUP
-        mme.output_ID = mme.ped.IDs
+        mme.output_ID = copy(mme.ped.IDs)
     end
 
     single_step_analysis = mme.MCMCinfo.single_step_analysis
@@ -425,7 +425,7 @@ function check_outputID(mme)
     end
     #Set ouput IDs to all genotyped inds in complete genomic data analysis for h² estimation
     if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.M != 0
-        mme.output_ID = mme.M.obsID
+        mme.output_ID = copy(mme.M.obsID)
     end
 
 end
