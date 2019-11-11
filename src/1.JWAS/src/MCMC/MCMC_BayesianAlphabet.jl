@@ -74,7 +74,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
             gammaArray = rand(gammaDist,nMarkers)
         end
-        if methods=="GBLUP2"
+        if methods=="GBLUP"
             mme.M.genotypes  = mme.M.genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
             G       = (mme.M.genotypes*mme.M.genotypes'+ I*0.00001)/nMarkers
             eigenG  = eigen(G)
@@ -166,7 +166,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             elseif methods == "BayesL"
                 sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
                 nLoci = nMarkers
-            elseif methods == "GBLUP2"
+            elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
                 lhs   = 1 .+ mme.RNew./(mme.M.G*D)
                 mean1 = mme.M.genotypes'ycorr./lhs
@@ -201,7 +201,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 2.4 Marker Effects Variance
         ########################################################################
         if mme.M != 0
-            if !(methods in ["BayesB","BayesL","GBLUP2"]) && mme.MCMCinfo.estimate_variance
+            if !(methods in ["BayesB","BayesL","GBLUP"]) && mme.MCMCinfo.estimate_variance
                 mme.M.G  = sample_variance(α, nLoci, mme.df.marker, mme.M.scale)
             elseif methods == "BayesB"
                 for j=1:nMarkers
@@ -215,7 +215,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 mme.M.G = (ssq + mme.df.marker*mme.M.scale)/rand(Chisq(nLoci+mme.df.marker))
                # MH sampler of gammaArray (Appendix C in paper)
                 sampleGammaArray!(gammaArray,α,mme.M.G)
-            elseif methods == "GBLUP2"
+            elseif methods == "GBLUP"
                 mme.M.G  = sample_variance(α./sqrt.(D), nObs,mme.df.marker, mme.M.scale)
             end
         end

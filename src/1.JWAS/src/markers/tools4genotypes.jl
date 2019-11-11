@@ -68,7 +68,7 @@ end
 #Note that Aligning genotypes with phenotypes in single-step analysis
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
-    if mme.output_ID != 0
+    if mme.output_ID != 0 && mme.MCMCinfo.methods != "GBLUP"
         Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
         mme.output_genotypes = (mme.output_ID == mme.M.obsID ? mme.M.genotypes : Zo*mme.M.genotypes)
     end
@@ -78,7 +78,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     #individuals with repeated records or individuals without records
     #
     #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M.obsID && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP2"
+    if mme.obsID != mme.M.obsID && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
         Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
         mme.M.genotypes = Z*mme.M.genotypes
         mme.M.obsID     = mme.obsID

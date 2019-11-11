@@ -236,29 +236,20 @@ function runMCMC(mme::MME,df;
       describe(mme)
     end
 
-    if mme.nModels ==1
-        if methods in ["conventional (no markers)","BayesC","RR-BLUP","BayesB","BayesL","GBLUP2"]
-            res=MCMC_BayesianAlphabet(chain_length,mme,df,
-                            burnin                   = burnin,
-                            π                        = Pi,
-                            methods                  = methods,
-                            estimatePi               = estimatePi,
-                            estimateScale            = estimateScale,
-                            starting_value           = mme.MCMCinfo.starting_value,
-                            outFreq                  = printout_frequency,
-                            output_samples_frequency = output_samples_frequency,
-                            output_file              = output_samples_file,
-                            update_priors_frequency  = update_priors_frequency,
-                            categorical_trait        = categorical_trait)
-        elseif methods =="GBLUP" && single_step_analysis != true
-            res=MCMC_GBLUP(chain_length,mme,df;
-                            burnin                   = burnin,
-                            sol                      = mme.MCMCinfo.starting_value,
-                            outFreq                  = printout_frequency,
-                            output_samples_frequency = output_samples_frequency,
-                            output_file              = output_samples_file)
-        end
-    elseif mme.nModels > 1
+    if mme.nModels ==1 #single-trait analysis
+        res=MCMC_BayesianAlphabet(chain_length,mme,df,
+                        burnin                   = burnin,
+                        π                        = Pi,
+                        methods                  = methods,
+                        estimatePi               = estimatePi,
+                        estimateScale            = estimateScale,
+                        starting_value           = mme.MCMCinfo.starting_value,
+                        outFreq                  = printout_frequency,
+                        output_samples_frequency = output_samples_frequency,
+                        output_file              = output_samples_file,
+                        update_priors_frequency  = update_priors_frequency,
+                        categorical_trait        = categorical_trait)
+    else #multi-trait analysis
         if methods == "conventional (no markers)" && estimate_variance == false
           res=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
                             sol    = mme.MCMCinfo.starting_value,
@@ -321,7 +312,7 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","GBLUP2","conventional (no markers)"])
+    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
         error(methods," is not available in JWAS. Please read the documentation.")
     end
 
@@ -360,6 +351,8 @@ function errors_args(mme,methods)
             error("Please provide values for the genetic variance for GBLUP analysis")
         elseif estimatePi == true
             error("GBLUP runs with estimatePi = false.")
+        elseif mme.MCMCinfo.single_step_analysis == true
+            error("SSGBLUP is not available")
         end
     end
     if mme.nModels > 1 && mme.M!=0
