@@ -72,14 +72,44 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #In RR-BLUP and BayesL, only alphaArray is used.
         #In BayesA, B and C, alphaArray,deltaArray, betaArray are used.
         ########################################################################
+        if methods=="BayesB"
+            mme.M.G = fill(mme.M.G,nMarkers)#locus specific covaraince matrix
+            nLoci   = zeros(nTraits)
+        end
+        if methods=="BayesL"
+           gammaDist  = Gamma((nTraits+1)/2, 8) #8 (1/8): the scale (rate) parameter
+           gammaArray = rand(gammaDist,nMarkers)
+        end
+        if methods=="GBLUP"
+            mme.M.genotypes  = mme.M.genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
+            G       = (mme.M.genotypes*mme.M.genotypes'+ I*0.00001)/nMarkers
+            eigenG  = eigen(G)
+            L       = eigenG.vectors
+            D       = eigenG.values
+            # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
+            nMarkers= nObs
+            α       = ((α != zero(α)) ? L'α : zeros(nTraits*nObs))  #starting values for pseudo marker effect
+            #reset parameter in mme.M
+            mme.M.G         = mme.M.genetic_variance
+            mme.M.scale     = mme.M.genetic_variance*(mme.df.marker-nTraits-1)
+            mme.M.markerID  = string.(1:nObs) #pseudo markers of length=nObs
+            mme.M.genotypes = L
+            #reset parameters in output
+            Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
+            mme.output_genotypes = (mme.output_ID == mme.M.obsID ? mme.M.genotypes : Zo*mme.M.genotypes)
+            #realign pseudo genotypes to phenotypes
+            Z               = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
+            mme.M.genotypes = Z*mme.M.genotypes
+            mme.M.obsID     = mme.obsID
+            mme.M.nObs      = length(mme.M.obsID)
+        end
         #starting values for marker effects(zeros) and location parameters (sol)
-        betaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        deltaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        meandeltaArray = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        alphaArray         = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
-        meanalphaArray     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        meanalphaArray2     = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-
+        betaArray       = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        deltaArray      = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meandeltaArray  = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        alphaArray      = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
+        meanalphaArray  = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        meanalphaArray2 = Array{Array{Float64,1}}(undef,nTraits) #BayesC
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
@@ -90,16 +120,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             alphaArray[traiti]         = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
             meanalphaArray[traiti]     = zeros(nMarkers)
             meanalphaArray2[traiti]    = zeros(nMarkers)
-        end
-
-        if methods=="BayesB"
-            arrayG  = fill(mme.M.G,nMarkers)#locus specific covaraince matrix
-            mme.M.G = arrayG
-            nLoci   = zeros(nTraits)
-        end
-        if methods=="BayesL"
-           gammaDist  = Gamma((nTraits+1)/2, 8) # 8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
-           gammaArray = rand(gammaDist,nMarkers)
         end
     end
 
@@ -163,6 +183,23 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                                          alphaArray,
                                          gammaArray,
                                          iR0,iGM)
+          elseif methods == "GBLUP"
+            for trait = 1:nTraits
+                wArray[trait][:] = wArray[trait] + mme.M.genotypes*alphaArray[trait]
+            end
+            lhs  = iR0 + iGM./D
+            #for trait = 1:nTraits
+            #    mme.M.genotypes'wArray[trait]
+            #    #rhs  =
+            #end
+            invLhs    = inv.(lhs)                #nTrait X nTrait
+            invLhsC   = chol.(Hermitian.(invLhs))
+            #gHat     = lhsC\rhs' #nTrait X 1
+            mean1      = invLhs.*rhs
+            αlpha      = mean1 .+ invLhsC'.*randn.(nTraits) #wrong assignment
+            for trait = 1:nTraits
+                wArray[trait][:] = wArray[trait] - mme.M.genotypes*alphaArray[trait]
+            end
           end
           if estimatePi == true
             if methods in ["BayesC","BayesB"]
@@ -213,7 +250,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
         if mme.M != 0 && estimate_variance == true
             SM    = zero(mme.M.scale)
-            if !(methods in ["BayesB","BayesL","RR-BLUP"])
+            if methods == "BayesC"
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
                         SM[traiti,traitj]   = (betaArray[traiti]'betaArray[traitj])
@@ -239,7 +276,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                 end
                 mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
                 sampleGammaArray!(gammaArray,alphaArray,mme.M.G)# MH sampler of gammaArray (Appendix C in paper)
-            else
+            elseif methods == "BayesB"
                 marker_effects_matrix = betaArray[1]
                 for traiti = 2:nTraits
                     marker_effects_matrix = [marker_effects_matrix betaArray[traiti]]
@@ -251,6 +288,18 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                 for markeri = 1:nMarkers
                   mme.M.G[markeri] = rand(InverseWishart(mme.df.marker + 1, convert(Array,Symmetric(mme.M.scale + beta2[markeri]))))
                 end
+            elseif methods == "GBLUP"
+                for traiti = 1:nTraits
+                    for traitj = traiti:nTraits
+                        alphaArrayi         = alphaArray[traiti]./D
+                        alphaArrayj         = alphaArray[traitj]./D
+                        SM[traiti,traitj]   = alphaArrayi'alphaArrayj
+                        SM[traitj,traiti]   = SM[traiti,traitj]
+                    end
+                end
+                mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
+            else
+                error("Sampling of marker effect vairances is not available")
             end
         end
 

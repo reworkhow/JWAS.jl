@@ -59,14 +59,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     if mme.M != 0
         mGibbs                     = GibbsMats(mme.M.genotypes)
         nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-        dfEffectVar                = mme.df.marker
 
-        α                    = starting_value[(size(mme.mmeLhs,1)+1):end]
-        δ                    = ones(nMarkers)#inclusion indicator for marker effects
         if methods=="BayesB" #α=β.*δ
-            β              = copy(α)  ##partial marker effeccts
-            locusEffectVar = fill(mme.M.G,nMarkers)
-            mme.M.G        = locusEffectVar #a scalar in BayesC but a vector in BayeB
+            mme.M.G        = fill(mme.M.G,nMarkers) #a scalar in BayesC but a vector in BayeB
         end
         if methods=="BayesL"         #in the MTBayesLasso paper
             mme.M.G   /= 8           #mme.M.G is the scale Matrix, Sigma
@@ -81,9 +76,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             L       = eigenG.vectors
             D       = eigenG.values
             # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
-            α       = ((α != zero(α)) ? L'α : zeros(nObs))  #starting values for pseudo marker effect
             nMarkers= nObs
-            δ       = ones(nMarkers)                        #inclusion indicator for marker effects
+            α       = starting_value[(size(mme.mmeLhs,1)+1):end] #starting values of BV
+            α       = ((α != zero(α)) ? L'α : zeros(nObs))
             #reset parameter in mme.M
             mme.M.G         = mme.M.genetic_variance
             mme.M.scale     = mme.M.G*(mme.df.marker-2)/mme.df.marker
@@ -98,11 +93,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.obsID     = mme.obsID
             mme.M.nObs      = length(mme.M.obsID)
         end
-        meanAlpha,meanAlpha2         = zero(α),zero(α)#marker effects
-        meanDelta                    = zero(δ)        #inclusion indicator
-        mean_pi,mean_pi2             = 0.0,0.0        #inclusion probability
-        meanVara,meanVara2           = 0.0,0.0        #marker effect variances
-        meanScaleVara,meanScaleVara2 = 0.0,0.0        #scale parameter for prior of marker effect variance
+        α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
+        β                            = copy(α)          #partial marker effeccts used in BayesB
+        δ                            = ones(nMarkers)   #inclusion indicator for marker effects
+        meanAlpha,meanAlpha2         = zero(α),zero(α)  #marker effects
+        meanDelta                    = zero(δ)          #inclusion indicator
+        mean_pi,mean_pi2             = 0.0,0.0          #inclusion probability
+        meanVara,meanVara2           = 0.0,0.0          #marker effect variances
+        meanScaleVara,meanScaleVara2 = 0.0,0.0          #scale parameter for prior of marker effect variance
     end
     #phenotypes corrected for all effects
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
@@ -162,7 +160,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 sampleEffectsBayesC0!(mArray,mpm,ycorr,α,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods=="BayesB"
-                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,locusEffectVar,π)
+                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,mme.M.G,π)
             elseif methods == "BayesL"
                 sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
                 nLoci = nMarkers
@@ -200,8 +198,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
-        if mme.M != 0
-            if !(methods in ["BayesB","BayesL","GBLUP"]) && mme.MCMCinfo.estimate_variance
+        if mme.M != 0 && mme.MCMCinfo.estimate_variance
+            if methods in ["BayesC","RR-BLUP"]
                 mme.M.G  = sample_variance(α, nLoci, mme.df.marker, mme.M.scale)
             elseif methods == "BayesB"
                 for j=1:nMarkers
@@ -217,6 +215,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 sampleGammaArray!(gammaArray,α,mme.M.G)
             elseif methods == "GBLUP"
                 mme.M.G  = sample_variance(α./sqrt.(D), nObs,mme.df.marker, mme.M.scale)
+            else
+                error("Sampling of marker effect vairances is not available")
             end
         end
         ########################################################################
