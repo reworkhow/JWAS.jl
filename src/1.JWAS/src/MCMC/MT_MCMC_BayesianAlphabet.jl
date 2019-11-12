@@ -187,16 +187,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] + mme.M.genotypes*alphaArray[trait]
             end
-            lhs  = iR0 + iGM./D
-            #for trait = 1:nTraits
-            #    mme.M.genotypes'wArray[trait]
-            #    #rhs  =
-            #end
-            invLhs    = inv.(lhs)                #nTrait X nTrait
-            invLhsC   = chol.(Hermitian.(invLhs))
-            #gHat     = lhsC\rhs' #nTrait X 1
+            lhs  = [iR0 + iGM/D[i] for i=1:length(D)]
+            RHS  = L'*reshape(ycorr,nObs,nTraits)*iR0 #size nmarkers (=nObs) * nTraits
+            rhs  = [RHS[i,:] for i in 1:size(RHS,1)]  #not column major
+            invLhs    = inv.(lhs)                     #nTrait X nTrait
+            invLhsC   = cholesky.(Symmetric.(invLhs))
             mean1      = invLhs.*rhs
-            αlpha      = mean1 .+ invLhsC'.*randn.(nTraits) #wrong assignment
+            αlpha      = mean1 .+ invLhsC'.*[randn(nTraits) for i=1:length(mean1)]#wrong assignment
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] - mme.M.genotypes*alphaArray[trait]
             end
