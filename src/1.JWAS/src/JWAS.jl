@@ -454,9 +454,9 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for genotyped individuals.",bold=false,color=:red)
             index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of observations with both genotypes and phenotypes used\n",
-            "in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
+        printstyled("The number of observations with both genotypes and phenotypes used ",
+        "in the analysis is ",size(df,1),".\n",bold=false,color=:green)
     end
     if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
@@ -466,9 +466,9 @@ function check_phenotypes(mme,df)
             "Only use phenotype information for individuals in the pedigree.",bold=false,color=:red)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
-            printstyled("The number of observations with both phenotype and pedigree information ",
-            "used in the analysis is ",size(df,1),".\n",bold=false,color=:red)
         end
+        printstyled("The number of observations with both phenotype and pedigree information ",
+        "used in the analysis is ",size(df,1),".\n",bold=false,color=:green)
     end
     #***************************************************************************
     # set IDs for phenotypes
@@ -533,7 +533,15 @@ end
 function init_mixed_model_equations(mme,df,sol)
     getMME(mme,df)
     #starting value for sol can be provided
-    nsol = mme.M!=0 ? size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels : size(mme.mmeLhs,1)
+    if mme.M == 0                          #PBLUP
+        nsol = size(mme.mmeLhs,1)
+    elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
+        nsol = size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels
+    elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
+        nsol = size(mme.mmeLhs,1)+mme.M.nObs*mme.nModels
+    else
+        error("Starting values are not allowed.")
+    end
     if sol == false #no starting values
         sol = zeros(nsol)
     else            #besure type is Float64

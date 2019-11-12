@@ -77,8 +77,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             D       = eigenG.values
             # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
             nMarkers= nObs
-            α       = starting_value[(size(mme.mmeLhs,1)+1):end] #starting values of BV
-            α       = ((α != zero(α)) ? L'α : zeros(nObs))
+
             #reset parameter in mme.M
             mme.M.G         = mme.M.genetic_variance
             mme.M.scale     = mme.M.G*(mme.df.marker-2)/mme.df.marker
@@ -94,6 +93,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.nObs      = length(mme.M.obsID)
         end
         α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
+        if methods == "GBLUP"
+            α  = L'α
+        end
         β                            = copy(α)          #partial marker effeccts used in BayesB
         δ                            = ones(nMarkers)   #inclusion indicator for marker effects
         meanAlpha,meanAlpha2         = zero(α),zero(α)  #marker effects

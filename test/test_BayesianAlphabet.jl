@@ -16,7 +16,7 @@ end
 mkdir("mytest/")
 cd("mytest/")
 for single_step in [false,true]
-      for test_method in ["BayesC","BayesB","RR-BLUP","BayesL","non_genomic"]
+      for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","BayesL","non_genomic"]
             newdir = "ST_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             cd(newdir)
