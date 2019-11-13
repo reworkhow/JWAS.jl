@@ -53,7 +53,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #Priors for marker covaraince matrix
         ########################################################################
         mGibbs      = GibbsMats(mme.M.genotypes)
-        nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+        nMarkers,mArray,mpm,M = mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
         dfEffectVar = mme.df.marker
         if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
             mme.M.G /= 4*(nTraits+1)
@@ -86,13 +86,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             eigenG  = eigen(G)
             L       = eigenG.vectors
             D       = eigenG.values
-            # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
-            nMarkers= nObs
-            α       = ((α != zero(α)) ? L'α : zeros(nTraits*nObs))  #starting values for pseudo marker effect
+            # α is pseudo marker effects of length #genotyped inds (starting values = L'(starting value for BV)
+            nMarkers= size(mme.M.genotypes,1)
+            α       = ((α != zero(α)) ? L'α : zeros(nTraits*nMarkers))  #starting values for pseudo marker effect
             #reset parameter in mme.M
             mme.M.G         = mme.M.genetic_variance
             mme.M.scale     = mme.M.genetic_variance*(mme.df.marker-nTraits-1)
-            mme.M.markerID  = string.(1:nObs) #pseudo markers of length=nObs
+            mme.M.markerID  = string.(1:nMarkers)
             mme.M.genotypes = L
             #reset parameters in output
             Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
@@ -187,13 +187,17 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] + mme.M.genotypes*alphaArray[trait]
             end
-            lhs  = [iR0 + iGM/D[i] for i=1:length(D)]
-            RHS  = L'*reshape(ycorr,nObs,nTraits)*iR0 #size nmarkers (=nObs) * nTraits
-            rhs  = [RHS[i,:] for i in 1:size(RHS,1)]  #not column major
-            invLhs    = inv.(lhs)                     #nTrait X nTrait
-            invLhsC   = cholesky.(Symmetric.(invLhs))
-            mean1      = invLhs.*rhs
-            αlpha      = mean1 .+ invLhsC'.*[randn(nTraits) for i=1:length(mean1)]#wrong assignment
+            lhs    = [iR0 + iGM/D[i] for i=1:length(D)]
+            RHS    = mme.M.genotypes'*reshape(ycorr,nObs,nTraits)*iR0 #size nmarkers (=nObs) * nTraits
+            rhs    = [RHS[i,:] for i in 1:size(RHS,1)]  #not column major
+            Σα     = Symmetric.(inv.(lhs))              #nTrait X nTrait
+            μα     = Σα.*rhs
+            αs     = rand.(MvNormal.(μα,Σα))
+            for markeri = 1:nMarkers
+                for traiti = 1:nTraits
+                    alphaArray[traiti][markeri] = αs[markeri][traiti]
+                end
+            end
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] - mme.M.genotypes*alphaArray[trait]
             end
@@ -324,7 +328,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
-                if methods in ["BayesC","RR-BLUP","BayesL"]
+                if methods in ["BayesC","RR-BLUP","BayesL","GBLUP"]
                     output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),BigPi,alphaArray,vec(mme.M.G),outfile)
                 elseif methods == "BayesB"
                     output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),BigPi,alphaArray,hcat([x for x in mme.M.G]...),outfile)

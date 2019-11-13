@@ -95,7 +95,7 @@ for single_step in [false,true]
             end
             outputMCMCsamples(model2,"x2")
 
-            if single_step == false && test_method!="non_genomic" && test_method!="GBLUP"
+            if single_step == false && test_method!="non_genomic" 
                   out2=runMCMC(model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
             elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
