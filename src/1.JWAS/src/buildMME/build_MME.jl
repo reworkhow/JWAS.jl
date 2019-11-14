@@ -157,6 +157,9 @@ function getX(trm::ModelTerm,mme::MME)
            error("The order of names is changed!")
        end
        if !issubset(filter(x->x≠"0",trm.str),thisnames)
+         println(trm.random_type)
+         println(mme.modelTermDict[trm.trmStr].names)
+         println(thisnames)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
@@ -175,6 +178,7 @@ function getX(trm::ModelTerm,mme::MME)
       end
       trm.str=str
     end
+    trm.nLevels  = length(dict) #before add key "0"
     #founders "0" are not fitted effect (e.g, fitting maternal effects)
     #all non-founder animals in pedigree are effects
     #put 1<=any interger<=nAnimal is okay)
@@ -184,7 +188,6 @@ function getX(trm::ModelTerm,mme::MME)
     xv[trm.str.=="0"] .= 0 #for missing data
 
     #output
-    trm.nLevels  = length(dict)
     xi           = [xi;1]              # adding a zero to
     xj           = [xj;trm.nLevels]    # the last column in row 1
     xv           = [xv;0.0]

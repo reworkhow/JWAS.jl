@@ -35,6 +35,11 @@ set_random(model,"animal",ped,G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4)
+    if mme.ped == 0
+      mme.ped = deepcopy(ped)
+    else
+      error("Pedigree information is already added. Polygenic effects can only be set for one time")
+    end
     set_random(mme,randomStr,G,Vinv=ped,df=df)
 end
 ############################################################################
@@ -108,14 +113,14 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     ############################################################################
     modelTerms = [mme.modelTermDict[trm] for trm in res]
     if typeof(Vinv)==PedModule.Pedigree
-      [trm.randomType = "A" for trm in modelTerms]
+      [trm.random_type = "A" for trm in modelTerms]
       [trm.names = PedModule.getIDs(mme.ped) for trm in modelTerms]
-    elseif typeof(Vinv) != 0
-      [trm.randomType = "V" for trm in modelTerms]
+    elseif Vinv != 0 && names != []
+      [trm.random_type = "V" for trm in modelTerms]
       [trm.names = names for trm in modelTerms]
       # observed effects (e.g., data[!,:litter]) may be a subset of total random effect (i.e.,names)
     else
-      [trm.randomType = "I" for trm in modelTerms]
+      [trm.random_type = "I" for trm in modelTerms]
       #names will be obtained from observed data
     end
 
@@ -138,11 +143,6 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     #return random_effct type
     ############################################################################
     if typeof(Vinv)==PedModule.Pedigree
-      if mme.ped == 0
-        mme.ped = deepcopy(Vinv)
-      else
-        error("Pedigree information is already added. Polygenic effects can only be set for one time")
-      end
       Vinv  = PedModule.AInverse(mme.ped)
       mme.pedTrmVec = res
       mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
