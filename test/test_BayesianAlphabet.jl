@@ -36,7 +36,7 @@ for single_step in [false,true]
             G2 = [1.0 0.5
                   0.5 1.0]
             set_random(model1,"x2",G1);
-            #set_random(model1,"ID dam",pedigree,G2);
+            set_random(model1,"ID dam",pedigree,G2);
 
             if test_method != "conventional (no markers)"
                   G3 =1.0
@@ -85,7 +85,7 @@ for single_step in [false,true]
                   0.5 0.5 1.0 0.5
                   0.5 0.5 0.5 1.0]
             set_random(model2,"x2",G1);
-            #set_random(model2,"ID dam",pedigree,G2);
+            set_random(model2,"ID dam",pedigree,G2);
 
             if test_method != "conventional (no markers)"
                   G3 = [1.0 0.5 0.5
