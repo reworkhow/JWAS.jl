@@ -36,15 +36,19 @@ for single_step in [false,true]
             G2 = [1.0 0.5
                   0.5 1.0]
             set_random(model1,"x2",G1);
-            set_random(model1,"ID dam",pedigree,G2);
+            #set_random(model1,"ID dam",pedigree,G2);
 
-            if test_method != "non_genomic"
+            if test_method != "conventional (no markers)"
                   G3 =1.0
                   add_genotypes(model1,genofile,G3,header=true,separator=',');
             end
             outputMCMCsamples(model1,"x2")
 
+<<<<<<< HEAD
             if single_step == false && test_method!="conventional (no markers)"
+=======
+            if single_step == false
+>>>>>>> master
                   out1=runMCMC(model1,phenotypes,
                                methods=test_method,estimatePi=test_estimatePi,
                                chain_length=100,output_samples_frequency=10,
@@ -85,9 +89,9 @@ for single_step in [false,true]
                   0.5 0.5 1.0 0.5
                   0.5 0.5 0.5 1.0]
             set_random(model2,"x2",G1);
-            set_random(model2,"ID dam",pedigree,G2);
+            #set_random(model2,"ID dam",pedigree,G2);
 
-            if test_method != "non_genomic"
+            if test_method != "conventional (no markers)" 
                   G3 = [1.0 0.5 0.5
                         0.5 1.0 0.5
                         0.5 0.5 1.0]
@@ -95,7 +99,11 @@ for single_step in [false,true]
             end
             outputMCMCsamples(model2,"x2")
 
+<<<<<<< HEAD
             if single_step == false && test_method!="conventional (no markers)"
+=======
+            if single_step == false
+>>>>>>> master
                   out2=runMCMC(model2,phenotypes,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=123);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
