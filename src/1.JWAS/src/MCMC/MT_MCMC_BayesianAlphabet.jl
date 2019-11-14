@@ -233,17 +233,11 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         mme.mmeRhs = X'Ri*ycorr
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
-        ########################################################################
-        if mme.pedTrmVec != 0 && estimate_variance == true
-            sample_variance_pedigree(mme,sol)
-            addA(mme)
-        end
-        ########################################################################
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
         if estimate_variance == true
             sampleVCs(mme,sol)
-            addLambdas(mme)
+            addVinv(mme)
         end
         ########################################################################
         # 2.3 Marker Covariance Matrix
@@ -374,16 +368,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         if iter%outFreq==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",round.(meanVare,digits=6))
-
-            if mme.pedTrmVec !=0
-              println("Polygenic effects covariance matrix \n",round.(G0Mean,digits=6))
-            end
-
-            if mme.M != 0
-              if methods != "BayesB"
-                  println("Marker effects covariance matrix: \n",round.(meanVara,digits=6))
-              end
-            end
         end
     end
 

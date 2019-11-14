@@ -76,41 +76,14 @@ function MT_MCMC_PBLUP_constvare(nIter,mme,df;
         X          = mme.X
         mme.mmeLhs = X'Ri*X
         mme.mmeRhs = X'Ri*mme.ySparse
-
         ########################################################################
-        # 2.2 Genetic Covariance Matrix (Polygenic Effects)
-        ########################################################################
-        if mme.pedTrmVec != 0 && estimate_variance == true #will optimize taking advantage of symmetry
-            for (i,trmi) = enumerate(pedTrmVec)
-                pedTrmi   = mme.modelTermDict[trmi]
-                startPosi = pedTrmi.startPos
-                endPosi   = startPosi + pedTrmi.nLevels - 1
-                for (j,trmj) = enumerate(pedTrmVec)
-                    pedTrmj    = mme.modelTermDict[trmj]
-                    startPosj  = pedTrmj.startPos
-                    endPosj    = startPosj + pedTrmj.nLevels - 1
-                    S[i,j]     = (sol[startPosi:endPosi]'*mme.Ai*sol[startPosj:endPosj])[1,1]
-                end
-            end
-            pedTrm1 = mme.modelTermDict[pedTrmVec[1]]
-            q = pedTrm1.nLevels
-
-            G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
-            mme.Gi = inv(G0)
-            addA(mme)
-            if iter > burnin
-                G0Mean  += (G0  - G0Mean )/(iter-burnin)
-            end
-        end
-
-        ########################################################################
+        # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
         if estimate_variance == true
             sampleVCs(mme,sol)
-            addLambdas(mme)
+            addVinv(mme)
         end
-
         ########################################################################
         # 2.4 Update priors using posteriors (empirical)
         ########################################################################

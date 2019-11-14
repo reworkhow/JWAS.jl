@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = 0.0; df = 4)
-  if !isposdef(map(Float64,R)) && R != 0.0
+  if R != 0.0 && !isposdef(map(Float64,R))
     error("The covariance matrix is not positive definite.")
   end
 
@@ -280,17 +280,14 @@ function getMME(mme::MME, df::DataFrame)
         if mme.Ai == 0 #if no SSBR
             mme.Ai=PedModule.AInverse(mme.ped)
         end
-      mme.GiOld = zeros(size(mme.GiOld))
-      addA(mme::MME)
-      mme.GiOld = copy(mme.GiNew)
     end
 
-    #trick to enable addLambdas() 1st time
+    #trick to enable addLambdas() 1st time ???
     #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
     for random_term in mme.rndTrmVec
       random_term.GiOld = zeros(size(random_term.GiOld))
     end
-    addLambdas(mme)
+    addVinv(mme)
     for random_term in mme.rndTrmVec
       random_term.GiOld = copy(random_term.GiNew)
     end

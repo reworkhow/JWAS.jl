@@ -48,7 +48,7 @@ end
 #*******************************************************************************
 
 ################################################################################
-# sample variances for IID random location effects
+# sample variances for random location effects
 ################################################################################
 function sampleVCs(mme::MME,sol::Array{Float64,1})
     for random_term in mme.rndTrmVec
@@ -73,32 +73,10 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
        random_term.GiOld = copy(random_term.GiNew)
        random_term.GiNew = copy(inv(G0))
        random_term.Gi    = copy(inv(G0))
+       if random_term.randomType == "A"
+           mme.GiOld = random_term.GiOld
+           mme.GiNew = random_term.GiNew
+           mme.Gi    = random_term.Gi
+       end
     end
-end
-################################################################################
-# sample variances for Polygenic Effects (Genetic Covariance Matrix)           #
-################################################################################
-function sample_variance_pedigree(mme,sol)
-    pedTrmVec = mme.pedTrmVec
-    νG0       = mme.df.polygenic
-    P         = mme.scalePed
-    S         = zero(P)
-    for (i,trmi) = enumerate(pedTrmVec)
-        pedTrmi   = mme.modelTermDict[trmi]
-        startPosi = pedTrmi.startPos
-        endPosi   = startPosi + pedTrmi.nLevels - 1
-        for (j,trmj) = enumerate(pedTrmVec)
-            pedTrmj   = mme.modelTermDict[trmj]
-            startPosj = pedTrmj.startPos
-            endPosj   = startPosj + pedTrmj.nLevels - 1
-            S[i,j]    = sol[startPosi:endPosi]'*mme.Ai*sol[startPosj:endPosj]
-        end
-    end
-
-    q  = mme.modelTermDict[pedTrmVec[1]].nLevels
-    G0 = rand(InverseWishart(νG0 + q, convert(Array,Symmetric(P + S))))
-
-    mme.GiOld = copy(mme.GiNew)
-    mme.GiNew = copy(inv(G0))
-    mme.Gi    = copy(inv(G0))
 end

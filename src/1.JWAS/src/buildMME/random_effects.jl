@@ -35,53 +35,7 @@ set_random(model,"animal",ped,G)
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4)
-    if  G != false && !isposdef(G)
-        error("The covariance matrix is not positive definite.")
-    end
-
-    pedTrmVec = split(randomStr," ",keepempty=false)  # "animal animal*age"
-
-    #add trait names to variables;
-    #"animal" => "y1:animal"; "animal*age"=>"y1:animal*age"
-    res = []
-    for trm in pedTrmVec
-      for (m,model) = enumerate(mme.modelVec)
-        strVec  = split(model,['=','+'])
-        strpVec = [strip(i) for i in strVec]
-        if trm in strpVec
-          res = [res;string(mme.lhsVec[m])*":"*trm]
-        else
-          printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
-        end
-      end
-    end
-    mme.pedTrmVec = res
-    if mme.ped == 0
-        mme.ped = deepcopy(ped)
-    else
-        error("Pedigree information is already added.")
-    end
-    if G == false #make G matrix of zeros to get prior from phenotypes later
-      G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
-    end
-    if typeof(G)<:Number  #single variable single-trait, convert scalar G to 1x1 matrix
-      G=reshape([G],1,1)
-    end
-    if length(res) != size(G,1)
-      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
-    end
-    #Gi            : multi-trait;
-    #GiOld & GiNew : single-trait, allow multiple correlated genetic effects (e.g., additive+materna) even in single-trait
-    #isposdef(G) to test whether G is provided or not
-    mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
-    mme.df.polygenic = Float64(df)
-
-    ν, k  = Float64(df), size(mme.pedTrmVec,1)
-    νG0   = ν + k
-    mme.df.polygenic = νG0 #final df for this inverse wisahrt
-    mme.scalePed     = G*(mme.df.polygenic - k - 1)
-
-    nothing
+    set_random(mme,randomStr,G,Vinv=ped,df=df)
 end
 ############################################################################
 #Set specific ModelTerm as random  (Not specific for IID or A(pedigree))
@@ -121,57 +75,97 @@ set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
 function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
+    ############################################################################
+    #Pre-Check
+    ############################################################################
     if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
-    if names != []
-      names = string.(names)
-    end
-    G = map(Float64,G)
-    df= Float64(df)
-    randTrmVec = split(randomStr," ",keepempty=false)  # "litter"
-
-    #add model equation number to variables; "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
-    for trm in randTrmVec
-      res = []
+    names   = string.(names)
+    G       = map(Float64,G)
+    df      = Float64(df)
+    ############################################################################
+    #add trait names (model equation number) to variables;
+    #e.g., "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
+    #"animal" => "y1:animal"; "animal*age"=>"y1:animal*age"
+    ############################################################################
+    randTrmVec = split(randomStr," ",keepempty=false)  # ["litter" "group"]
+    res = []
+    for trm in randTrmVec                              # "litter"; "group"
       for (m,model) = enumerate(mme.modelVec)
         strVec  = split(model,['=','+'])
         strpVec = [strip(i) for i in strVec]
         if trm in strpVec || trm == "ϵ"
           mtrm= string(mme.lhsVec[m])*":"*trm
           res = [res;mtrm]
-          #*********************
-          #phenotype IDs is a subset of names (Vinv)
-          mme.modelTermDict[mtrm].names=names
-          #*********************
+          mme.modelTermDict[mtrm].names=names         # observed effects (e.g., data[!,:litter]) may be a subset of total random effect (i.e.,names)
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
-      if G == false #make G matrix of zeros to get prior from phenotypes later
-        G = (length(res)==1 ? 0.0 : Matrix{Float64}(I,length(res),length(res)))*0.0
-      end
-      if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
-        G=reshape([G],1,1)
-      end
-      if length(res) != size(G,1)
-        error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
-      end
-      #Gi            : multi-trait;
-      #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-      Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
-
-      term_array   = res
-      df           = df+length(term_array)
-      scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-      randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names)
-      push!(mme.rndTrmVec,randomEffect)
-      mme.df.random = Float64(df)
+    end                                               # "y1:litter"; "y2:litter"; "y1:group"
+    ############################################################################
+    #Covariance among effects for the same individual
+    ############################################################################
+    if G == false #make G matrix of zeros to get prior from phenotypes later
+      G = (length(res)==1 ? 0.0 : zeros(length(res),length(res)))
     end
+    if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
+      G=reshape([G],1,1)
+    end
+    if length(res) != size(G,1)
+      error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
+    end
+    #Gi            : multi-trait;
+    #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
+    Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+    ############################################################################
+    #return random_effct type
+    ############################################################################
+    if typeof(Vinv)==PedModule.Pedigree
+      if mme.ped == 0
+        mme.ped = deepcopy(Vinv)
+      else
+        error("Pedigree information is already added. Polygenic effects can only be set for one time")
+      end
+      Vinv  = PedModule.AInverse(mme.ped)
+      names = PedModule.getIDs(mme.ped)
+      mme.pedTrmVec = res
+      mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+      mme.df.polygenic = Float64(df)
+
+      ν, k  = Float64(df), size(mme.pedTrmVec,1)
+      νG0   = ν + k
+      mme.df.polygenic = νG0 #final df for this inverse wisahrt
+      mme.scalePed     = G*(mme.df.polygenic - k - 1)
+      random_type = "A"
+    elseif Vinv != 0
+      random_type = "V"
+    else
+      random_type = "I"
+    end
+    term_array   = res
+    df           = df+length(term_array)
+    scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+    randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names,random_type)
+    push!(mme.rndTrmVec,randomEffect)
     nothing
 end
 ################################################################################
 #ADD TO MIXED MODEL EQUATIONS FOR THE RANDOM EFFECTS PARTS
+################################################################################
+#Construct MME for random effects with specific covariance structures including
+#1) pedigree-based random effects part, e.g., "animal" and "maternal"
+#2) IID
+#
+#Single-trait:
+#lamda version, e.g., litter(A) and groups(B), where A and B may not be next to each other in the design matrix
+#1) use `set_random(model,"1:A 1:B",G)` to estimate cov(1:A,1:B) (requirement: A.names == B.names; similar to ped)
+#2) use `set_random(model,"1:A",G1);`set_random(model,"1:B",G2)` to make 1:A and 1:B independent.
+#
+#Multi-trait:
+#e.g., 1:litter, 2:litter
+#
 ################################################################################
 #NOTE: SINGLE TRAIT
 #The equation Ai*(GiNew*RNew - GiOld*ROld) is used to update Ai part in LHS
@@ -183,37 +177,7 @@ end
 #LHS is update as Ai*(GiNew*RNew - GiOld*ROld), then GiOld = Ginew
 #if sample residual variances, similar approaches to update the LHS is used.
 ################################################################################
-
-#Construct MME for pedigree-based random effects part
-function addA(mme::MME) #two terms,e.g.,"animal" and "maternal" may not be near in MME
-    pedTrmVec = mme.pedTrmVec
-    for (i,trmi) = enumerate(pedTrmVec)
-        pedTrmi  = mme.modelTermDict[trmi]
-        startPosi  = pedTrmi.startPos
-        endPosi    = startPosi + pedTrmi.nLevels - 1
-        for (j,trmj) in enumerate(pedTrmVec)
-            pedTrmj  = mme.modelTermDict[trmj]
-            startPosj= pedTrmj.startPos
-            endPosj  = startPosj + pedTrmj.nLevels - 1
-            #lamda version (single trait) or not (multi-trait)
-            myaddA   = (mme.nModels!=1) ? (mme.Ai*mme.Gi[i,j]) : (mme.Ai*(mme.GiNew[i,j]*mme.RNew - mme.GiOld[i,j]*mme.ROld))
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddA
-        end
-    end
-end
-
-################################################################################
-#Construct MME for random effects with specific covariance structures (including iid )
-#Single-trait:
-#lamda version, e.g., litter and groups
-#1) use `set_random(model,"1:A 1:B",G)` to estimate cov(1:A,1:B) (requirement: A.names == B.names; similar to ped)
-#2) use `set_random(model,"1:A",G1);`set_random(model,"1:B",G2)` to make 1:A and 1:B independent.
-#
-#Multi-trait:
-#e.g., 1:litter, 2:litter
-################################################################################
-function addLambdas(mme::MME)
+function addVinv(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
       Vi         = (random_term.Vinv!=0) ? random_term.Vinv : SparseMatrixCSC{Float64}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
@@ -225,9 +189,10 @@ function addLambdas(mme::MME)
             randTrmj    = mme.modelTermDict[termj]
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
-            myaddLambda = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
+            #lamda version (single trait) or not (multi-trait)
+            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddLambda
+            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddVinv
           end
       end
     end

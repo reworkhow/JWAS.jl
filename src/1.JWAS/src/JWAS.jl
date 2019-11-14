@@ -704,7 +704,11 @@ function getMCMCinfo(mme)
 
     printstyled("\nDegree of freedom for hyper-parameters:\n\n",bold=true)
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
-    @printf("%-30s %20.3f\n","iid random effect variances:",mme.df.random)
+    for randomeffect in mme.rndTrmVec
+        if randomeffect.randomType != "A"
+            @printf("%-30s %20.3f\n","random effect variances:",randomeffect.df)
+        end
+    end
     if mme.pedTrmVec!=0
         @printf("%-30s %20.3f\n","polygenic effect variances:",mme.df.polygenic)
     end

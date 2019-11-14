@@ -71,6 +71,7 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
     names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
+    randomType::String
 end
 
 mutable struct Genotypes
