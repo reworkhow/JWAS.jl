@@ -1,4 +1,3 @@
-
 using CSV,DataFrames,JWAS,JWAS.Datasets
 phenofile       = Datasets.dataset("example","phenotypes.txt")
 phenofile_ssbr  = Datasets.dataset("example","phenotypes_ssbr.txt")
@@ -16,7 +15,7 @@ end
 mkdir("mytest/")
 cd("mytest/")
 for single_step in [false,true]
-      for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","BayesL","non_genomic"]
+      for test_method in ["BayesC","BayesB","RR-BLUP","GBLUP","BayesL","conventional (no markers)"]
             newdir = "ST_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             cd(newdir)
@@ -45,15 +44,15 @@ for single_step in [false,true]
             end
             outputMCMCsamples(model1,"x2")
 
-            if single_step == false && test_method!="non_genomic"
-                  out1=runMCMC(model1,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
-            elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
+            if single_step == false && test_method!="conventional (no markers)"
+                  out1=runMCMC(model1,phenotypes,
+                               methods=test_method,estimatePi=test_estimatePi,
+                               chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
+            elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out1=runMCMC(model1,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples");
-            elseif test_method=="non_genomic"
-                  out1=runMCMC(model1,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
             end
-            if test_method != "non_genomic" && test_method!="GBLUP"
+            if test_method != "conventional (no markers)" && test_method!="GBLUP"
                   gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
                   show(gwas1)
                   println()
@@ -95,15 +94,14 @@ for single_step in [false,true]
             end
             outputMCMCsamples(model2,"x2")
 
-            if single_step == false && test_method!="non_genomic"
-                  out2=runMCMC(model2,phenotypes,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
-            elseif single_step == true && test_method!="non_genomic" && test_method!="GBLUP"
+            if single_step == false && test_method!="conventional (no markers)"
+                  out2=runMCMC(model2,phenotypes,
+                              methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
+            elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples");
-            elseif test_method=="non_genomic"
-                  out2=runMCMC(model2,phenotypes,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples");
             end
-            if test_method != "non_genomic" && test_method!="GBLUP"
+            if test_method != "conventional (no markers)" && test_method!="GBLUP"
                   gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
                   show(gwas1)
                   println()
