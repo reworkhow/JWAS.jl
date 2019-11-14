@@ -157,9 +157,6 @@ function getX(trm::ModelTerm,mme::MME)
            error("The order of names is changed!")
        end
        if !issubset(filter(x->x≠"0",trm.str),thisnames)
-         println(trm.random_type)
-         println(mme.modelTermDict[trm.trmStr].names)
-         println(thisnames)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
