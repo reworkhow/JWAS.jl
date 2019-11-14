@@ -32,6 +32,8 @@ mutable struct ModelTerm
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
 
+    random_type::String
+
     function ModelTerm(trmStr,m,traitname)
         iModel    = m
         trmStr    = strip(trmStr)
@@ -40,7 +42,7 @@ mutable struct ModelTerm
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
+        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0),"fixed")
     end
 end
 

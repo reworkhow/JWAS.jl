@@ -98,12 +98,27 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
         if trm in strpVec || trm == "ϵ"
           mtrm= string(mme.lhsVec[m])*":"*trm
           res = [res;mtrm]
-          mme.modelTermDict[mtrm].names=names         # observed effects (e.g., data[!,:litter]) may be a subset of total random effect (i.e.,names)
         else
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
     end                                               # "y1:litter"; "y2:litter"; "y1:group"
+    ############################################################################
+    #Set type of model terms
+    ############################################################################
+    modelTerms = [mme.modelTermDict[trm] for trm in res]
+    if typeof(Vinv)==PedModule.Pedigree
+      [trm.randomType = "A" for trm in modelTerms]
+      [trm.names = PedModule.getIDs(mme.ped) for trm in modelTerms]
+    elseif typeof(Vinv) != 0
+      [trm.randomType = "V" for trm in modelTerms]
+      [trm.names = names for trm in modelTerms]
+      # observed effects (e.g., data[!,:litter]) may be a subset of total random effect (i.e.,names)
+    else
+      [trm.randomType = "I" for trm in modelTerms]
+      #names will be obtained from observed data
+    end
+
     ############################################################################
     #Covariance among effects for the same individual
     ############################################################################
@@ -129,11 +144,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
         error("Pedigree information is already added. Polygenic effects can only be set for one time")
       end
       Vinv  = PedModule.AInverse(mme.ped)
-      names = PedModule.getIDs(mme.ped)
       mme.pedTrmVec = res
       mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
-      mme.df.polygenic = Float64(df)
-
       ν, k  = Float64(df), size(mme.pedTrmVec,1)
       νG0   = ν + k
       mme.df.polygenic = νG0 #final df for this inverse wisahrt
@@ -141,6 +153,9 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       random_type = "A"
     elseif Vinv != 0
       random_type = "V"
+      if size(Vinv,1) != length(names) || length(unique(names)) != length(names)
+        error("Wrong size or duplicated values in Vinv and names.")
+      end
     else
       random_type = "I"
     end
