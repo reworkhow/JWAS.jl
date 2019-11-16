@@ -153,7 +153,6 @@ mutable struct MME
                                                   #RANDOM EFFCTS
     pedTrmVec                                     #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
     ped                                           #PedModule.Pedigree
-    Ai                                            #inverse of numerator relationship matrix
     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
     GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
@@ -190,7 +189,7 @@ mutable struct MME
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,R*(ν-2)/ν,
                    0,
@@ -206,7 +205,7 @@ mutable struct MME
         scaleRes = R*(νR0 - k - 1)
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    R,0,0,0.0,0.0,scaleRes,
                    0,

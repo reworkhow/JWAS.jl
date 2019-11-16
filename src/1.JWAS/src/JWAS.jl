@@ -359,24 +359,18 @@ function errors_args(mme,methods)
 end
 
 function check_pedigree(mme,df,pedigree)
-    if mme.ped == 0 && pedigree == false
-        return
-    elseif pedigree != false
-        mme.ped = pedigree
+    if mme.ped == 0 && pedigree != false #check whether mme.ped exists
+        mme.ped = deepcopy(pedigree)
     end
-    if pedigree!=false
-        pedID=map(string,collect(keys(pedigree.idMap)))
-    else
+    if mme.ped != 0
         pedID=map(string,collect(keys(mme.ped.idMap)))
-    end
-
-    if mme.M!=0 && !issubset(mme.M.obsID,pedID)
-        error("Not all genotyped individuals are found in pedigree!")
-    end
-
-    phenoID = strip.(map(string,df[!,1]))
-    if !issubset(phenoID,pedID)
+        if mme.M!=0 && !issubset(mme.M.obsID,pedID)
+            error("Not all genotyped individuals are found in pedigree!")
+        end
+        phenoID = strip.(map(string,df[!,1]))
+        if !issubset(phenoID,pedID)
         error("Not all phenotyped individuals are found in pedigree!")
+        end
     end
 end
 

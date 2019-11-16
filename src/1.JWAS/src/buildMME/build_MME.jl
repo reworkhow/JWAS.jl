@@ -250,13 +250,6 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Random effects parts in MME
-    #Pedigree
-    if mme.pedTrmVec != 0
-        if mme.Ai == 0 #if no SSBR
-            mme.Ai=PedModule.AInverse(mme.ped)
-        end
-    end
-
     #trick to enable addLambdas() 1st time ???
     #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
     for random_term in mme.rndTrmVec

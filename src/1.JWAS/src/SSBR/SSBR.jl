@@ -42,9 +42,9 @@ function calc_Ai(ped,geno,mme)
     #***********************************************************************
     num_pedn = PedModule.genoSet!(geno.obsID,ped)
     #calculate Ai, Ai_nn, Ai_ng
-    mme.Ai   = PedModule.AInverse(ped)
-    Ai_nn    = mme.Ai[1:num_pedn,1:num_pedn]
-    Ai_ng    = mme.Ai[1:num_pedn,(num_pedn+1):size(mme.Ai,1)]
+    Ai       = PedModule.AInverse(ped)
+    Ai_nn    = Ai[1:num_pedn,1:num_pedn]
+    Ai_ng    = Ai[1:num_pedn,(num_pedn+1):size(Ai,1)]
     return Ai_nn,Ai_ng
 end
 ############################################################################

@@ -40,7 +40,7 @@ function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G
     else
       error("Pedigree information is already added. Polygenic effects can only be set for one time")
     end
-    set_random(mme,randomStr,G,Vinv=ped,df=df)
+    set_random(mme,randomStr,G,Vinv=mme.ped,df=df)
 end
 ############################################################################
 #Set specific ModelTerm as random  (Not specific for IID or A(pedigree))
