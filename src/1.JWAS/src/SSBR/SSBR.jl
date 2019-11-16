@@ -15,7 +15,7 @@ function SSBRrun(mme,df,big_memory=false)
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
     data_ϵ    = deepcopy(obsID)
-    data_ϵ[.!isnongeno].="0"
+    data_ϵ[.!isnongeno].="missing"
     df[!,Symbol("ϵ")]=data_ϵ
 
     df[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)

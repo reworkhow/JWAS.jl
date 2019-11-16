@@ -99,7 +99,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
 
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      error("Missing values are found in independent variables: ",trm.factors[i])
+      printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
     end
   end
 
@@ -156,7 +156,7 @@ function getX(trm::ModelTerm,mme::MME)
        if thisnames!=mme.modelTermDict[trm.trmStr].names
            error("The order of names is changed!")
        end
-       if !issubset(filter(x->x≠"0",trm.str),thisnames)
+       if !issubset(filter(x->x≠"missing",trm.str),thisnames)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
@@ -168,7 +168,7 @@ function getX(trm::ModelTerm,mme::MME)
       str=[]
       for i in trm.str  #data
         for animalstr in getFactor(i) #two ways:animal*age;age*animal
-          if animalstr in thisnames || animalstr == "0"  #"animal" ID not "age"
+          if animalstr in thisnames || animalstr == "missing"  #"animal" ID not "age"
             str = [str;animalstr]
           end
         end
@@ -180,9 +180,9 @@ function getX(trm::ModelTerm,mme::MME)
     #all non-founder animals in pedigree are effects
     #put 1<=any interger<=nAnimal is okay)
     #thus add one row of zeros in X
-    dict["0"]          = 1 #for missing data
+    dict["missing"]          = 1 #for missing data
     xj                 = round.(Int64,[dict[i] for i in trm.str]) #column index
-    xv[trm.str.=="0"] .= 0 #for missing data
+    xv[trm.str.=="missing"] .= 0 #for missing data
 
     #output
     xi           = [xi;1]              # adding a zero to

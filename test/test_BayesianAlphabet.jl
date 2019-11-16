@@ -6,7 +6,7 @@ genofile   = Datasets.dataset("example","genotypes.txt")
 mapfile    = Datasets.dataset("example","map.txt")
 
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
-phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true)
+phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true,missingstrings=["NA"])
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
 if ispath("mytest") == true
