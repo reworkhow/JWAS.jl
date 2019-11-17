@@ -156,42 +156,42 @@ function getX(trm::ModelTerm,mme::MME)
        if thisnames!=mme.modelTermDict[trm.trmStr].names
            error("The order of names is changed!")
        end
-       if !issubset(filter(x->x≠"missing",trm.str),thisnames)
+       if trm.nFactors == 1 && !issubset(filter(x->x≠"missing",trm.str),thisnames)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
     else #fixed or iid random effects
       dict,trm.names  = mkDict(trm.str)
     end
+    trm.nLevels  = length(dict) #before add key "missing"
     #3.2. Levels for each observation
+    #Get the random effect in interactions
     if trm.random_type != "fixed" && trm.nFactors != 1
       str=[]
       for i in trm.str  #data
-        for animalstr in getFactor(i) #two ways:animal*age;age*animal
-          if animalstr in thisnames || animalstr == "missing"  #"animal" ID not "age"
-            str = [str;animalstr]
+        for factorstr in getFactor(i) #two ways:animal*age;age*animal
+          if factorstr in thisnames || factorstr == "missing"  #"animal" ID not "age"
+            str = [str;factorstr]
           end
         end
       end
+      if length(str) != length(trm.str)
+        error("Same level names are found in the two factors in the interaction.")
+      end
       trm.str=str
     end
-    trm.nLevels  = length(dict) #before add key "0"
-    #founders "0" are not fitted effect (e.g, fitting maternal effects)
-    #all non-founder animals in pedigree are effects
-    #put 1<=any interger<=nAnimal is okay)
-    #thus add one row of zeros in X
-    dict["missing"]          = 1 #for missing data
+    #4. missing values in random effects
+    #e.g, founders in pedigree are "missing" ("0") for materal effects
+    #e.g, ϵ in single-step SNP-BLUP are missings for genotyped individuals
+    #Thus, add one row of zeros in the design matrix for corresponding observation
+    dict["missing"]          = 1 #column index for missing data (any positive integer < nLevels)
+    xv[trm.str.=="missing"] .= 0 #values       for missing data
+
+    #5.column index
     xj                 = round.(Int64,[dict[i] for i in trm.str]) #column index
-    xv[trm.str.=="missing"] .= 0 #for missing data
 
-    #output
-    xi           = [xi;1]              # adding a zero to
-    xj           = [xj;trm.nLevels]    # the last column in row 1
-    xv           = [xv;0.0]
-
-
-    #some animal IDs in pedigree may be missing in data (df),ensure #columns = #animals in
-    #ensure X has nObs*nModels rows
+    #create the design matrix
+    #ensure size of X is nObs*nModels X nLevels
     nModels = size(mme.lhsVec,1)
     #create X
     trm.X = sparse(xi,xj,xv,nObs*nModels,trm.nLevels)

@@ -123,7 +123,6 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       [trm.random_type = "I" for trm in modelTerms]
       #names will be obtained from observed data
     end
-
     ############################################################################
     #Covariance among effects for the same individual
     ############################################################################
