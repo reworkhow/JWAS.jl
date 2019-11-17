@@ -19,9 +19,29 @@ c,a,b
 d,a,c
 ```
 """
-function get_pedigree(pedfile::AbstractString;header=false,separator=',')
+function get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
     printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
-    mkPed(pedfile,header=header,separator=separator)
+
+    df  = CSV.read(pedfile,types=[String,String,String],
+                    delim=separator,header=header,missingstrings=missingstrings)
+    df[!,1]=strip.(string.(df[!,1]))
+    df[!,2]=strip.(string.(df[!,2]))
+    df[!,3]=strip.(string.(df[!,3]))
+    ped = Pedigree(1,Dict{AbstractString,PedNode}(),
+                     Dict{Int64, Float64}(),
+                     Set(),Set(),Set(),Set(),Array{String,1}())
+    fillMap!(ped,df)
+    @showprogress "coding pedigree... " for id in keys(ped.idMap)
+     code!(ped,id)
+    end
+    @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
+      calcInbreeding!(ped,id)
+    end
+
+    ped.IDs=getIDs(ped)
+
+    println("Finished!")
+    return ped
 end
 
 mutable struct PedNode
@@ -50,10 +70,10 @@ function code!(ped::Pedigree,id::AbstractString)
     end
     sireID = ped.idMap[id].sire
     damID  = ped.idMap[id].dam
-    if sireID!="0" && ped.idMap[sireID].seqID==0
+    if sireID!="missing" && ped.idMap[sireID].seqID==0
         code!(ped,sireID)
     end
-    if damID!="0" && ped.idMap[damID].seqID==0
+    if damID!="missing" && ped.idMap[damID].seqID==0
         code!(ped,damID)
     end
     ped.idMap[id].seqID = ped.currentID
@@ -65,13 +85,13 @@ function fillMap!(ped::Pedigree,df)
     #use df[col_inds] to get the columns without copying
     n = size(df,1)
     for i in df[!,2] #same to df[:,2] in deprecated CSV
-        if i!="0" && !haskey(ped.idMap,i)          # skip 0 and if already done
-            ped.idMap[i]=PedNode(0,"0","0",-1.0)
+        if i!="missing" && !haskey(ped.idMap,i)          # skip 0 and if already done
+            ped.idMap[i]=PedNode(0,"missing","missing",-1.0)
         end
     end
     for i in df[!,3]
-        if i!="0" && !haskey(ped.idMap,i)         # make an entry for all dams
-            ped.idMap[i]=PedNode(0,"0","0",-1.0)
+        if i!="missing" && !haskey(ped.idMap,i)         # make an entry for all dams
+            ped.idMap[i]=PedNode(0,"missing","missing",-1.0)
         end
     end
     j=1
@@ -83,7 +103,7 @@ end
 
 function calcAddRel!(ped::Pedigree,id1::AbstractString,id2::AbstractString)
     #@printf "calcRel between %s and %s \n" id1 id2
-    if id1=="0" || id2=="0"           # zero
+    if id1=="missing" || id2=="missing"           # zero
         return 0.0
     end
     old,yng = ped.idMap[id1].seqID < ped.idMap[id2].seqID ? (id1,id2) : (id2,id1)
@@ -106,8 +126,8 @@ function calcAddRel!(ped::Pedigree,id1::AbstractString,id2::AbstractString)
         return (aii)
     end
 
-    aOldDamYoung  = (old=="0" || damOfYng =="0") ? 0.0 : calcAddRel!(ped,old,damOfYng)
-    aOldSireYoung = (old=="0" || sireOfYng=="0") ? 0.0 : calcAddRel!(ped,old,sireOfYng)
+    aOldDamYoung  = (old=="missing" || damOfYng =="missing") ? 0.0 : calcAddRel!(ped,old,damOfYng)
+    aOldSireYoung = (old=="missing" || sireOfYng=="missing") ? 0.0 : calcAddRel!(ped,old,sireOfYng)
     aijVal = 0.5*(aOldSireYoung + aOldDamYoung)
     ped.aij[aijKey] = aijVal
 
@@ -124,7 +144,7 @@ function calcInbreeding!(ped::Pedigree,id::AbstractString)
     end
     sireID = ped.idMap[id].sire
     damID  = ped.idMap[id].dam
-    if (sireID=="0" || damID=="0" )
+    if (sireID=="missing" || damID=="missing" )
         ped.idMap[id].f = 0.0
     else
         ped.idMap[id].f = 0.5*calcAddRel!(ped,sireID,damID)
@@ -145,8 +165,8 @@ function HAi(ped::Pedigree)
     for ind in keys(ped.idMap)
         sire = ped.idMap[ind].sire
         dam  = ped.idMap[ind].dam
-        sirePos = sire=="0" ? 0 : ped.idMap[sire].seqID
-        damPos  = dam =="0" ? 0 : ped.idMap[dam ].seqID
+        sirePos = sire=="missing" ? 0 : ped.idMap[sire].seqID
+        damPos  = dam =="missing" ? 0 : ped.idMap[dam ].seqID
         myPos   = ped.idMap[ind].seqID
         if sirePos>0 && damPos>0
             d = sqrt(4.0/(2 - ped.idMap[sire].f - ped.idMap[dam].f))
@@ -193,8 +213,8 @@ function AInverseSlow(ped::Pedigree)
     for ind in keys(ped.idMap)
         sire = ped.idMap[ind].sire
         dam  = ped.idMap[ind].dam
-        pos[1] = sire=="0" ? 0 : ped.idMap[sire].seqID
-        pos[2] = dam =="0" ? 0 : ped.idMap[dam ].seqID
+        pos[1] = sire=="missing" ? 0 : ped.idMap[sire].seqID
+        pos[2] = dam =="missing" ? 0 : ped.idMap[dam ].seqID
         pos[3] = ped.idMap[ind].seqID
         if pos[1]>0 && pos[2]>0
             q[1] = -0.5
@@ -228,29 +248,6 @@ function AInverseSlow(ped::Pedigree)
     return (Ai)
 end
 
-function  mkPed(pedFile::AbstractString;header=false,separator=',')
-    df  = CSV.read(pedFile,types=[String,String,String],
-                    delim=separator,header=header)
-    df[!,1]=strip.(df[!,1])
-    df[!,2]=strip.(df[!,2])
-    df[!,3]=strip.(df[!,3])
-    ped = Pedigree(1,Dict{AbstractString,PedNode}(),
-                     Dict{Int64, Float64}(),
-                     Set(),Set(),Set(),Set(),Array{String,1}())
-    fillMap!(ped,df)
-    @showprogress "coding pedigree... " for id in keys(ped.idMap)
-     code!(ped,id)
-    end
-    @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
-      calcInbreeding!(ped,id)
-    end
-
-    ped.IDs=getIDs(ped)
-
-    println("Finished!")
-    return ped
-end
-
 function getIDs(ped::Pedigree)
     n = length(ped.idMap)
     ids = Array{String}(undef,n)
@@ -280,9 +277,9 @@ function getinfo(pedigree::Pedigree)
     println("#individuals: ",length(pedigree.idMap))
     sires  = [pednode.sire for pednode in values(pedigree.idMap)]
     dams = [pednode.dam for pednode in values(pedigree.idMap)]
-    println("#sires:       ",sum(unique(sires).!="0"))
-    println("#dams:        ",sum(unique(dams).!="0"))
-    println("#founders:    ",length(pedigree.idMap)-sum((sires .!= "0") .* (dams .!= "0")))
+    println("#sires:       ",sum(unique(sires).!="missing"))
+    println("#dams:        ",sum(unique(dams).!="missing"))
+    println("#founders:    ",length(pedigree.idMap)-sum((sires .!= "missing") .* (dams .!= "missing")))
 
     Ai   = PedModule.AInverse(pedigree)
     IDs = PedModule.getIDs(pedigree)

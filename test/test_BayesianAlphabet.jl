@@ -6,7 +6,7 @@ genofile   = Datasets.dataset("example","genotypes.txt")
 mapfile    = Datasets.dataset("example","map.txt")
 
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
-phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true)
+phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true,missingstrings=["NA"])
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
 
 if ispath("mytest") == true
@@ -48,10 +48,10 @@ for single_step in [false,true]
                   out1=runMCMC(model1,phenotypes,
                                methods=test_method,estimatePi=test_estimatePi,
                                chain_length=100,output_samples_frequency=10,
-                               printout_frequency=50,output_samples_file = "MCMC_samples",seed=123);
+                               printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out1=runMCMC(model1,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=123);
+                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
                   gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
@@ -97,10 +97,10 @@ for single_step in [false,true]
 
             if single_step == false
                   out2=runMCMC(model2,phenotypes,
-                              methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=123);
+                              methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=123);
+                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
                   gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")

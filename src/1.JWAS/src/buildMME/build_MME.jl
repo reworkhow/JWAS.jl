@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = 0.0; df = 4)
-  if !isposdef(map(Float64,R)) && R != 0.0
+  if R != 0.0 && !isposdef(map(Float64,R))
     error("The covariance matrix is not positive definite.")
   end
 
@@ -99,7 +99,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
 
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      error("Missing values are found in independent variables: ",trm.factors[i])
+      printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
     end
   end
 
@@ -140,86 +140,61 @@ getFactor(str) = [strip(i) for i in split(str,"*")]
 #
 ################################################################################
 function getX(trm::ModelTerm,mme::MME)
-    #Row Index
+    #1. Row Index
     nObs  = length(trm.str)
     xi    = (trm.iModel-1)*nObs .+ collect(1:nObs)
-    #Value
+    #2. Value
     xv    = trm.val
-    #Column Index
-    if trm.trmStr in mme.pedTrmVec
-       #########################################################################
-       #random polygenic effects,e.g."Animal","Animal*age"
-       #column index needs to compromise numerator relationship matrix
-       #########################################################################
-       trm.names   = PedModule.getIDs(mme.ped)
-       trm.nLevels = length(mme.ped.idMap)
-       whichobs    = 1
-
-       xj          = []
-       for i in trm.str
-         for animalstr in getFactor(i) #two ways:animal*age;age*animal
-           if haskey(mme.ped.idMap, animalstr)   #"animal" ID not "age"
-             xj = [xj; mme.ped.idMap[animalstr].seqID]
-           elseif animalstr=="0" #founders "0" are not fitted effect (e.g, fitting maternal effects)
-                                 #all non-founder animals in pedigree are effects
-             xj = [xj; 1]        #put 1<=any interger<=nAnimal is okay)
-             xv[whichobs]=0      #thus add one row of zeros in X
-           end
-         end
-         whichobs    += 1
+    #3. Column Index
+    #3.1. position fo all levels
+    if trm.random_type == "V" || trm.random_type == "A"
+      #########################################################################
+      #random polygenic effects,e.g."Animal","Animal*age"
+      #column index needs to compromise numerator relationship matrix
+      #########################################################################
+       dict,thisnames  = mkDict(mme.modelTermDict[trm.trmStr].names) #key: levels of variable; value: column index
+       if thisnames!=mme.modelTermDict[trm.trmStr].names
+           error("The order of names is changed!")
        end
-       xj        = round.(Int64,xj)
-
-       #some animal IDs in pedigree may be missing in data (df),ensure #columns = #animals in
-       #pedigree by adding a column of zeros
-       pedSize = length(mme.ped.idMap)
-       xi      = [xi;1]          # adding a zero to
-       xj      = [xj;pedSize]    # the last column in row 1
-       xv      = [xv;0.0]
-    else
-       #########################################################################
-       #other fixed or random effects
-       #########################################################################
-       #dict,trm.names  = mkDict(trm.str) #key: levels of variable; value: column index
-       #trm.nLevels     = length(dict)
-       #xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
-       res=Array{AbstractString,1}()
-       for i in mme.rndTrmVec
-           res=[res;i.term_array]
-       end #make an array of all random effects (string)
-       if trm.trmStr in res && mme.modelTermDict[trm.trmStr].names!=[]
-           #imputational residual
-           dict,thisnames  = mkDict(mme.modelTermDict[trm.trmStr].names)
-           if thisnames!=mme.modelTermDict[trm.trmStr].names
-               error("errors in SSBR")
-           end
-           if !issubset(filter(x->x≠"0",trm.str),thisnames)
-             error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
-             trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
-           end
-       else
-           dict,trm.names  = mkDict(trm.str)
-           #delete "0"? for fixed effects missing
+       if trm.nFactors == 1 && !issubset(filter(x->x≠"missing",trm.str),thisnames)
+         error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
+         trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
-
-       trm.nLevels     = length(dict)
-       dict["0"]       = 1 #for missing data
-       xj              = round.(Int64,[dict[i] for i in trm.str]) #column index
-       xv[trm.str.=="0"] .= 0 #for missing data
-
-       xi      = [xi;1]              # adding a zero to
-       xj      = [xj;trm.nLevels]    # the last column in row 1
-       xv      = [xv;0.0]
+    else #fixed or iid random effects
+      dict,trm.names  = mkDict(trm.str)
     end
+    trm.nLevels  = length(dict) #before add key "missing"
+    #3.2. Levels for each observation
+    #Get the random effect in interactions
+    if trm.random_type != "fixed" && trm.nFactors != 1
+      str=[]
+      for i in trm.str  #data
+        for factorstr in getFactor(i) #two ways:animal*age;age*animal
+          if factorstr in thisnames || factorstr == "missing"  #"animal" ID not "age"
+            str = [str;factorstr]
+          end
+        end
+      end
+      if length(str) != length(trm.str)
+        error("Same level names are found in the two factors in the interaction.")
+      end
+      trm.str=str
+    end
+    #4. missing values in random effects
+    #e.g, founders in pedigree are "missing" ("0") for materal effects
+    #e.g, ϵ in single-step SNP-BLUP are missings for genotyped individuals
+    #Thus, add one row of zeros in the design matrix for corresponding observation
+    dict["missing"]          = 1 #column index for missing data (any positive integer < nLevels)
+    xv[trm.str.=="missing"] .= 0 #values       for missing data
 
-    #ensure X has nObs*nModels rows
+    #5.column index
+    xj                 = round.(Int64,[dict[i] for i in trm.str]) #column index
+
+    #create the design matrix
+    #ensure size of X is nObs*nModels X nLevels
     nModels = size(mme.lhsVec,1)
-    xi = [xi;nObs*nModels] #if (1,1) and (nObs*nModels,1) already exist
-    xj = [xj;1]            # add 0 to X
-    xv = [xv;0]
-
     #create X
-    trm.X = sparse(xi,xj,xv)
+    trm.X = sparse(xi,xj,xv,nObs*nModels,trm.nLevels)
     dropzeros!(trm.X)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
@@ -275,22 +250,12 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Random effects parts in MME
-    #Pedigree
-    if mme.pedTrmVec != 0
-        if mme.Ai == 0 #if no SSBR
-            mme.Ai=PedModule.AInverse(mme.ped)
-        end
-      mme.GiOld = zeros(size(mme.GiOld))
-      addA(mme::MME)
-      mme.GiOld = copy(mme.GiNew)
-    end
-
-    #trick to enable addLambdas() 1st time
+    #trick to enable addLambdas() 1st time ???
     #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
     for random_term in mme.rndTrmVec
       random_term.GiOld = zeros(size(random_term.GiOld))
     end
-    addLambdas(mme)
+    addVinv(mme)
     for random_term in mme.rndTrmVec
       random_term.GiOld = copy(random_term.GiNew)
     end
