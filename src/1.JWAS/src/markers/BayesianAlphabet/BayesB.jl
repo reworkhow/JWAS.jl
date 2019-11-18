@@ -6,7 +6,8 @@ function sampleEffectsBayesB!(xArray,
                               δ,
                               vare,
                               locusEffectVar,
-                              π)
+                              π,
+                              Rinv)
 
     logPi             = log(π)
     logPiComp         = log(1.0-π)
@@ -15,12 +16,11 @@ function sampleEffectsBayesB!(xArray,
     invlocusEffectVar = 1.0./locusEffectVar
     loglocusEffectVar = log.(locusEffectVar)
     nLoci             = 0
-
-    nMarkers      = length(α)
+    nMarkers          = length(α)
 
     for j=1:nMarkers
         x = xArray[j]
-        rhs = (dot(x,yCorr) + xpx[j]*u[j])*invVarRes
+        rhs = (dot(x.*Rinv,yCorr) + xpx[j]*u[j])*invVarRes
         lhs = xpx[j]*invVarRes + invlocusEffectVar[j]
         invLhs = 1.0/lhs
         gHat   = rhs*invLhs

@@ -59,6 +59,7 @@ export get_correlations,get_heritability
 
 """
     runMCMC(model::MME,df::DataFrame;
+            weight                   = false,
             ### MCMC
             chain_length             = 1000,
             starting_value           = false,
@@ -121,6 +122,8 @@ export get_correlations,get_heritability
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
 """
 function runMCMC(mme::MME,df;
+                #Data
+                heterogeneous_residuals         = false,
                 #MCMC
                 chain_length::Int64             = 100,
                 starting_value                  = false,
@@ -161,6 +164,11 @@ function runMCMC(mme::MME,df;
         if istril(causal_structure)
             error("The causal structue needs to be a lower triangular matrix.")
         end
+    end
+    if heterogeneous_residuals !=false && length(heterogeneous_residuals) == size(df,1)
+        Rinv = inv.(heterogeneous_residuals)
+    else
+        Rinv = false
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
@@ -238,6 +246,7 @@ function runMCMC(mme::MME,df;
 
     if mme.nModels ==1 #single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
+                        Rinv                     = Rinv,
                         burnin                   = burnin,
                         π                        = Pi,
                         methods                  = methods,

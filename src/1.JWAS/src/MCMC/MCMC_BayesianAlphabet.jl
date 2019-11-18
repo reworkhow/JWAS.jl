@@ -6,6 +6,7 @@
 #y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
 ################################################################################
 function MCMC_BayesianAlphabet(nIter,mme,df;
+                     Rinv                       = false,
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,
@@ -157,14 +158,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if mme.M !=0
             if methods=="BayesC"
-                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,mme.RNew, mme.M.G, π)
+                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,mme.RNew, mme.M.G, π, Rinv)
             elseif methods=="RR-BLUP"
-                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,mme.RNew,mme.M.G)
+                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,mme.RNew,mme.M.G,Rinv)
                 nLoci = nMarkers
             elseif methods=="BayesB"
-                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,mme.M.G,π)
+                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,mme.M.G,π,Rinv)
             elseif methods == "BayesL"
-                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
+                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,mme.M.G,Rinv)
                 nLoci = nMarkers
             elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
@@ -195,7 +196,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if categorical_trait == false
             mme.ROld = mme.RNew
-            mme.RNew = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleRes)
+            mme.RNew = sample_variance(ycorr.*sqrt.(Rinv), length(ycorr), mme.df.residual, mme.scaleRes)
         end
         ########################################################################
         # 2.4 Marker Effects Variance

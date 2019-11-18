@@ -32,8 +32,7 @@ function center(X)
 end
 
 function getXpRinvX(X, Rinv)
-    ncol = size(X)[2]
-    XpRinvX = [((X[:,i].*Rinv)'X[:,i])[1]::Float64 for i=1:ncol]
+    XpRinvX = [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 
@@ -48,10 +47,14 @@ mutable struct GibbsMats
     ncols::Int64
     xArray::Array{Array{Float64,1},1}
     xpx::Array{Float64,1}
-    function GibbsMats(X::Array{Float64,2}) ###More
+    function GibbsMats(X::Array{Float64,2};weight=false) ###More
         nrows,ncols = size(X)
         xArray = get_column_ref(X)
-        XpX = getXpRinvX(X)
+        if weight==false
+            XpX = getXpRinvX(X)
+        else
+            XpX = getXpRinvX(X,weight)
+        end
         new(X,nrows,ncols,xArray,XpX)
     end
 end
