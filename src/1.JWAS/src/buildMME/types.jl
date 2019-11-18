@@ -169,6 +169,8 @@ mutable struct MME
     RNew::Float64                                 #lambda version of MME (single-trait)
     scaleRes                                      #scale parameters
 
+    invweights                                    #heterogeneous residuals
+
     M                                             #GENOTYPES
 
     mmePos::Int64                                 #temporary value to record term position (start from 1)
@@ -192,6 +194,7 @@ mutable struct MME
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,R*(ν-2)/ν,
+                   [],
                    0,
                    1,
                    [],
@@ -208,6 +211,7 @@ mutable struct MME
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    R,0,0,0.0,0.0,scaleRes,
+                   [],
                    0,
                    1,
                    [],

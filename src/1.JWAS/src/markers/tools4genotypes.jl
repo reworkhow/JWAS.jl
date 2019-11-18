@@ -47,15 +47,20 @@ mutable struct GibbsMats
     ncols::Int64
     xArray::Array{Array{Float64,1},1}
     xpx::Array{Float64,1}
-    function GibbsMats(X::Array{Float64,2};weight=false) ###More
+    xRinvArray::Array{Array{Float64,1},1}
+    xpRinvx::Array{Float64,1}
+    function GibbsMats(X::Array{Float64,2};Rinv=false) ###More
         nrows,ncols = size(X)
-        xArray = get_column_ref(X)
-        if weight==false
-            XpX = getXpRinvX(X)
+        xArray      = get_column_ref(X)
+        xpx         = getXpRinvX(X)
+        if Rinv==false
+            xRinvArray = xArray
+            xpRinvx    = xpx
         else
-            XpX = getXpRinvX(X,weight)
+            xRinvArray = [x.*Rinv for x in xArray]
+            xpRinvx    = getXpRinvX(X,Rinv)
         end
-        new(X,nrows,ncols,xArray,XpX)
+        new(X,nrows,ncols,xArray,xpx,xRinvArray,xpRinvx)
     end
 end
 

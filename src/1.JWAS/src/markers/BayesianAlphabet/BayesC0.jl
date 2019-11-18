@@ -1,4 +1,6 @@
-function sampleEffectsBayesL!(xArray,xpx,yCorr,α,gammaArray,vRes,vEff,Rinv) # sample vare and vara
+function sampleEffectsBayesL!(xArray,xpx,
+                              xRinvArray,xpRinvx, #Heterogeneous residuals
+                              yCorr,α,gammaArray,vRes,vEff) # sample vare and vara
     nMarkers      = length(α)
     λ    = vRes/vEff
 
@@ -9,17 +11,17 @@ function sampleEffectsBayesL!(xArray,xpx,yCorr,α,gammaArray,vRes,vEff,Rinv) # s
     end
     getLambda = getLambdaFunction(gammaArray)
     for j=1:nMarkers
-        x        = xArray[j]
-        rhs      = dot(x.*Rinv,yCorr) + xpx[j]*α[j,1]
+        x, xRinv = xArray[j], xRinvArray[j]
+        rhs      = dot(xRinv,yCorr) + xpx[j]*α[j]
         lhs      = xpx[j] + getLambda(gammaArray,j,λ)
         invLhs   = 1.0/lhs
         mean     = invLhs*rhs
-        oldAlpha = α[j,1]
+        oldAlpha = α[j]
         α[j]     = mean + randn()*sqrt(invLhs*vRes)
-        BLAS.axpy!(oldAlpha-α[j,1],x,yCorr)
+        BLAS.axpy!(oldAlpha-α[j],x,yCorr)
     end
 end
 
-function sampleEffectsBayesC0!(xArray,xpx,yCorr,α,vRes,vEff)
-    sampleEffectsBayesL!(xArray,xpx,yCorr,α,[1.0],vRes,vEff)
+function sampleEffectsBayesC0!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,vRes,vEff)
+    sampleEffectsBayesL!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,[1.0],vRes,vEff)
 end
