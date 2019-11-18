@@ -32,6 +32,8 @@ mutable struct ModelTerm
     startPos::Int64                   #start postion for this term in incidence matrix
     X::SparseMatrixCSC{Float64,Int64} #incidence matrix
 
+    random_type::String
+
     function ModelTerm(trmStr,m,traitname)
         iModel    = m
         trmStr    = strip(trmStr)
@@ -40,7 +42,7 @@ mutable struct ModelTerm
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0))
+        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0),"fixed")
     end
 end
 
@@ -71,6 +73,7 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
     names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
+    randomType::String
 end
 
 mutable struct Genotypes
@@ -150,7 +153,6 @@ mutable struct MME
                                                   #RANDOM EFFCTS
     pedTrmVec                                     #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
     ped                                           #PedModule.Pedigree
-    Ai                                            #inverse of numerator relationship matrix
     Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
     GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
@@ -187,7 +189,7 @@ mutable struct MME
       if nModels==1 && typeof(R)==Float64             #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    zeros(1,1),0,0,R,R,R*(ν-2)/ν,
                    0,
@@ -203,7 +205,7 @@ mutable struct MME
         scaleRes = R*(νR0 - k - 1)
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
                    [],
                    R,0,0,0.0,0.0,scaleRes,
                    0,
