@@ -194,7 +194,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if categorical_trait == false
             mme.ROld = mme.RNew
-            mme.RNew = sample_variance(ycorr.*sqrt.(Rinv), length(ycorr), mme.df.residual, mme.scaleRes)
+            mme.RNew = sample_variance(ycorr.* (Rinv!=false ? sqrt.(Rinv) : 1.0), length(ycorr), mme.df.residual, mme.scaleRes)
         end
         ########################################################################
         # 2.4 Marker Effects Variance
