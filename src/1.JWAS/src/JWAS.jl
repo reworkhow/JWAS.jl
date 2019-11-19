@@ -28,8 +28,7 @@ include("MCMC/MT_PBLUP_constvare.jl")
 include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
 include("markers/BayesianAlphabet/BayesC0.jl")
-include("markers/BayesianAlphabet/BayesC.jl")
-include("markers/BayesianAlphabet/BayesB.jl")
+include("markers/BayesianAlphabet/BayesABC.jl")
 include("markers/BayesianAlphabet/MTBayesC.jl")
 include("markers/BayesianAlphabet/MTBayesB.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
@@ -59,6 +58,7 @@ export get_correlations,get_heritability
 
 """
     runMCMC(model::MME,df::DataFrame;
+            weight                   = false,
             ### MCMC
             chain_length             = 1000,
             starting_value           = false,
@@ -98,7 +98,7 @@ export get_correlations,get_heritability
     * Miscellaneous Options
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
-    * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
+    * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
     * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
       a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
@@ -121,6 +121,8 @@ export get_correlations,get_heritability
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
 """
 function runMCMC(mme::MME,df;
+                #Data
+                heterogeneous_residuals         = false,
                 #MCMC
                 chain_length::Int64             = 100,
                 starting_value                  = false,
@@ -196,7 +198,8 @@ function runMCMC(mme::MME,df;
     check_outputID(mme)
     #check phenotypes, only use phenotypes for individuals in pedigree
     #(incomplete genomic data,PBLUP) or with genotypes (complete genomic data)
-    df = check_phenotypes(mme,df)
+    #check heterogeneous residuals
+    df = check_phenotypes(mme,df,heterogeneous_residuals)
     #check priors
     #make default covariance matrices if not provided
     set_default_priors_for_variance_components(mme,df)
@@ -238,6 +241,7 @@ function runMCMC(mme::MME,df;
 
     if mme.nModels ==1 #single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
+                        Rinv                     = mme.invweights,
                         burnin                   = burnin,
                         π                        = Pi,
                         methods                  = methods,
@@ -308,7 +312,7 @@ function errors_args(mme,methods)
 
     Pi         = mme.MCMCinfo.Pi
     estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesB","RR-BLUP","GBLUP","conventional (no markers)"])
+    if !(methods in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP","conventional (no markers)"])
         error(methods," is not available in JWAS. Please read the documentation.")
     end
 
@@ -340,6 +344,16 @@ function errors_args(mme,methods)
         elseif estimatePi == true
             error("BayesL runs with estimatePi = false.")
         end
+    elseif methods=="BayesA"
+        if mme.M==0
+            error("BayesA runs with genotypes.")
+        elseif Pi != 0.0
+            error("BayesA runs with π=0.")
+        elseif estimatePi == true
+            error("BayesA runs with estimatePi = false.")
+        end
+        methods = "BayesB"
+        println("BayesA is equivalent to BayesB with constant π=0. BayesB with constant π=0 runs.")
     elseif methods=="GBLUP"
         if mme.M == 0
             error("GBLUP runs with genotypes.")
@@ -413,7 +427,7 @@ function check_outputID(mme)
 
 end
 
-function check_phenotypes(mme,df)
+function check_phenotypes(mme,df,heterogeneous_residuals)
     printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
     df[!,1] = strip.(map(string,df[!,1])) #make IDs stripped string
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
@@ -464,6 +478,14 @@ function check_phenotypes(mme,df)
     # set IDs for phenotypes
     #***************************************************************************
     mme.obsID  = map(string,df[!,1])
+    #***************************************************************************
+    # set Riv for heterogeneous residuals
+    #***************************************************************************
+    if heterogeneous_residuals == true
+        mme.invweights = 1 ./ convert(Array,phenotypes[!,Symbol("weights")])
+    else
+        mme.invweights = false
+    end
     return df
 end
 

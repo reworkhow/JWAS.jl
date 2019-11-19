@@ -6,6 +6,7 @@
 #y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
 ################################################################################
 function MCMC_BayesianAlphabet(nIter,mme,df;
+                     Rinv                       = false,
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,
@@ -57,8 +58,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     end
     #marker effects
     if mme.M != 0
-        mGibbs                     = GibbsMats(mme.M.genotypes)
-        nObs,nMarkers,mArray,mpm,M = mGibbs.nrows,mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
+        mGibbs                        = GibbsMats(mme.M.genotypes)
+        nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
+        mArray,mpm,mRinvArray,mpRinvm = mGibbs.xArray,mGibbs.xpx,mGibbs.xRinvArray,mGibbs.xpRinvx
 
         if methods=="BayesB" #α=β.*δ
             mme.M.G        = fill(mme.M.G,nMarkers) #a scalar in BayesC but a vector in BayeB
@@ -147,7 +149,11 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 1.1. Non-Marker Location Parameters
         ########################################################################
         ycorr = ycorr + mme.X*sol
-        rhs = mme.X'ycorr
+        if Rinv == false
+            rhs = mme.X'ycorr
+        else
+            rhs = mme.X'Diagonal(Rinv)*ycorr
+        end
 
         Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
 
@@ -156,15 +162,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 1.2 Marker Effects
         ########################################################################
         if mme.M !=0
-            if methods=="BayesC"
-                nLoci = sampleEffectsBayesC!(mArray, mpm, ycorr, α, δ,mme.RNew, mme.M.G, π)
+            if methods in ["BayesC","BayesB","BayesA"]
+                locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
+                nLoci = sampleEffectsBayesABC!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
             elseif methods=="RR-BLUP"
-                sampleEffectsBayesC0!(mArray,mpm,ycorr,α,mme.RNew,mme.M.G)
+                sampleEffectsBayesC0!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
                 nLoci = nMarkers
-            elseif methods=="BayesB"
-                nLoci = sampleEffectsBayesB!(mArray,mpm,ycorr,α,β,δ,mme.RNew,mme.M.G,π)
             elseif methods == "BayesL"
-                sampleEffectsBayesL!(mArray,mpm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
+                sampleEffectsBayesL!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
@@ -189,7 +194,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if categorical_trait == false
             mme.ROld = mme.RNew
-            mme.RNew = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleRes)
+            mme.RNew = sample_variance(ycorr.* (Rinv!=false ? sqrt.(Rinv) : 1.0), length(ycorr), mme.df.residual, mme.scaleRes)
         end
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -212,7 +217,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             elseif methods == "GBLUP"
                 mme.M.G  = sample_variance(α./sqrt.(D), nObs,mme.df.marker, mme.M.scale)
             else
-                error("Sampling of marker effect vairances is not available")
+                error("Sampling of marker effect variances is not available")
             end
         end
         ########################################################################
