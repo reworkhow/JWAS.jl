@@ -7,7 +7,9 @@
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 
 """
-function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G=false;rowID=false,header=false,center=true,G_is_marker_variance=false,df=4)
+function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G=false;
+                       rowID=false,header=false,center=true,G_is_marker_variance=false,df=4,
+                       double_precision=false)
     if length(rowID) != size(M,1)
         rowID = string.(1:size(M,1))
         printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
@@ -16,7 +18,7 @@ function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},
         header = ["id"; string.(1:size(M,2))]
         printstyled("The header (marker IDs) is set to 1,2,...,#markers\n",bold=true)
     end
-    mme.M   = readgenotypes(M,rowID = rowID, header=header, center=center)
+    mme.M   = readgenotypes(M,rowID = rowID, header=header, center=center,double_precision=double_precision)
     if G_is_marker_variance == true
         mme.M.G = G
     else
@@ -45,8 +47,10 @@ O1,1,2,0,1,0
 O3,0,0,2,1,1
 ```
 """
-function add_genotypes(mme::MME,file,G=false;separator=',',header=true,center=true,G_is_marker_variance=false,df=4)
-    mme.M   = readgenotypes(file;separator=separator,header=header,center=center)
+function add_genotypes(mme::MME,file,G=false;
+                       separator=',',header=true,center=true,G_is_marker_variance=false,df=4,
+                       double_precision=false)
+    mme.M   = readgenotypes(file,separator=separator,header=header,center=center,double_precision=double_precision)
     if G_is_marker_variance == true
         mme.M.G = G
     else
@@ -67,7 +71,9 @@ end
 #
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
-function readgenotypes(file::AbstractString;separator=',',header=true,center=true)
+function readgenotypes(file::AbstractString;
+                       separator=',',header=true,center=true,
+                       double_precision=false)
     printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
     printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
 
@@ -88,7 +94,7 @@ function readgenotypes(file::AbstractString;separator=',',header=true,center=tru
     #read a large genotype file
     df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
     obsID     = map(string,df[!,1])
-    genotypes = map(Float64,convert(Matrix,df[!,2:end]))
+    genotypes = map((double_precision ? Float64 : Float32),convert(Matrix,df[!,2:end]))
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
@@ -99,7 +105,9 @@ function readgenotypes(file::AbstractString;separator=',',header=true,center=tru
 end
 
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
-function readgenotypes(M::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFrame};rowID=false,header=false,center=true)
+function readgenotypes(M::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFrame};
+                       rowID=false,header=false,center=true,
+                       double_precision=false)
     if length(header) != (size(M,2)+1)
         header = ["id"; string.(1:size(M,2))]
         printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
@@ -110,7 +118,7 @@ function readgenotypes(M::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFra
     end
     markerID  = string.(header[2:end])
     obsID     = map(string,rowID)
-    genotypes = map(Float64,convert(Matrix,M))
+    genotypes = map((double_precision ? Float64 : Float32),convert(Matrix,M))
     #preliminary summary of genotype (duplication of the function above)
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not

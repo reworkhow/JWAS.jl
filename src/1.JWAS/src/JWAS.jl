@@ -122,14 +122,14 @@ export get_correlations,get_heritability
 """
 function runMCMC(mme::MME,df;
                 #Data
-                heterogeneous_residuals         = false,
+                heterogeneous_residuals           = false,
                 #MCMC
-                chain_length::Int64             = 100,
-                starting_value                  = false,
-                burnin::Int64                   = 0,
-                output_samples_frequency::Int64 = chain_length>1000 ? div(chain_length,1000) : 1,
-                output_samples_file             = "MCMC_samples",
-                update_priors_frequency::Int64  = 0,
+                chain_length::Integer             = 100,
+                starting_value                    = false,
+                burnin::Integ                     = 0,
+                output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
+                output_samples_file               = "MCMC_samples",
+                update_priors_frequency::Integer  = 0,
                 #Methods
                 methods                         = "conventional (no markers)",
                 estimate_variance               = true,
@@ -149,7 +149,8 @@ function runMCMC(mme::MME,df;
                 seed                            = false,
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
-                big_memory                      = false)
+                big_memory                      = false,
+                double_precision                = false)
 
     ############################################################################
     # Pre-Check
@@ -183,7 +184,8 @@ function runMCMC(mme::MME,df;
                             outputEBV,
                             output_heritability,
                             categorical_trait,
-                            seed)
+                            seed,
+                            double_precision)
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -238,7 +240,11 @@ function runMCMC(mme::MME,df;
     if printout_model_info == true
       describe(mme)
     end
-
+    ############################################################################
+    # Double Precision or not
+    ############################################################################
+    if double_precision == false
+        mme.M.genotypes
     if mme.nModels ==1 #single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
@@ -483,6 +489,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     #***************************************************************************
     if heterogeneous_residuals == true
         mme.invweights = 1 ./ convert(Array,phenotypes[!,Symbol("weights")])
+        mme.invweights = mme.MCMCinfo.double_precision : Float64.(invweights) : Float32.(invweights)
     else
         mme.invweights = false
     end

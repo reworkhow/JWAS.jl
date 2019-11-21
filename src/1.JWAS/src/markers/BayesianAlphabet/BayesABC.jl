@@ -7,10 +7,10 @@ function sampleEffectsBayesABC!(xArray,xpx,
                                 π)
 
     logPi         = log(π)
-    logPiComp     = log(1.0-π)
+    logPiComp     = log(1-π)
     logDelta0     = logPi
-    invVarRes     = 1.0/vare
-    invVarEffects = 1.0./varEffects
+    invVarRes     = 1/vare
+    invVarEffects = 1./varEffects
     logVarEffects = log.(varEffects)
     nLoci         = 0
     nMarkers      = length(α)
@@ -19,10 +19,10 @@ function sampleEffectsBayesABC!(xArray,xpx,
         x, xRinv = xArray[j], xRinvArray[j]
         rhs = (dot(xRinv,yCorr) + xpx[j]*α[j])*invVarRes
         lhs = xpRinvx[j]*invVarRes + invVarEffects[j]
-        invLhs = 1.0/lhs
+        invLhs = 1/lhs
         gHat   = rhs*invLhs
         logDelta1  = -0.5*(log(lhs) + logVarEffects[j] - gHat*rhs) + logPiComp
-        probDelta1 = 1.0/(1.0 + exp(logDelta0 - logDelta1))
+        probDelta1 = 1/(1+ exp(logDelta0 - logDelta1))
         oldAlpha = α[j]
 
         if(rand()<probDelta1)

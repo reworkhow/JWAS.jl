@@ -11,7 +11,7 @@ end
 
 function get_column_ref(X)
     ncol = size(X)[2]
-    xArray = Array{Array{Float64,1}}(undef,ncol)
+    xArray = Array{Array{AbstractFloat,1}}(undef,ncol)
     for i=1:ncol
         xArray[i] = get_column(X,i)
     end
@@ -42,14 +42,14 @@ function getXpRinvX(X)
 end
 
 mutable struct GibbsMats
-    X::Array{Float64,2}
+    X::Array{AbstractFloat,2}
     nrows::Int64
     ncols::Int64
-    xArray::Array{Array{Float64,1},1}
-    xpx::Array{Float64,1}
-    xRinvArray::Array{Array{Float64,1},1}
-    xpRinvx::Array{Float64,1}
-    function GibbsMats(X::Array{Float64,2};Rinv=false) ###More
+    xArray::Array{Array{AbstractFloat,1},1}
+    xpx::Array{AbstractFloat,1}
+    xRinvArray::Array{Array{AbstractFloat,1},1}
+    xpRinvx::Array{AbstractFloat,1}
+    function GibbsMats(X::Array{AbstractFloat,2};Rinv=false) ###More
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
         xpx         = getXpRinvX(X)

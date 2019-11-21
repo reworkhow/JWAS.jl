@@ -99,7 +99,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             α  = L'α
         end
         β                            = copy(α)          #partial marker effeccts used in BayesB
-        δ                            = ones(nMarkers)   #inclusion indicator for marker effects
+        δ                            = ones(typeof(α[1]),nMarkers)   #inclusion indicator for marker effects
         meanAlpha,meanAlpha2         = zero(α),zero(α)  #marker effects
         meanDelta                    = zero(δ)          #inclusion indicator
         mean_pi,mean_pi2             = 0.0,0.0          #inclusion probability
