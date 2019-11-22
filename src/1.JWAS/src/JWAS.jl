@@ -243,8 +243,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Double Precision or not
     ############################################################################
-    if double_precision == false
-        mme.M.genotypes
     if mme.nModels ==1 #single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
