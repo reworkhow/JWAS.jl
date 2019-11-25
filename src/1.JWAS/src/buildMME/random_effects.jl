@@ -91,7 +91,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     names   = string.(names)
     G       = double_precision ? Float64.(G) : Float32.(G)
-    df      = double_precision ? Float64(df) : Float32(df))
+    df      = double_precision ? Float64(df) : Float32(df)
     ############################################################################
     #add trait names (model equation number) to variables;
     #e.g., "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
@@ -134,7 +134,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     #Gi            : multi-trait;
     #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-    Gi = GiOld = GiNew = (G == false ? false :Symmetric(inv(G)))
+    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(G)))
     ############################################################################
     #return random_effct type
     ############################################################################

@@ -126,7 +126,7 @@ function runMCMC(mme::MME,df;
                 #MCMC
                 chain_length::Integer             = 100,
                 starting_value                    = false,
-                burnin::Integ                     = 0,
+                burnin::Integer                   = 0,
                 output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
                 output_samples_file               = "MCMC_samples",
                 update_priors_frequency::Integer  = 0,

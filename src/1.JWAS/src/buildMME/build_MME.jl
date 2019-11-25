@@ -91,9 +91,6 @@ end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   nObs    = size(df,1)
-  trm.str = Array{AbstractString}(undef,nObs)
-  trm.val = Array{AbstractFloat}(undef,nObs)
-
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
       printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
@@ -127,7 +124,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.str = str
-  trm.val = mme.MCMCinfo.double_precision : Float64(val) : Float32(val)
+  trm.val = (mme.MCMCinfo.double_precision ? Float64.(val) : Float32.(val))
 end
 
 getFactor(str) = [strip(i) for i in split(str,"*")]
@@ -228,7 +225,7 @@ function getMME(mme::MME, df::DataFrame)
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
-    vv      = mme.MCMCinfo.double_precision : Float64.(y) : Float32.(y)
+    vv      = (mme.MCMCinfo.double_precision ? Float64.(y) : Float32.(y))
     ySparse = sparse(ii,jj,vv)
 
     #Make lhs and rhs for MME

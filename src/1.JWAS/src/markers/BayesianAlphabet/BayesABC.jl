@@ -10,7 +10,7 @@ function sampleEffectsBayesABC!(xArray,xpx,
     logPiComp     = log(1-π)
     logDelta0     = logPi
     invVarRes     = 1/vare
-    invVarEffects = 1./varEffects
+    invVarEffects = 1 ./  varEffects
     logVarEffects = log.(varEffects)
     nLoci         = 0
     nMarkers      = length(α)

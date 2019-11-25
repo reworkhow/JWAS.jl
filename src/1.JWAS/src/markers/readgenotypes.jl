@@ -7,7 +7,7 @@
 * **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 
 """
-function add_genotypes(mme::MME,M::Union{Array{Float64,2},DataFrames.DataFrame},G=false;
+function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataFrames.DataFrame},G=false;
                        rowID=false,header=false,center=true,G_is_marker_variance=false,df=4,
                        double_precision=false)
     if length(rowID) != size(M,1)
@@ -105,7 +105,7 @@ function readgenotypes(file::AbstractString;
 end
 
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
-function readgenotypes(M::Union{Array{Float64,2},Array{Any,2},DataFrames.DataFrame};
+function readgenotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame};
                        rowID=false,header=false,center=true,
                        double_precision=false)
     if length(header) != (size(M,2)+1)
