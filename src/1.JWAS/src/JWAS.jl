@@ -487,7 +487,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     #***************************************************************************
     if heterogeneous_residuals == true
         mme.invweights = 1 ./ convert(Array,phenotypes[!,Symbol("weights")])
-        mme.invweights = mme.MCMCinfo.double_precision : Float64.(invweights) : Float32.(invweights)
+        mme.invweights = (mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     else
         mme.invweights = false
     end
@@ -560,7 +560,7 @@ function init_mixed_model_equations(mme,df,sol)
         error("Starting values are not allowed.")
     end
     if sol == false #no starting values
-        sol = zeros(nsol)
+        sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
     else            #besure type is Float64
         if length(sol) != nsol || typeof(sol) <: AbstractString
             error("length or type of starting values is wrong.")
@@ -568,7 +568,7 @@ function init_mixed_model_equations(mme,df,sol)
         printstyled("Starting values are provided. The order of starting values for location parameters and\n",
         "marker effects should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
         "obtained by getNames(model)) and then markers for all traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
-        sol = map(Float64,sol)
+        sol = map((mme.MCMCinfo.double_precision ? Float64 : Float32),sol)
     end
     return sol,df
 end
