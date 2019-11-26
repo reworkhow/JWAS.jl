@@ -60,10 +60,10 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.scale /= 4*(nTraits+1)
         end
         vEff      = mme.M.G
-        meanVara  = zero(mme.M.G) #variable to save variance for marker effect
-        meanVara2 = zero(mme.M.G) #variable to save variance for marker effect
-        meanScaleVara  =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
-        meanScaleVara2 =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
+        meanVara  = zero(mme.R) #variable to save variance for marker effect
+        meanVara2 = zero(mme.R) #variable to save variance for marker effect
+        meanScaleVara  =  zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
+        meanScaleVara2 =  zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
         ########################################################################
         ##WORKING VECTORS
         wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits)#wArray is list reference of ycor
