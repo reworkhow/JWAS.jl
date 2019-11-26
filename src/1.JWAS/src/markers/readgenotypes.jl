@@ -10,6 +10,9 @@
 function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataFrames.DataFrame},G=false;
                        rowID=false,header=false,center=true,G_is_marker_variance=false,df=4,
                        double_precision=false)
+    if G != false && size(G,1) != mme.nModels
+        error("The covariance matrix is not a ",mme.nModels," by ",mme.nModels," matrix.")
+    end
     if length(rowID) != size(M,1)
         rowID = string.(1:size(M,1))
         printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
@@ -50,6 +53,9 @@ O3,0,0,2,1,1
 function add_genotypes(mme::MME,file,G=false;
                        separator=',',header=true,center=true,G_is_marker_variance=false,df=4,
                        double_precision=false)
+    if G != false && size(G,1) != mme.nModels
+       error("The covariance matrix is not a ",mme.nModels," by ",mme.nModels," matrix.")
+    end
     mme.M   = readgenotypes(file,separator=separator,header=header,center=center,double_precision=double_precision)
     if G_is_marker_variance == true
         mme.M.G = G

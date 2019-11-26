@@ -47,6 +47,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0, doubl
   #e.g., ""y2 = A+B+A*B""
   modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
   nModels    = size(modelVec,1)
+  if R != false && size(R,1) != nModels
+    error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
+  end
+
   lhsVec     = Symbol[]    #:y, phenotypes
   modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
   dict       = Dict{AbstractString,ModelTerm}()
