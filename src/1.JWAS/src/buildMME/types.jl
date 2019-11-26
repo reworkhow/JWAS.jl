@@ -66,9 +66,9 @@ end
 ################################################################################
 mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    Gi::Union{Array{Float64,2},Array{Float32,2}}     #covariance matrix (multi-trait)
-    GiOld::Union{Array{Float64,2},Array{Float32,2}}  #specific for lambda version of MME (single-trait)
-    GiNew::Union{Array{Float64,2},Array{Float32,2}}  #specific for lambda version of MME (single-trait)
+    Gi::Array{Float64,2}    #covariance matrix (multi-trait)
+    GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
+    GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
     df::AbstractFloat
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
@@ -151,12 +151,12 @@ mutable struct MME
     mmeLhs                                        #Lhs of Mixed Model Equations
     mmeRhs                                        #Rhs of Mixed Model Equations
 
-                                                       #RANDOM EFFCTS
-    pedTrmVec                                          #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
-    ped                                                #PedModule.Pedigree
-    Gi::Union{Array{Float64,2},Array{Float32,2}}       #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
-    GiOld::Union{Array{Float64,2},Array{Float32,2}}    #specific for lambda version of MME (single-trait)
-    GiNew::Union{Array{Float64,2},Array{Float32,2}}    #specific for lambda version of MME (single-trait)
+                                                  #RANDOM EFFCTS
+    pedTrmVec                                     #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
+    ped                                           #PedModule.Pedigree
+    Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
+    GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+    GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
     scalePed
 
     rndTrmVec::Array{RandomEffect,1}              #General (including i.i.d.) random effects
