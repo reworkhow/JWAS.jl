@@ -9,14 +9,13 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
     Ginv     = invG0
     Rinv     = invR0
 
-    β        = zeros(nTraits)
-    newα     = zeros(nTraits)
-    oldα     = zeros(nTraits)
-    δ        = zeros(nTraits)
-    w        = zeros(nTraits) #for rhs
+    β        = zeros(typeof(betaArray[1][1]),nTraits)
+    newα     = zeros(typeof(alphaArray[1][1]),nTraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),nTraits)
+    δ        = zeros(typeof(deltaArray[1][1]),nTraits)
+    w        = zeros(typeof(wArray[1][1]),nTraits) #for rhs
 
     for marker=1:nMarkers
-
         x    = xArray[marker]
 
         for trait = 1:nTraits

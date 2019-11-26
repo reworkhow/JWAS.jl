@@ -41,8 +41,8 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     end
 
     #save posterior mean for residual variance
-    meanVare  = zeros(Float64,nTraits,nTraits)
-    meanVare2 = zeros(Float64,nTraits,nTraits)
+    meanVare  = zero(mme.R)
+    meanVare2 = zero(mme.R)
     #save poseterior mean for variances explained by polygenic effects (A) e.g Animal+ Maternal
     if mme.pedTrmVec != 0
         G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
@@ -59,14 +59,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.G /= 4*(nTraits+1)
             mme.M.scale /= 4*(nTraits+1)
         end
-        vEff        = mme.M.G
-        meanVara  = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
-        meanVara2 = zeros(Float64,nTraits,nTraits) #variable to save variance for marker effect
-        meanScaleVara  =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
-        meanScaleVara2 =  zeros(Float64,nTraits,nTraits) #variable to save Scale parameter for prior of marker effect variance
+        vEff      = mme.M.G
+        meanVara  = zero(mme.M.G) #variable to save variance for marker effect
+        meanVara2 = zero(mme.M.G) #variable to save variance for marker effect
+        meanScaleVara  =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
+        meanScaleVara2 =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
         ########################################################################
         ##WORKING VECTORS
-        wArray         = Array{Array{Float64,1}}(undef,nTraits)#wArray is list reference of ycor
+        wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits)#wArray is list reference of ycor
         ########################################################################
         #Arrays to save solutions for marker effects
         #In RR-BLUP and BayesL, only alphaArray is used.
@@ -104,22 +104,22 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.nObs      = length(mme.M.obsID)
         end
         #starting values for marker effects(zeros) and location parameters (sol)
-        betaArray       = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        deltaArray      = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        meandeltaArray  = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        alphaArray      = Array{Array{Float64,1}}(undef,nTraits) #BayesC,BayesC0
-        meanalphaArray  = Array{Array{Float64,1}}(undef,nTraits) #BayesC
-        meanalphaArray2 = Array{Array{Float64,1}}(undef,nTraits) #BayesC
+        betaArray       = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+        deltaArray      = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+        meandeltaArray  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+        alphaArray      = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC,BayesC0
+        meanalphaArray  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+        meanalphaArray2 = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
         for traiti = 1:nTraits
             startPosi              = (traiti-1)*nObs  + 1
             ptr                    = pointer(ycorr,startPosi)
             wArray[traiti]         = unsafe_wrap(Array,ptr,nObs)
             betaArray[traiti]      = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
-            deltaArray[traiti]     = ones(nMarkers)
-            meandeltaArray[traiti] = zeros(nMarkers)
+            deltaArray[traiti]     = ones(typeof(α[1]),nMarkers)
+            meandeltaArray[traiti] = zero(betaArray[traiti])
             alphaArray[traiti]         = copy(α[(traiti-1)*nMarkers+1:traiti*nMarkers])
-            meanalphaArray[traiti]     = zeros(nMarkers)
-            meanalphaArray2[traiti]    = zeros(nMarkers)
+            meanalphaArray[traiti]     = zero(alphaArray[traiti])
+            meanalphaArray2[traiti]    = zero(alphaArray[traiti])
         end
     end
 
@@ -222,7 +222,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         if estimate_variance == true
             sample_variance(mme,resVec,constraint=constraint)
         end
-        Ri = kron(inv(mme.R),SparseMatrixCSC{Float64}(I, nObs, nObs))
+        Ri = kron(inv(mme.R),SparseMatrixCSC{(mme.MCMCinfo.double_precision ? Float64 : Float32)}(I, nObs, nObs))
         ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
