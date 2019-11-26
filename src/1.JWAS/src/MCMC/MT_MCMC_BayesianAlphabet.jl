@@ -159,31 +159,26 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         # 1.2 Marker Effects
         ########################################################################
         if mme.M != 0
-          iR0      = inv(mme.R)
-          iGM      = (methods!="BayesB" ? inv(mme.M.G) : inv.(mme.M.G)) #an array in BayesB
           #WILL ADD BURIN INSIDE
-          if methods == "BayesC"
-            sampleMarkerEffectsBayesC!(mArray,mpm,wArray,
-                                      betaArray,
-                                      deltaArray,
-                                      alphaArray,
-                                      iR0,iGM,BigPi)
+          if methods in ["BayesC","BayesB","BayesA"]
+            locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
+            MTBayesABC!(mArray,mpm,wArray,
+                      betaArray,
+                      deltaArray,
+                      alphaArray,
+                      mme.R,locus_effect_variances,BigPi)
           elseif methods == "RR-BLUP"
-            sampleMarkerEffectsMTBayesC0!(mArray,mpm,wArray,
-                                          alphaArray,
-                                          iR0,iGM)
-          elseif methods == "BayesB"
-            sampleMarkerEffectsBayesB!(mArray,mpm,wArray,
-                                       betaArray,
-                                       deltaArray,
-                                       alphaArray,
-                                       iR0,iGM,BigPi)
+            MTBayesC0!(mArray,mpm,wArray,
+                       alphaArray,
+                       mme.R,mme.M.G)
           elseif methods == "BayesL"
-            sampleMarkerEffectsMTBayesL!(mArray,mpm,wArray,
-                                         alphaArray,
-                                         gammaArray,
-                                         iR0,iGM)
+            MTBayesL!(mArray,mpm,wArray,
+                      alphaArray,
+                      gammaArray,
+                      mme.R,mme.M.G)
           elseif methods == "GBLUP"
+            iR0      = inv(mme.R)
+            iGM      = inv(mme.M.G)
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] + mme.M.genotypes*alphaArray[trait]
             end

@@ -1,10 +1,10 @@
-function sampleEffectsBayesABC!(xArray,xpx,
-                                xRinvArray,xpRinvx, #Heterogeneous residuals
-                                yCorr,
-                                α,β,δ,
-                                vare,
-                                varEffects,
-                                π)
+function BayesABC!(xArray,xpx,
+                   xRinvArray,xpRinvx, #Heterogeneous residuals
+                   yCorr,
+                   α,β,δ,
+                   vare,
+                   varEffects,
+                   π)
 
     logPi         = log(π)
     logPiComp     = log(1-π)

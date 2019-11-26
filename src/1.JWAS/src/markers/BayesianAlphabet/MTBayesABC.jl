@@ -1,13 +1,15 @@
 #MTBayesC requires the support for prior for delta for d is the set
 #of all 2^ntrait outcomes of dj:
-function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
+function MTBayesABC!(xArray,xpx,wArray,betaArray,
                                     deltaArray,
                                     alphaArray,
-                                    invR0,invG0,BigPi)
+                                    vare,varEffects,
+                                    BigPi)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
-    Ginv     = invG0
-    Rinv     = invR0
+
+    Rinv     = inv(vare) #Do Not Use inv.(): elementwise
+    Ginv     = inv.(varEffects)
 
     β        = zeros(typeof(betaArray[1][1]),nTraits)
     newα     = zeros(typeof(alphaArray[1][1]),nTraits)
@@ -26,9 +28,9 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
         end
 
         for k=1:nTraits
-            Ginv11 = Ginv[k,k]
+            Ginv11 = Ginv[marker][k,k]
             nok    = deleteat!(collect(1:nTraits),k)
-            Ginv12 = Ginv[k,nok]
+            Ginv12 = Ginv[marker][k,nok]
             C11    = Ginv11+Rinv[k,k]*xpx[marker]
             C12    = Ginv12+xpx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
             #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,

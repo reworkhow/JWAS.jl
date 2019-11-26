@@ -27,10 +27,9 @@ include("MCMC/MT_PBLUP_constvare.jl")
 #Genomic Markers
 include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
-include("markers/BayesianAlphabet/BayesC0.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
-include("markers/BayesianAlphabet/MTBayesC.jl")
-include("markers/BayesianAlphabet/MTBayesB.jl")
+include("markers/BayesianAlphabet/BayesC0L.jl")
+include("markers/BayesianAlphabet/MTBayesABC.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
 

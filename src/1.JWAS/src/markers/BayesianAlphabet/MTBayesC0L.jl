@@ -1,9 +1,8 @@
-function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,
-                                      alphaArray,gammaArray,
-                                      invR0,invG0)
-    # function to sample effects
-    # invR0 is inverse of R0
-    # invG0 is inverse of G0
+function MTBayesL!(xArray,xpx,wArray,
+                   alphaArray,gammaArray,
+                   vare,varEffect)
+    invR0=inv(vare)
+    invG0=inv(varEffect)
 
     function getGiFunction(gammaArray)
         f1(x,j,Gi)  = Gi ./ x[j]
@@ -46,6 +45,5 @@ function sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,
     end
 end
 
-sampleMarkerEffectsMTBayesC0!(xArray,xpx,wArray,
-                              alphaArray,invR0,invG0) =
-  sampleMarkerEffectsMTBayesL!(xArray,xpx,wArray,alphaArray,[1.0],invR0,invG0)
+MTBayesC0!(xArray,xpx,wArray,alphaArray,vare,varEffect) =
+  MTBayesL!(xArray,xpx,wArray,alphaArray,[1.0],vare,varEffect)
