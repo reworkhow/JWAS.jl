@@ -39,7 +39,6 @@ function MTBayesL!(xArray,xpx,wArray,
         end
         # adjust for locus j
         for trait = 1:nTraits
-            #wArray[trait][:] = wArray[trait][:] - x*alphaArray[trait][j]
             BLAS.axpy!(oldβ[trait]-β[trait],x,wArray[trait])
         end
     end

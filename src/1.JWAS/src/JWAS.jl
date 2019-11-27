@@ -20,7 +20,6 @@ include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
-include("MCMC/MCMC_GBLUP.jl")
 include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_PBLUP_constvare.jl")
 
@@ -285,6 +284,9 @@ function runMCMC(mme::MME,df;
     end
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
+    end
+    if methods == "GBLUP"
+        mv("marker_effects_variance.txt","genetic_variance(REML).txt")
     end
     printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
     versioninfo()

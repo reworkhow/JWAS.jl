@@ -298,6 +298,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         close(value)
       end
     end
+    if methods == "GBLUP"
+        mv(output_file*"_marker_effects_variances.txt",output_file*"_genetic_variance(REML).txt")
+    end
     output=output_result(mme,output_file,
                          solMean,meanVare,
                          mme.pedTrmVec!=0 ? G0Mean : false,
