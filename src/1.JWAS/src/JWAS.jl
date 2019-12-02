@@ -207,6 +207,9 @@ function runMCMC(mme::MME,df;
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
     if mme.M!=0
+        if double_precision == true
+            mme.M.genotypes = map(Float64,mme.M.genotypes)
+        end
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     ############################################################################
@@ -216,7 +219,6 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
-        #println("calling SSBRrun(mme,df)")
         SSBRrun(mme,df,big_memory)
     end
     ############################################################################
