@@ -1,5 +1,3 @@
-##Phenotypes adjusted for all effects (assuming zeros now)
-ycorr          = vec(Matrix(mme.ySparse))
 ## assume ys is a nobs x 1 observations from the data
 function Transform_DM(IDvec, ys, tpvec)
     time_points = sort(unique(tpvec))
@@ -19,6 +17,23 @@ function Transform_DM(IDvec, ys, tpvec)
     end
     return DesignMatrix
 end
+function GenrateFullPhi(tpvec, nCoeff) # nCoeff = number of polynomial coefficients to be estimated
+    ti = sort(unique(tpvec))
+    tmin = minimum(ti)
+    tmax = maximum(ti)
+    # standardized time points
+    qi = 2*(ti .- tmin)./(tmax .- tmin) .- 1
+    Phi = Matrix{Float64}(undef, length(ti), nCoeff)
+    for i in 1:nCoeff
+        n = i - 1
+        ## Given the normalized function from L. R. Schaeffer
+        Phi[:,i] = sqrt((2*n+1)/2)*sf_legendre_Pl.(n,qi)
+    end
+    return Phi
+end
+
+##Phenotypes adjusted for all effects (assuming zeros now)
+ycorr          = vec(Matrix(mme.ySparse))
 DM = Transform_DM(IDvec, ys, tpvec)
 yfull = DM'ycorr
 nObs = div(length(yfull),nTimes)
@@ -36,21 +51,8 @@ for ti = 1:nTimes
         end
     end
 DM = Transform_DM(IDvec, ys, tpvec)
-function GenrateFullPhi(tpvec, nCoeff) # nCoeff = number of polynomial coefficients to be estimated
-    ti = sort(unique(tpvec))
-    tmin = minimum(ti)
-    tmax = maximum(ti)
-    # standardized time points
-    qi = 2*(ti .- tmin)./(tmax .- tmin) .- 1
-    Phi = Matrix{Float64}(undef, length(ti), nCoeff)
-    for i in 1:nCoeff
-        n = i - 1
-        ## Given the normalized function from L. R. Schaeffer
-        Phi[:,i] = sqrt((2*n+1)/2)*sf_legendre_Pl.(n,qi)
-    end
-    return Phi
-end
 Φ =  GenrateFullPhi(tpvec, 3)
+
 #MTBayesC requires the support for prior for delta for d is the set
 #of all 2^n trait outcomes of dj:
 function RRM!(xArray,xpx,wArray,betaArray,
@@ -75,6 +77,7 @@ function RRM!(xArray,xpx,wArray,betaArray,
     nlabels  = length(labels)
     Ginv     = invG0
     Rinv     = invR0
+
     β        = zeros(nCoeff)
     newα     = zeros(nCoeff)
     oldα     = zeros(nCoeff)
@@ -84,6 +87,14 @@ function RRM!(xArray,xpx,wArray,betaArray,
     beta     = Array{Array{Float64,1}}(undef,nlabels) ###
 
     T = DM'DM
+
+    for i in 1:length(labels)
+      δi = labels[i]
+      D  = diagm(δi)
+      RinvLhs[i] = D*Rinv*D #split better
+      RinvRhs[i] = Rinv*D
+    end
+
     for marker=1:nMarkers
         x    = xArray[marker]
         for coeffi = 1:nCoeff
@@ -91,13 +102,16 @@ function RRM!(xArray,xpx,wArray,betaArray,
          oldα[coeffi]  = newα[coeffi] = alphaArray[coeffi][marker]
             δ[coeffi]  = deltaArray[coeffi][marker] # we don't need this
         end
-        oldtemp =  Φ*oldα
+
+        oldΦα =  Φ*oldα
 
         for timei = 1:nTimes
-            xw[timei]  = dot(x,wArray[timei])+xpx[marker]*oldtemp[timei] #m_ij*w_ij
+            if
+            xw[timei]  = dot(x,wArray[timei])+xpx[marker]*oldΦα[timei] #x_{ij}*w_{ij} #WRONG!!!!
         end
+
         for label in 1:length(labels)
-            δi = labels[j]
+            δi   = labels[label]
             Dj   = Diagonal(δj)
             temp = Φ*Dj
             lhs  = temp'temp * xpx[marker]/vare + Ginv
@@ -128,7 +142,7 @@ function RRM!(xArray,xpx,wArray,betaArray,
             deltaArray[coeffi][marker]      = δ[coeffi]
             alphaArray[coeffi][marker]      = newα[coeffi]
         end
-        Φαold = Φ*oldα
+        Φαold = Φ*oldα #individual phi is needed
         Φαnew = Φ*newα
         for timei = 1:nTimes
             BLAS.axpy!(Φαold[timei]-Φαnew[timei],x,wArray[nTimes])
