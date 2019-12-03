@@ -15,11 +15,11 @@ mutable struct ModelTerm
     nFactors::Int64                # | "y2:A"  |     1     | :A      |
     factors::Array{Symbol,1}       # | "y1:A*B"|     2     | :A,:B   |
 
-                                   #DATA             |          str               |     val       |
-                                   #                :|----------------------------|---------------|
-    str::Array{AbstractString,1}   #covariate^2     :|["A x B", "A X B", ...]     | df[:A].*df[:B]|
-    val::Array{Float64,1}          #factor^2        :|["A1 x B1", "A2 X B2", ...] | [1.0,1.0,...] |
-                                   #factor*covariate:|["A1 x B","A2 X B", ...]    | 1.0.*df[:B]   |
+                                                     #DATA             |          str               |     val       |
+                                                     #                :|----------------------------|---------------|
+    str::Array{AbstractString,1}                     #covariate^2     :|["A x B", "A X B", ...]     | df[:A].*df[:B]|
+    val::Union{Array{Float64,1},Array{Float32,1}}    #factor^2        :|["A1 x B1", "A2 X B2", ...] | [1.0,1.0,...] |
+                                                     #factor*covariate:|["A1 x B","A2 X B", ...]    | 1.0.*df[:B]   |
 
                                    #OUTPUT           | nLevels |     names        |
                                    #                 |---------|------------------|
@@ -29,8 +29,8 @@ mutable struct ModelTerm
                                    #animal(ped)*age: | nAnimals| "A1*age","A2*age"|
                                    #factor*covariate:| nLevels | "A1*age","A2*age"|
 
-    startPos::Int64                   #start postion for this term in incidence matrix
-    X::SparseMatrixCSC{Float64,Int64} #incidence matrix
+    startPos::Int64                         #start postion for this term in incidence matrix
+    X::Union{SparseMatrixCSC{Float64,Int64},SparseMatrixCSC{Float32,Int64}} #incidence matrix
 
     random_type::String
 
@@ -42,7 +42,7 @@ mutable struct ModelTerm
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],[],0,[],0,spzeros(0,0),"fixed")
+        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,spzeros(0,0),"fixed")
     end
 end
 
@@ -54,8 +54,8 @@ end
 #or missing phenotypes are not imputed at each step of MCMC (no marker effects).
 ################################################################################
 mutable struct ResVar
-    R0::Array{Float64,2}
-    RiDict::Dict{BitArray{1},Array{Float64,2}}
+    R0::Union{Array{Float64,2},Array{Float32,2}}
+    RiDict::Dict{BitArray{1},Union{Array{Float64,2},Array{Float32,2}}}
 end
 
 ################################################################################
@@ -66,10 +66,10 @@ end
 ################################################################################
 mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    Gi::Array{Float64,2}     #covariance matrix (multi-trait)
+    Gi::Array{Float64,2}    #covariance matrix (multi-trait)
     GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
     GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
-    df::Float64
+    df::AbstractFloat
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
     names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
@@ -81,10 +81,10 @@ mutable struct Genotypes
   markerID
   nObs::Int64                     #length of obsID
   nMarkers::Int64
-  alleleFreq::Array{Float64,2}
-  sum2pq::Float64
+  alleleFreq::Union{Array{Float64,2},Array{Float32,2}}
+  sum2pq::AbstractFloat
   centered::Bool
-  genotypes::Array{Float64,2}
+  genotypes::Union{Array{Float64,2},Array{Float32,2}}
   genetic_variance  #genetic variance
   G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
   scale             #scale parameter for marker effect variance (G)
@@ -92,10 +92,10 @@ mutable struct Genotypes
 end
 
 mutable struct DF
-    residual::Float64
-    polygenic::Float64  #df+size(mme.pedTrmVec,1)
-    marker::Float64
-    random::Float64
+    residual::AbstractFloat
+    polygenic::AbstractFloat  #df+size(mme.pedTrmVec,1)
+    marker::AbstractFloat
+    random::AbstractFloat
 end
 
 mutable struct MCMCinfo
@@ -119,6 +119,7 @@ mutable struct MCMCinfo
     output_heritability
     categorical_trait
     seed
+    double_precision
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...
@@ -162,11 +163,11 @@ mutable struct MME
                                                   #may merge pedTrmVec here
 
                                                   #RESIDUAL EFFECTS
-    R::Array{Float64,2}                           #residual covariance matrix (multi-trait)
+    R                                             #residual covariance matrix (multi-trait) ::Array{Union{Float64,Float32},2}
     missingPattern                                #for impuation of missing residual
     resVar                                        #for impuation of missing residual
-    ROld::Float64                                 #residual variance (single-trait) for
-    RNew::Float64                                 #lambda version of MME (single-trait)
+    ROld::AbstractFloat                           #residual variance (single-trait) for
+    RNew::AbstractFloat                           #lambda version of MME (single-trait)
     scaleRes                                      #scale parameters
 
     invweights                                    #heterogeneous residuals
@@ -188,7 +189,7 @@ mutable struct MME
     MCMCinfo
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
-      if nModels==1 && typeof(R)==Float64             #single-trait
+      if nModels==1    #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
@@ -202,7 +203,7 @@ mutable struct MME
                    0,0,Dict{String,Any}(),
                    0,
                    0)
-      elseif nModels>1 && typeof(R)==Array{Float64,2} #multi-trait
+      elseif nModels>1 #multi-trait
         ν,k      = ν, nModels
         νR0      = ν + k
         scaleRes = R*(νR0 - k - 1)
@@ -219,8 +220,6 @@ mutable struct MME
                    0,0,Dict{String,Any}(),
                    0,
                    0)
-      else
-        error("Residual variance R should be a scalar for single-trait analyses or a matrix for multi-trait analyses.")
       end
     end
 end

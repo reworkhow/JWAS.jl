@@ -1,6 +1,5 @@
-function sampleEffectsBayesL!(xArray,xpx,
-                              xRinvArray,xpRinvx, #Heterogeneous residuals
-                              yCorr,α,gammaArray,vRes,vEff) # sample vare and vara
+function BayesL!(xArray,xpx,xRinvArray,xpRinvx, #Heterogeneous residuals
+                 yCorr,α,gammaArray,vRes,vEff)
     nMarkers      = length(α)
     λ    = vRes/vEff
 
@@ -22,6 +21,6 @@ function sampleEffectsBayesL!(xArray,xpx,
     end
 end
 
-function sampleEffectsBayesC0!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,vRes,vEff)
-    sampleEffectsBayesL!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,[1.0],vRes,vEff)
+function BayesC0!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,vRes,vEff)
+    BayesL!(xArray,xpx,xRinvArray,xpRinvx,yCorr,α,[1.0],vRes,vEff)
 end

@@ -34,7 +34,7 @@ G               = [6.72   2.84
 set_random(model,"animal",ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4.0)
     if mme.ped == 0
       mme.ped = deepcopy(ped)
     else
@@ -79,16 +79,19 @@ G               = 0.6
 set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0,double_precision=false)
     ############################################################################
     #Pre-Check
     ############################################################################
     if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
     end
+    if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
+      G=reshape([G],1,1)
+    end
     names   = string.(names)
-    G       = map(Float64,G)
-    df      = Float64(df)
+    G       = double_precision ? Float64.(G) : Float32.(G)
+    df      = double_precision ? Float64(df) : Float32(df)
     ############################################################################
     #add trait names (model equation number) to variables;
     #e.g., "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
@@ -126,18 +129,12 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     ############################################################################
     #Covariance among effects for the same individual
     ############################################################################
-    if G == false #make G matrix of zeros to get prior from phenotypes later
-      G = (length(res)==1 ? 0.0 : zeros(length(res),length(res)))
-    end
-    if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
-      G=reshape([G],1,1)
-    end
     if length(res) != size(G,1)
       error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
     #Gi            : multi-trait;
     #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-    Gi = GiOld = GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(G)))
     ############################################################################
     #return random_effct type
     ############################################################################
@@ -161,6 +158,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     term_array   = res
     df           = df+length(term_array)
     scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+    Vinv         = double_precision ? Float64.(Vinv) : Float32.(Vinv)
     randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names,random_type)
     push!(mme.rndTrmVec,randomEffect)
     nothing
@@ -194,7 +192,8 @@ end
 function addVinv(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
-      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : SparseMatrixCSC{Float64}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
+      myI        = SparseMatrixCSC{mme.MCMCinfo.double_precision ? Float64 : Float32}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
+      Vi         = (random_term.Vinv!=0) ? random_term.Vinv : myI
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
           startPosi  = randTrmi.startPos

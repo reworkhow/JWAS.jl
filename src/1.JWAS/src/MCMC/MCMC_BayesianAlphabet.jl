@@ -99,7 +99,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             α  = L'α
         end
         β                            = copy(α)          #partial marker effeccts used in BayesB
-        δ                            = ones(nMarkers)   #inclusion indicator for marker effects
+        δ                            = ones(typeof(α[1]),nMarkers)   #inclusion indicator for marker effects
         meanAlpha,meanAlpha2         = zero(α),zero(α)  #marker effects
         meanDelta                    = zero(δ)          #inclusion indicator
         mean_pi,mean_pi2             = 0.0,0.0          #inclusion probability
@@ -164,12 +164,12 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         if mme.M !=0
             if methods in ["BayesC","BayesB","BayesA"]
                 locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
-                nLoci = sampleEffectsBayesABC!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
+                nLoci = BayesABC!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
             elseif methods=="RR-BLUP"
-                sampleEffectsBayesC0!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
+                BayesC0!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods == "BayesL"
-                sampleEffectsBayesL!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
+                BayesL!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
@@ -297,6 +297,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
       for (key,value) in outfile
         close(value)
       end
+    end
+    if methods == "GBLUP"
+        mv(output_file*"_marker_effects_variances.txt",output_file*"_genetic_variance(REML).txt")
     end
     output=output_result(mme,output_file,
                          solMean,meanVare,

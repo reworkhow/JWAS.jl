@@ -12,7 +12,7 @@ function mkDict(a)
 end
 
 """
-    build_model(model_equations::AbstractString,R=false; df::Float64=4.0)
+    build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0)
 
 * Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
   is the mean for the prior assigned for the residual variance with degree of freedom **df** defaulting
@@ -34,8 +34,8 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString, R = 0.0; df = 4)
-  if R != 0.0 && !isposdef(map(Float64,R))
+function build_model(model_equations::AbstractString, R = false; df = 4.0, double_precision = false)
+  if R != false && !isposdef(map(AbstractFloat,R))
     error("The covariance matrix is not positive definite.")
   end
 
@@ -47,6 +47,10 @@ function build_model(model_equations::AbstractString, R = 0.0; df = 4)
   #e.g., ""y2 = A+B+A*B""
   modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
   nModels    = size(modelVec,1)
+  if R != false && size(R,1) != nModels
+    error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
+  end
+
   lhsVec     = Symbol[]    #:y, phenotypes
   modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
   dict       = Dict{AbstractString,ModelTerm}()
@@ -61,10 +65,7 @@ function build_model(model_equations::AbstractString, R = 0.0; df = 4)
   for trm in modelTerms          #make a dict for model terms
     dict[trm.trmStr] = trm
   end
-  if R == 0.0
-    R = (nModels==1 ? 0.0 : zeros(nModels,nModels))
-  end
-  return MME(nModels,modelVec,modelTerms,dict,lhsVec,map(Float64,R),Float64(df))
+  return MME(nModels,modelVec,modelTerms,dict,lhsVec,(double_precision ? Float64.(R) : Float32.(R)),(double_precision ? Float64(df) : Float32(df)))
 end
 
 """
@@ -94,9 +95,6 @@ end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   nObs    = size(df,1)
-  trm.str = Array{AbstractString}(undef,nObs)
-  trm.val = Array{Float64}(undef,nObs)
-
   for i = 1:trm.nFactors
     if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
       printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
@@ -130,7 +128,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.str = str
-  trm.val = val
+  trm.val = (mme.MCMCinfo.double_precision ? Float64.(val) : Float32.(val))
 end
 
 getFactor(str) = [strip(i) for i in split(str,"*")]
@@ -229,9 +227,9 @@ function getMME(mme::MME, df::DataFrame)
     for i=2:size(mme.lhsVec,1)
       y   = [y; recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
-    ii    = 1:length(y)
-    jj    = ones(length(y))
-    vv    = y
+    ii      = 1:length(y)
+    jj      = ones(length(y))
+    vv      = (mme.MCMCinfo.double_precision ? Float64.(y) : Float32.(y))
     ySparse = sparse(ii,jj,vv)
 
     #Make lhs and rhs for MME
@@ -258,7 +256,7 @@ function getMME(mme::MME, df::DataFrame)
     #trick to enable addLambdas() 1st time ???
     #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
     for random_term in mme.rndTrmVec
-      random_term.GiOld = zeros(size(random_term.GiOld))
+      random_term.GiOld = zero(random_term.GiOld)
     end
     addVinv(mme)
     for random_term in mme.rndTrmVec

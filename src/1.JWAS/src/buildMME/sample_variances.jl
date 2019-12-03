@@ -36,6 +36,9 @@ function sample_variance(mme,resVec;constraint=false)
             mme.R[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
         end
     end
+    if mme.MCMCinfo.double_precision == false
+        mme.R = Float32.(mme.R)
+    end
 end
 ################################################################################
 #  SAMPLE VARIANCES FOR OTHER RANDOM EFFECTS (GIBBS SAMPLER)                   #
@@ -50,7 +53,7 @@ end
 ################################################################################
 # sample variances for random location effects
 ################################################################################
-function sampleVCs(mme::MME,sol::Array{Float64,1})
+function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
       nLevels    = mme.modelTermDict[term_array[1]].nLevels
@@ -69,7 +72,6 @@ function sampleVCs(mme::MME,sol::Array{Float64,1})
        end
        q  = mme.modelTermDict[term_array[1]].nLevels
        G0 = rand(InverseWishart(random_term.df + q, convert(Array,Symmetric(random_term.scale + S))))
-
        random_term.GiOld = copy(random_term.GiNew)
        random_term.GiNew = copy(inv(G0))
        random_term.Gi    = copy(inv(G0))

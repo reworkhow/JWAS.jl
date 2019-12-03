@@ -1,22 +1,23 @@
 #MTBayesC requires the support for prior for delta for d is the set
 #of all 2^ntrait outcomes of dj:
-function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
+function MTBayesABC!(xArray,xpx,wArray,betaArray,
                                     deltaArray,
                                     alphaArray,
-                                    invR0,invG0,BigPi)
+                                    vare,varEffects,
+                                    BigPi)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
-    Ginv     = invG0
-    Rinv     = invR0
 
-    β        = zeros(nTraits)
-    newα     = zeros(nTraits)
-    oldα     = zeros(nTraits)
-    δ        = zeros(nTraits)
-    w        = zeros(nTraits) #for rhs
+    Rinv     = inv(vare) #Do Not Use inv.(): elementwise
+    Ginv     = inv.(varEffects)
+
+    β        = zeros(typeof(betaArray[1][1]),nTraits)
+    newα     = zeros(typeof(alphaArray[1][1]),nTraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),nTraits)
+    δ        = zeros(typeof(deltaArray[1][1]),nTraits)
+    w        = zeros(typeof(wArray[1][1]),nTraits) #for rhs
 
     for marker=1:nMarkers
-
         x    = xArray[marker]
 
         for trait = 1:nTraits
@@ -27,9 +28,9 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
         end
 
         for k=1:nTraits
-            Ginv11 = Ginv[k,k]
+            Ginv11 = Ginv[marker][k,k]
             nok    = deleteat!(collect(1:nTraits),k)
-            Ginv12 = Ginv[k,nok]
+            Ginv12 = Ginv[marker][k,nok]
             C11    = Ginv11+Rinv[k,k]*xpx[marker]
             C12    = Ginv12+xpx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
             #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
@@ -53,15 +54,17 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,betaArray,
             if(rand()<probDelta1)
                 δ[k] = 1
                 β[k] = newα[k] = gHat1 + randn()*sqrt(invLhs1)
+                BLAS.axpy!(oldα[k]-newα[k],x,wArray[k])
             else
                 β[k] = gHat0 + randn()*sqrt(invLhs0)
                 δ[k] = 0
                 newα[k] = 0
+                if oldα[k] != 0
+                    BLAS.axpy!(oldα[k],x,wArray[k])
+                end
             end
         end
-        # adjust for locus j
         for trait = 1:nTraits
-            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])
             betaArray[trait][marker]       = β[trait]
             deltaArray[trait][marker]      = δ[trait]
             alphaArray[trait][marker]      = newα[trait]

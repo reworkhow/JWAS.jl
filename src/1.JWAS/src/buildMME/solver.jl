@@ -81,7 +81,7 @@ function GaussSeidel(A,x,b;tolerance=0.000001,outFreq=10,maxiter=1000)
 end
 
 #Gibbs for \lambda version of MME (single-trait)
-function Gibbs(A,x,b,varRes::Float64,nIter::Int64;outFreq=100)
+function Gibbs(A,x,b,varRes::AbstractFloat,nIter::Int64;outFreq=100)
     n = size(x,1)
     xMean = zeros(n)
     for iter = 1:nIter
@@ -117,7 +117,7 @@ function Gibbs(A,x,b,nIter::Int64;outFreq=100)
 end
 
 #one iteration of Gibbs for \lambda version of MME (single-trait)
-function Gibbs(A,x,b,varRes::Float64)
+function Gibbs(A,x,b,varRes::AbstractFloat)
     n = size(x,1)
      for i=1:n
         cVarInv = 1.0/A[i,i]

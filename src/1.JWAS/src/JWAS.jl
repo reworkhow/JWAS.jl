@@ -20,17 +20,15 @@ include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
-include("MCMC/MCMC_GBLUP.jl")
 include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_PBLUP_constvare.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
-include("markers/BayesianAlphabet/BayesC0.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
-include("markers/BayesianAlphabet/MTBayesC.jl")
-include("markers/BayesianAlphabet/MTBayesB.jl")
+include("markers/BayesianAlphabet/BayesC0L.jl")
+include("markers/BayesianAlphabet/MTBayesABC.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
 
@@ -122,14 +120,14 @@ export get_correlations,get_heritability
 """
 function runMCMC(mme::MME,df;
                 #Data
-                heterogeneous_residuals         = false,
+                heterogeneous_residuals           = false,
                 #MCMC
-                chain_length::Int64             = 100,
-                starting_value                  = false,
-                burnin::Int64                   = 0,
-                output_samples_frequency::Int64 = chain_length>1000 ? div(chain_length,1000) : 1,
-                output_samples_file             = "MCMC_samples",
-                update_priors_frequency::Int64  = 0,
+                chain_length::Integer             = 100,
+                starting_value                    = false,
+                burnin::Integer                   = 0,
+                output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
+                output_samples_file               = "MCMC_samples",
+                update_priors_frequency::Integer  = 0,
                 #Methods
                 methods                         = "conventional (no markers)",
                 estimate_variance               = true,
@@ -149,7 +147,8 @@ function runMCMC(mme::MME,df;
                 seed                            = false,
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
-                big_memory                      = false)
+                big_memory                      = false,
+                double_precision                = false)
 
     ############################################################################
     # Pre-Check
@@ -183,7 +182,8 @@ function runMCMC(mme::MME,df;
                             outputEBV,
                             output_heritability,
                             categorical_trait,
-                            seed)
+                            seed,
+                            double_precision)
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -207,6 +207,9 @@ function runMCMC(mme::MME,df;
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
     if mme.M!=0
+        if double_precision == true
+            mme.M.genotypes = map(Float64,mme.M.genotypes)
+        end
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     ############################################################################
@@ -216,7 +219,6 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
-        #println("calling SSBRrun(mme,df)")
         SSBRrun(mme,df,big_memory)
     end
     ############################################################################
@@ -238,7 +240,9 @@ function runMCMC(mme::MME,df;
     if printout_model_info == true
       describe(mme)
     end
-
+    ############################################################################
+    # Double Precision or not
+    ############################################################################
     if mme.nModels ==1 #single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
@@ -282,6 +286,9 @@ function runMCMC(mme::MME,df;
     end
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
+    end
+    if methods == "GBLUP"
+        mv("marker_effects_variance.txt","genetic_variance(REML).txt")
     end
     printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
     versioninfo()
@@ -483,6 +490,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     #***************************************************************************
     if heterogeneous_residuals == true
         mme.invweights = 1 ./ convert(Array,phenotypes[!,Symbol("weights")])
+        mme.invweights = (mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     else
         mme.invweights = false
     end
@@ -555,7 +563,7 @@ function init_mixed_model_equations(mme,df,sol)
         error("Starting values are not allowed.")
     end
     if sol == false #no starting values
-        sol = zeros(nsol)
+        sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
     else            #besure type is Float64
         if length(sol) != nsol || typeof(sol) <: AbstractString
             error("length or type of starting values is wrong.")
@@ -563,7 +571,7 @@ function init_mixed_model_equations(mme,df,sol)
         printstyled("Starting values are provided. The order of starting values for location parameters and\n",
         "marker effects should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
         "obtained by getNames(model)) and then markers for all traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
-        sol = map(Float64,sol)
+        sol = map((mme.MCMCinfo.double_precision ? Float64 : Float32),sol)
     end
     return sol,df
 end
