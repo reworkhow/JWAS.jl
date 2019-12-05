@@ -80,8 +80,6 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
        random_term.GiNew = copy(inv(G0))
        random_term.Gi    = copy(inv(G0))
        if random_term.randomType == "A"
-           mme.GiOld = random_term.GiOld
-           mme.GiNew = random_term.GiNew
            mme.Gi    = random_term.Gi
        end
     end

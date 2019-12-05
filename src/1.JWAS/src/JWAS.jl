@@ -689,13 +689,10 @@ function getMCMCinfo(mme)
 
     if mme.nModels==1
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
-            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),digits=3))
+            thisterm= join(i.term_array, ",")
+            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
         end
         @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),digits=3))
-        end
         if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")
@@ -706,7 +703,7 @@ function getMCMCinfo(mme)
         end
     else
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
+            thisterm= join(i.term_array, ",")
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
             Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
             println()

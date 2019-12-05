@@ -141,7 +141,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     if typeof(Vinv)==PedModule.Pedigree
       Vinv  = PedModule.AInverse(mme.ped)
       mme.pedTrmVec = res
-      mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
+      mme.Gi = (isposdef(G) ? Symmetric(inv(G)) : G)
       ν, k  = Float32(df), size(mme.pedTrmVec,1)
       νG0   = ν + k
       mme.df.polygenic = νG0 #final df for this inverse wisahrt
