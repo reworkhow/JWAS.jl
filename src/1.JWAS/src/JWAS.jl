@@ -148,7 +148,8 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 big_memory                      = false,
-                double_precision                = false)
+                double_precision                = false,
+                RRM                             = false) # Φ
 
     ############################################################################
     # Pre-Check
@@ -249,7 +250,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Double Precision or not
     ############################################################################
-    if mme.nModels ==1 #single-trait analysis
+    if mme.nModels ==1 && RRM == false#single-trait analysis
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
                         burnin                   = burnin,
@@ -263,7 +264,7 @@ function runMCMC(mme::MME,df;
                         output_file              = output_samples_file,
                         update_priors_frequency  = update_priors_frequency,
                         categorical_trait        = categorical_trait)
-    else #multi-trait analysis
+    elseif  mme.nModels != 1 #multi-trait analysis
         if methods == "conventional (no markers)" && estimate_variance == false
           mme.output=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
                             sol    = mme.MCMCinfo.starting_value,
@@ -289,6 +290,19 @@ function runMCMC(mme::MME,df;
                           update_priors_frequency=update_priors_frequency,
                           causal_structure = causal_structure)
         end
+    elseif mme.nModels ==1 && RRM != false
+        MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
+                                  Φ                        = RRM,
+                                  Pi                       = Pi,
+                                  burnin                   = burnin,
+                                  methods                  = methods,
+                                  estimatePi               = estimatePi,
+                                  estimateScale            = estimateScale,
+                                  starting_value           = mme.MCMCinfo.starting_value,
+                                  outFreq                  = printout_frequency,
+                                  output_samples_frequency = output_samples_frequency,
+                                  output_file              = output_samples_file,
+                                  update_priors_frequency  = update_priors_frequency)
     end
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
