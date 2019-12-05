@@ -203,13 +203,19 @@ function runMCMC(mme::MME,df;
     #check priors
     #make default covariance matrices if not provided
     set_default_priors_for_variance_components(mme,df)
+    #double precision
+    if double_precision == true
+        if mme.M != 0
+            mme.M.genotypes = map(Float64,mme.M.genotypes)
+        end
+        for random_term in mme.rndTrmVec
+            random_term.Vinv = map(Float64,random_term.Vinv)
+        end
+    end
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
     if mme.M!=0
-        if double_precision == true
-            mme.M.genotypes = map(Float64,mme.M.genotypes)
-        end
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     ############################################################################
@@ -501,38 +507,42 @@ end
 function set_default_priors_for_variance_components(mme,df)
   myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
   phenovar  = diagm(0=>myvar)
-  var_piece = phenovar/2
+  h2        = 0.5
+
+  genetic_random_count    = (mme.M!=0 ? 1 : 0)
+  nongenetic_random_count = 1
+  for random_term in mme.rndTrmVec
+    if random_term.randomType == "A"
+        genetic_random_count += 1
+    else
+        nongenetic_random_count +=1
+    end
+  end
+  if genetic_random_count != 0
+      varg = phenovar*h2/genetic_random_count
+  end
+  vare = phenovar*h2/nongenetic_random_count
 
   #genetic variance or marker effect variance
   if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
     printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
     if mme.nModels==1
-      mme.M.genetic_variance = var_piece[1,1]
+      mme.M.genetic_variance = varg[1,1]
     elseif mme.nModels>1
-      mme.M.genetic_variance = var_piece
+      mme.M.genetic_variance = varg
     end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
   end
   #residual effects
   if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.RNew = mme.ROld = var_piece[1,1]
+    mme.RNew = mme.ROld = vare[1,1]
     mme.scaleRes = mme.RNew*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.R = var_piece
+    mme.R = vare
     mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
   end
-  #polyginic effects
-  if mme.pedTrmVec != 0 && isposdef(mme.Gi) == false
-    printstyled("Prior information for polygenic effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    myvarout  = [split(i,":")[1] for i in mme.pedTrmVec]
-    myvarin   = string.(mme.lhsVec)
-    Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
-    G         = diagm(Zdesign*diag(var_piece))
-    mme.Gi    = mme.GiOld = mme.GiNew = Symmetric(inv(G))
-    mme.scalePed = G*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
-  end
-  #other random effects
+  #random effects
   if length(mme.rndTrmVec) != 0
     for randomEffect in mme.rndTrmVec
       if isposdef(randomEffect.Gi) == false
@@ -540,8 +550,11 @@ function set_default_priors_for_variance_components(mme,df)
         myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
         myvarin   = string.(mme.lhsVec)
         Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
-        G         = diagm(Zdesign*diag(var_piece))
-
+        if randomEffect.randomType == "A"
+            G = diagm(Zdesign*diag(varg))
+        else
+            G = diagm(Zdesign*diag(vare))
+        end
         randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
         randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
       end
@@ -676,13 +689,10 @@ function getMCMCinfo(mme)
 
     if mme.nModels==1
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
-            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",round.(inv(i.GiNew),digits=3))
+            thisterm= join(i.term_array, ",")
+            @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
         end
         @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n %50s\n","genetic variances (polygenic):",round.(inv(mme.GiNew),digits=3))
-        end
         if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")
@@ -693,7 +703,7 @@ function getMCMCinfo(mme)
         end
     else
         for i in mme.rndTrmVec
-            thisterm=split(i.term_array[1],':')[end]
+            thisterm= join(i.term_array, ",")
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
             Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
             println()

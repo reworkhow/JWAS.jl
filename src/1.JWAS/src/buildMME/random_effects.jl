@@ -79,7 +79,7 @@ G               = 0.6
 set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0,double_precision=false)
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
     ############################################################################
     #Pre-Check
     ############################################################################
@@ -90,8 +90,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       G=reshape([G],1,1)
     end
     names   = string.(names)
-    G       = double_precision ? Float64.(G) : Float32.(G)
-    df      = double_precision ? Float64(df) : Float32(df)
+    G       = Float32.(G)
+    df      = Float32(df)
     ############################################################################
     #add trait names (model equation number) to variables;
     #e.g., "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
@@ -141,8 +141,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     if typeof(Vinv)==PedModule.Pedigree
       Vinv  = PedModule.AInverse(mme.ped)
       mme.pedTrmVec = res
-      mme.Gi = mme.GiOld = mme.GiNew = (isposdef(G) ? Symmetric(inv(G)) : G)
-      ν, k  = Float64(df), size(mme.pedTrmVec,1)
+      mme.Gi = (isposdef(G) ? Symmetric(inv(G)) : G)
+      ν, k  = Float32(df), size(mme.pedTrmVec,1)
       νG0   = ν + k
       mme.df.polygenic = νG0 #final df for this inverse wisahrt
       mme.scalePed     = G*(mme.df.polygenic - k - 1)
@@ -158,7 +158,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     term_array   = res
     df           = df+length(term_array)
     scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
-    Vinv         = double_precision ? Float64.(Vinv) : Float32.(Vinv)
+    Vinv         = Float32.(Vinv)
     randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names,random_type)
     push!(mme.rndTrmVec,randomEffect)
     nothing

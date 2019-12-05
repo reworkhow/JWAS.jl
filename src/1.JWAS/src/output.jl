@@ -264,7 +264,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   #non-marker random effects variances
   for i in  mme.rndTrmVec
-      trmStri   = split(i.term_array[1],':')[end]
+      trmStri   = join(i.term_array, "_")                  #x2
       push!(outvar,trmStri*"_variances")
   end
 
@@ -300,7 +300,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   for effect in  mme.rndTrmVec
-    trmStri   = split(effect.term_array[1],':')[end]                  #x2
+    trmStri   = join(effect.term_array, "_")                  #x2
     thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
     writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
   end
@@ -343,7 +343,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
   output_location_parameters_samples(mme,sol,outfile)
   #random effects variances
   for effect in  mme.rndTrmVec
-    trmStri   = split(effect.term_array[1],':')[end]
+    trmStri   = join(effect.term_array, "_")
     writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
   end
 

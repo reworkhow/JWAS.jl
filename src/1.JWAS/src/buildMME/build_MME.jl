@@ -34,7 +34,7 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString, R = false; df = 4.0, double_precision = false)
+function build_model(model_equations::AbstractString, R = false; df = 4.0)
   if R != false && !isposdef(map(AbstractFloat,R))
     error("The covariance matrix is not positive definite.")
   end
@@ -65,7 +65,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0, doubl
   for trm in modelTerms          #make a dict for model terms
     dict[trm.trmStr] = trm
   end
-  return MME(nModels,modelVec,modelTerms,dict,lhsVec,(double_precision ? Float64.(R) : Float32.(R)),(double_precision ? Float64(df) : Float32(df)))
+  return MME(nModels,modelVec,modelTerms,dict,lhsVec,Float32.(R),Float32(df))
 end
 
 """

@@ -1,9 +1,14 @@
 ################################################################################
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
 #
-#in GBLUP, pseudo markers are used.
+#In GBLUP, pseudo markers are used.
 #y = μ + a + e with mean(a)=0,var(a)=Gσ²=MM'σ² and G = LDL' <==>
 #y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
+#
+#Threshold trait
+#Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative Genetics
+#Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
+#Heredity, 110(3), 213–219.
 ################################################################################
 function MCMC_BayesianAlphabet(nIter,mme,df;
                      Rinv                       = false,
@@ -31,7 +36,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         #-Inf,t1,t2,...,t_{#c-1},Inf
         thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
 
-        cmean      = mme.X*starting_value[1:size(mme.mmeLhs,1)] #assume maker effects all zeros
+        cmean      = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
         for i in 1:length(category_obs) #1,2,2,3,1...
             whichcategory = category_obs[i]
             mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
