@@ -66,9 +66,9 @@ end
 ################################################################################
 mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    Gi::Array{Float64,2}    #covariance matrix (multi-trait)
-    GiOld::Array{Float64,2}  #specific for lambda version of MME (single-trait)
-    GiNew::Array{Float64,2}  #specific for lambda version of MME (single-trait)
+    Gi     #covariance matrix (multi-trait) #::Array{Float64,2}
+    GiOld  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
+    GiNew  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
     df::AbstractFloat
     scale #::Array{Float64,2}
     Vinv # 0, identity matrix
@@ -137,7 +137,7 @@ end
 #
 ################################################################################
 mutable struct MME
-    nModels::Int64                                #number of model equations
+    nModels::Integer                              #number of model equations
     modelVec::Array{AbstractString,1}             #["y1 = A + B","y2 = A + B + A*B"]
     modelTerms::Array{ModelTerm,1}                #ModelTerms for "1:intercept","1:A","2:intercept","2:A","2:A*B"...;
     modelTermDict::Dict{AbstractString,ModelTerm} #key: "1:A*B" value: ModelTerm; convert modelTerms above to dictionary
@@ -154,9 +154,9 @@ mutable struct MME
                                                   #RANDOM EFFCTS
     pedTrmVec                                     #polygenic effects(pedigree): "1:Animal","1:Mat","2:Animal"
     ped                                           #PedModule.Pedigree
-    Gi::Array{Float64,2}                          #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
-    GiOld::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
-    GiNew::Array{Float64,2}                       #specific for lambda version of MME (single-trait)
+    Gi                                            #inverse of genetic covariance matrix for pedTrmVec (multi-trait)
+    GiOld                                         #specific for lambda version of MME (single-trait)
+    GiNew                                         #specific for lambda version of MME (single-trait)
     scalePed
 
     rndTrmVec::Array{RandomEffect,1}              #General (including i.i.d.) random effects
@@ -174,7 +174,7 @@ mutable struct MME
 
     M                                             #GENOTYPES
 
-    mmePos::Int64                                 #temporary value to record term position (start from 1)
+    mmePos::Integer                               #temporary value to record term position (start from 1)
 
     outputSamplesVec::Array{ModelTerm,1}          #for which location parameters to save MCMC samples
 

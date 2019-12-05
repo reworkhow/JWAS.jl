@@ -203,13 +203,19 @@ function runMCMC(mme::MME,df;
     #check priors
     #make default covariance matrices if not provided
     set_default_priors_for_variance_components(mme,df)
+    #double precision
+    if double_precision == true
+        if mme.M != 0
+            mme.M.genotypes = map(Float64,mme.M.genotypes)
+        end
+        for random_term in mme.rndTrmVec
+            random_term.Vinv = map(Float64,random_term.Vinv)
+        end
+    end
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     ############################################################################
     if mme.M!=0
-        if double_precision == true
-            mme.M.genotypes = map(Float64,mme.M.genotypes)
-        end
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     ############################################################################
