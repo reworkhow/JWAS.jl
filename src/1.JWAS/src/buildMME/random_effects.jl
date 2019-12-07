@@ -85,12 +85,10 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     ############################################################################
     if  G != false && !isposdef(G)
         error("The covariance matrix is not positive definite.")
-    end
-    if typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
+    elseif G != false && typeof(G)<:Number ##single variable single-trait, convert scalar G to 1x1 matrix
       G=reshape([G],1,1)
     end
     names   = string.(names)
-    G       = Float32.(G)
     df      = Float32(df)
     ############################################################################
     #add trait names (model equation number) to variables;
@@ -134,14 +132,14 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     #Gi            : multi-trait;
     #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(G)))
+    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(Float32.(G))))
     ############################################################################
     #return random_effct type
     ############################################################################
     if typeof(Vinv)==PedModule.Pedigree
       Vinv  = PedModule.AInverse(mme.ped)
       mme.pedTrmVec = res
-      mme.Gi = (isposdef(G) ? Symmetric(inv(G)) : G)
+      mme.Gi = Gi
       ν, k  = Float32(df), size(mme.pedTrmVec,1)
       νG0   = ν + k
       mme.df.polygenic = νG0 #final df for this inverse wisahrt

@@ -65,7 +65,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
   for trm in modelTerms          #make a dict for model terms
     dict[trm.trmStr] = trm
   end
-  return MME(nModels,modelVec,modelTerms,dict,lhsVec,Float32.(R),Float32(df))
+  return MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
 end
 
 """
