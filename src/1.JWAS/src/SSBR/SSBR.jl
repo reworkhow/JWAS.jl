@@ -76,10 +76,12 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
                block22];
     #genotypes are imputed for all individuals in pedigree and aligned to
     #phenotyped individuals by genotype chunks to avoid memory issues.
-    Z              = mkmat_incidence_factor(mme.obsID,ped.IDs)
+    Z              = mkmat_incidence_factor(mme.obsID,ped.IDs)  #aligned to phenotypes
+    Zo             = mkmat_incidence_factor(mme.output_ID,ped.IDs) #aligned to outputIDs
     if big_memory == false
         nmarkers       = size(Mg,2)
         Mpheno         = zeros(length(mme.obsID),nmarkers)
+        Mout           = zeros(length(mme.output_ID),nmarkers)
         markerperchunk = 1000
         if nmarkers%markerperchunk == 0
             nchunks = div(nmarkers,markerperchunk)
@@ -94,10 +96,15 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
             end
             Mped_chunk        = lhs\(rhs*Mg[:,myrange])
             Mpheno[:,myrange] = Z*Mped_chunk
+            Mout[:,myrange]   = Zo*Mped_chunk
         end
     else
          Mpheno = Z*(lhs\(rhs*Mg))
+         Mout   = Zo*(lhs\(rhs*Mg))
     end
+    
+    mme.output_genotypes =  Mout
+
     mme.M.genotypes = Mpheno
     mme.M.obsID     = mme.obsID
     mme.M.nObs      = length(mme.M.obsID)

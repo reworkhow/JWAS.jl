@@ -33,13 +33,13 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         #Then liabilities are sampled and stored in mme.ySparse
         category_obs  = map(Int,mme.ySparse) # categories (1,2,2,3,1...)
         ncategories = length(unique(category_obs))
-        #-Inf,t1,t2,...,t_{#c-1},Inf
+        #-Inf,t1,t2,...,t_{#c-1},Inf, where t1=0 and t_{#c-1}<1
         thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
 
         cmean      = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
         for i in 1:length(category_obs) #1,2,2,3,1...
             whichcategory = category_obs[i]
-            mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
+            mme.ySparse[i] = rand(truncated(Normal(cmean[i], 1), thresholds[whichcategory], thresholds[whichcategory+1]))
         end
     end
     ############################################################################
@@ -135,7 +135,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             cmean = mme.ySparse - ycorr #liabilities - residuals
             for i in 1:length(category_obs) #1,2,2,3,1...
                 whichcategory = category_obs[i]
-                mme.ySparse[i] = rand(TruncatedNormal(cmean[i], 1, thresholds[whichcategory],thresholds[whichcategory+1]))
+                mme.ySparse[i] = rand(truncated(Normal(cmean[i], 1), thresholds[whichcategory], thresholds[whichcategory+1]))
             end
             ########################################################################
             # 0. Categorical traits

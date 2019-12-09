@@ -46,7 +46,7 @@ export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
 #Pedmodule
-export get_pedigree
+export get_pedigree,getinfo
 #misc
 export GWAS,QC
 export get_additive_genetic_variances,get_breeding_values
@@ -106,7 +106,7 @@ export get_correlations,get_heritability
     * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
-        * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`.
+        * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
         * If `constraint`=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
         * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
@@ -408,10 +408,6 @@ function check_pedigree(mme,df,pedigree)
         if mme.M!=0 && !issubset(mme.M.obsID,pedID)
             error("Not all genotyped individuals are found in pedigree!")
         end
-        phenoID = strip.(map(string,df[!,1]))
-        if !issubset(phenoID,pedID)
-        error("Not all phenotyped individuals are found in pedigree!")
-        end
     end
 end
 
@@ -458,6 +454,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
     df[!,1] = strip.(map(string,df[!,1])) #make IDs stripped string
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
+    writedlm("IDs_for_individuals_with_phenotypes.txt",df[!,1])
 
     missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
@@ -528,7 +525,7 @@ function set_default_priors_for_variance_components(mme,df)
   for random_term in mme.rndTrmVec
     if random_term.randomType == "A"
         genetic_random_count += 1
-    else
+    elseif split(random_term.term_array[1],":")[2] != "ϵ"
         nongenetic_random_count +=1
     end
   end
@@ -564,13 +561,17 @@ function set_default_priors_for_variance_components(mme,df)
         myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
         myvarin   = string.(mme.lhsVec)
         Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
-        if randomEffect.randomType == "A"
+        if randomEffect.randomType == "A" || split(randomEffect.term_array[1],":")[2] == "ϵ"
             G = diagm(Zdesign*diag(varg))
         else
             G = diagm(Zdesign*diag(vare))
         end
         randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
         randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+        if randomEffect.randomType == "A"
+          mme.Gi = randomEffect.Gi
+          mme.scalePed = randomEffect.scale
+        end
       end
     end
   end
@@ -706,7 +707,7 @@ function getMCMCinfo(mme)
             thisterm= join(i.term_array, ",")
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
         end
-        @printf("%-30s %20.3f\n","residual variances:",mme.RNew)
+        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
         if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")

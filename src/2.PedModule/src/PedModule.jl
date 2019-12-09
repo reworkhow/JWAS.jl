@@ -1,6 +1,6 @@
 module PedModule
 
-using DataFrames,CSV
+using DataFrames,CSV, DelimitedFiles
 using SparseArrays
 using ProgressMeter
 
@@ -40,7 +40,9 @@ function get_pedigree(pedfile::AbstractString;header=false,separator=',',missing
 
     ped.IDs=getIDs(ped)
 
-    println("Finished!")
+    getinfo(ped)
+    writedlm("IDs_for_individuals_with_pedigree.txt",ped.IDs)
+
     return ped
 end
 
@@ -273,7 +275,8 @@ end
   and inbreeding coefficients.
 
 """
-function getinfo(pedigree::Pedigree)
+function getinfo(pedigree::Pedigree;Ai=false)
+    println("Pedigree informatin:")
     println("#individuals: ",length(pedigree.idMap))
     sires  = [pednode.sire for pednode in values(pedigree.idMap)]
     dams = [pednode.dam for pednode in values(pedigree.idMap)]
@@ -281,15 +284,13 @@ function getinfo(pedigree::Pedigree)
     println("#dams:        ",sum(unique(dams).!="missing"))
     println("#founders:    ",length(pedigree.idMap)-sum((sires .!= "missing") .* (dams .!= "missing")))
 
-    Ai   = PedModule.AInverse(pedigree)
-    IDs = PedModule.getIDs(pedigree)
-    inbreeding = PedModule.getInbreeding(pedigree)
-    #outID=string.(1:12)
-    #JWAS.mkmat_incidence_factor(outID,inID)
-    #mat=Matrix(JWAS.mkmat_incidence_factor(outID,inID))
-    #A=mat*A*mat'
-    println("Get individual IDs, inverse of numerator relationship matrix, and inbreeding coefficients.")
-    return IDs,Ai,inbreeding
+    if Ai == true
+        Ai   = PedModule.AInverse(pedigree)
+        IDs = PedModule.getIDs(pedigree)
+        inbreeding = PedModule.getInbreeding(pedigree)
+        println("Get individual IDs, inverse of numerator relationship matrix, and inbreeding coefficients.")
+        return IDs,Ai,inbreeding
+    end
 end
 
 include("forSSBR.jl")

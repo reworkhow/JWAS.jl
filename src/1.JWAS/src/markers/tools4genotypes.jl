@@ -73,12 +73,12 @@ end
 #
 # mme.M.genotypes is modified to same IDs in phenotypes for coding convenience
 #
-#Note that Aligning genotypes with phenotypes in single-step analysis
+#Note that Aligning genotypes with phenotypes and output_ID in single-step analysis
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
-    if mme.output_ID != 0 && mme.MCMCinfo.methods != "GBLUP"
+    if mme.output_ID != 0 && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
         Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
-        mme.output_genotypes = (mme.output_ID == mme.M.obsID ? mme.M.genotypes : Zo*mme.M.genotypes)
+        mme.output_genotypes =  Zo*mme.M.genotypes
     end
     #***************************************************************************
     #Align genotypes with phenotypes
