@@ -394,10 +394,6 @@ function check_pedigree(mme,df,pedigree)
         if mme.M!=0 && !issubset(mme.M.obsID,pedID)
             error("Not all genotyped individuals are found in pedigree!")
         end
-        phenoID = strip.(map(string,df[!,1]))
-        if !issubset(phenoID,pedID)
-        error("Not all phenotyped individuals are found in pedigree!")
-        end
     end
 end
 
@@ -444,6 +440,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
     df[!,1] = strip.(map(string,df[!,1])) #make IDs stripped string
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
+    writedlm("IDs_for_individuals_with_phenotypes.txt",df[!,1])
 
     missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)

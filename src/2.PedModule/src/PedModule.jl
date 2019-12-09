@@ -1,6 +1,6 @@
 module PedModule
 
-using DataFrames,CSV
+using DataFrames,CSV, DelimitedFiles
 using SparseArrays
 using ProgressMeter
 
@@ -41,6 +41,8 @@ function get_pedigree(pedfile::AbstractString;header=false,separator=',',missing
     ped.IDs=getIDs(ped)
 
     getinfo(ped)
+    writedlm("IDs_for_individuals_with_pedigree.txt",ped.IDs)
+
     return ped
 end
 

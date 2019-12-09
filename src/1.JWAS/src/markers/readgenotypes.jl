@@ -32,6 +32,7 @@ function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataF
         νG0   = Float32(df) + mme.nModels
         mme.df.marker = νG0 #final df for inverse wisahrt
     end
+    writedlm("IDs_for_individuals_with_genotypes.txt",mme.M.obsID)
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 
@@ -66,6 +67,7 @@ function add_genotypes(mme::MME,file,G=false;
         νG0   = Float32(df) + mme.nModels
         mme.df.marker = νG0 #final df for inverse wisahrt
     end
+    writedlm("IDs_for_individuals_with_genotypes.txt",mme.M.obsID)
     println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 
