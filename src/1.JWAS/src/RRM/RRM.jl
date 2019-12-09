@@ -1,82 +1,76 @@
-using DataFrames, LinearAlgebra, Statistics, Distributions, Random, DelimitedFiles, GSL;
-##Phenotypes adjusted for all effects (assuming zeros now)
-ycorr  = vec(Matrix(mme.ySparse))
-function Transform_DM(IDvec, ys, tpvec)
-    # input:
-    # IDvec - a vector of ID for all the observed data
-    # ys: a vector of observations from the data
-    # tpvec: a vector of TimePoints for all observed data
-    time_points = sort(unique(tpvec)) # vector of whole timepoints sorted
-    nt = length(time_points) # number of timepoints measured in the data
-    IDs = unique(IDvec) # vector of unique individuals
-    nind = length(IDs) # number of individuals having records
-    nobs = length(ys) # number of observations from the data
-    observed_IDbyDays = string.(IDvec) .* string.(tpvec) # an extra vector as “ID x TimePoint” for all observations
-    all_IDbyDays = vcat([ID .* string.(time_points)  for ID in string.(IDs)]...) # an extra vector as “ID x TimePoint” for full y
+#ID, time, obs
+#a1, 1, y11
+#a1, 3, y13
+#a2, 1, y21
+#a2, 2, y22
+#a2, 3, y23
+#a3, 2, y32
+#
+#yobs order: a1, a1, a2, a2, a2, a3
+#yfull order: a1, a1, a1, a2, a2, a2, a3, a3, a3 (fill missing values)
+function matrix_yfull_to_yobs(IDvec, yvec, timevec)
+    times  = sort(unique(time))      # vector of whole timepoints sorted
+    ntimes = length(times)           # number of timepoints measured in the data
+    IDs    = unique(IDvec)           # vector of unique individuals
+    nIDs   = length(IDs)             # number of individuals from data
+    nobs   = length(yvec)            # number of observations from the data
+    yobs = string.(IDvec) .* string.(timevec) # an extra vector as “ID x TimePoint” for all observations
+    yfull = vcat([ID .* string.(times)  for ID in string.(IDs)]...) # an extra vector as “ID x TimePoint” for full y
     Is = Array{Int64}(undef, nobs)
     Js = Array{Int64}(undef, nobs)
-    Vs = Array{Float64}(undef, nobs)
-    indicator = Array{Float64, 1}(undef, nind*nt)
-    rows = 1
-    for i in 1:nind*nt
-        if all_IDbyDays[i] in observed_IDbyDays
-            Is[rows] = rows
+    zeros_indicator = fill(true, length(yfull))
+    whichrow = 1
+    for i in 1:length(yfull)
+        if yfull[i] in yobs
+            Is[rows] = whichrow
             Js[rows] = i
-            Vs[rows] = 1 # put 1 at each column corresponding to the observations
-            indicator[i] = false
-            rows += 1
-        else
-            indicator[i] = true
+            zeros_indicator[i] = false
+            whichrow += 1
         end
     end
-    DesignMatrix = sparse(Is, Js, Vs,nobs,nind*nt)
-    return DesignMatrix, indicator
+    matrix_yfull2yobs = sparse(Is, Js, ones(nobs),length(yobs),length(yfull))
+    return matrix_yfull2yobs, zeros_indicator
 end
 
-
-function GenrateFullPhi(tpvec, nCoeff)
-    # input:
-    # tpvec: a vector of TimePoints for all observed data
-    # nCoeff = number of polynomial coefficients to be estimated
-    ti = sort(unique(tpvec)) # vector of whole timepoints sorted
-    tmin = minimum(ti) # minimal timepoint
-    tmax = maximum(ti) # maximal timepoint
+#using Statistics, GSL
+#Φ =  generatefullPhi(timevec)
+function generatefullPhi(timevec, ncoeff=3)
+    # timevec: a vector of time points for all observations
+    # ncoeff : the number of polynomial coefficients to be estimated
+    times = sort(unique(timevec)) # vector of whole timepoints sorted
+    tmin  = minimum(times)
+    tmax  = maximum(times)
     # standardized time points
-    qi = 2*(ti .- tmin)./(tmax .- tmin) .- 1
-    Phi = Matrix{Float64}(undef, length(ti), nCoeff) # a matrix for the whole Phi corresponding to whole timepoints
-    for i in 1:nCoeff
+    qi = 2*(times .- tmin)./(tmax .- tmin) .- 1
+    Φ  = Matrix{Float64}(undef, length(times), ncoeff) # Phi of size ntimes x ncoeff
+    for i in 1:ncoeff
         n = i - 1
         ## Given the normalized function from L. R. Schaeffer
-        Phi[:,i] = sqrt((2*n+1)/2)*sf_legendre_Pl.(n,qi) # construct the matrix
+        Φ[:,i] = sqrt((2*n+1)/2)*sf_legendre_Pl.(n,qi) # construct the matrix
     end
-    return Phi
+    return Φ
 end
 
-
-#Φ =  GenrateFullPhi(tpvec, nCoeff) # complete Φ for all time points
-
-function get_mΦΦArray(Φ,T,xArray)
-    nind = length(xArray[1])
-    nMarkers = length(xArray)
-    nTimes = size(Φ)[1]
-    Φw   = T*repeat(Φ; outer=nind) # whole Φ for observed data
+function get_mΦΦarray(Φ,T,mArray)
+    ninds    = length(mArray[1])
+    nmarkers = length(mArray)
+    ntimes   = size(Φ,1)
+    Φyobs    = T*repeat(Φ; outer=nind) # whole Φ for all observations of size #observations X #coeff
     #### Construct an array (of lengh number of markers) of matrices (of order nCoeff x nCoeff)
-    mΦΦArray = Array{Array{Float64,2}}(undef,nMarkers)
-    for marker in 1:nMarkers
-        x = xArray[marker]
-        Mj = T*repeat(x;inner = nTimes) # vector of genetypes corresponding to ycor (observed y)
-        term = Mj .* Φw
-        mΦΦArray[marker] = term'term
+    mΦΦarray = Array{Array{Float64,2}}(undef,nmarkers)
+    for i in 1:nmarkers
+        m  = mArray[i]
+        mj = T*repeat(x;inner = ntimes) # vector of genotypes corresponding to yobs
+        term = mj .* Φyobs
+        mΦΦarray[i] = term'term
     end
-    return mΦΦArray
+    return mΦΦarray
 end
 
-#MTBayesC requires the support for prior for delta for d is the set
-#of all 2^n trait outcomes of dj:
 function BayesABCRRM!(xArray,xpx,wArray,
                       betaArray,deltaArray,alphaArray,
-                      vare,varEffects,BigPi,labels,
-                      Φ, whichzeros, mΦΦArray)
+                      vare,varEffects,BigPi,
+                      Φ, zeros_indicator, mΦΦArray)
 #For example of n individuals, 5 time points and 3 RR coefficient
 #wArray is an array (of length number of timepoints)
 #                    of vectors (of length number of individuals)
@@ -84,12 +78,11 @@ function BayesABCRRM!(xArray,xpx,wArray,
 #                                   of vectors (of length of number of markers)
 #xArray is an array (of length number of markers)
 #                                   of vector (of length number of individuals)
-#invG0 is the inverse of the covariance matrix among RR coefficients
-#        [G11 G12 G13
+#varEffects is an array of the covariance matrix among RR coefficients
+#         [G11 G12 G13
 #         G21 G22 G23
 #         G31 G32 G33]
-#invR0 is the inverse of the covariance matrix among time pointes
-#        Diag(σ2,σ2,σ2,σ2,σ2)
+#vare is a scallar (residual variance)
 
     nMarkers = length(xArray)
     nind     = length(xArray[1])
@@ -103,16 +96,16 @@ function BayesABCRRM!(xArray,xpx,wArray,
     oldα     = zeros(typeof(alphaArray[1][1]),nCoeff)
     δ        = zeros(typeof(deltaArray[1][1]),nCoeff)
     # xw       = zeros(nTimes) # for rhs # construct directly
-    xw_first = zeros(nTimes)
-    αcandidate = Array{Array{typeof(alphaArray[1][1]),1}}(undef,nlabels) ###
-    βcandidate = Array{Array{typeof(betaArray[1][1]),1}}(undef,nlabels) ### an array (of length number of labels)
-#                                                                  of vector (of length number of RR coefficients)
+    xw_first   = zeros(nTimes)
+
+    logDelta   = Dict{Any,Float64}() #of length number of labels
+    αcandidate = Dict()
+    βcandidate = Dict()
+
     for marker=1:nMarkers
         x    = xArray[marker]
         for coeffi = 1:nCoeff
-            β[coeffi]  = betaArray[coeffi][marker]  # we don't need this
-         oldα[coeffi]  = newα[coeffi] = alphaArray[coeffi][marker]
-            δ[coeffi]  = deltaArray[coeffi][marker] # we don't need this
+          oldα[coeffi]  = newα[coeffi] = alphaArray[coeffi][marker]
         end
         ## calculate sum(m_ij * Phi_i' w_ij)
         ## first part (see derivation)
@@ -123,45 +116,44 @@ function BayesABCRRM!(xArray,xpx,wArray,
         xw = Φ'xw_first + mΦΦ*oldα
         #########################################
 
-        for label in 1:nlabels
-            δj = labels[label]
+        for label in keys(BigPi)
+            δj   = label
             Dj   = Diagonal(δj)
             lhs  = Dj'mΦΦ*Dj/vare + Ginv
             rhs  = Dj'xw/vare
             Σ    = inv(lhs)
             μ    = Σ *rhs
             logDelta[label]=-0.5*(log(det(lhs))-(rhs*μ)[1,1])+log(BigPi[label])
-            beta[label] = rand(MvNormal(μ, Σ))
-            α[label]  = Dj*beta[label]
+            βcandidate[label] = rand(MvNormal(μ, Σ))
+            αcandidate[label] = Dj*beta[label]
         end
-        for label in 1:nlabels
+        for i in keys(BigPi)
           deno =0.0
-          for i in 1:nlabels
-            deno += exp(logDelta[i]-logDelta[label])
+          for j in keys(BigPi)
+            deno += exp(logDelta[j]-logDelta[i])
           end
-          probDelta[label]=1/deno
+          probDelta[i]=1/deno
         end
 
-        whichlabel = rand((Categorical(probDelta)))
-        newα = α[whichlabel]
-        β = beta[whichlabel]
-        δ = labels[whichlabel]
+        whichlabel = rand((Categorical(collect(values(probDelta)))))
+        newα = collect(values(αcandidate))[whichlabel]
+        β    = collect(values(βcandidate))[whichlabel]
+        δ    = collect(keys(BigPi))[whichlabel]
 
-        # adjust for locus j
-        for coeffi = 1:nCoeff
-            betaArray[coeffi][marker]       = β[coeffi]
-            deltaArray[coeffi][marker]      = δ[coeffi]
-            alphaArray[coeffi][marker]      = newα[coeffi]
-        end
-
-        #### when we change wArray, we change yfull correspondingly because we use pointer to generate wArray
-        ## indicator for yfull
+        ## adjust for locus j
+        #when we change wArray, yfull is changed correspondingly
+        #because we use pointer to generate wArray
         Φαold = Φ*oldα
         Φαnew = Φ*newα
         for timei = 1:nTimes
             BLAS.axpy!(Φαold[timei]-Φαnew[timei],x,wArray[nTimes])
         end
-        # renew wArray
-        yfull[whichzeros] .= 0
+        yfull[zeros_indicator] .= 0         # renew wArray
+
+        for coeffi = 1:nCoeff
+            betaArray[coeffi][marker]       = β[coeffi]
+            deltaArray[coeffi][marker]      = δ[coeffi]
+            alphaArray[coeffi][marker]      = newα[coeffi]
+        end
     end
 end

@@ -21,14 +21,14 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
     #transition matrix from yfull to yobs
-    T,whichzeros = Transform_DM(df[!,1],mme.ySparse,df[!,:time])
+    T,whichzeros = matrix_yfull_to_yobs(df[!,1],mme.ySparse,df[!,:time])
     #size of Φ
     ntime, ncoeff      = size(Φ)
     #location parameters
     sol                = starting_value[1:size(mme.mmeLhs,1)]
     solMean, solMean2  = zero(sol),zero(sol)
     #residual variance
-    meanVare = meanVare2 = 1.0
+    meanVare = meanVare2 = 0.0
     #polygenic effects (A), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
@@ -97,12 +97,12 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                     betaArray,
                     deltaArray,
                     alphaArray,
-                    mme.R,locus_effect_variances,BigPi,labels,
+                    mme.R,locus_effect_variances,BigPi,
                     Φ, whichzeros, mΦΦArray)
         ycorr     = T*yfull
         #sample Pi
         if estimatePi == true
-            samplePi(deltaArray,BigPi,BigPiMean,iter,labels)
+            samplePi(deltaArray,BigPi,BigPiMean,iter)
         end
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
