@@ -506,7 +506,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     # set Riv for heterogeneous residuals
     #***************************************************************************
     if heterogeneous_residuals == true
-        mme.invweights = 1 ./ convert(Array,phenotypes[!,Symbol("weights")])
+        invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
         mme.invweights = (mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     else
         mme.invweights = false
