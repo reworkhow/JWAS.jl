@@ -99,6 +99,9 @@ function readgenotypes(file::AbstractString;
     #read a large genotype file
     df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
     obsID     = map(string,df[!,1])
+    if length(unique(obsID)) != length(obsID)
+        error("Duplicated IDs are found in genotypes.")
+    end
     genotypes = map(Float32,convert(Matrix,df[!,2:end]))
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
@@ -122,6 +125,9 @@ function readgenotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},D
     end
     markerID  = string.(header[2:end])
     obsID     = map(string,rowID)
+    if length(unique(obsID)) != length(obsID)
+        error("Duplicated IDs are found in genotypes.")
+    end 
     genotypes = map(Float32,convert(Matrix,M))
     #preliminary summary of genotype (duplication of the function above)
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers

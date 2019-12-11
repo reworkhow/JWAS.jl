@@ -38,6 +38,10 @@ include("SSBR/SSBR.jl")
 #Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
+#Random Regression Model
+include("RRM/MCMC_BayesianAlphabet_RRM.jl")
+include("RRM/RRM.jl")
+
 #output
 include("output.jl")
 
@@ -184,7 +188,8 @@ function runMCMC(mme::MME,df;
                             output_heritability,
                             categorical_trait,
                             seed,
-                            double_precision)
+                            double_precision,
+                            RRM)
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -291,7 +296,7 @@ function runMCMC(mme::MME,df;
                           causal_structure = causal_structure)
         end
     elseif mme.nModels ==1 && RRM != false
-        MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
+        mme.output=MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
                                   Φ                        = RRM,
                                   Pi                       = Pi,
                                   burnin                   = burnin,
@@ -537,10 +542,12 @@ function set_default_priors_for_variance_components(mme,df)
   #genetic variance or marker effect variance
   if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
     printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    if mme.nModels==1
-      mme.M.genetic_variance = varg[1,1]
-    elseif mme.nModels>1
+    if mme.nModels>1
       mme.M.genetic_variance = varg
+    elseif mme.nModels==1 && mme.MCMCinfo.RRM == false
+      mme.M.genetic_variance = varg[1,1]
+    elseif mme.MCMCinfo.RRM != false
+      mme.M.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
     end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
   end
   #residual effects
@@ -583,6 +590,8 @@ function init_mixed_model_equations(mme,df,sol)
     #starting value for sol can be provided
     if mme.M == 0                          #PBLUP
         nsol = size(mme.mmeLhs,1)
+    elseif mme.MCMCinfo.RRM != false
+        nsol = size(mme.mmeLhs,1)+mme.M.nMarkers*size(mme.MCMCinfo.RRM,1)
     elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
         nsol = size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels
     elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
@@ -702,7 +711,7 @@ function getMCMCinfo(mme)
 
     printstyled("\nHyper-parameters Information:\n\n",bold=true)
 
-    if mme.nModels==1
+    if mme.nModels==1 && mme.MCMCinfo.RRM == false
         for i in mme.rndTrmVec
             thisterm= join(i.term_array, ",")
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
@@ -724,8 +733,11 @@ function getMCMCinfo(mme)
             println()
         end
         @printf("%-30s\n","residual variances:")
-        Base.print_matrix(stdout,round.(mme.R,digits=3))
-        println()
+        if mme.MCMCinfo.RRM == false
+            Base.print_matrix(stdout,round.(mme.R,digits=3))
+        elseif mme.MCMCinfo.RRM == true
+            @printf("%20.3f\n", mme.RNew)
+        end
         if mme.pedTrmVec!=0
             @printf("%-30s\n","genetic variances (polygenic):")
             Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))

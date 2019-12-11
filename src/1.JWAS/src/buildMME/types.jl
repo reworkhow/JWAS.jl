@@ -120,6 +120,7 @@ mutable struct MCMCinfo
     categorical_trait
     seed
     double_precision
+    RRM
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

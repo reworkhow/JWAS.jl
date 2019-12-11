@@ -9,7 +9,7 @@
 #yobs order: a1, a1, a2, a2, a2, a3
 #yfull order: a1, a1, a1, a2, a2, a2, a3, a3, a3 (fill missing values)
 function matrix_yfull_to_yobs(IDvec, yvec, timevec)
-    times  = sort(unique(time))      # vector of whole timepoints sorted
+    times  = sort(unique(timevec))      # vector of whole timepoints sorted
     ntimes = length(times)           # number of timepoints measured in the data
     IDs    = unique(IDvec)           # vector of unique individuals
     nIDs   = length(IDs)             # number of individuals from data
@@ -22,8 +22,8 @@ function matrix_yfull_to_yobs(IDvec, yvec, timevec)
     whichrow = 1
     for i in 1:length(yfull)
         if yfull[i] in yobs
-            Is[rows] = whichrow
-            Js[rows] = i
+            Is[whichrow] = whichrow
+            Js[whichrow] = i
             zeros_indicator[i] = false
             whichrow += 1
         end
@@ -55,19 +55,19 @@ function get_mΦΦarray(Φ,T,mArray)
     ninds    = length(mArray[1])
     nmarkers = length(mArray)
     ntimes   = size(Φ,1)
-    Φyobs    = T*repeat(Φ; outer=nind) # whole Φ for all observations of size #observations X #coeff
+    Φyobs    = T*repeat(Φ; outer=ninds) # whole Φ for all observations of size #observations X #coeff
     #### Construct an array (of lengh number of markers) of matrices (of order nCoeff x nCoeff)
     mΦΦarray = Array{Array{Float64,2}}(undef,nmarkers)
     for i in 1:nmarkers
         m  = mArray[i]
-        mj = T*repeat(x;inner = ntimes) # vector of genotypes corresponding to yobs
+        mj = T*repeat(m;inner = ntimes) # vector of genotypes corresponding to yobs
         term = mj .* Φyobs
         mΦΦarray[i] = term'term
     end
     return mΦΦarray
 end
 
-function BayesABCRRM!(xArray,xpx,wArray,
+function BayesABCRRM!(xArray,xpx,wArray,yfull,
                       betaArray,deltaArray,alphaArray,
                       vare,varEffects,BigPi,
                       Φ, zeros_indicator, mΦΦArray)
@@ -88,7 +88,6 @@ function BayesABCRRM!(xArray,xpx,wArray,
     nind     = length(xArray[1])
     nCoeff   = length(alphaArray)
     nTimes   = length(wArray)
-    nlabels  = length(labels)
     Rinv     = inv(vare)           #Do Not Use inv.(): elementwise
     Ginv     = inv.(varEffects)
     β        = zeros(typeof(betaArray[1][1]),nCoeff)
@@ -99,6 +98,7 @@ function BayesABCRRM!(xArray,xpx,wArray,
     xw_first   = zeros(nTimes)
 
     logDelta   = Dict{Any,Float64}() #of length number of labels
+    probDelta  = Dict{Any,Float64}() #of length number of labels
     αcandidate = Dict()
     βcandidate = Dict()
 
@@ -119,13 +119,14 @@ function BayesABCRRM!(xArray,xpx,wArray,
         for label in keys(BigPi)
             δj   = label
             Dj   = Diagonal(δj)
-            lhs  = Dj'mΦΦ*Dj/vare + Ginv
+            lhs  = Dj'mΦΦ*Dj/vare + Ginv[marker]
             rhs  = Dj'xw/vare
             Σ    = inv(lhs)
             μ    = Σ *rhs
-            logDelta[label]=-0.5*(log(det(lhs))-(rhs*μ)[1,1])+log(BigPi[label])
-            βcandidate[label] = rand(MvNormal(μ, Σ))
-            αcandidate[label] = Dj*beta[label]
+            logDelta[label]=-0.5*(log(det(lhs))-(rhs'μ)[1,1])+log(BigPi[label])
+            beta = rand(MvNormal(μ, convert(Array,Symmetric(Σ))))
+            βcandidate[label] = beta
+            αcandidate[label] = Dj*beta
         end
         for i in keys(BigPi)
           deno =0.0
@@ -134,7 +135,6 @@ function BayesABCRRM!(xArray,xpx,wArray,
           end
           probDelta[i]=1/deno
         end
-
         whichlabel = rand((Categorical(collect(values(probDelta)))))
         newα = collect(values(αcandidate))[whichlabel]
         β    = collect(values(βcandidate))[whichlabel]

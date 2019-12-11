@@ -71,7 +71,7 @@ function output_result(mme,output_file,
   end
 
   if mme.M != 0
-    if mme.nModels == 1
+    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
         meanAlpha =[meanAlpha]
         meanAlpha2=[meanAlpha2]
         meanDelta = [meanDelta]
@@ -92,7 +92,11 @@ function output_result(mme,output_file,
     output["marker effects"]=
     DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
 
-    output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
+    if mme.MCMCinfo.RRM == false
+        output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
+    elseif mme.MCMCinfo.RRM != false
+        output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec).*string.(1:size(mme.MCMCinfo.RRM,2)),meanVara,meanVara2)
+    end
     if estimatePi == true
         output["Pi"] = dict2dataframe(mean_pi,mean_pi2)
     end
