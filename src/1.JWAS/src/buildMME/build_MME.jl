@@ -150,25 +150,25 @@ function getX(trm::ModelTerm,mme::MME)
       #random polygenic effects,e.g."Animal","Animal*age"
       #column index needs to compromise numerator relationship matrix
       #########################################################################
-       dict,thisnames  = mkDict(mme.modelTermDict[trm.trmStr].names) #key: levels of variable; value: column index
-       if thisnames!=mme.modelTermDict[trm.trmStr].names
+       dict,trm.names  = mkDict(mme.modelTermDict[trm.trmStr].names) #key: levels of variable; value: column index
+       if trm.names!=mme.modelTermDict[trm.trmStr].names
            error("The order of names is changed!")
        end
-       if trm.nFactors == 1 && !issubset(filter(x->x≠"missing",trm.str),thisnames)
+       if trm.nFactors == 1 && !issubset(filter(x->x≠"missing",trm.str),trm.names)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
-    else #fixed or iid random effects
+    else #fixed or iid random effects (also works with interactions)
       dict,trm.names  = mkDict(trm.str)
     end
     trm.nLevels  = length(dict) #before add key "missing"
     #3.2. Levels for each observation
     #Get the random effect in interactions
-    if trm.random_type != "fixed" && trm.nFactors != 1
+    if (trm.random_type == "V" || trm.random_type == "A") && trm.nFactors != 1
       str=[]
       for i in trm.str  #data
         for factorstr in getFactor(i) #two ways:animal*age;age*animal
-          if factorstr in thisnames || factorstr == "missing"  #"animal" ID not "age"
+          if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
             str = [str;factorstr]
           end
         end
