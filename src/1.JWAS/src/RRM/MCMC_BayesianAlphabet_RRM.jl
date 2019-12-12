@@ -20,6 +20,7 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
     # 2) posterior mean and variance at current iteration (zeros at the beginning)
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
+    mme.lhsVec = Symbol.(string.(1:size(mme.MCMCinfo.RRM,2)))
     #transition matrix from yfull to yobs
     T,whichzeros = matrix_yfull_to_yobs(df[!,1],mme.ySparse,df[!,:time])
     Z  = mkmat_incidence_factor(unique(df[!,1]) ,mme.M.obsID)
@@ -93,15 +94,10 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
-        println("I'm here 0!")
-
         ycorr = ycorr + mme.X*sol
         rhs = mme.X'ycorr
-        println(rhs)
         Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
         ycorr = ycorr - mme.X*sol
-
-        println("I'm here 00!")
 
         ########################################################################
         # 1.2 Marker Effects
@@ -114,9 +110,7 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                     alphaArray,
                     mme.RNew,locus_effect_variances,BigPi,
                     Φ, whichzeros, mΦΦArray)
-        println("I'm here 1!")
         ycorr     = T*yfull
-        println("I'm here 2!")
 
         #sample Pi
         if estimatePi == true
@@ -133,7 +127,6 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         ########################################################################
         mme.ROld = mme.RNew
         mme.RNew = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleRes)
-        println("I'm here 3!")
 
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -146,9 +139,8 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                     SM[coeffj,coeffi]   = SM[coeffi,coeffj]
                 end
             end
-            mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(I*mme.M.scale + SM))))
+            mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
         end
-        println("I'm here 4!")
         ########################################################################
         # 2.6 sample Scale parameter in prior for marker effect variances
         ########################################################################
@@ -161,7 +153,7 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),BigPi,alphaArray,vec(mme.M.G),outfile)
+            output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),BigPi,alphaArray,vec(mme.M.G),outfile)
             nsamples = (iter-burnin)/output_samples_frequency
             solMean   += (sol - solMean)/nsamples
             solMean2  += (sol .^2 - solMean2)/nsamples
@@ -172,10 +164,10 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                 G0Mean  += (inv(mme.Gi)  - G0Mean )/nsamples
                 G0Mean2 += (inv(mme.Gi) .^2  - G0Mean2 )/nsamples
             end
-            for trait in 1:nTraits
-                meanalphaArray[trait] += (alphaArray[trait] - meanalphaArray[trait])/nsamples
-                meanalphaArray2[trait]+= (alphaArray[trait].^2 - meanalphaArray2[trait])/nsamples
-                meandeltaArray[trait] += (deltaArray[trait] - meandeltaArray[trait])/nsamples
+            for i in 1:ncoeff
+                meanalphaArray[i] += (alphaArray[i] - meanalphaArray[i])/nsamples
+                meanalphaArray2[i]+= (alphaArray[i].^2 - meanalphaArray2[i])/nsamples
+                meandeltaArray[i] += (deltaArray[i] - meandeltaArray[i])/nsamples
             end
             if estimatePi == true
                 for i in keys(BigPi)
@@ -192,8 +184,6 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                 meanScaleVara2 += (mme.M.scale .^2 - meanScaleVara2)/nsamples
             end
         end
-        println("I'm here 5!")
-
         ########################################################################
         # 3.2 Printout
         ########################################################################
@@ -201,7 +191,6 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,digits=6))
         end
-        println("I'm here 6!")
     end
 
     ############################################################################

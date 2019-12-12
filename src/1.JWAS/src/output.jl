@@ -63,8 +63,12 @@ function output_result(mme,output_file,
   output = Dict()
   location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(solMean2 .- solMean .^2)])
   output["location parameters"] = location_parameters
-  output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
+  if mme.MCMCinfo.RRM == false
+      output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
+  else
+      output["residual variance"]   = matrix2dataframe(["1"],meanVare,meanVare2)
+  end
 
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
@@ -77,6 +81,7 @@ function output_result(mme,output_file,
         meanDelta = [meanDelta]
     end
     traiti      = 1
+    ntraits     = length(mme.lhsVec)
     whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
     whichmarker = mme.M.markerID
     whicheffect = meanAlpha[traiti]
@@ -92,11 +97,7 @@ function output_result(mme,output_file,
     output["marker effects"]=
     DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
 
-    if mme.MCMCinfo.RRM == false
-        output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
-    elseif mme.MCMCinfo.RRM != false
-        output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec).*string.(1:size(mme.MCMCinfo.RRM,2)),meanVara,meanVara2)
-    end
+    output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
     if estimatePi == true
         output["Pi"] = dict2dataframe(mean_pi,mean_pi2)
     end
@@ -106,7 +107,7 @@ function output_result(mme,output_file,
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
-      for traiti in 1:mme.nModels
+      for traiti in 1:ntraits
           EBVkey         = "EBV"*"_"*string(mme.lhsVec[traiti])
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
@@ -394,7 +395,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
               if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
                   mygvar = cov(EBVmat)
                   writedlm(outfile["genetic_variance"],vec(mygvar)',',')
-                  writedlm(outfile["heritability"],(diag(mygvar./(mygvar+vRes)))',',')
+                  writedlm(outfile["heritability"],(diag(mygvar./(mygvar.+vRes)))',',')
               end
           end
        end
