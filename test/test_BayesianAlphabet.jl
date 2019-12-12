@@ -8,8 +8,6 @@ mapfile    = Datasets.dataset("example","map.txt")
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true,missingstrings=["NA"])
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
-phenotypes[:weights]=ones(size(phenotypes,1))
-phenotypes_ssbr[:weights]=ones(size(phenotypes_ssbr,1))
 
 if ispath("mytest") == true
       rm("mytest", recursive=true)

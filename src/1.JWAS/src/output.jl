@@ -74,6 +74,7 @@ function output_result(mme,output_file,
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
 
+  ntraits     = length(mme.lhsVec)
   if mme.M != 0
     if mme.nModels == 1 && mme.MCMCinfo.RRM == false
         meanAlpha =[meanAlpha]
@@ -81,7 +82,6 @@ function output_result(mme,output_file,
         meanDelta = [meanDelta]
     end
     traiti      = 1
-    ntraits     = length(mme.lhsVec)
     whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
     whichmarker = mme.M.markerID
     whicheffect = meanAlpha[traiti]
