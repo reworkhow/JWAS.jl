@@ -146,7 +146,7 @@ function BayesABCRRM!(xArray,xpx,wArray,yfull,
         Φαold = Φ*oldα
         Φαnew = Φ*newα
         for timei = 1:nTimes
-            BLAS.axpy!(Φαold[timei]-Φαnew[timei],x,wArray[nTimes])
+            BLAS.axpy!(Φαold[timei]-Φαnew[timei],x,wArray[timei])
         end
         yfull[zeros_indicator] .= 0         # renew wArray
 
