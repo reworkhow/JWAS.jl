@@ -481,9 +481,6 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
 
     phenoID = df[!,1]
     single_step_analysis = mme.MCMCinfo.single_step_analysis
-    if mme.M == 0 && mme.ped == 0 #non-genetic analysis
-        return df
-    end
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
             printstyled("Phenotyped individuals are not a subset of ",
