@@ -17,7 +17,7 @@ mutable struct ModelTerm
 
                                                      #DATA             |          str               |     val       |
                                                      #                :|----------------------------|---------------|
-    str::Array{AbstractString,1}                     #covariate^2     :|["A x B", "A X B", ...]     | df[:A].*df[:B]|
+    data::Array{AbstractString,1}                    #covariate^2     :|["A x B", "A X B", ...]     | df[:A].*df[:B]|
     val::Union{Array{Float64,1},Array{Float32,1}}    #factor^2        :|["A1 x B1", "A2 X B2", ...] | [1.0,1.0,...] |
                                                      #factor*covariate:|["A1 x B","A2 X B", ...]    | 1.0.*df[:B]   |
 

@@ -127,7 +127,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
       end
     end
   end
-  trm.str = str
+  trm.data = str
   trm.val = (mme.MCMCinfo.double_precision ? Float64.(val) : Float32.(val))
 end
 
@@ -139,54 +139,57 @@ getFactor(str) = [strip(i) for i in split(str,"*")]
 ################################################################################
 function getX(trm::ModelTerm,mme::MME)
     #1. Row Index
-    nObs  = length(trm.str)
+    nObs  = length(trm.data)
     xi    = (trm.iModel-1)*nObs .+ collect(1:nObs)
     #2. Value
     xv    = trm.val
     #3. Column Index
-    #3.1. position fo all levels
+    #replace missing values (e.g., "missing","missing*a1") with "missing"
+    for i in 1:length(trm.data)  #data
+      if "missing" in getFactor(trm.data[i]) #replace "A*missing" with "missing"
+          trm.data[i] = "missing"
+      end
+    end
+    #3.1. fixed effects or iid random effects (names: "a1","a1*b1")
+    if trm.random_type == "I" || trm.random_type == "fixed"
+      dict,trm.names = mkDict(filter(x->x≠"missing",trm.data))
+      trm.nLevels    = length(dict)
+      data           = trm.data
+    end
     if trm.random_type == "V" || trm.random_type == "A"
       #########################################################################
       #random polygenic effects,e.g."Animal","Animal*age"
       #column index needs to compromise numerator relationship matrix
       #########################################################################
        dict,trm.names  = mkDict(mme.modelTermDict[trm.trmStr].names) #key: levels of variable; value: column index
-       if trm.names!=mme.modelTermDict[trm.trmStr].names
-           error("The order of names is changed!")
+       trm.nLevels  = length(dict) #before add key "missing"
+       #3.2. Levels for each observation
+       #Get the random effect in interactions
+       data=[]
+       for i in trm.data
+         for factorstr in getFactor(i) #two ways:animal*age;age*animal
+           if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
+             data = [data;factorstr]
+           end
+         end
        end
-       if trm.nFactors == 1 && !issubset(filter(x->x≠"missing",trm.str),trm.names)
+       if length(data) != length(trm.data)
+         error("Same level names are found for the two terms in the interaction.")
+       end
+       if !issubset(filter(x->x≠"missing",data),trm.names)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
          trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
        end
-    else #fixed or iid random effects (also works with interactions)
-      dict,trm.names  = mkDict(trm.str)
-    end
-    trm.nLevels  = length(dict) #before add key "missing"
-    #3.2. Levels for each observation
-    #Get the random effect in interactions
-    if (trm.random_type == "V" || trm.random_type == "A") && trm.nFactors != 1
-      str=[]
-      for i in trm.str  #data
-        for factorstr in getFactor(i) #two ways:animal*age;age*animal
-          if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
-            str = [str;factorstr]
-          end
-        end
-      end
-      if length(str) != length(trm.str)
-        error("Same level names are found in the two factors in the interaction.")
-      end
-      trm.str=str
     end
     #4. missing values in random effects
     #e.g, founders in pedigree are "missing" ("0") for materal effects
     #e.g, ϵ in single-step SNP-BLUP are missings for genotyped individuals
     #Thus, add one row of zeros in the design matrix for corresponding observation
     dict["missing"]          = 1 #column index for missing data (any positive integer < nLevels)
-    xv[trm.str.=="missing"] .= 0 #values       for missing data
+    xv[data.=="missing"]     .= 0 #values       for missing data
 
     #5.column index
-    xj                 = round.(Int64,[dict[i] for i in trm.str]) #column index
+    xj                 = round.(Int64,[dict[i] for i in data]) #column index
 
     #create the design matrix
     #ensure size of X is nObs*nModels X nLevels
