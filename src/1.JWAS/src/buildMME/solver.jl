@@ -15,13 +15,15 @@ function solve(mme::MME,
     end
     p = size(mme.mmeRhs,1)
     if solver=="Jacobi"
-        return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,0.3,
-                                    tolerance=tolerance,maxiter=maxiter,
-                                    outFreq=printout_frequency)]
+        return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
+                                    tolerance=tolerance,
+                                    maxiter=maxiter,
+                                    printout_frequency=printout_frequency)]
     elseif solver=="GaussSeidel"
         return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
-                              tolerance=tolerance,maxiter=maxiter,
-                              outFreq=printout_frequency)]
+                              tolerance=tolerance,
+                              maxiter=maxiter,
+                              printout_frequency=printout_frequency)]
     elseif solver=="Gibbs" && mme.nModels !=1
         return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
                               maxiter,outFreq=printout_frequency)]
@@ -38,43 +40,46 @@ end
 ################################################################################
 #Solvers including Jacobi, GaussSeidel, and Gibbs (general,lambda,one_iteration)
 ################################################################################
-function Jacobi(A,x,b,p;tolerance=0.000001,outFreq=10,maxiter=1000)
+function Jacobi(A,x,b,p=0.7;tolerance=0.000001,printout_frequency=10,maxiter=1000)
+    n       = size(A,1)   #number of linear equations
     D       = diag(A)
-    res     = A*x
-    resid   = b-res
-    tempSol = resid./D
-    diff    = sum(resid.^2)
-    n       = size(A,1)
+    error   = b - A*x
+    diff    = sum(error.^2)/n
+
     iter    = 0
-    while ((diff/n > tolerance) & (iter<maxiter))
+    while (diff > tolerance) && (iter < maxiter)
         iter   += 1
-        x       = p*tempSol + (1-p)*x
-        res     = A*x
-        resid   = b-res
-        tempSol = resid./D + x
-        diff    = sum(resid.^2)
-        if iter%outFreq == 0
-            println(iter," ",diff/n)
+        error   = b - A*x
+        x_temp  = error./D + x
+        x       = p*x_temp + (1-p)*x
+        diff    = sum(error.^2)/n
+
+        if iter%printout_frequency == 0
+            println(iter," ",diff)
         end
     end
     return x
 end
 
-function GaussSeidel(A,x,b;tolerance=0.000001,outFreq=10,maxiter=1000)
-    n = size(x,1)
-    for i=1:n
+function GaussSeidel(A,x,b;tolerance=0.000001,printout_frequency=10,maxiter=1000)
+    n = size(A,1)
+    for i = 1:n
         x[i] = (b[i] - A[:,i]'x)/A[i,i] + x[i]
     end
-    diff = sum((A*x-b).^2)
-    iter = 0
-    while ((diff/n > tolerance) & (iter<maxiter))
+    error = b - A*x
+    diff  = sum(error.^2)/n
+
+    iter  = 0
+    while (diff > tolerance) & (iter < maxiter)
         iter += 1
-        for i=1:n
+        for i = 1:n
             x[i] = (b[i] - A[:,i]'x)/A[i,i] + x[i]
         end
-        diff = sum((A*x-b).^2)
-        if iter%outFreq == 0
-            println(iter," ",diff/n)
+
+        error = b - A*x
+        diff  = sum(error.^2)/n
+        if iter%printout_frequency == 0
+            println(iter," ",diff)
         end
     end
     return x
