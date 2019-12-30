@@ -9,29 +9,38 @@ function solve(mme::MME,
                solver="default",
                printout_frequency=100,
                tolerance = 0.000001,
-               maxiter = 5000)
+               maxiter = 5000,
+               double_precision=false)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
-    sol = zeros(size(mme.mmeRhs,1))
+    if double_precision == true
+        A = map(Float64,mme.mmeLhs)
+        b = map(Float64,mme.mmeRhs)
+        x = zeros(Float64,size(mme.mmeRhs,1))
+    else
+        A = map(Float32,mme.mmeLhs)
+        b = map(Float32,mme.mmeRhs)
+        x = zeros(Float32,size(mme.mmeRhs,1))
+    end
     if solver=="Jacobi"
-        return [getNames(mme) Jacobi(mme.mmeLhs,sol,mme.mmeRhs,
+        return [getNames(mme) Jacobi(A,x,b,
                                     tolerance=tolerance,
                                     maxiter=maxiter,
                                     printout_frequency=printout_frequency)]
     elseif solver=="Gauss-Seidel"
-        return [getNames(mme) GaussSeidel(mme.mmeLhs,sol,mme.mmeRhs,
+        return [getNames(mme) GaussSeidel(A,x,b,
                               tolerance=tolerance,
                               maxiter=maxiter,
                               printout_frequency=printout_frequency)]
     elseif solver=="Gibbs" && mme.nModels !=1
-        return [getNames(mme) Gibbs(mme.mmeLhs,sol,mme.mmeRhs,
+        return [getNames(mme) Gibbs(A,x,b,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="Gibbs" && mme.nModels==1
-        return [getNames(mme) Gibbs(mme.mmeLhs,sol,mme.mmeRhs,mme.RNew,
+        return [getNames(mme) Gibbs(A,x,b,mme.RNew,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="default"
-        return [getNames(mme) mme.mmeLhs\mme.mmeRhs]
+        return [getNames(mme) A\b]
     else
         error("Please try solver=`default`,`Jacobi`,`Gauss-Seidel`, or `Gibbs sampler`\n")
     end

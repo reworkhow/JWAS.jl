@@ -128,7 +128,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.data = str
-  trm.val = (mme.MCMCinfo.double_precision ? Float64.(val) : Float32.(val))
+  trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
 
 getFactor(str) = [strip(i) for i in split(str,"*")]
@@ -232,7 +232,7 @@ function getMME(mme::MME, df::DataFrame)
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
-    vv      = (mme.MCMCinfo.double_precision ? Float64.(y) : Float32.(y))
+    vv      = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(y) : Float32.(y))
     ySparse = sparse(ii,jj,vv)
 
     #Make lhs and rhs for MME
@@ -268,6 +268,15 @@ function getMME(mme::MME, df::DataFrame)
 
     dropzeros!(mme.mmeLhs)
     dropzeros!(mme.mmeRhs)
+
+    #No phenotypic data for some levels of a factor in multi-trait analysis
+    #e.g., y3:x3:f in https://github.com/reworkhow/JWAS.jl/blob/
+    #a6f4595796b70811c0b745af525e7e0a822bb954/src/5.Datasets/data/example/phenotypes.txt
+    for i in size(mme.mmeLhs,1)
+      if mme.mmeLhs[i,i] == 0.0
+        error("No phenotypic data for ",getNames(mme)[i])
+      end
+    end
 end
 
 ################################################################################

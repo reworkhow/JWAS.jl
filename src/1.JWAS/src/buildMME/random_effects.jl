@@ -190,7 +190,7 @@ end
 function addVinv(mme::MME)
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
-      myI        = SparseMatrixCSC{mme.MCMCinfo.double_precision ? Float64 : Float32}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
+      myI        = SparseMatrixCSC{(mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64 : Float32}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
       Vi         = (random_term.Vinv!=0) ? random_term.Vinv : myI
       for (i,termi) = enumerate(term_array)
           randTrmi   = mme.modelTermDict[termi]
