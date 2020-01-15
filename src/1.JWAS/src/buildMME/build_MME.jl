@@ -299,7 +299,7 @@ function getNames(mme::MME)
     names = Array{AbstractString}(undef,0)
     for trm in mme.modelTerms
         for name in trm.names
-            push!(names,trm.trmStr*" : "*name)
+            push!(names,trm.trmStr*":"*name)
         end
     end
     return names
@@ -308,7 +308,7 @@ end
 function getNames(trm::ModelTerm)
     names = Array{AbstractString}(undef,0)
     for name in trm.names
-        push!(names,trm.trmStr*" : "*name)
+        push!(names,trm.trmStr*":"*name)
     end
     return names
 end
