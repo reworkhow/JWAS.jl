@@ -2,138 +2,148 @@
     solve(mme::MME,df::DataFrame;solver="default",printout_frequency=100,tolerance = 0.000001,maxiter = 5000)
 
 * Solve the mixed model equations (no marker information) without estimating variance components.
-Available solvers include `default`, `Jacobi`, `GaussSeidel`, and `Gibbs sampler`.
+Available solvers include `default`, `Jacobi`, `Gauss-Seidel`, and `Gibbs sampler`.
 """
 function solve(mme::MME,
                df::DataFrame;
                solver="default",
                printout_frequency=100,
                tolerance = 0.000001,
-               maxiter = 5000)
+               maxiter = 5000,
+               double_precision=false)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
-    p = size(mme.mmeRhs,1)
-    if solver=="Jacobi"
-        return [getNames(mme) Jacobi(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,0.3,
-                                    tolerance=tolerance,maxiter=maxiter,
-                                    outFreq=printout_frequency)]
-    elseif solver=="GaussSeidel"
-        return [getNames(mme) GaussSeidel(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
-                              tolerance=tolerance,maxiter=maxiter,
-                              outFreq=printout_frequency)]
-    elseif solver=="Gibbs" && mme.nModels !=1
-        return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,
-                              maxiter,outFreq=printout_frequency)]
-    elseif solver=="Gibbs" && mme.nModels==1
-        return [getNames(mme) Gibbs(mme.mmeLhs,fill(0.0,p),mme.mmeRhs,mme.RNew,
-                              maxiter,outFreq=printout_frequency)]
-    elseif solver=="default"
-        return [getNames(mme) mme.mmeLhs\mme.mmeRhs]
+    if double_precision == true
+        A = map(Float64,mme.mmeLhs)
+        b = map(Float64,mme.mmeRhs)
+        x = zeros(Float64,size(mme.mmeRhs,1))
     else
-        error("No this solver. Please try `default`,`Jacobi`,`GaussSeidel`, or `Gibbs sampler`\n")
+        A = map(Float32,mme.mmeLhs)
+        b = map(Float32,mme.mmeRhs)
+        x = zeros(Float32,size(mme.mmeRhs,1))
+    end
+    if solver=="Jacobi"
+        return [getNames(mme) Jacobi(A,x,b,
+                                    tolerance=tolerance,
+                                    maxiter=maxiter,
+                                    printout_frequency=printout_frequency)]
+    elseif solver=="Gauss-Seidel"
+        return [getNames(mme) GaussSeidel(A,x,b,
+                              tolerance=tolerance,
+                              maxiter=maxiter,
+                              printout_frequency=printout_frequency)]
+    elseif solver=="Gibbs" && mme.nModels !=1
+        return [getNames(mme) Gibbs(A,x,b,
+                              maxiter,printout_frequency=printout_frequency)]
+    elseif solver=="Gibbs" && mme.nModels==1
+        return [getNames(mme) Gibbs(A,x,b,mme.RNew,
+                              maxiter,printout_frequency=printout_frequency)]
+    elseif solver=="default"
+        return [getNames(mme) A\b]
+    else
+        error("Please try solver=`default`,`Jacobi`,`Gauss-Seidel`, or `Gibbs sampler`\n")
     end
 end
 
 ################################################################################
-#Solvers including Jacobi, GaussSeidel, and Gibbs (general,lambda,one_iteration)
+#Solvers including Jacobi, Gauss-Seidel, and Gibbs (general,lambda,one iteration)
 ################################################################################
-function Jacobi(A,x,b,p;tolerance=0.000001,outFreq=10,maxiter=1000)
+function Jacobi(A,x,b,p=0.7;tolerance=0.000001,printout_frequency=10,maxiter=1000)
+    n       = size(A,1)   #number of linear equations
     D       = diag(A)
-    res     = A*x
-    resid   = b-res
-    tempSol = resid./D
-    diff    = sum(resid.^2)
-    n       = size(A,1)
+    error   = b - A*x
+    diff    = sum(error.^2)/n
+
     iter    = 0
-    while ((diff/n > tolerance) & (iter<maxiter))
+    while (diff > tolerance) && (iter < maxiter)
         iter   += 1
-        x       = p*tempSol + (1-p)*x
-        res     = A*x
-        resid   = b-res
-        tempSol = resid./D + x
-        diff    = sum(resid.^2)
-        if iter%outFreq == 0
-            println(iter," ",diff/n)
+        error   = b - A*x
+        x_temp  = error./D + x
+        x       = p*x_temp + (1-p)*x
+        diff    = sum(error.^2)/n
+
+        if iter%printout_frequency == 0
+            println("at iteration ",iter,": ",diff)
         end
     end
     return x
 end
 
-function GaussSeidel(A,x,b;tolerance=0.000001,outFreq=10,maxiter=1000)
-    n = size(x,1)
-    for i=1:n
+function GaussSeidel(A,x,b;tolerance=0.000001,printout_frequency=10,maxiter=1000)
+    n = size(A,1)
+    for i = 1:n
         x[i] = (b[i] - A[:,i]'x)/A[i,i] + x[i]
     end
-    diff = sum((A*x-b).^2)
-    iter = 0
-    while ((diff/n > tolerance) & (iter<maxiter))
+    error = b - A*x
+    diff  = sum(error.^2)/n
+
+    iter  = 0
+    while (diff > tolerance) & (iter < maxiter)
         iter += 1
-        for i=1:n
+        for i = 1:n
             x[i] = (b[i] - A[:,i]'x)/A[i,i] + x[i]
         end
-        diff = sum((A*x-b).^2)
-        if iter%outFreq == 0
-            println(iter," ",diff/n)
+
+        error = b - A*x
+        diff  = sum(error.^2)/n
+        if iter%printout_frequency == 0
+            println("at iteration ",iter,": ",diff)
         end
     end
     return x
 end
 
-#Gibbs for \lambda version of MME (single-trait)
-function Gibbs(A,x,b,varRes::AbstractFloat,nIter::Int64;outFreq=100)
+#Gibbs for lambda version of MME (single-trait)
+function Gibbs(A,x,b,vare::AbstractFloat,niter::Int64;printout_frequency=100)
     n = size(x,1)
-    xMean = zeros(n)
-    for iter = 1:nIter
-        if iter%outFreq==0
-            println("at sample: ",iter)
+    xmean = zeros(n)
+    for iter = 1:niter
+        if iter%printout_frequency==0
+            println("at iteration: ",iter)
         end
         for i=1:n
-            cVarInv = 1.0/A[i,i]
-            cMean   = cVarInv*(b[i] - A[:,i]'x) + x[i]
-            x[i]    = randn()*sqrt(cVarInv*varRes) + cMean
+            invlhs = 1.0/A[i,i]
+            μ      = invlhs*(b[i] - A[:,i]'x) + x[i]
+            x[i]   = randn()*sqrt(invlhs*vare) + μ
         end
-        xMean += (x - xMean)/iter
+        xmean += (x - xmean)/iter
     end
-    return xMean
+    return xmean
 end
 
 #General Gibbs (multi-trait)
-function Gibbs(A,x,b,nIter::Int64;outFreq=100)
+function Gibbs(A,x,b,niter::Int64;printout_frequency=100)
     n = size(x,1)
-    xMean = zeros(n)
-    for iter = 1:nIter
-        if iter%outFreq==0
-            println("at sample: ",iter)
+    xmean = zeros(n)
+    for iter = 1:niter
+        if iter%printout_frequency==0
+            println("at iteration: ",iter)
         end
         for i=1:n
-            cVarInv = 1.0/A[i,i]
-            cMean   = cVarInv*(b[i] - A[:,i]'x) + x[i]
-            x[i]    = randn()*sqrt(cVarInv) + cMean
+            invlhs = 1.0/A[i,i]
+            μ      = invlhs*(b[i] - A[:,i]'x) + x[i]
+            x[i]   = randn()*sqrt(invlhs) + μ
         end
-        xMean += (x - xMean)/iter
+        xmean += (x - xmean)/iter
     end
-    return xMean
+    return xmean
 end
 
-#one iteration of Gibbs for \lambda version of MME (single-trait)
-function Gibbs(A,x,b,varRes::AbstractFloat)
-    n = size(x,1)
-     for i=1:n
-        cVarInv = 1.0/A[i,i]
-        cMean   = cVarInv*(b[i] - A[:,i]'x) + x[i]
-        x[i]    = randn()*sqrt(cVarInv*varRes) + cMean
+#one iteration of Gibbs sampler for lambda version of MME (single-trait)
+function Gibbs(A,x,b,vare::AbstractFloat)
+    for i = 1:size(x,1)
+        invlhs  = 1.0/A[i,i]
+        μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
+        x[i]    = randn()*sqrt(invlhs*vare) + μ
     end
 end
 
-#one iteration of Gibbs for general version of MME (multi-trait)
+#one iteration of Gibbs sampler for general version of MME (multi-trait)
 function Gibbs(A,x,b)
-    n = size(x,1)
-    for i=1:n
-      if A[i,i] != 0 # get rid of it #double-check
-        cVarInv = 1.0/A[i,i]
-        cMean   = cVarInv*(b[i] - A[:,i]'x) + x[i]
-        x[i]    = randn()*sqrt(cVarInv) + cMean
-      end
+    for i = 1:size(x,1)
+        invlhs  = 1.0/A[i,i]
+        μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
+        x[i]    = randn()*sqrt(invlhs) + μ
     end
 end

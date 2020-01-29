@@ -285,7 +285,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   for i in outvar
-      file_i    = file_name*"_"*i*".txt"
+      file_i    = file_name*"_"*replace(i,":"=>".")*".txt" #replace ":" by "." to avoid reserved characters in Windows
       if isfile(file_i)
         printstyled("The file "*file_i*" already exists!!! It is overwritten by the new output.\n",bold=false,color=:red)
       else
