@@ -526,7 +526,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     # change the order of phenotypes in RRM as IDs nested in time
     #***************************************************************************
     if mme.MCMCinfo.RRM != false #sorted by time then ID (1st column)
-        sort!(df,[:time,1])
+        df = sort(df,[:time,1])
     end
     #***************************************************************************
     # set IDs for phenotypes
