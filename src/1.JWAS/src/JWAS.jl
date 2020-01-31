@@ -418,9 +418,10 @@ function errors_args(mme,methods)
             error("Pi cannot be a number in random regression analysis")
         elseif mme.nModels > 1 && round(sum(values(Pi)),digits=2)!=1.0
             error("Summation of probabilities of Pi is not equal to one.")
-        elseif (mme.nModels > 1 || mme.MCMCinfo.RRM != false) && 2^(length(collect(keys(Pi))[1])) != length(Pi)
+        elseif (mme.nModels > 1) && 2^(length(collect(keys(Pi))[1])) != length(Pi)
             error(" All combinations need to be included as keys in the dictionary,
             e.g.,`Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.2,[0.0; 1.0]=>0.0,[0.0; 0.0]=>0.1)`.")
+            #mme.MCMCinfo.RRM allows only a subset of combinations
         end
     end
 end
@@ -520,6 +521,12 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
         end
         printstyled("The number of observations with both phenotype and pedigree information ",
         "used in the analysis is ",size(df,1),".\n",bold=false,color=:green)
+    end
+    #***************************************************************************
+    # change the order of phenotypes in RRM as IDs nested in time
+    #***************************************************************************
+    if mme.MCMCinfo.RRM != false #sorted by time then ID (1st column)
+        sort!(df,[:time,1])
     end
     #***************************************************************************
     # set IDs for phenotypes

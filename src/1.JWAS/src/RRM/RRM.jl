@@ -129,11 +129,15 @@ function BayesABCRRM!(xArray,xpx,wArray,yfull,
             αcandidate[label] = Dj*beta
         end
         for i in keys(BigPi)
-          deno =0.0
-          for j in keys(BigPi)
-            deno += exp(logDelta[j]-logDelta[i])
-          end
-          probDelta[i]=1/deno
+            if logDelta[i] == -Inf
+                deno = Inf
+            else
+                deno =0.0
+                for j in keys(BigPi)
+                    deno += exp(logDelta[j]-logDelta[i])
+                end
+            end
+            probDelta[i]=1/deno
         end
         whichlabel = rand((Categorical(collect(values(probDelta)))))
         newα = collect(values(αcandidate))[whichlabel]
