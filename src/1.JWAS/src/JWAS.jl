@@ -103,9 +103,10 @@ export get_correlations,get_heritability
     * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
     * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
-      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
-      have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
-      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
+      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.2,[0.0; 1.0]=>0.0,[0.0; 0.0]=>0.1)` (all combinations need
+      to be included as keys in the dictionary), defaulting to `all markers have effects (Pi = 0.0)` in single-trait analysis
+      and `all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis.
+      `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
     * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
     * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
     * Miscellaneous Options
@@ -401,9 +402,25 @@ function errors_args(mme,methods)
             error("SSGBLUP is not available")
         end
     end
-    if mme.nModels > 1 && mme.M!=0
-        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
+    if mme.nModels > 1 && mme.M!=0 && Pi != 0.0
+        if round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
+        end
+    end
+    if Pi != false
+        if mme.M == 0
+            error("genotypic information needs to be added if Pi is provided")
+        elseif mme.nModels > 1 && (typeof(Pi) <: Number)
+            error("Pi cannot be a number in multi-trait analysis")
+        elseif mme.nModels == 1 && mme.MCMCinfo.RRM == false && !(typeof(Pi) <: Number)
+            error("Pi shound be a number in single-trait analysis")
+        elseif mme.nModels == 1 && mme.MCMCinfo.RRM != false && (typeof(Pi) <: Number)
+            error("Pi cannot be a number in random regression analysis")
+        elseif mme.nModels > 1 && round(sum(values(Pi)),digits=2)!=1.0
+            error("Summation of probabilities of Pi is not equal to one.")
+        elseif mme.nModels > 1 && 2^(length(collect(keys(Pi))[1])) != length(Pi)
+            error(" All combinations need to be included as keys in the dictionary,
+            e.g.,`Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.2,[0.0; 1.0]=>0.0,[0.0; 0.0]=>0.1)`.")
         end
     end
 end
@@ -547,7 +564,7 @@ function set_default_priors_for_variance_components(mme,df)
       mme.M.genetic_variance = varg
     elseif mme.nModels==1 && mme.MCMCinfo.RRM == false
       mme.M.genetic_variance = varg[1,1]
-    elseif mme.MCMCinfo.RRM != false
+    elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
       mme.M.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
     end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
   end
