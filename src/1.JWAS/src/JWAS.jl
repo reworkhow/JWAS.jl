@@ -418,7 +418,7 @@ function errors_args(mme,methods)
             error("Pi cannot be a number in random regression analysis")
         elseif mme.nModels > 1 && round(sum(values(Pi)),digits=2)!=1.0
             error("Summation of probabilities of Pi is not equal to one.")
-        elseif mme.nModels > 1 && 2^(length(collect(keys(Pi))[1])) != length(Pi)
+        elseif (mme.nModels > 1 || mme.MCMCinfo.RRM != false) && 2^(length(collect(keys(Pi))[1])) != length(Pi)
             error(" All combinations need to be included as keys in the dictionary,
             e.g.,`Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.2,[0.0; 1.0]=>0.0,[0.0; 0.0]=>0.1)`.")
         end
