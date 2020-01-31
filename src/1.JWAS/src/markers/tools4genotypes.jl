@@ -166,7 +166,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
   return Pi
 end
 
-function genetic2marker(M::Genotypes,Pi::Dict)
+function genetic2marker(M::Genotypes,Pi::Dict) #multi-trait or RRM
   nTraits = size(M.genetic_variance,1)
   denom   = zeros(nTraits,nTraits)
   for i in 1:nTraits
@@ -180,6 +180,6 @@ function genetic2marker(M::Genotypes,Pi::Dict)
   M.G = M.genetic_variance ./ denom
 end
 
-function genetic2marker(M::Genotypes,π::Float64)
+function genetic2marker(M::Genotypes,π::Float64) #single-trait analysis
     M.G = M.genetic_variance/((1-π)*M.sum2pq)
 end
