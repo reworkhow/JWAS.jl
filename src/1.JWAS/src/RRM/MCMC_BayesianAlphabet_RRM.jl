@@ -69,7 +69,8 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
     wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntime)#wArray is list reference of ycor
     for timei = 1:ntime
         startPosi              = (timei-1)*nObs  + 1
-        ptr                    = pointer(yfull,startPosi)
+        #ptr                    = pointer(yfull,startPosi)
+        ptr                    = pointer(ycorr,startPosi)
         wArray[timei]         = unsafe_wrap(Array,ptr,nObs)
     end
 
@@ -102,15 +103,20 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
-        yfull[:]   = T'ycorr
+        #yfull[:]   = T'ycorr
         locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
-        BayesABCRRM!(mArray,mpm,wArray,yfull,
-                    betaArray,
-                    deltaArray,
-                    alphaArray,
-                    mme.RNew,locus_effect_variances,BigPi,
-                    Φ, whichzeros, mΦΦArray)
-        ycorr     = T*yfull
+        # BayesABCRRM!(mArray,mpm,wArray,yfull,
+        #             betaArray,
+        #             deltaArray,
+        #             alphaArray,
+        #             mme.RNew,locus_effect_variances,BigPi,
+        #             Φ, whichzeros, mΦΦArray)
+        MTBayesABC!(mArray,mpm,wArray,
+                  betaArray,
+                  deltaArray,
+                  alphaArray,
+                  [mme.RNew 0;0 mme.RNew],locus_effect_variances,BigPi)
+        #ycorr     = T*yfull
 
         #sample Pi
         if estimatePi == true
