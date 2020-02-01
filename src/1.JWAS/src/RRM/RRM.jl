@@ -8,6 +8,20 @@
 #
 #yobs order: a1, a1, a2, a2, a2, a3
 #yfull order: a1, a1, a1, a2, a2, a2, a3, a3, a3 (fill missing values)
+## - yfull should be ids within tps
+function matrix_yfull_to_yobs2(pheno_data, YString, TimeString, IDString)
+    timevec = pheno_data[!, Symbol(TimeString)]
+    IDvec = pheno_data[!, Symbol(IDString)]
+    yvec = pheno_data[!, Symbol(YString)]
+    times  = sort(unique(timevec))      # vector of whole timepoints sorted
+    IDs = unique(IDvec)
+    yobs = string.(timevec) .* string.(IDvec) # an extra vector as "TimePoint x ID" for all observations
+    yfull = vcat([timei .* string.(IDs) for timei in string.(times)]...) # an extra vector as "ID x TimePoint" for full y
+    matrix_yfull2yobs = mkmat_incidence_factor(yobs,yfull)
+    zeros_indicator = .!Bool.(Int.(matrix_yfull2yobs'ones(length(yobs))))
+    return matrix_yfull2yobs, zeros_indicator
+end
+
 function matrix_yfull_to_yobs(IDvec, yvec, timevec)
     times  = sort(unique(timevec))      # vector of whole timepoints sorted
     ntimes = length(times)           # number of timepoints measured in the data
