@@ -9,40 +9,13 @@
 #yobs order: a1, a1, a2, a2, a2, a3
 #yfull order: a1, a1, a1, a2, a2, a2, a3, a3, a3 (fill missing values)
 ## - yfull should be ids within tps
-function matrix_yfull_to_yobs2(pheno_data, YString, TimeString, IDString)
-    timevec = pheno_data[!, Symbol(TimeString)]
-    IDvec = pheno_data[!, Symbol(IDString)]
-    yvec = pheno_data[!, Symbol(YString)]
+function matrix_yfull_to_yobs(IDvec, yvec, timevec)
     times  = sort(unique(timevec))      # vector of whole timepoints sorted
     IDs = unique(IDvec)
     yobs = string.(timevec) .* string.(IDvec) # an extra vector as "TimePoint x ID" for all observations
     yfull = vcat([timei .* string.(IDs) for timei in string.(times)]...) # an extra vector as "ID x TimePoint" for full y
     matrix_yfull2yobs = mkmat_incidence_factor(yobs,yfull)
     zeros_indicator = .!Bool.(Int.(matrix_yfull2yobs'ones(length(yobs))))
-    return matrix_yfull2yobs, zeros_indicator
-end
-
-function matrix_yfull_to_yobs(IDvec, yvec, timevec)
-    times  = sort(unique(timevec))      # vector of whole timepoints sorted
-    ntimes = length(times)           # number of timepoints measured in the data
-    IDs    = unique(IDvec)           # vector of unique individuals
-    nIDs   = length(IDs)             # number of individuals from data
-    nobs   = length(yvec)            # number of observations from the data
-    yobs = string.(IDvec) .* string.(timevec) # an extra vector as “ID x TimePoint” for all observations
-    yfull = vcat([ID .* string.(times)  for ID in string.(IDs)]...) # an extra vector as “ID x TimePoint” for full y
-    Is = Array{Int64}(undef, nobs)
-    Js = Array{Int64}(undef, nobs)
-    zeros_indicator = fill(true, length(yfull))
-    whichrow = 1
-    for i in 1:length(yfull)
-        if yfull[i] in yobs
-            Is[whichrow] = whichrow
-            Js[whichrow] = i
-            zeros_indicator[i] = false
-            whichrow += 1
-        end
-    end
-    matrix_yfull2yobs = sparse(Is, Js, ones(nobs),length(yobs),length(yfull))
     return matrix_yfull2yobs, zeros_indicator
 end
 
