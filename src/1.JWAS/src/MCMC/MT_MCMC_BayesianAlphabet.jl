@@ -296,9 +296,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 2.4 Causal Relationships among phenotypes (Structure Equation Model)
         ########################################################################
-        if causal_structure != false
-            sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
-        end
+        #if causal_structure != false
+        #    sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+        #end
         ########################################################################
         # 2.5 Update priors using posteriors (empirical)
         ########################################################################
