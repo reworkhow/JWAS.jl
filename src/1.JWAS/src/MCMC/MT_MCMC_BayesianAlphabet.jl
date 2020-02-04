@@ -325,9 +325,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             else
                 output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),false,fill(false,nTraits),false,outfile)
             end
-            #if causal_structure != false
-            #    writedlm(causal_structure_outfile,sample4λ',',')
-            #end
+            if causal_structure != false
+                writedlm(causal_structure_outfile,sample4λ',',')
+            end
 
             nsamples = (iter-burnin)/output_samples_frequency
             solMean   += (sol - solMean)/nsamples
