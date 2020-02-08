@@ -131,10 +131,10 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #now Λycorr = ycorr, later variable "ycorr" actually denotes Λycorr for
         #coding convinience 2)no missing phenotypes
         Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
-        Λ  = Matrix{Float64}(I,nTraits,nTraits) #structural coefficient λij (i≂̸j) is zero
+        Λ  = Matrix{Float64}(I,nTraits,nTraits) #structural coefficient λij (i≂̸j) is zero (starting values)
         Λy = kron(Λ,sparse(1.0I,nObs,nObs))*mme.ySparse
-
-        causal_structure_filename = "strcuture_coefficient_MCMC_samples.txt"
+        ycorr = Λy                              # (I-Λ)y adjusted for all effects (assuming zeros now)
+        causal_structure_filename = "structure_coefficient_MCMC_samples.txt"
         causal_structure_outfile  = open(causal_structure_filename,"w")   #write MCMC samples for Λ to a txt file
     end
 
