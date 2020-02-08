@@ -15,6 +15,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                      burnin                     = 0,
                      π                          = 0.0,
                      estimatePi                 = false,
+                     estimate_variance          = false,
                      estimateScale              = false,
                      starting_value             = false,
                      outFreq                    = 1000,
@@ -192,19 +193,21 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
-        sampleVCs(mme,sol)
-        addVinv(mme)
+        if mme.MCMCinfo.estimate_variance == true
+            sampleVCs(mme,sol)
+            addVinv(mme)
+        end
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
-        if categorical_trait == false
+        if categorical_trait == false && mme.MCMCinfo.estimate_variance == true
             mme.ROld = mme.RNew
             mme.RNew = sample_variance(ycorr.* (Rinv!=false ? sqrt.(Rinv) : 1.0), length(ycorr), mme.df.residual, mme.scaleRes)
         end
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
-        if mme.M != 0 && mme.MCMCinfo.estimate_variance
+        if mme.M != 0 && mme.MCMCinfo.estimate_variance == true
             if methods in ["BayesC","RR-BLUP"]
                 mme.M.G  = sample_variance(α, nLoci, mme.df.marker, mme.M.scale)
             elseif methods == "BayesB"

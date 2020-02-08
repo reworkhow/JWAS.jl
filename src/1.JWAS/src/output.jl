@@ -150,7 +150,7 @@ function matrix2dataframe(names,meanVare,meanVare2)
     names     = repeat(names,inner=length(names)).*"_".*repeat(names,outer=length(names))
     meanVare  = (typeof(meanVare) <: Union{Number,Missing}) ? meanVare : vec(meanVare)
     meanVare2 = (typeof(meanVare2) <: Union{Number,Missing}) ? meanVare2 : vec(meanVare2)
-    stdVare   = sqrt.(meanVare2 .- meanVare .^2)
+    stdVare   = sqrt.(abs.(meanVare2 .- meanVare .^2))
     DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:Std_Error])
 end
 
@@ -162,7 +162,7 @@ function dict2dataframe(mean_pi,mean_pi2)
     end
     mean_pi  = (typeof(mean_pi) <: Union{Number,Missing}) ? mean_pi : collect(values(mean_pi))
     mean_pi2 = (typeof(mean_pi2) <: Union{Number,Missing}) ? mean_pi2 : collect(values(mean_pi2))
-    stdpi    = sqrt.(mean_pi2 .- mean_pi .^2)
+    stdpi    = sqrt.(abs.(mean_pi2 .- mean_pi .^2))
     DataFrame([names mean_pi stdpi],[:π,:Estimate,:Std_Error])
 end
 

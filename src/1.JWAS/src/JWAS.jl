@@ -207,10 +207,15 @@ function runMCMC(mme::MME,df;
     if double_precision == true
         if mme.M != 0
             mme.M.genotypes = map(Float64,mme.M.genotypes)
+            mme.M.G         = map(Float64,mme.M.G)
         end
         for random_term in mme.rndTrmVec
-            random_term.Vinv = map(Float64,random_term.Vinv)
+            random_term.Vinv  = map(Float64,random_term.Vinv)
+            random_term.GiOld = map(Float64,random_term.GiOld)
+            random_term.GiNew = map(Float64,random_term.GiNew)
+            random_term.Gi    = map(Float64,random_term.Gi)
         end
+        mme.Gi = map(Float64,mme.Gi)
     end
     ############################################################################
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
@@ -256,6 +261,7 @@ function runMCMC(mme::MME,df;
                         π                        = Pi,
                         methods                  = methods,
                         estimatePi               = estimatePi,
+                        estimate_variance        = estimate_variance,
                         estimateScale            = estimateScale,
                         starting_value           = mme.MCMCinfo.starting_value,
                         outFreq                  = printout_frequency,

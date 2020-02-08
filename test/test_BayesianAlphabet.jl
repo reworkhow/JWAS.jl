@@ -45,12 +45,12 @@ for single_step in [false,true]
             outputMCMCsamples(model1,"x2")
 
             if single_step == false
-                  out1=runMCMC(model1,phenotypes,
+                  out1=runMCMC(model1,phenotypes,estimate_variance=true,
                                methods=test_method,estimatePi=test_estimatePi,
                                chain_length=100,output_samples_frequency=10,
                                printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
-                  out1=runMCMC(model1,phenotypes_ssbr,
+                  out1=runMCMC(model1,phenotypes_ssbr,estimate_variance=true,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
@@ -97,10 +97,10 @@ for single_step in [false,true]
             outputMCMCsamples(model2,"x2")
 
             if single_step == false
-                  out2=runMCMC(model2,phenotypes,
+                  out2=runMCMC(model2,phenotypes,estimate_variance=true,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
-                  out2=runMCMC(model2,phenotypes_ssbr,
+                  out2=runMCMC(model2,phenotypes_ssbr,estimate_variance=true,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
