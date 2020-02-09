@@ -52,9 +52,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     end
     #marker effects
     if mme.M != 0
-        mGibbs                        = GibbsMats(mme.M.genotypes)
+        mGibbs                        = GibbsMats(mme.M.genotypes,Rinv)
         nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
-        mArray,mpm,mRinvArray,mpRinvm = mGibbs.xArray,mGibbs.xpx,mGibbs.xRinvArray,mGibbs.xpRinvx
+        mArray,mRinvArray,mpRinvm     = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
         if methods=="BayesB" #α=β.*δ
             mme.M.G        = fill(mme.M.G,nMarkers) #a scalar in BayesC but a vector in BayeB
@@ -140,12 +140,12 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         if mme.M !=0
             if methods in ["BayesC","BayesB","BayesA"]
                 locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
-                nLoci = BayesABC!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
+                nLoci = BayesABC!(mArray,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
             elseif methods=="RR-BLUP"
-                BayesC0!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
+                BayesC0!(mArray,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods == "BayesL"
-                BayesL!(mArray,mpm,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
+                BayesL!(mArray,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
                 nLoci = nMarkers
             elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
