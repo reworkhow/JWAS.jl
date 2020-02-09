@@ -44,6 +44,21 @@
 #    0   0    0   0  yl1 yl2
 
 
+#1)starting values for structural coefficient λij (i≂̸j) is zero,
+#2)the variable "ycorr" is used for "Λycorr" for coding convinience,
+#and starting values for ycorr (i.e., Λycorr) is the ycorr obtained above
+#3)no missing phenotypes in SEM
+#4)Λ is (I-Λ) in Wang et al. 2020 BioRxiv.
+function SEM_setup(wArray,causal_structure,mme)
+    ntraits = length(wArray)
+    nobs    = length(wArray[1])
+    Y  = get_sparse_Y_FRM(wArray,causal_structure) #here wArray is for phenotypes (before corrected)
+    Λ  = Matrix{Float64}(I,ntraits,ntraits) #structural coefficient λij (i≂̸j) is zero (starting values)
+    Λy = kron(Λ,sparse(1.0I,nobs,nobs))*mme.ySparse
+    causal_structure_filename = "structure_coefficient_MCMC_samples.txt"
+    causal_structure_outfile  = open(causal_structure_filename,"w")   #write MCMC samples for Λ to a txt file
+    return Y,Λy,causal_structure_outfile
+end
 # Get Y for all individuals ordered as individuals within traits (fully simultaneous model)
 function get_sparse_Y_FSM(wArray)
     ntraits = length(wArray)
