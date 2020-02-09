@@ -35,6 +35,9 @@ include("markers/Pi.jl")
 #Incomplete Genomic Data (Single-step Methods)
 include("SSBR/SSBR.jl")
 
+#Categorical trait
+include("CategoricalTrait/categorical_trait.jl")
+
 #Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
