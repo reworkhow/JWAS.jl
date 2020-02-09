@@ -274,7 +274,7 @@ function runMCMC(mme::MME,df;
                         categorical_trait        = categorical_trait)
     else #multi-trait analysis
         if methods == "conventional (no markers)" && estimate_variance == false
-          mme.output=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
+          mme.output=MT_MCMC_PBLUP_constvare(chain_length,mme,df, #delete this on with a warning in running "Please use solve"
                             sol    = mme.MCMCinfo.starting_value,
                             outFreq= printout_frequency,
                             missing_phenotypes=missing_phenotypes,
@@ -284,6 +284,7 @@ function runMCMC(mme::MME,df;
                             update_priors_frequency=update_priors_frequency)
         elseif methods in ["GBLUP","BayesL","BayesC","BayesB","RR-BLUP","conventional (no markers)"]
           mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
+                          Rinv   = mme.invweights,
                           Pi     = Pi,
                           sol    = mme.MCMCinfo.starting_value,
                           outFreq= printout_frequency,

@@ -11,13 +11,14 @@ function sample_variance(x, n, df, scale)
     return (dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
 
-function sample_variance(mme,resVec;constraint=false)
+function sample_variance(mme,resVec;constraint=false,Rinv=false)
     νR0     = mme.df.residual
     PRes    = mme.scaleRes
     SRes    = zero(PRes)
 
     nTraits = mme.nModels
     nObs    = div(length(resVec),nTraits)
+    ycorr   = resVec.* (Rinv!=false ? sqrt.(Rinv) : 1.0)
     for traiti = 1:nTraits
         startPosi = (traiti-1)*nObs + 1
         endPosi   = startPosi + nObs - 1

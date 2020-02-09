@@ -1,4 +1,5 @@
 function MT_MCMC_BayesianAlphabet(nIter,mme,df;
+                        Rinv                       = false,
                         burnin                     = 0,
                         Pi                         = 0.0,
                         estimatePi                 = false,
@@ -53,8 +54,8 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #Priors for marker covaraince matrix
         ########################################################################
         mGibbs      = GibbsMats(mme.M.genotypes)
-        nMarkers,mArray,mpm,M = mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-        dfEffectVar = mme.df.marker
+        nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
+        mArray,mpm,mRinvArray,mpRinvm = mGibbs.xArray,mGibbs.xpx,mGibbs.xRinvArray,mGibbs.xpRinvx
         if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
             mme.M.G /= 4*(nTraits+1)
             mme.M.scale /= 4*(nTraits+1)
@@ -207,9 +208,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         end
 
         if estimate_variance == true
-            sample_variance(mme,resVec,constraint=constraint)
+            sample_variance(mme,resVec .* (Rinv!=false ? repeat(sqrt.(Rinv),nTraits) : 1.0),constraint=constraint)
         end
-        Ri = kron(inv(mme.R),SparseMatrixCSC{(mme.MCMCinfo.double_precision ? Float64 : Float32)}(I, nObs, nObs))
+        if Rinv == false
+            Ri = kron(inv(mme.R),SparseMatrixCSC{(mme.MCMCinfo.double_precision ? Float64 : Float32)}(I, nObs, nObs))
+        else
+            Ri = kron(inv(mme.R),spdiagm(0=>Rinv))
+        end
         ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
