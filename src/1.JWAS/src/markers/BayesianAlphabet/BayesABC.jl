@@ -1,10 +1,7 @@
-function BayesABC!(xArray,xpx,
-                   xRinvArray,xpRinvx, #Heterogeneous residuals
+function BayesABC!(xArray,xRinvArray,xpRinvx,
                    yCorr,
                    α,β,δ,
-                   vare,
-                   varEffects,
-                   π)
+                   vare,varEffects,π)
 
     logPi         = log(π)
     logPiComp     = log(1-π)
@@ -17,7 +14,7 @@ function BayesABC!(xArray,xpx,
 
     for j=1:nMarkers
         x, xRinv = xArray[j], xRinvArray[j]
-        rhs = (dot(xRinv,yCorr) + xpx[j]*α[j])*invVarRes
+        rhs = (dot(xRinv,yCorr) + xpRinvx[j]*α[j])*invVarRes
         lhs = xpRinvx[j]*invVarRes + invVarEffects[j]
         invLhs = 1/lhs
         gHat   = rhs*invLhs
