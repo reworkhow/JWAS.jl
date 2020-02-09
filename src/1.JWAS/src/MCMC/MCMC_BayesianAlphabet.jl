@@ -149,8 +149,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 nLoci = nMarkers
             elseif methods == "GBLUP"
                 ycorr = ycorr + mme.M.genotypes*α
-                lhs   = 1 .+ mme.RNew./(mme.M.G*D)
-                mean1 = mme.M.genotypes'ycorr./lhs
+                lhs   = Rinv .+ mme.RNew./(mme.M.G*D)
+                mean1 = mme.M.genotypes'*(Rinv.*ycorr)./lhs
                 α     = mean1 + randn(nObs).*sqrt.(mme.RNew./lhs)
                 ycorr = ycorr - mme.M.genotypes*α
             end
