@@ -239,10 +239,6 @@ function getMME(mme::MME, df::DataFrame)
     mme.ySparse = ySparse
 
     if mme.nModels==1     #single-trait (lambda version)
-      if mme.invweights == false
-        mme.mmeLhs = X'X
-        mme.mmeRhs = X'ySparse
-      else
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
       end

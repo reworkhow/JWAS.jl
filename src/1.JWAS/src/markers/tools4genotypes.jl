@@ -49,18 +49,16 @@ mutable struct GibbsMats
     xpx::Union{Array{Float64,1},Array{Float32,1}}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
-    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}};Rinv=false) ###More
+    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
-        xpx         = getXpRinvX(X)
-        if Rinv==false
-            xRinvArray = xArray
-            xpRinvx    = xpx
+        xpRinvx     = getXpRinvX(X,Rinv)
+        if Rinv == ones(length(Rinv))
+            xRinvArray = xArray  #avoid using extra memory for xRinvArray
         else
             xRinvArray = [x.*Rinv for x in xArray]
-            xpRinvx    = getXpRinvX(X,Rinv)
         end
-        new(X,nrows,ncols,xArray,xpx,xRinvArray,xpRinvx)
+        new(X,nrows,ncols,xArray,xRinvArray,xpRinvx)
     end
 end
 
