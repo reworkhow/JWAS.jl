@@ -173,12 +173,11 @@ function getX(trm::ModelTerm,mme::MME)
            end
          end
        end
-       if length(data) != length(trm.data)
-         error("Same level names are found for the two terms in the interaction.")
-       end
-       if !issubset(filter(x->x≠"missing",data),trm.names)
+       if length(data) < length(trm.data)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
-         trm.trmStr,". ","This may happen if the type is wrong, e.g, use of float instead of string.")
+         trm.trmStr,". ","This may happen if missing values are not considered in missingstrings.")
+       elseif length(data) > length(trm.data)
+         error("Same level names are found for the two terms in the interaction.")
        end
     end
     #4. missing values in random effects
