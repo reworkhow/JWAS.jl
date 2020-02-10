@@ -1,4 +1,5 @@
 function MT_MCMC_BayesianAlphabet(nIter,mme,df;
+                        Rinv                       = false,
                         burnin                     = 0,
                         Pi                         = 0.0,
                         estimatePi                 = false,
@@ -52,9 +53,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         #Priors for marker covaraince matrix
         ########################################################################
-        mGibbs      = GibbsMats(mme.M.genotypes)
-        nMarkers,mArray,mpm,M = mGibbs.ncols,mGibbs.xArray,mGibbs.xpx,mGibbs.X
-        dfEffectVar = mme.df.marker
+        mGibbs                        = GibbsMats(mme.M.genotypes,Rinv)
+        nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
+        mArray,mRinvArray,mpRinvm     = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
         if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
             mme.M.G /= 4*(nTraits+1)
             mme.M.scale /= 4*(nTraits+1)
@@ -144,7 +145,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
-
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
         ycorr[:] = ycorr[:] - mme.X*sol
         ########################################################################
@@ -154,19 +154,16 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
           #WILL ADD BURIN INSIDE
           if methods in ["BayesC","BayesB","BayesA"]
             locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
-            MTBayesABC!(mArray,mpm,wArray,
-                      betaArray,
-                      deltaArray,
-                      alphaArray,
-                      mme.R,locus_effect_variances,BigPi)
+            MTBayesABC!(mArray,mRinvArray,mpRinvm,
+                        wArray,betaArray,deltaArray,alphaArray,
+                        mme.R,locus_effect_variances,BigPi)
           elseif methods == "RR-BLUP"
-            MTBayesC0!(mArray,mpm,wArray,
-                       alphaArray,
+            MTBayesC0!(mArray,mRinvArray,mpRinvm,
+                       wArray,alphaArray,
                        mme.R,mme.M.G)
           elseif methods == "BayesL"
-            MTBayesL!(mArray,mpm,wArray,
-                      alphaArray,
-                      gammaArray,
+            MTBayesL!(mArray,mRinvArray,mpRinvm,
+                      wArray,alphaArray,gammaArray,
                       mme.R,mme.M.G)
           elseif methods == "GBLUP"
             iR0      = inv(mme.R)
@@ -174,8 +171,8 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             for trait = 1:nTraits
                 wArray[trait][:] = wArray[trait] + mme.M.genotypes*alphaArray[trait]
             end
-            lhs    = [iR0 + iGM/D[i] for i=1:length(D)]
-            RHS    = mme.M.genotypes'*reshape(ycorr,nObs,nTraits)*iR0 #size nmarkers (=nObs) * nTraits
+            lhs    = [iR0*Rinv[i] + iGM/D[i] for i=1:length(D)]
+            RHS    = (mme.M.genotypes'Diagonal(Rinv))*reshape(ycorr,nObs,nTraits)*iR0 #size nmarkers (=nObs) * nTraits
             rhs    = [RHS[i,:] for i in 1:size(RHS,1)]  #not column major
             Σα     = Symmetric.(inv.(lhs))              #nTrait X nTrait
             μα     = Σα.*rhs
@@ -207,9 +204,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         end
 
         if estimate_variance == true
-            sample_variance(mme,resVec,constraint=constraint)
+            sample_variance(mme,resVec,Rinv,constraint=constraint)
         end
-        Ri = kron(inv(mme.R),SparseMatrixCSC{(mme.MCMCinfo.double_precision ? Float64 : Float32)}(I, nObs, nObs))
+        Ri = kron(inv(mme.R),spdiagm(0=>Rinv))
         ########################################################################
         # -- LHS and RHS for conventional MME (No Markers)
         # -- Position: between new Ri and new Ai
@@ -273,9 +270,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             elseif methods == "GBLUP"
                 for traiti = 1:nTraits
                     for traitj = traiti:nTraits
-                        alphaArrayi         = alphaArray[traiti]./D
-                        alphaArrayj         = alphaArray[traitj]./D
-                        SM[traiti,traitj]   = alphaArrayi'alphaArrayj
+                        alphaArrayi         = alphaArray[traiti]
+                        alphaArrayj         = alphaArray[traitj]
+                        SM[traiti,traitj]   = alphaArrayi'*Diagnal(1./D)*alphaArrayj
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end
@@ -386,34 +383,4 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                          mme.M != 0 ? BigPiMean2 : false,
                          mme.M != 0 ? meanScaleVara2 : false)
     return output
-end
-
-
-function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
-    Gi = inv(mmeMG)
-    nMarkers = size(gammaArray,1)
-    nTraits  = length(alphaArray[1])==1 ? 1 : length(alphaArray)
-
-    Q  = zeros(nMarkers)
-    nTraits > 1 ? calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)
-    gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
-    candidateArray = 1 ./ rand(gammaDist,nMarkers)
-    uniformArray = rand(nMarkers)
-    acceptProbArray = exp.(Q ./4 .*(2 ./ gammaArray - candidateArray))
-    replace = uniformArray .< acceptProbArray
-    gammaArray[replace] = 2 ./ candidateArray[replace]
-end
-
-function calcMTQ!(Q,nMarkers,nTraits,alphaArray,Gi)
-    for locus = 1:nMarkers
-        for traiti = 1:nTraits
-            for traitj = 1:nTraits
-                Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
-            end
-        end
-    end
-end
-
-function calcSTQ!(Q,nMarkers,alphaArray,Gi)
-        Q .= alphaArray.^2 ./Gi
 end
