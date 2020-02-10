@@ -1,14 +1,15 @@
 #MTBayesC requires the support for prior for delta for d is the set
 #of all 2^ntrait outcomes of dj:
-function MTBayesABC!(xArray,xpx,wArray,betaArray,
-                                    deltaArray,
-                                    alphaArray,
-                                    vare,varEffects,
-                                    BigPi)
+function MTBayesABC!(xArray,xRinvArray,xpRinvx,
+                     wArray,betaArray,
+                     deltaArray,
+                     alphaArray,
+                     vare,varEffects,
+                     BigPi)
     nMarkers = length(xArray)
     nTraits  = length(alphaArray)
 
-    Rinv     = inv(vare) #Do Not Use inv.(): elementwise
+    Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
     Ginv     = inv.(varEffects)
 
     β        = zeros(typeof(betaArray[1][1]),nTraits)
@@ -18,28 +19,27 @@ function MTBayesABC!(xArray,xpx,wArray,betaArray,
     w        = zeros(typeof(wArray[1][1]),nTraits) #for rhs
 
     for marker=1:nMarkers
-        x    = xArray[marker]
+        x, xRinv = xArray[j], xRinvArray[j]
 
         for trait = 1:nTraits
             β[trait]  = betaArray[trait][marker]
          oldα[trait]  = newα[trait] = alphaArray[trait][marker]
             δ[trait]  = deltaArray[trait][marker]
-            w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldα[trait]
+            w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]
         end
 
         for k=1:nTraits
             Ginv11 = Ginv[marker][k,k]
             nok    = deleteat!(collect(1:nTraits),k)
             Ginv12 = Ginv[marker][k,nok]
-            C11    = Ginv11+Rinv[k,k]*xpx[marker]
-            C12    = Ginv12+xpx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
-            #C12    = Ginv12+xpx[marker]*Rinv[k,nok].*δ[nok]' #δ[:,nok] : row vector,
+            C11    = Ginv11+Rinv[k,k]*xpRinvx[marker]
+            C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
 
             invLhs0  = 1/Ginv11
             rhs0     = - Ginv12'β[nok]
             gHat0    = (rhs0*invLhs0)[1,1]
             invLhs1  = 1/C11
-            rhs1     = w'*Rinv[:,k]-C12'β[nok] #w transpose
+            rhs1     = w'*Rinv[:,k]-C12'β[nok]
             gHat1    = (rhs1*invLhs1)[1,1]
 
             d0 = copy(δ)
