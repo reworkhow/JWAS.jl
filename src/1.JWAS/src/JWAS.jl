@@ -467,7 +467,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     end
 
     phenoID = df[!,1]
-    single_step_analysis = (mme.MCMCinfo ? mme.MCMCinfo.single_step_analysis : false)
+    single_step_analysis = (mme.MCMCinfo != false ? mme.MCMCinfo.single_step_analysis : false)
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
             printstyled("Phenotyped individuals are not a subset of ",
@@ -503,7 +503,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     else
         invweights = ones(length(mme.obsID))
     end
-    mme.invweights = (mme.MCMCinfo && mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
+    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     return df
 end
 
