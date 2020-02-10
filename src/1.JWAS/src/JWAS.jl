@@ -452,6 +452,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
     writedlm("IDs_for_individuals_with_phenotypes.txt",df[!,1])
 
+    #remove records whose phenotypes are missing for all traits fitted in the model 
     missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
     nonmissingindex = Array{Int64,1}()
