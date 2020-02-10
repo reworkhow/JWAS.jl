@@ -7,7 +7,9 @@ function MTBayesL!(xArray,xRinvArray,xpRinvx,
     nTraits  = length(alphaArray)
     Lhs      = zeros(nTraits,nTraits)
     Rhs      = zeros(nTraits)
-    α        = zeros(nTraits) # vector of effects for locus j across all traits
+    newα     = zeros(typeof(alphaArray[1][1]),nTraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),nTraits)
+
 
     function getGi_function(gammaArray)
         f1(x,j,Gi)  = Gi ./ x[j]
@@ -16,21 +18,21 @@ function MTBayesL!(xArray,xRinvArray,xpRinvx,
     end
     getGi = getGi_function(gammaArray)
 
-    for j=1:nMarkers
-        x, xRinv = xArray[j], xRinvArray[j]
+    for marker=1:nMarkers
+        x, xRinv = xArray[marker], xRinvArray[marker]
         for trait=1:nTraits #unadjust for locus j
-            oldα[trait] = newα[trait] = alphaArray[trait][j]
-            Rhs[trait]  = dot(xRinv,wArray[trait])+xpRinvx[j]*oldα[trait][j]
+            oldα[trait] = newα[trait] = alphaArray[trait][marker]
+            Rhs[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]
         end
         Rhs = invR0*Rhs
-        Lhs = xpRinvx[j]*invR0 + getGi(gammaArray,j,invG0)
+        Lhs = xpRinvx[marker]*invR0 + getGi(gammaArray,marker,invG0)
         for trait = 1:nTraits
             lhs  = Lhs[trait,trait]
             ilhs = 1/lhs
             rhs  = Rhs[trait] - (Lhs[trait,:]'newα)[1]
             mu   = ilhs*rhs + newα[trait]
-            alphaArray[trait][j] = mu + randn()*sqrt(ilhs)
-            newα[trait] = alphaArray[trait][j]
+            alphaArray[trait][marker] = mu + randn()*sqrt(ilhs)
+            newα[trait] = alphaArray[trait][marker]
         end
         for trait = 1:nTraits
             BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])

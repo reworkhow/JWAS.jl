@@ -241,7 +241,6 @@ function getMME(mme::MME, df::DataFrame)
     if mme.nModels==1     #single-trait (lambda version)
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
-      end
     elseif mme.nModels>1  #multi-trait
       Ri         = mkRi(mme,df) #handle missing phenotypes with ResVar
                                 #make MME without variance estimation (constant)

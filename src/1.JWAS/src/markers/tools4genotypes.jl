@@ -46,7 +46,6 @@ mutable struct GibbsMats
     nrows::Int64
     ncols::Int64
     xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
-    xpx::Union{Array{Float64,1},Array{Float32,1}}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
     function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)

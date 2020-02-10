@@ -272,7 +272,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                     for traitj = traiti:nTraits
                         alphaArrayi         = alphaArray[traiti]
                         alphaArrayj         = alphaArray[traitj]
-                        SM[traiti,traitj]   = alphaArrayi'*Diagnal(1./D)*alphaArrayj
+                        SM[traiti,traitj]   = alphaArrayi'*Diagnal(1 ./D)*alphaArrayj
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end

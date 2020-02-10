@@ -19,7 +19,7 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
     w        = zeros(typeof(wArray[1][1]),nTraits) #for rhs
 
     for marker=1:nMarkers
-        x, xRinv = xArray[j], xRinvArray[j]
+        x, xRinv = xArray[marker], xRinvArray[marker]
 
         for trait = 1:nTraits
             β[trait]  = betaArray[trait][marker]
