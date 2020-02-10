@@ -1,9 +1,3 @@
-#For MT-PBLUP with constant residual covariance matrix for Multi-trait
-#Pedigree-Based BLUP when Residual Covariance Matrix is *CONSTANT*.
-#In this situation, Ri (big), the inverse of residual covariance
-#matrix is modify based on phenotype missing patterns such that no imputation for
-#missing phenotypes is required.
-
 #fill up missing phenotype patterns with corresponding inverted residual variance
 function getRi(resVar::ResVar,sel::BitArray{1})
     if haskey(resVar.RiDict,sel)
@@ -18,7 +12,7 @@ end
 
 #make tricky Ri (big) allowing NA in phenotypes and fixed effects
 #make ResVar, dictionary for Rinv, no sample Missing residuals
-function mkRi(mme::MME,df::DataFrame)
+function mkRi(mme::MME,df::DataFrame,Rinv)
     resVar   = ResVar(mme.R,Dict())
     tstMsng  = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
     mme.missingPattern = tstMsng
@@ -30,7 +24,7 @@ function mkRi(mme::MME,df::DataFrame)
     pos = 1
     for i=1:nObs
         sel = tstMsng[i,:]
-        Ri  = getRi(resVar,sel)
+        Ri  = getRi(resVar,sel)*Rinv[i]
         for ti=1:ntrait
             tii = (ti-1)*nObs + i
             for tj=1:ntrait

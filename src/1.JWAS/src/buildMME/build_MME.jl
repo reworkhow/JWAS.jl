@@ -247,7 +247,7 @@ function getMME(mme::MME, df::DataFrame)
     #such that no imputation of missing phenotypes is required.
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
-      Ri         = mkRi(mme,df)
+      Ri         = mkRi(mme,df,mme.invweights)
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
     end
