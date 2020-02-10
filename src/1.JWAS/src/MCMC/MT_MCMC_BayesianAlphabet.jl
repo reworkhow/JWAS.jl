@@ -37,9 +37,6 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ycorr          = vec(Matrix(mme.ySparse))
     nTraits        = mme.nModels
     nObs           = div(length(ycorr),nTraits)
-    if missing_phenotypes==true
-        RiNotUsing   = mkRi(mme,df) #fill up missing phenotypes patterns
-    end
 
     #save posterior mean for residual variance
     meanVare  = zero(mme.R)
