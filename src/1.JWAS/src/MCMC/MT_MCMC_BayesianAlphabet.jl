@@ -87,19 +87,15 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             # α is pseudo marker effects of length #genotyped inds (starting values = L'(starting value for BV)
             nMarkers= size(mme.M.genotypes,1)
             α       = ((α != zero(α)) ? L'α : zeros(nTraits*nMarkers))  #starting values for pseudo marker effect
+            #reset parameters in output
+            M2   = mme.output_genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
+            M2Mt = M2*mme.M.genotypes'/nMarkers
+            mme.output_genotypes = M2Mt*L*Diagonal(1 ./D)
             #reset parameter in mme.M
             mme.M.G         = mme.M.genetic_variance
-            mme.M.scale     = mme.M.genetic_variance*(mme.df.marker-nTraits-1)
+            mme.M.scale     = mme.M.G*(mme.df.marker-nTraits-1)
             mme.M.markerID  = string.(1:nMarkers)
             mme.M.genotypes = L
-            #reset parameters in output
-            Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
-            mme.output_genotypes = (mme.output_ID == mme.M.obsID ? mme.M.genotypes : Zo*mme.M.genotypes)
-            #realign pseudo genotypes to phenotypes
-            Z               = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
-            mme.M.genotypes = Z*mme.M.genotypes
-            mme.M.obsID     = mme.obsID
-            mme.M.nObs      = length(mme.M.obsID)
         end
         #starting values for marker effects(zeros) and location parameters (sol)
         betaArray       = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
@@ -269,7 +265,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                     for traitj = traiti:nTraits
                         alphaArrayi         = alphaArray[traiti]
                         alphaArrayj         = alphaArray[traitj]
-                        SM[traiti,traitj]   = alphaArrayi'*Diagnal(1 ./D)*alphaArrayj
+                        SM[traiti,traitj]   = alphaArrayi'*Diagonal(1 ./D)*alphaArrayj
                         SM[traitj,traiti]   = SM[traiti,traitj]
                     end
                 end

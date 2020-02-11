@@ -1,13 +1,16 @@
 ################################################################################
-#MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
+#MCMC for RR-BLUP, GBLUP, BayesABC, and conventional (no markers) methods
 #
-#In GBLUP, pseudo markers are used.
+#GBLUP: pseudo markers are used.
 #y = μ + a + e with mean(a)=0,var(a)=Gσ²=MM'σ² and G = LDL' <==>
 #y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
+#y2hat = cov(a2,a)*inv(var(a))*L*αhat =>
+#      = (M2*M')*inv(MM')*L*αhat = (M2*M')*(L(1./D)L')(Lαhat)=(M2*M'*L(1./D))αhat
 #
-#Threshold trait
-#Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative Genetics
-#Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
+#Threshold trait:
+#1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
+#Genetics
+#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
 #Heredity, 110(3), 213–219.
 ################################################################################
 function MCMC_BayesianAlphabet(nIter,mme,df;
@@ -73,20 +76,15 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             D       = eigenG.values
             # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
             nMarkers= nObs
-
+            #reset parameters in output
+            M2   = mme.output_genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
+            M2Mt = M2*mme.M.genotypes'/nMarkers
+            mme.output_genotypes = M2Mt*L*Diagonal(1 ./D)
             #reset parameter in mme.M
             mme.M.G         = mme.M.genetic_variance
             mme.M.scale     = mme.M.G*(mme.df.marker-2)/mme.df.marker
             mme.M.markerID  = string.(1:nObs) #pseudo markers of length=nObs
             mme.M.genotypes = L
-            #reset parameters in output
-            Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
-            mme.output_genotypes = (mme.output_ID == mme.M.obsID ? mme.M.genotypes : Zo*mme.M.genotypes)
-            #realign pseudo genotypes to phenotypes
-            Z               = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
-            mme.M.genotypes = Z*mme.M.genotypes
-            mme.M.obsID     = mme.obsID
-            mme.M.nObs      = length(mme.M.obsID)
         end
         α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
         if methods == "GBLUP"
