@@ -102,7 +102,6 @@ mutable struct MCMCinfo
     chain_length
     starting_value
     burnin
-    output_samples_file
     output_samples_frequency
     printout_model_info
     printout_frequency
@@ -120,6 +119,7 @@ mutable struct MCMCinfo
     categorical_trait
     seed
     double_precision
+    output_samples_file
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

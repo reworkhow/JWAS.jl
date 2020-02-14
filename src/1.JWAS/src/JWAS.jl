@@ -6,7 +6,6 @@ using SparseArrays
 using LinearAlgebra
 using ProgressMeter
 using .PedModule
-using .misc
 
 import StatsBase: describe #a new describe is exported
 
@@ -129,7 +128,6 @@ function runMCMC(mme::MME,df;
                 starting_value                    = false,
                 burnin::Integer                   = 0,
                 output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
-                output_samples_file               = "MCMC_samples",
                 update_priors_frequency::Integer  = 0,
                 #Methods
                 methods                         = "conventional (no markers)",
@@ -151,13 +149,23 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 big_memory                      = false,
-                double_precision                = false)
+                double_precision                = false,
+                #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
+                output_samples_file             = "MCMC_samples",
+                output_samples_for_all_parameters = false) #calculare lsmeans
 
     ############################################################################
     # Pre-Check
     ############################################################################
     if seed != false
         Random.seed!(seed)
+    end
+    if output_samples_for_all_parameters == true
+        allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
+        allparameters=unique(allparameters)
+        for parameter in allparameters
+            outputMCMCsamples(mme,parameter)
+        end
     end
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
@@ -169,7 +177,6 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo = MCMCinfo(chain_length,
                             starting_value,
                             burnin,
-                            output_samples_file,
                             output_samples_frequency,
                             printout_model_info,
                             printout_frequency,
@@ -186,7 +193,8 @@ function runMCMC(mme::MME,df;
                             output_heritability,
                             categorical_trait,
                             seed,
-                            double_precision)
+                            double_precision,
+                            output_samples_file)
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
