@@ -127,7 +127,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     ############################################################################
     #Covariance among effects for the same individual
     ############################################################################
-    if length(res) != size(G,1)
+    if G != false && length(res) != size(G,1)
       error("Dimensions must match. The covariance matrix (G) should be a ",length(res)," x ",length(res)," matrix.\n")
     end
     #Gi            : multi-trait;
