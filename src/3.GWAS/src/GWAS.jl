@@ -51,11 +51,14 @@ m5,2,101135
 
 """
 function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString...;
-             header=true,
-             window_size="1 Mb",
-             threshold=0.001,
-             sliding_window = false,
-             output_winVarProps=false)
+              #window
+              window_size = "1 Mb",sliding_window = false,
+              #GWAS
+              GWAS = true, threshold = 0.001,
+              #genetic correlation
+              genetic_correlation = false,
+              #misc
+              header = true, output_winVarProps = false)
 
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
     if split(window_size)[2] != "Mb"
@@ -155,6 +158,41 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                         WPPA     = WPPA[srtIndx],
                         PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
          push!(out,outi)
+    end
+    if genetic_correlation == true && length(marker_effects_file) ==2
+            #using marker effect files
+            output1           = readdlm(marker_effects_file[1],',',header=true)[1]
+            output2           = readdlm(marker_effects_file[2],',',header=true)[1]
+            nsamples,nMarkers = size(output1)
+            nWindows          = length(window_size_nSNPs)
+            gcor              = zeros(nsamples,nWindows)
+            #window_mrk_start ID and window_mrk_end ID are not provided now
+            X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
+            for i=1:nsamples
+                α1 = output1[i,:]
+                α2 = output2[i,:]
+                for winj = 1:length(window_column_start)
+                  wStart = window_column_start[winj]
+                  wEnd   = window_column_end[winj]
+                  Xwinj  = X[:,wStart:wEnd]
+                  BV_winj1= Xwinj*α1[wStart:wEnd]
+                  BV_winj2= Xwinj*α2[wStart:wEnd]
+                  gcor[i,winj] = cor(BV_winj1,BV_winj2)
+                end
+            end
+            gcormean = vec(mean(gcor,dims=1))
+            gcorstd  = vec(std(gcor,dims=1))
+            outi = DataFrame(trait  = fill("cor(t1,t2)",length(gcormean)),
+                            window = (1:length(gcormean)),
+                            chr    = window_chr,
+                            wStart = window_pos_start,
+                            wEnd   = window_pos_end,
+                            start_SNP = window_snp_start,
+                            end_SNP   = window_snp_end,
+                            numSNP   = window_size_nSNPs,
+                            estimate = gcormean,
+                            std      = gcorstd)
+             push!(out,outi)
     end
     return output_winVarProps ? (Tuple(out),winVarProps) : Tuple(out)
 end
