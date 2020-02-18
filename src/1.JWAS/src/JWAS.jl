@@ -388,6 +388,9 @@ function errors_args(mme,methods)
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
         end
+        if Pi != 0.0 && typeof(Pi) <: Number
+            error("Pi cannot be a number in multi-trait analysis.")
+        end
     end
 end
 

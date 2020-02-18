@@ -31,13 +31,20 @@ end
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
 """
-    GWAS(model,map_file,marker_effects_file...;header=true,window_size="1 Mb",threshold=0.001)
+    GWAS(model,map_file,marker_effects_file...;
+         window_size = "1 Mb",sliding_window = false,
+         GWAS = true, threshold = 0.001,
+         genetic_correlation = false,
+         header = true)
 
 run genomic window-based GWAS
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
-* **model** is either the model::MME used in analysis or the genotypic cavariate matrix M::Array
+* **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
 * **map_file** has the (sorted) marker position information with delimiter ','.
+* If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
+* Statistics are computed for nonoverlapping windows of size *window_size* by default.
+  If **sliding_window** = true, those for overlapping sliding windows are calculated.
 * File format:
 
 ```
@@ -60,7 +67,6 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
               #misc
               header = true, output_winVarProps = false)
 
-    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
     if split(window_size)[2] != "Mb"
         error("The format for window_size is \"1 Mb\".")
     end
@@ -127,41 +133,44 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
     end
 
     out=[]
-    for i in 1:length(marker_effects_file)
-        #using marker effect files
-        output            = readdlm(marker_effects_file[i],',',header=true)[1]
-        nsamples,nMarkers = size(output)
-        nWindows          = length(window_size_nSNPs)
-        winVarProps       = zeros(nsamples,nWindows)
-        #window_mrk_start ID and window_mrk_end ID are not provided now
-        X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
-        for i=1:nsamples
-            α = output[i,:]
-            genVar = var(X*α)
-            for winj = 1:length(window_column_start)
-              wStart = window_column_start[winj]
-              wEnd   = window_column_end[winj]
-              BV_winj= X[:,wStart:wEnd]*α[wStart:wEnd]
-              winVarProps[i,winj] = var(BV_winj)/genVar
+    if GWAS == true
+        println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
+        for i in 1:length(marker_effects_file)
+            #using marker effect files
+            output            = readdlm(marker_effects_file[i],',',header=true)[1]
+            nsamples,nMarkers = size(output)
+            nWindows          = length(window_size_nSNPs)
+            winVarProps       = zeros(nsamples,nWindows)
+            #window_mrk_start ID and window_mrk_end ID are not provided now
+            X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
+            @showprogress "running GWAS..." for i=1:nsamples
+                α = output[i,:]
+                genVar = var(X*α)
+                for winj = 1:length(window_column_start)
+                  wStart = window_column_start[winj]
+                  wEnd   = window_column_end[winj]
+                  BV_winj= X[:,wStart:wEnd]*α[wStart:wEnd]
+                  winVarProps[i,winj] = var(BV_winj)/genVar
+                end
             end
-        end
-        winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
-        WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
-        prop_genvar = round.(prop_genvar*100,digits=2)
+            winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
+            WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
+            prop_genvar = round.(prop_genvar*100,digits=2)
 
-        srtIndx = sortperm(WPPA,rev=true)
-        outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
-                        window = (1:length(WPPA))[srtIndx],
-                        chr    = window_chr[srtIndx],
-                        wStart = window_pos_start[srtIndx],
-                        wEnd   = window_pos_end[srtIndx],
-                        start_SNP = window_snp_start[srtIndx],
-                        end_SNP   = window_snp_end[srtIndx],
-                        numSNP  = window_size_nSNPs[srtIndx],
-                        prGenVar = prop_genvar[srtIndx],
-                        WPPA     = WPPA[srtIndx],
-                        PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
-         push!(out,outi)
+            srtIndx = sortperm(WPPA,rev=true)
+            outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
+                            window = (1:length(WPPA))[srtIndx],
+                            chr    = window_chr[srtIndx],
+                            wStart = window_pos_start[srtIndx],
+                            wEnd   = window_pos_end[srtIndx],
+                            start_SNP = window_snp_start[srtIndx],
+                            end_SNP   = window_snp_end[srtIndx],
+                            numSNP  = window_size_nSNPs[srtIndx],
+                            prGenVar = prop_genvar[srtIndx],
+                            WPPA     = WPPA[srtIndx],
+                            PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
+             push!(out,outi)
+        end
     end
     if genetic_correlation == true && length(marker_effects_file) ==2
             #using marker effect files
@@ -172,7 +181,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             gcor              = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
-            for i=1:nsamples
+            @showprogress "calculating genomic correlation..." for i=1:nsamples
                 α1 = output1[i,:]
                 α2 = output2[i,:]
                 for winj = 1:length(window_column_start)
@@ -184,6 +193,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                   gcor[i,winj] = cor(BV_winj1,BV_winj2)
                 end
             end
+            gcor[isnan.(gcor)] .= 0.0
             gcormean = vec(mean(gcor,dims=1))
             gcorstd  = vec(std(gcor,dims=1))
             outi = DataFrame(trait  = fill("cor(t1,t2)",length(gcormean)),
