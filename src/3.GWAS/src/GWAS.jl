@@ -106,7 +106,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
         push!(window_chr,i)
         push!(window_pos_start,thisstart)
         push!(window_pos_end,thisend)
-        snps_window = thisstart .< pos_on_chri .<= thisend
+        snps_window = thisstart .<= pos_on_chri .< thisend
         snps_window_sizej = sum(snps_window)
         push!(window_size_nSNPs,snps_window_sizej)
         if sum(snps_window)!=0
@@ -114,10 +114,14 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             push!(window_snp_end,pos_on_chri[findlast(snps_window)])
             push!(window_column_start,index_start)
             push!(window_column_end,index_start+snps_window_sizej-1)
-            index_start = index_start+snps_window_sizej
-        else
+        else #empty windows exist in non-sliding window; no empty window in sliding windows
             push!(window_snp_start,0)
             push!(window_snp_end,0)
+        end
+        if sliding_window == false
+            index_start += snps_window_sizej
+        else
+            index_start += 1
         end
       end
     end
