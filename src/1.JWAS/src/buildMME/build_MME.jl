@@ -239,17 +239,15 @@ function getMME(mme::MME, df::DataFrame)
     mme.ySparse = ySparse
 
     if mme.nModels==1     #single-trait (lambda version)
-      if mme.invweights == false
-        mme.mmeLhs = X'X
-        mme.mmeRhs = X'ySparse
-      else
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
-      end
     elseif mme.nModels>1  #multi-trait
-      Ri         = mkRi(mme,df) #handle missing phenotypes with ResVar
-                                #make MME without variance estimation (constant)
-                                #and residual imputation
+    #Ri of size (nind x ntraits)^2, the inverse of the variance of the random
+    #vector of errors, is generated based on the phenotype missing patterns,
+    #such that no imputation of missing phenotypes is required.
+    #mixed model equations is obtained below for multi-trait PBLUP
+    #with known residual covariance matrix and missing phenotypes.
+      Ri         = mkRi(mme,df,mme.invweights)
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
     end

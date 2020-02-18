@@ -46,21 +46,18 @@ mutable struct GibbsMats
     nrows::Int64
     ncols::Int64
     xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
-    xpx::Union{Array{Float64,1},Array{Float32,1}}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
-    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}};Rinv=false) ###More
+    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
-        xpx         = getXpRinvX(X)
-        if Rinv==false
-            xRinvArray = xArray
-            xpRinvx    = xpx
+        xpRinvx     = getXpRinvX(X,Rinv)
+        if Rinv == ones(length(Rinv))
+            xRinvArray = xArray  #avoid using extra memory for xRinvArray
         else
             xRinvArray = [x.*Rinv for x in xArray]
-            xpRinvx    = getXpRinvX(X,Rinv)
         end
-        new(X,nrows,ncols,xArray,xpx,xRinvArray,xpRinvx)
+        new(X,nrows,ncols,xArray,xRinvArray,xpRinvx)
     end
 end
 
@@ -76,7 +73,7 @@ end
 #Note that Aligning genotypes with phenotypes and output_ID in single-step analysis
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
-    if mme.output_ID != 0 && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
+    if mme.output_ID != 0 && single_step_analysis==false
         Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
         mme.output_genotypes =  Zo*mme.M.genotypes
     end
@@ -86,7 +83,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     #individuals with repeated records or individuals without records
     #
     #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M.obsID && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
+    if mme.obsID != mme.M.obsID && single_step_analysis==false
         Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
         mme.M.genotypes = Z*mme.M.genotypes
         mme.M.obsID     = mme.obsID

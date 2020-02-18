@@ -20,7 +20,6 @@ include("buildMME/solver.jl")
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
 include("MCMC/MT_MCMC_BayesianAlphabet.jl")
-include("MCMC/MT_PBLUP_constvare.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")
@@ -281,31 +280,21 @@ function runMCMC(mme::MME,df;
                         update_priors_frequency  = update_priors_frequency,
                         categorical_trait        = categorical_trait)
     else #multi-trait analysis
-        if methods == "conventional (no markers)" && estimate_variance == false
-          mme.output=MT_MCMC_PBLUP_constvare(chain_length,mme,df,
-                            sol    = mme.MCMCinfo.starting_value,
-                            outFreq= printout_frequency,
-                            missing_phenotypes=missing_phenotypes,
-                            estimate_variance = estimate_variance,
-                            output_samples_frequency=output_samples_frequency,
-                            output_file=output_samples_file,
-                            update_priors_frequency=update_priors_frequency)
-        elseif methods in ["GBLUP","BayesL","BayesC","BayesB","RR-BLUP","conventional (no markers)"]
-          mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
-                          Pi     = Pi,
-                          sol    = mme.MCMCinfo.starting_value,
-                          outFreq= printout_frequency,
-                          missing_phenotypes=missing_phenotypes,
-                          constraint = constraint,
-                          estimatePi = estimatePi,
-                          estimate_variance = estimate_variance,
-                          estimateScale     = estimateScale,
-                          methods    = methods,
-                          output_samples_frequency=output_samples_frequency,
-                          output_file=output_samples_file,
-                          update_priors_frequency=update_priors_frequency,
-                          causal_structure = causal_structure)
-        end
+        mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
+                      Rinv   = mme.invweights,
+                      Pi     = Pi,
+                      sol    = mme.MCMCinfo.starting_value,
+                      outFreq= printout_frequency,
+                      missing_phenotypes=missing_phenotypes,
+                      constraint = constraint,
+                      estimatePi = estimatePi,
+                      estimate_variance = estimate_variance,
+                      estimateScale     = estimateScale,
+                      methods    = methods,
+                      output_samples_frequency=output_samples_frequency,
+                      output_file=output_samples_file,
+                      update_priors_frequency=update_priors_frequency,
+                      causal_structure = causal_structure)
     end
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
@@ -459,6 +448,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
     writedlm("IDs_for_individuals_with_phenotypes.txt",df[!,1])
 
+    #remove records whose phenotypes are missing for all traits fitted in the model
     missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
     nonmissingindex = Array{Int64,1}()
@@ -474,7 +464,7 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     end
 
     phenoID = df[!,1]
-    single_step_analysis = mme.MCMCinfo.single_step_analysis
+    single_step_analysis = (mme.MCMCinfo != false ? mme.MCMCinfo.single_step_analysis : false)
     if single_step_analysis == false && mme.M != 0 #complete genomic data
         if !issubset(phenoID,mme.M.obsID)
             printstyled("Phenotyped individuals are not a subset of ",
@@ -507,10 +497,10 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     #***************************************************************************
     if heterogeneous_residuals == true
         invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
-        mme.invweights = (mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     else
-        mme.invweights = false
+        invweights = ones(length(mme.obsID))
     end
+    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     return df
 end
 
