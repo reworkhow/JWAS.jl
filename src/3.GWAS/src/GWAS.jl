@@ -1,3 +1,5 @@
+include("GWAS_deprecated.jl")
+
 """
     GWAS(marker_effects_file;header=true)
 
@@ -17,50 +19,6 @@ function GWAS(marker_effects_file;header=true)
     return out
 end
 
-"""
-    GWAS(marker_effects_file,model;header=true,window_size=100,threshold=0.001)
-
-run genomic window-based GWAS without a map file
-
-* MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
-* **window_size** is either a constant (identical number of markers in each window) or an array of number of markers in each window
-* **model** is either the model::MME used in analysis or the genotypic covariate matrix M::Array
-* File format:
-
-"""
-function GWAS(marker_effect_file,mme;header=true,window_size=100,threshold=0.001,output_winVarProps=false)
-    println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
-
-    winVarProps, window_mrk_start, window_mrk_end = getWinVarProps(marker_effect_file,mme;header=header,window_size=window_size,threshold=threshold)
-
-    winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
-    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
-    prop_genvar = round.(prop_genvar*100,digits=2)
-    if typeof(mme) <: Array
-        nMarkers = size(mme,2)
-    else
-        nMarkers = size(mme.M.markerID,1)
-    end
-
-    if length(window_size)==1
-        nWindows    = ceil(Int64,nMarkers/window_size)
-        window_size = fill(window_size,nWindows)
-    end
-    srtIndx = sortperm(WPPA,rev=true)
-    out = DataFrame(wStart = window_mrk_start[srtIndx],
-                    wEnd   = window_mrk_end[srtIndx],
-                    wSize  = window_size[srtIndx],
-                    prGenVar = prop_genvar[srtIndx],
-                    WPPA     = WPPA[srtIndx],
-                    PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
-                   )
-    if output_winVarProps == false
-        return out
-    else
-        return out,winVarProps
-    end
-end
-
 #Chen, C., Steibel, J. P., & Tempelman, R. J. (2017). Genome-Wide Association
 #Analyses Based on Broadly Different Specifications for Prior Distributions,
 #Genomic Windows, and Estimation Methods. Genetics, 206(4), 1791–1806.
@@ -73,7 +31,7 @@ end
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
 """
-    GWAS(marker_effects_file,map_file,model;header=true,window_size="1 Mb",threshold=0.001)
+    GWAS(model,map_file,marker_effects_file...;header=true,window_size="1 Mb",threshold=0.001)
 
 run genomic window-based GWAS
 
@@ -91,133 +49,128 @@ m4,2,70350
 m5,2,101135
 ```
 
-
 """
-function GWAS(marker_effects_file,map_file,mme;header=true,window_size="1 Mb",threshold=0.001,output_winVarProps=false)
+function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString...;
+             header=true,
+             window_size="1 Mb",
+             threshold=0.001,
+             sliding_window = false,
+             output_winVarProps=false)
+
     println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
-    if window_size=="1 Mb"
-        window_size_Mb = 1_000_000
-    else
-        window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
+    if split(window_size)[2] != "Mb"
+        error("The format for window_size is \"1 Mb\".")
+    end
+    if map_file == false
+        println("The map file is not provided. A fake map file is generated with 100 markers in each 1 Mb window.")
+        nmarkers=length(readdlm(marker_effect_file,',',header=true)[2])
+        mapfile = DataFrame(markerID=1:nmarkers,
+                            chromosome=fill(1,nmarkers),
+                            position=1:10_000:nmarkers*10_000)
+        CSV.write("mapfile.temp",mapfile)
     end
 
-    if header == true
-        mapfile = readdlm(map_file,',',header=true)[1]
-    else
-        mapfile = readdlm(map_file,',')
-    end
+    window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
+    mapfile = (header == true ? readdlm(map_file,',',header=true)[1] : readdlm(map_file,','))
     chr     = map(string,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
 
-    window_size = Array{Int64,1}() #save number of markers in ith window for all windows
-    window_chr  = Array{String,1}()
-    window_pos_start = Array{Int64,1}()
-    window_pos_end   = Array{Int64,1}()
-    window_snp_start = Array{Int64,1}()
-    window_snp_end   = Array{Int64,1}()
+    window_size_nSNPs   = Array{Int64,1}()  #save number of markers in ith window for all windows
+    window_chr          = Array{String,1}() #1
+    window_pos_start    = Array{Int64,1}()  #1_000_000
+    window_pos_end      = Array{Int64,1}()  #2_000_000
+    window_snp_start    = Array{Int64,1}()  #1_314_314
+    window_snp_end      = Array{Int64,1}()  #1_999_003
+    window_column_start = Array{Int64,1}()  #101
+    window_column_end   = Array{Int64,1}()  #200
 
+    index_start = 1
     for i in unique(chr)
       pos_on_chri     = pos[chr.== i] #assume chr and pos are sorted
-      nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
+      if sliding_window == false
+          nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
+      else
+          nwindow_on_chri = findfirst(x -> x >= pos_on_chri[end] - window_size_Mb, pos_on_chri)
+      end
 
       for j in 1: nwindow_on_chri
-        thisstart= window_size_Mb*(j-1)
-        thisend  = window_size_Mb*j
+        if sliding_window == false
+            thisstart = window_size_Mb*(j-1)
+        else
+            thisstart = pos_on_chri[j]
+        end
+        thisend  = thisstart + window_size_Mb
         push!(window_chr,i)
         push!(window_pos_start,thisstart)
         push!(window_pos_end,thisend)
         snps_window = thisstart .< pos_on_chri .<= thisend
-        push!(window_size,sum(snps_window))
+        snps_window_sizej = sum(snps_window)
+        push!(window_size_nSNPs,snps_window_sizej)
         if sum(snps_window)!=0
             push!(window_snp_start,pos_on_chri[findfirst(snps_window)])
             push!(window_snp_end,pos_on_chri[findlast(snps_window)])
+            push!(window_column_start,index_start)
+            push!(window_column_end,index_start+snps_window_sizej-1)
+            index_start = index_start+snps_window_sizej
         else
             push!(window_snp_start,0)
             push!(window_snp_end,0)
         end
       end
     end
-    winVarProps, window_mrk_start, window_mrk_end =
-    getWinVarProps(marker_effects_file,mme,header=header,window_size=window_size,threshold=threshold)
-    winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
-    WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
-    prop_genvar = round.(prop_genvar*100,digits=2)
 
-    srtIndx = sortperm(WPPA,rev=true)
-    out = DataFrame(window = (1:length(WPPA))[srtIndx],
-                    chr    = window_chr[srtIndx],
-                    wStart = window_pos_start[srtIndx],
-                    wEnd   = window_pos_end[srtIndx],
-                    start_SNP = window_snp_start[srtIndx],
-                    end_SNP   = window_snp_end[srtIndx],
-                    numSNP  = window_size[srtIndx],
-                    prGenVar = prop_genvar[srtIndx],
-                    WPPA     = WPPA[srtIndx],
-                    PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA))
-                   )
+    out=[]
+    for i in 1:length(marker_effects_file)
+        #using marker effect files
+        output            = readdlm(marker_effects_file[i],',',header=true)[1]
+        nsamples,nMarkers = size(output)
+        nWindows          = length(window_size_nSNPs)
+        winVarProps       = zeros(nsamples,nWindows)
+        #window_mrk_start ID and window_mrk_end ID are not provided now
+        X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
+        for i=1:nsamples
+            α = output[i,:]
+            genVar = var(X*α)
+            for winj = 1:length(window_column_start)
+              wStart = window_column_start[winj]
+              wEnd   = window_column_end[winj]
+              BV_winj= X[:,wStart:wEnd]*α[wStart:wEnd]
+              winVarProps[i,winj] = var(BV_winj)/genVar
+            end
+        end
+        winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
+        WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
+        prop_genvar = round.(prop_genvar*100,digits=2)
 
-    if output_winVarProps == false
-        return out
-    else
-        return out,winVarProps
+        srtIndx = sortperm(WPPA,rev=true)
+        outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
+                        window = (1:length(WPPA))[srtIndx],
+                        chr    = window_chr[srtIndx],
+                        wStart = window_pos_start[srtIndx],
+                        wEnd   = window_pos_end[srtIndx],
+                        start_SNP = window_snp_start[srtIndx],
+                        end_SNP   = window_snp_end[srtIndx],
+                        numSNP  = window_size_nSNPs[srtIndx],
+                        prGenVar = prop_genvar[srtIndx],
+                        WPPA     = WPPA[srtIndx],
+                        PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
+         push!(out,outi)
     end
+    return output_winVarProps ? (Tuple(out),winVarProps) : Tuple(out)
 end
 
-function getWinVarProps(marker_effect_file,mme;header=true,window_size=100,threshold=0.001)
-    if header==true
-        output=readdlm(marker_effect_file,',',header=true)[1]
-    else
-        output=readdlm(marker_effect_file,',')
-    end
-
-    nsamples,nMarkers=size(output)
-    if length(window_size)==1
-        nWindows    = ceil(Int64,nMarkers/window_size)
-        window_size = fill(window_size,nWindows)
-    else
-        nWindows    = length(window_size)
-    end
-
-    winVarProps = zeros(nsamples,nWindows)
-    if typeof(mme) <: Array
-        X = mme
-        window_mrk_start = Array{Int64,1}()
-        window_mrk_end   = Array{Int64,1}()
-    else
-        X = mme.output_genotypes
-        window_mrk_start = Array{String,1}()
-        window_mrk_end   = Array{String,1}()
-    end
-
-    wEnd    = 0
-    @showprogress  for i in window_size
-        wStart = wEnd + 1
-        wEnd  += i
-        wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
-        if typeof(mme) <: Array
-            push!(window_mrk_start,wStart)
-            push!(window_mrk_end  ,wEnd)
-        else
-            push!(window_mrk_start,mme.M.markerID[wStart])
-            push!(window_mrk_end  ,mme.M.markerID[wEnd])
-        end
-    end
-
-    for i=1:nsamples
-        α = output[i,:]
-        genVar = var(X*α)
-
-        wEnd    = 0
-        windowi = 1
-        for win=1:nWindows
-          wStart = wEnd + 1
-          wEnd  += window_size[windowi]
-          wEnd   = (wEnd > nMarkers) ? nMarkers : wEnd
-          winVarProps[i,win] = var(X[:,wStart:wEnd]*α[wStart:wEnd])/genVar
-          windowi +=1
-        end
-    end
-    return winVarProps, window_mrk_start, window_mrk_end
+function GWAS(marker_effects_file::AbstractString,map_file::AbstractString,mme;
+             header=true,
+             window_size="1 Mb",
+             threshold=0.001,
+             sliding_window = false,
+             output_winVarProps=false)
+     GWAS(mme,map_file,marker_effects_file,
+                  header=header,
+                  window_size=window_size,
+                  threshold=threshold,
+                  sliding_window = sliding_window,
+                  output_winVarProps=output_winVarProps)
 end
 
 
