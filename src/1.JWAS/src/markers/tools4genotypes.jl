@@ -36,6 +36,11 @@ function getXpRinvX(X, Rinv)
     return XpRinvX
 end
 
+function getXpRinvX(X, Rinv)
+    XpRinvX = [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
+    return XpRinvX
+end
+
 function getXpRinvX(X)
     XpRinvX = [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
     return XpRinvX
@@ -48,14 +53,14 @@ mutable struct GibbsMats
     xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
-    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)
+    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv...)
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
-        xpRinvx     = getXpRinvX(X,Rinv)
+        xpRinvx     = [getXpRinvX(X,Rinvi) for Rinvi in Rinv]
         if Rinv == ones(length(Rinv))
             xRinvArray = xArray  #avoid using extra memory for xRinvArray
         else
-            xRinvArray = [x.*Rinv for x in xArray]
+            xRinvArray = [[x.*Rinvi for x in xArray] for Rinvi in Rinv]
         end
         new(X,nrows,ncols,xArray,xRinvArray,xpRinvx)
     end

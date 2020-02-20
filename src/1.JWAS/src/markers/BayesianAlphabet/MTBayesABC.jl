@@ -28,19 +28,24 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
             w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]
         end
 
+        Ginv_marker = Ginv[marker]
         for k=1:nTraits
-            Ginv11 = Ginv[marker][k,k]
+            Ginv11 = Ginv_marker[k,k]
             nok    = deleteat!(collect(1:nTraits),k)
-            Ginv12 = Ginv[marker][k,nok]
-            C11    = Ginv11+Rinv[k,k]*xpRinvx[marker]
-            C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
+            Ginv12 = Ginv_marker[k,nok]
+            δ[k]   = 1.0
+            C      = Ginv_marker+Diagonal(δ)*(Rinv.*xpRinvx[marker])*Diagonal(δ)
+            C11    = C[k,k]
+            C12    = C[k,nok]
+            #C11    = Ginv11+Rinv[k,k]*xpRinvx[marker][k,k]
+            #C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
 
             invLhs0  = 1/Ginv11
-            rhs0     = - Ginv12'β[nok]
-            gHat0    = (rhs0*invLhs0)[1,1]
+            rhs0     = -Ginv12'β[nok]
+            gHat0    = rhs0*invLhs0
             invLhs1  = 1/C11
-            rhs1     = w'*Rinv[:,k]-C12'β[nok]
-            gHat1    = (rhs1*invLhs1)[1,1]
+            rhs1     = w'Rinv[:,k]-C12'β[nok]
+            gHat1    = rhs1*invLhs1
 
             d0 = copy(δ)
             d1 = copy(δ)
