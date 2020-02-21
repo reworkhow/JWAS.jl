@@ -74,8 +74,12 @@ end
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
     if mme.output_ID != 0 && single_step_analysis==false
-        Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
-        mme.output_genotypes =  Zo*mme.M.genotypes
+        if mme.output_ID != mme.M.obsID
+            Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,mme.M.obsID))
+            mme.output_genotypes =  Zo*mme.M.genotypes
+        else
+            mme.output_genotypes =  mme.M.genotypes
+        end
     end
     #***************************************************************************
     #Align genotypes with phenotypes
@@ -84,7 +88,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     #
     #**********CENTERING?*******************************************************
     if mme.obsID != mme.M.obsID && single_step_analysis==false
-        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
+        Z  = map(Float32,mkmat_incidence_factor(mme.obsID,mme.M.obsID))
         mme.M.genotypes = Z*mme.M.genotypes
         mme.M.obsID     = mme.obsID
         mme.M.nObs      = length(mme.M.obsID)
