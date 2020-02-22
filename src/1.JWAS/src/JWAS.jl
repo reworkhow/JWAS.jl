@@ -384,6 +384,9 @@ function errors_args(mme,methods)
             error("SSGBLUP is not available")
         end
     end
+    if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
+        error("Genomic information is required for single-step analysis.")
+    end
     if mme.nModels > 1 && mme.M!=0
         if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
           error("Summation of probabilities of Pi is not equal to one.")
