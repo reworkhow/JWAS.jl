@@ -80,13 +80,13 @@ function output_result(mme,output_file,
     whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
     whichmarker = mme.M.markerID
     whicheffect = meanAlpha[traiti]
-    whicheffectsd = sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)
+    whicheffectsd = sqrt.(abs.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
     whichdelta    = meanDelta[traiti]
     for traiti in 2:mme.nModels
         whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(mme.M.markerID)))
         whichmarker    = vcat(whichmarker,mme.M.markerID)
         whicheffect    = vcat(whicheffect,meanAlpha[traiti])
-        whicheffectsd  = vcat(whicheffectsd,sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
+        whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)))
         whichdelta     = vcat(whichdelta,meanDelta[traiti])
     end
     output["marker effects"]=
