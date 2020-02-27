@@ -141,6 +141,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             nsamples,nMarkers = size(output)
             nWindows          = length(window_size_nSNPs)
             winVarProps       = zeros(nsamples,nWindows)
+            winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
             @showprogress "running GWAS..." for i=1:nsamples
@@ -150,12 +151,16 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                   wStart = window_column_start[winj]
                   wEnd   = window_column_end[winj]
                   BV_winj= X[:,wStart:wEnd]*α[wStart:wEnd]
-                  winVarProps[i,winj] = var(BV_winj)/genVar
+                  var_winj = var(BV_winj)
+                  winVar[i,winj]      = var_winj
+                  winVarProps[i,winj] = var_winj/genVar
                 end
             end
             winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
             WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
             prop_genvar = round.(prop_genvar*100,digits=2)
+            winVarmean = vec(mean(winVar,dims=1))
+            winVarstd  = vec(std(winVar,dims=1))
 
             srtIndx = sortperm(WPPA,rev=true)
             outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
@@ -166,6 +171,8 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                             start_SNP = window_snp_start[srtIndx],
                             end_SNP   = window_snp_end[srtIndx],
                             numSNP  = window_size_nSNPs[srtIndx],
+                            estimateGenVar  = winVarmean[srtIndx],
+                            stdGenVar     = winVarstd[srtIndx],
                             prGenVar = prop_genvar[srtIndx],
                             WPPA     = WPPA[srtIndx],
                             PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
