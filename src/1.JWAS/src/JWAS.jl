@@ -89,11 +89,14 @@ export get_correlations,get_heritability
 
 * Markov chain Monte Carlo
     * The first `burnin` iterations are discarded at the beginning of a MCMC chain of length `chain_length`.
-    * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
     * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to files `output_samples_file`,
       defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
       MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
       down the computation.
+    * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s. 
+      The order of starting values for location parameters and marker effects should be the order of location parameters in 
+      the Mixed Model Equation for all traits (This can be obtained by getNames(model)) and then markers for all traits (all 
+      markers for trait 1 then all markers for trait 2...).
     * Miscellaneous Options
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
@@ -589,12 +592,12 @@ function init_mixed_model_equations(mme,df,sol)
     if sol == false #no starting values
         sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
     else            #besure type is Float64
-        if length(sol) != nsol || typeof(sol) <: AbstractString
-            error("length or type of starting values is wrong.")
-        end
         printstyled("Starting values are provided. The order of starting values for location parameters and\n",
         "marker effects should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
         "obtained by getNames(model)) and then markers for all traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
+        if length(sol) != nsol || typeof(sol) <: AbstractString
+            error("length or type of starting values is wrong.")
+        end
         sol = map((mme.MCMCinfo.double_precision ? Float64 : Float32),sol)
     end
     return sol,df
