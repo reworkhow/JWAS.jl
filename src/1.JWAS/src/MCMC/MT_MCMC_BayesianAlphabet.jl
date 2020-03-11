@@ -24,9 +24,11 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
 
     if mme.M != 0
         BigPi,BigPiMean,BigPiMean2 = copy(Pi),copy(Pi),copy(Pi)
-        for key in keys(BigPiMean)
-          BigPiMean[key]=0.0
-          BigPiMean2[key]=0.0
+        if estimatePi == true
+          for key in keys(BigPiMean)
+            BigPiMean[key]=0.0
+            BigPiMean2[key]=0.0
+          end
         end
     end
     #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)  end
