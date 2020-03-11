@@ -122,7 +122,7 @@ end
 ################################################################################
 function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
   #multi-trait (Pi)
-  if mme.nModels !=1 && Pi==0.0
+  if mme.nModels !=1 && Pi==0.0 && !(methods in ["RR-BLUP","BayesL","BayesA"])
       println()
       printstyled("Pi (Π) is not provided.\n",bold=false)
       printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
