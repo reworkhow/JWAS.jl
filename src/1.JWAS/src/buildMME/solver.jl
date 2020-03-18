@@ -10,7 +10,10 @@ function solve(mme::MME,
                printout_frequency=100,
                tolerance = 0.000001,
                maxiter = 5000,
+               heterogeneous_residuals = false,
                double_precision=false)
+    df = check_phenotypes(mme,df,heterogeneous_residuals)
+    set_default_priors_for_variance_components(mme,df)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
     end
