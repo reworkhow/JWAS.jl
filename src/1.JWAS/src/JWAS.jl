@@ -93,9 +93,9 @@ export get_correlations,get_heritability
       defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
       MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
       down the computation.
-    * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s. 
-      The order of starting values for location parameters and marker effects should be the order of location parameters in 
-      the Mixed Model Equation for all traits (This can be obtained by getNames(model)) and then markers for all traits (all 
+    * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
+      The order of starting values for location parameters and marker effects should be the order of location parameters in
+      the Mixed Model Equation for all traits (This can be obtained by getNames(model)) and then markers for all traits (all
       markers for trait 1 then all markers for trait 2...).
     * Miscellaneous Options
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
@@ -272,7 +272,7 @@ function runMCMC(mme::MME,df;
                         Rinv                     = mme.invweights,
                         burnin                   = burnin,
                         π                        = Pi,
-                        methods                  = methods,
+                        methods                  = mme.MCMCinfo.methods,
                         estimatePi               = estimatePi,
                         estimate_variance        = estimate_variance,
                         estimateScale            = estimateScale,
@@ -293,7 +293,7 @@ function runMCMC(mme::MME,df;
                       estimatePi = estimatePi,
                       estimate_variance = estimate_variance,
                       estimateScale     = estimateScale,
-                      methods    = methods,
+                      methods    = mme.MCMCinfo.methods,
                       output_samples_frequency=output_samples_frequency,
                       output_file=output_samples_file,
                       update_priors_frequency=update_priors_frequency,
@@ -374,8 +374,8 @@ function errors_args(mme,methods)
         elseif estimatePi == true
             error("BayesA runs with estimatePi = false.")
         end
-        methods = "BayesB"
-        println("BayesA is equivalent to BayesB with constant π=0. BayesB with constant π=0 runs.")
+        mme.MCMCinfo.methods = "BayesB"
+        println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
     elseif methods=="GBLUP"
         if mme.M == 0
             error("GBLUP runs with genotypes.")
@@ -739,13 +739,15 @@ function getMCMCinfo(mme)
             @printf("%-30s\n","marker effect variances:")
             Base.print_matrix(stdout,round.(mme.M.G,digits=3))
             println()
-            println("\nΠ: (Y(yes):included; N(no):excluded)\n")
-            print(string.(mme.lhsVec))
-            @printf("%20s\n","probability")
-            for (i,j) in MCMCinfo.Pi
-                i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                print(i)
-                @printf("%20s\n",j)
+            if !(MCMCinfo.methods in ["RR-BLUP","BayesL"])
+                println("\nΠ: (Y(yes):included; N(no):excluded)\n")
+                print(string.(mme.lhsVec))
+                @printf("%20s\n","probability")
+                for (i,j) in MCMCinfo.Pi
+                    i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
+                    print(i)
+                    @printf("%20s\n",j)
+                end
             end
         end
     end
