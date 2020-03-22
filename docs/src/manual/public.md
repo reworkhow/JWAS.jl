@@ -10,12 +10,6 @@ Pages = ["public.md"]
 Modules = [JWAS]
 ```
 
-```@index
-Pages = ["public.md"]
-Modules = [JWAS.misc]
-```
-
-
 ## Public Interface
 
 ```@docs
@@ -33,9 +27,4 @@ solve
 
 ```@docs
 GWAS
-get_additive_genetic_variances
-get_heritability
-get_correlations
-get_breeding_values
-QC
 ```

@@ -36,7 +36,6 @@ JWAS.jl
 
 ├──────── Datasets.jl
 
-├──────── misc.jl
 ```
 
 ### Help

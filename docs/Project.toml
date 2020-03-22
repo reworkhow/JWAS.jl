@@ -3,4 +3,4 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 JWAS = "c9a035f4-d403-5e6b-8649-6be755bc4798"
 
 [compat]
-Documenter = "~0.20"
+Documenter = "0.23, 0.24"
