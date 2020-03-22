@@ -43,7 +43,9 @@ function solve(mme::MME,
         return [getNames(mme) Gibbs(A,x,b,mme.RNew,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="default"
-        return [getNames(mme) A\b]
+        println("left-hand side and right-hand side of mixed model equations are returned.")
+        println("To solve the equations, please choose a solver. (run ?solver for help)")
+        return [getNames(mme),A,b]
     else
         error("Please try solver=`default`,`Jacobi`,`Gauss-Seidel`, or `Gibbs sampler`\n")
     end
