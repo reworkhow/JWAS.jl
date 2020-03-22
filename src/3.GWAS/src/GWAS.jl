@@ -27,7 +27,7 @@ end
 #location for window sizes 1 Mb, starting at 0 or 1 Mb location for window sizes 2 Mb,
 #and starting at 0 or 1.5 Mb location for window sizes 3 Mb) for each chromosome were
 #chosen to partly counteract the chance effect of different LD patterns being associated
-#with nonoverlapping windows. Fi- nally, adaptive window sizes based on clustering SNP
+#with nonoverlapping windows. Finally, adaptive window sizes based on clustering SNP
 #by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
 #using the procedure described by Dehman et al. (2015).
 """
@@ -41,11 +41,12 @@ run genomic window-based GWAS
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
-* **map_file** has the (sorted) marker position information with delimiter ','.
+* **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided, a fake map file
+  will be generated with 100 markers in each 1 Mb window.
 * If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
 * Statistics are computed for nonoverlapping windows of size *window_size* by default.
   If **sliding_window** = true, those for overlapping sliding windows are calculated.
-* File format:
+* map file format:
 
 ```
 markerID,chromosome,position
@@ -185,6 +186,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             output2           = readdlm(marker_effects_file[2],',',header=true)[1]
             nsamples,nMarkers = size(output1)
             nWindows          = length(window_size_nSNPs)
+            gcov              = zeros(nsamples,nWindows)
             gcor              = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
@@ -197,12 +199,14 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                   Xwinj  = X[:,wStart:wEnd]
                   BV_winj1= Xwinj*α1[wStart:wEnd]
                   BV_winj2= Xwinj*α2[wStart:wEnd]
+                  gcov[i,winj] = cov(BV_winj1,BV_winj2)
                   gcor[i,winj] = cor(BV_winj1,BV_winj2)
                 end
             end
+            gcov[isnan.(gcov)] .= 0.0
             gcor[isnan.(gcor)] .= 0.0
-            gcormean = vec(mean(gcor,dims=1))
-            gcorstd  = vec(std(gcor,dims=1))
+            gcovmean,gcovstd = vec(mean(gcov,dims=1)),vec(std(gcov,dims=1))
+            gcormean,gcorstd = vec(mean(gcor,dims=1)),vec(std(gcor,dims=1))
             outi = DataFrame(trait  = fill("cor(t1,t2)",length(gcormean)),
                             window = (1:length(gcormean)),
                             chr    = window_chr,
@@ -211,8 +215,10 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                             start_SNP = window_snp_start,
                             end_SNP   = window_snp_end,
                             numSNP   = window_size_nSNPs,
-                            estimate = gcormean,
-                            std      = gcorstd)
+                            estimate_cov = gcovmean,
+                            std_cov      = gcovstd,
+                            estimate_cor = gcormean,
+                            std_cor      = gcorstd)
              push!(out,outi)
     end
     return output_winVarProps ? (Tuple(out),winVarProps) : Tuple(out)
