@@ -5,8 +5,11 @@
 """
     set_random(mme::MME,randomStr::AbstractString,ped::Pedigree, G;df=4)
 
-* set variables as random polygenic effects with pedigree information **ped** and
-  variances **G** with degree of freedom **df**, defaulting to `4.0`.
+* set variables as random polygenic effects with pedigree information **ped**. and
+  variances **G**.
+* **G** is the mean for the prior assigned for the variance with degree of freedom **df**, defaulting to 4.0.
+  If **G** is not provided, a value is calculated from responses (phenotypes).
+
 
 ```julia
 #single-trait (example 1)
@@ -49,8 +52,9 @@ end
 """
     set_random(mme::MME,randomStr::AbstractString,G;Vinv=0,names=[],df=4)
 
-* set variables as random effects, defaulting to i.i.d effects, with variances **G** with
-  degree of freedom **df**, defaulting to 4.0.
+* set variables as random effects, defaulting to i.i.d effects, with variances **G**.
+* **G** is the mean for the prior assigned for the variance with degree of freedom **df**, defaulting to 4.0.
+  If **G** is not provided, a value is calculated from responses (phenotypes).
 * the random effects are assumed to be i.i.d by default and it can be defined with any
   (inverse of) covariance structure **Vinv** with its index (row names) provided by **names**.
 

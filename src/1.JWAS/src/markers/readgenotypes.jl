@@ -2,9 +2,10 @@
     add_genotypes(mme::MME,M,G;header=false,center=true,rowID=false,G_is_marker_variance=false,df=4)
 * Get marker informtion from an nxp Matrix M of genotypes (Array or DataFrame),
   where n is the number of individuals and p is the number of markers. This matrix needs to be column-wise sorted by marker positions.
+* **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
+  If **G** is not provided, a value is calculated from responses (phenotypes)
 * rowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n
 * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
-* **G** defaults to the genetic variance with degree of freedom **df**=4.0.
 
 """
 function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataFrames.DataFrame},G=false;
@@ -39,7 +40,9 @@ end
 """
     add_genotypes(mme::MME,file,G;separator=' ',header=true,center=true,G_is_marker_variance=false,df=4.0)
 * Get marker informtion from a genotype file. This file needs to be column-wise sorted by marker positions.
-* **G** defaults to the genetic variance with degree of freedom **df**=4.0.
+* **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
+  If **G** is not provided, a value is calculated from responses (phenotypes).
+
 * File format:
 
 ```

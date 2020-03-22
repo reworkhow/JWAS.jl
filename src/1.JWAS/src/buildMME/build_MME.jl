@@ -15,8 +15,8 @@ end
     build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0)
 
 * Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
-  is the mean for the prior assigned for the residual variance with degree of freedom **df** defaulting
-  to 4.0. If **R** is not provided, a value is calculate from responses (phenotypes).
+  is the mean for the prior assigned for the residual variance with degree of freedom **df**, defaulting
+  to 4.0. If **R** is not provided, a value is calculated from responses (phenotypes).
 * By default, all variabels in model_equations are factors (categorical) and fixed. Set variables
   to be covariates (continuous) or random using functions `set_covariate()` or `set_random()`.
 

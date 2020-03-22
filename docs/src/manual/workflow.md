@@ -208,7 +208,8 @@ The **phenotypic data** is read on line 1, and the **pedigree data** is read on 
 model_equation = "y1 = intercept + x1 + x3 + ID + dam
                   y2 = intercept + x1 + x2 + x3 + ID  
                   y3 = intercept + x1 + x1*x3 + x2 + ID"
-model=build_model(model_equation, R)
+model=build_model(model_equation,R) #R is optional
+
 ```
 
 - link to documentation for [`build_model`](@ref)
@@ -219,9 +220,8 @@ The non-genomic part of the model equation for a 3-trait analysis is defined on 
 * The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
 * The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
 
-On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix).
-By default, all effects are treated as fixed and classed as factors (categorical variables)
-rather than covariates (quantitative variables).
+On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix). In Bayesian analysis, `R` is the mean for the prior assigned for the residual variance with degree of freedom `df`, defaulting to 4.0. If `R` is not provided, a value is calculated from responses (phenotypes).
+By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables).
 
 ## Step 4: Set Factors or Covariate
 ```julia
@@ -235,14 +235,14 @@ On line 1, the effect `x1` is defined to be a covariate rather than class effect
 
 ## Step 5: Set Random or Fixed Effects
 ```julia
-set_random(model,"x2",G1)
-set_random(model,"ID dam",pedigree,G2)
+set_random(model,"x2",G1) #G1 is optional
+set_random(model,"ID dam",pedigree,G2) #G2 is optional
 ```
 - link to documentation for [`set_random`](@ref)
 
 ---
 On line 1, the `x2` class effect is defined as random with variance `G1`(a 2x2 matrix). On line 2, direct genetic effects and
-maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree.
+maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree. In Bayesian analysis, `G1` and `G2` are the means for the priors assigned for the variances with degree of freedom `df`, defaulting to 4.0. If `G1` or `G2` is not provided, a value is calculated from responses (phenotypes).
 
 ## Step 6: Use Genomic Information
 ```julia
@@ -253,6 +253,7 @@ add_genotypes(model,"genotypes.txt",G3,separator=',')
 
 ---
 On line 1, the genomic part of the model is defined with the genotype file and variance `G3` (a 3x3 matrix).
+In Bayesian analysis, `G3` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G3` is not provided, a value is calculated from responses (phenotypes).
 
 ## Step 7: Run Bayesian Analysis
 ```julia
@@ -284,22 +285,28 @@ keys(out)
 # output:
 #
 # Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:
-#   "Posterior mean of polygenic effects covariance matrix"
+#   "polygenic effects covariance matrix"
 #   "Model frequency"
-#   "Posterior mean of residual covariance matrix"
-#   "Posterior mean of marker effects"
-#   "Posterior mean of marker effects covariance matrix"
-#   "Posterior mean of location parameters"
-#   "Posterior mean of Pi"
+#   "residual covariance matrix"
+#   "marker effects"
+#   "marker effects variance"
+#   "location parameters"
+#   "Pi"
 
-out["Posterior mean of residual covariance matrix"]
+out["residual variance"]
 
 # output:
 #
-# 3×3 Array{Float64,2}:
-#   0.674651   -0.103877   0.0834044
-#  -0.103877    0.828135  -0.121798
-#   0.0834044  -0.121798   0.720751
+#Covariance	Estimate	Std_Error
+#y1_y1	1.65265	0.29405
+#y1_y2	-0.0290279	0.02347
+#y1_y3	-0.252009	0.048289
+#y2_y1	-0.0290279	0.02347
+#y2_y2	0.977405	0.009732
+#y2_y3	0.0451994	0.095828
+#y3_y1	-0.252009	0.048289
+#y3_y2	0.0451994	0.095828
+#y3_y3	0.363878	0.049278
 
 ```
 
