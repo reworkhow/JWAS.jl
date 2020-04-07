@@ -65,7 +65,26 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
   for trm in modelTerms          #make a dict for model terms
     dict[trm.trmStr] = trm
   end
-  return MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
+  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
+
+  #add genotypes to mme
+  genotypes = []
+  whichterm = 1
+  for term in modelTerms
+    term_symbol = Symbol(split(term.trmStr,":")[end])
+    if isdefined(Main,term_symbol)
+      if typeof(getfield(Main,term_symbol)) == Genotypes
+        deleteat!(modelTerms,whichterm)
+        push!(genotypes,getfield(Main,term_symbol))
+      end
+    end
+    whichterm += 1
+  end
+  if length(genotypes) != 0
+    mme.M = genotypes[1]
+  end
+  
+  return mme
 end
 
 """

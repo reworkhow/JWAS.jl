@@ -42,7 +42,7 @@ include("StructureEquationModel/SEM.jl")
 #output
 include("output.jl")
 
-export build_model,set_covariate,set_random,add_genotypes
+export build_model,set_covariate,set_random,add_genotypes,get_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe

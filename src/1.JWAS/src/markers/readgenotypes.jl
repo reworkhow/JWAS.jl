@@ -21,7 +21,7 @@ function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataF
         header = ["id"; string.(1:size(M,2))]
         printstyled("The header (marker IDs) is set to 1,2,...,#markers\n",bold=true)
     end
-    mme.M   = readgenotypes(M,rowID = rowID, header=header, center=center)
+    mme.M   = get_genotypes(M,rowID = rowID, header=header, center=center)
     if G_is_marker_variance == true
         mme.M.G = G
     else
@@ -58,7 +58,7 @@ function add_genotypes(mme::MME,file,G=false;
     if G != false && size(G,1) != mme.nModels
        error("The covariance matrix is not a ",mme.nModels," by ",mme.nModels," matrix.")
     end
-    mme.M   = readgenotypes(file,separator=separator,header=header,center=center)
+    mme.M   = get_genotypes(file,separator=separator,header=header,center=center)
     if G_is_marker_variance == true
         mme.M.G = G
     else
@@ -80,7 +80,7 @@ end
 #
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
-function readgenotypes(file::AbstractString;
+function get_genotypes(file::AbstractString;
                        separator=',',header=true,center=true)
     printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
     printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
@@ -113,7 +113,7 @@ function readgenotypes(file::AbstractString;
 end
 
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
-function readgenotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame};
+function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame};
                        rowID=false,header=false,center=true)
     if length(header) != (size(M,2)+1)
         header = ["id"; string.(1:size(M,2))]
