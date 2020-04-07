@@ -35,8 +35,27 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     # PRIORS
     ############################################################################
-    ##Phenotypes adjusted for all effects (assuming zeros now)
-    ycorr          = vec(Matrix(mme.ySparse))
+    ##Phenotypes adjusted for all effects
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
+    if mme.M != 0 && α!=zero(α)
+        ycorr      = ycorr - M*α
+    end
+    #if starting values for marker effects are provided,
+    #re-calculate mmeLhs and mmeRhs (non-genomic mixed model equation)
+    if mme.M != 0 && α!=zero(α)
+        ycorr[:]   = ycorr[:] + X*sol
+        Ri         = mkRi(mme,df,mme.invweights)
+        mme.mmeLhs = mme.X'Ri*mme.X
+        mme.mmeRhs = mme.X'Ri*ycorr
+        for random_term in mme.rndTrmVec
+          random_term.GiOld = zero(random_term.GiOld)
+        end
+        addVinv(mme)
+        for random_term in mme.rndTrmVec
+          random_term.GiOld = copy(random_term.GiNew)
+        end
+    end
+
     nTraits        = mme.nModels
     nObs           = div(length(ycorr),nTraits)
 
