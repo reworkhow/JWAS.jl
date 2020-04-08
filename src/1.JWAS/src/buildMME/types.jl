@@ -88,7 +88,13 @@ mutable struct Genotypes
   genetic_variance  #genetic variance
   G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
   scale             #scale parameter for marker effect variance (G)
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,false,false,false)
+  df                #degree of freedom
+
+  mArray            #a collection of matrices used in Bayesian Alphabet
+  mRinvArray        #a collection of matrices used in Bayesian Alphabet
+  mpRinvm           #a collection of matrices used in Bayesian Alphabet
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,
+                                         false,false,false,false,false,false,false)
 end
 
 mutable struct DF
