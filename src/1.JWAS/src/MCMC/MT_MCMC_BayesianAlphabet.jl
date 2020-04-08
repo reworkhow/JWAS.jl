@@ -38,7 +38,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ##Phenotypes adjusted for all effects
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
     if mme.M != 0 && α!=zero(α)
-        ycorr      = ycorr - M*α
+        ycorr      = ycorr - mme.M.genotypes*α
     end
     #if starting values for marker effects are provided,
     #re-calculate mmeLhs and mmeRhs (non-genomic mixed model equation)
@@ -72,7 +72,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         #Priors for marker covaraince matrix
         ########################################################################
         mGibbs                        = GibbsMats(mme.M.genotypes,Rinv)
-        nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
+        nObs,nMarkers                 = mGibbs.nrows,mGibbs.ncols
         mArray,mRinvArray,mpRinvm     = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
         if methods=="BayesL"# in BayesL mme.M.G is the scale Matrix, Sigma, in MTBayesLasso paper
             mme.M.G /= 4*(nTraits+1)
