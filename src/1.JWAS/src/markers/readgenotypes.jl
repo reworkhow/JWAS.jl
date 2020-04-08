@@ -21,12 +21,12 @@ function add_genotypes(mme::MME,M::Union{Array{Float64,2},Array{Float32,2},DataF
         header = ["id"; string.(1:size(M,2))]
         printstyled("The header (marker IDs) is set to 1,2,...,#markers\n",bold=true)
     end
-    mme.M   = get_genotypes(M,rowID = rowID, header=header, center=center)
-    if G_is_marker_variance == true
-        mme.M.G = G
-    else
-        mme.M.genetic_variance = G
-    end
+    mme.M   = get_genotypes(M,G,
+                            df = df,
+                            G_is_marker_variance = G_is_marker_variance,
+                            rowID = rowID,
+                            header=header,
+                            center=center)
     if mme.nModels == 1 #?move to set_marker_hyperparameters_variances_and_pi?
         mme.df.marker = Float32(df)
     else
@@ -58,12 +58,12 @@ function add_genotypes(mme::MME,file,G=false;
     if G != false && size(G,1) != mme.nModels
        error("The covariance matrix is not a ",mme.nModels," by ",mme.nModels," matrix.")
     end
-    mme.M   = get_genotypes(file,separator=separator,header=header,center=center)
-    if G_is_marker_variance == true
-        mme.M.G = G
-    else
-        mme.M.genetic_variance = G
-    end
+    mme.M   = get_genotypes(file,G,
+                            df = df,
+                            G_is_marker_variance = G_is_marker_variance,
+                            separator=separator,
+                            header=header,
+                            center=center)
     if mme.nModels == 1 #?move to set_marker_hyperparameters_variances_and_pi?
         mme.df.marker = Float32(df)
     else
@@ -80,8 +80,12 @@ end
 #
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
-function get_genotypes(file::AbstractString;
-                       separator=',',header=true,center=true)
+function get_genotypes(file::AbstractString,G=false;
+                       G_is_marker_variance = false,
+                       df = 4.0,
+                       separator=',',
+                       header=true,
+                       center=true)
     printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
     printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
 
@@ -108,13 +112,24 @@ function get_genotypes(file::AbstractString;
     markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
+    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
+    genotypes.df  = df
+    if G_is_marker_variance == true
+        genotypes.G = G
+    else
+        genotypes.genetic_variance = G
+    end
 
-    return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
+    return genotypes
 end
 
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
-function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame};
-                       rowID=false,header=false,center=true)
+function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
+                       df = 4.0,
+                       G_is_marker_variance = false,
+                       rowID=false,
+                       header=false,
+                       center=true)
     if length(header) != (size(M,2)+1)
         header = ["id"; string.(1:size(M,2))]
         printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
@@ -132,5 +147,13 @@ function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},D
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
 
-    return Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
+    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
+    genotypes.df  = df
+    if G_is_marker_variance == true
+        genotypes.G = G
+    else
+        genotypes.genetic_variance = G
+    end
+
+    return genotypes
 end
