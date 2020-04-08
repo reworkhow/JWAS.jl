@@ -65,7 +65,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.G   /= 8           #mme.M.G is the scale Matrix, Sigma
             mme.M.scale /= 8
             gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
-            gammaArray = rand(gammaDist,mme.M.nMarkers)
+            mme.M.gammaArray = rand(gammaDist,mme.M.nMarkers)
         end
         if methods=="GBLUP"
             mme.M.genotypes  = mme.M.genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
@@ -85,9 +85,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mme.M.markerID  = string.(1:mme.M.nObs) #pseudo markers of length=nObs
             mme.M.genotypes = L
         end
-        α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
+        mme.M.α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
         if methods == "GBLUP"
-            α  = L'α
+            mme.M.α  = L'mme.M.α
         end
         mme.M.β                                  = copy(α)          #partial marker effeccts used in BayesB
         mme.M.δ                                  = ones(typeof(α[1]),mme.M.nMarkers)   #inclusion indicator for marker effects
@@ -137,19 +137,19 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         if mme.M !=0
             if methods in ["BayesC","BayesB","BayesA"]
                 locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,mme.M.nMarkers) : mme.M.G)
-                nLoci = BayesABC!(mArray,mRinvArray,mpRinvm,ycorr,α,β,δ,mme.RNew,locus_effect_variances,π)
+                nLoci = BayesABC!(mme.M,ycorr,mme.RNew,locus_effect_variances)
             elseif methods=="RR-BLUP"
-                BayesC0!(mArray,mRinvArray,mpRinvm,ycorr,α,mme.RNew,mme.M.G)
+                BayesC0!(mme.M,ycorr,mme.RNew)
                 nLoci = mme.M.nMarkers
             elseif methods == "BayesL"
-                BayesL!(mArray,mRinvArray,mpRinvm,ycorr,α,gammaArray,mme.RNew,mme.M.G)
+                BayesL!(mme.M,ycorr,mme.RNew)
                 nLoci = mme.M.nMarkers
             elseif methods == "GBLUP"
-                ycorr = ycorr + mme.M.genotypes*α
-                lhs   = Rinv .+ mme.RNew./(mme.M.G*D)
-                mean1 = mme.M.genotypes'*(Rinv.*ycorr)./lhs
-                α     = mean1 + randn(mme.M.nObs).*sqrt.(mme.RNew./lhs)
-                ycorr = ycorr - mme.M.genotypes*α
+                ycorr       = ycorr + mme.M.genotypes*mme.M.α
+                lhs         = Rinv .+ mme.RNew./(mme.M.G*D)
+                mean1       = mme.M.genotypes'*(Rinv.*ycorr)./lhs
+                mme.M.α     = mean1 + randn(mme.M.nObs).*sqrt.(mme.RNew./lhs)
+                ycorr       = ycorr - mme.M.genotypes*mme.M.α
             end
             #sample Pi
             if estimatePi == true
@@ -184,11 +184,11 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             elseif methods == "BayesL"
                 ssq = 0.0
                 for i=1:size(α,1)
-                    ssq += α[i]^2/gammaArray[i]
+                    ssq += α[i]^2/mme.M.gammaArray[i]
                 end
                 mme.M.G = (ssq + mme.df.marker*mme.M.scale)/rand(Chisq(nLoci+mme.df.marker))
                # MH sampler of gammaArray (Appendix C in paper)
-                sampleGammaArray!(gammaArray,α,mme.M.G)
+                sampleGammaArray!(mme.M.gammaArray,α,mme.M.G)
             elseif methods == "GBLUP"
                 mme.M.G  = sample_variance(α./sqrt.(D), mme.M.nObs,mme.df.marker, mme.M.scale)
             else

@@ -1,3 +1,13 @@
+function BayesL!(genotypes,ycorr,vare)
+    BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            ycorr,genotypes.α,mme.M.gammaArray,mme.RNew,genotypes.G)
+end
+
+function BayesC0!(genotypes,ycorr,vare)
+    BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            ycorr,genotypes.α,[1.0],mme.RNew,genotypes.G)
+end
+
 function BayesL!(xArray,xRinvArray,xpRinvx,
                  yCorr,
                  α,gammaArray,
@@ -20,8 +30,4 @@ function BayesL!(xArray,xRinvArray,xpRinvx,
         α[j]     = mean + randn()*sqrt(invLhs*vRes)
         BLAS.axpy!(oldAlpha-α[j],x,yCorr)
     end
-end
-
-function BayesC0!(xArray,xRinvArray,xpRinvx,yCorr,α,vRes,vEff)
-    BayesL!(xArray,xRinvArray,xpRinvx,yCorr,α,[1.0],vRes,vEff)
 end
