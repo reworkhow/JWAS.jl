@@ -38,7 +38,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ##Phenotypes adjusted for all effects
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
     if mme.M != 0 && α!=zero(α)
-        ycorr      = ycorr - M*α
+        ycorr      = ycorr - mme.M.genotypes*α
     end
     #if starting values for marker effects are provided,
     #re-calculate mmeLhs and mmeRhs (non-genomic mixed model equation)
