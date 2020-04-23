@@ -85,6 +85,8 @@ mutable struct Genotypes
   sum2pq::AbstractFloat
   centered::Bool
   genotypes::Union{Array{Float64,2},Array{Float32,2}}
+  nLoci             #number of markers included in the model
+
   genetic_variance  #genetic variance
   G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
   scale             #scale parameter for marker effect variance (G)
@@ -110,9 +112,14 @@ mutable struct Genotypes
   meanVara2
   meanScaleVara
   meanScaleVara2
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,
-                                         false,false,false,false,false,false,false,false,false
-                                         false,false,false,false,false,false,false,false)
+
+  output_genotypes #output genotypes
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,a4,
+                                         false,false,false,false,
+                                         false,
+                                         false,false,false,
+                                         false,false,false,false,
+                                         false,false,false,false,false,false,false,false,false)
 end
 
 mutable struct DF

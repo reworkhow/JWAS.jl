@@ -59,44 +59,26 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             mGibbs                              = GibbsMats(Mi.genotypes,Rinv)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
-            if methods=="BayesB" #α=β.*δ
+            if Mi.method=="BayesB" #α=β.*δ
                 Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayeB
             end
-            if methods=="BayesL"         #in the MTBayesLasso paper
+            if Mi.method=="BayesL"         #in the MTBayesLasso paper
                 Mi.G   /= 8           #mme.M.G is the scale Matrix, Sigma
                 Mi.scale /= 8
                 gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
                 Mi.gammaArray = rand(gammaDist,mme.M.nMarkers)
             end
-            if methods=="GBLUP"
-                mme.M.genotypes  = mme.M.genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
-                G       = (mme.M.genotypes*mme.M.genotypes'+ I*0.00001)/mme.M.nMarkers
-                eigenG  = eigen(G)
-                L       = eigenG.vectors
-                D       = eigenG.values
-                # α is pseudo marker effects of length nobs (starting values = L'(starting value for BV)
-                mme.M.nMarkers= mme.M.nObs
-                #reset parameters in output
-                M2   = mme.output_genotypes ./ sqrt.(2*mme.M.alleleFreq.*(1 .- mme.M.alleleFreq))
-                M2Mt = M2*mme.M.genotypes'/mme.M.nMarkers
-                mme.output_genotypes = M2Mt*L*Diagonal(1 ./D)
-                #reset parameter in mme.M
-                mme.M.G         = mme.M.genetic_variance
-                mme.M.scale     = mme.M.G*(mme.df.marker-2)/mme.df.marker
-                mme.M.markerID  = string.(1:mme.M.nObs) #pseudo markers of length=nObs
-                mme.M.genotypes = L
+            Mi.α   = starting_value[(size(mme.mmeLhs,1)+1):end]
+            if Mi.method=="GBLUP"
+                D = GBLUP_setup(Mi)
             end
-            mme.M.α                            = starting_value[(size(mme.mmeLhs,1)+1):end]
-            if methods == "GBLUP"
-                mme.M.α  = L'mme.M.α
-            end
-            Mi.β                               = copy(α)          #partial marker effeccts used in BayesB
-            Mi.δ                               = ones(typeof(α[1]),Mi.nMarkers)   #inclusion indicator for marker effects
-            Mi.meanAlpha,Mi.meanAlpha2         = zero(α),zero(α)  #marker effects
-            Mi.meanDelta                       = zero(δ)          #inclusion indicator
-            Mi.mean_pi,Mi.mean_pi2             = 0.0,0.0          #inclusion probability
-            Mi.meanVara,Mi.meanVara2           = 0.0,0.0          #marker effect variances
-            Mi.meanScaleVara,Mi.meanScaleVara2 = 0.0,0.0          #scale parameter for prior of marker effect variance
+            Mi.β                               = copy(Mi.α)       #partial marker effeccts used in BayesB
+            Mi.δ                               = ones(typeof(Mi.α[1]),Mi.nMarkers)  #inclusion indicator for marker effects
+            Mi.meanAlpha,Mi.meanAlpha2         = zero(Mi.α),zero(Mi.α)  #marker effects
+            Mi.meanDelta                       = zero(δ)                #inclusion indicator
+            Mi.mean_pi,Mi.mean_pi2             = 0.0,0.0                #inclusion probability
+            Mi.meanVara,Mi.meanVara2           = 0.0,0.0                #marker effect variances
+            Mi.meanScaleVara,Mi.meanScaleVara2 = 0.0,0.0                #scale parameter for prior of marker effect variance
         end
     end
     #phenotypes corrected for all effects
@@ -140,23 +122,16 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             for Mi in mme.M
                 if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
-                    nLoci = BayesABC!(Mi,ycorr,mme.RNew,locus_effect_variances)
+                    BayesABC!(Mi,ycorr,mme.RNew,locus_effect_variances)
                 elseif Mi.method =="RR-BLUP"
                     BayesC0!(Mi,ycorr,mme.RNew)
-                    nLoci = Mi.nMarkers
                 elseif Mi.method == "BayesL"
                     BayesL!(Mi,ycorr,mme.RNew)
-                    nLoci = Mi.nMarkers
                 elseif Mi.method == "GBLUP"
-                    ycorr       = ycorr + mme.M.genotypes*mme.M.α
-                    lhs         = Rinv .+ mme.RNew./(mme.M.G*D)
-                    mean1       = mme.M.genotypes'*(Rinv.*ycorr)./lhs
-                    mme.M.α     = mean1 + randn(mme.M.nObs).*sqrt.(mme.RNew./lhs)
-                    ycorr       = ycorr - mme.M.genotypes*mme.M.α
+                    GBLUP!(Mi,ycorr,mme.Rnew,Rinv,D)
                 end
-                #sample Pi
                 if estimatePi == true #method specific pi?
-                    Mi.π = samplePi(nLoci, Mi.nMarkers)
+                    Mi.π = samplePi(Mi.nLoci, Mi.nMarkers)
                 end
             end
         end
@@ -202,7 +177,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             end
         end
         ########################################################################
-        # 2.5 Update priors using posteriors (empirical)
+        # 2.5 Update priors using posteriors (empirical) LATER
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0 && methods != "BayesB"
@@ -243,21 +218,23 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 G0Mean2 += (inv(mme.Gi) .^2  - G0Mean2 )/nsamples
             end
             if mme.M != 0
-                mme.M.meanAlpha  += (mme.M.α - mme.M.meanAlpha)/nsamples
-                mme.M.meanAlpha2 += (mme.M.α .^2 - mme.M.meanAlpha2)/nsamples
-                mme.M.meanDelta  += (mme.M.δ - mme.M.meanDelta)/nsamples
+                for Mi in mme.M
+                    Mi.meanAlpha  += (Mi.α - Mi.meanAlpha)/nsamples
+                    Mi.meanAlpha2 += (Mi.α .^2 - Mi.meanAlpha2)/nsamples
+                    Mi.meanDelta  += (Mi.δ - Mi.meanDelta)/nsamples
 
-                if estimatePi == true
-                    mme.M.mean_pi += (mme.M.π-mme.M.mean_pi)/nsamples
-                    mme.M.mean_pi2 += (mme.M.π .^2-mme.M.mean_pi2)/nsamples
-                end
-                if methods != "BayesB"
-                    mme.M.meanVara += (mme.M.G - mme.M.meanVara)/nsamples
-                    mme.M.meanVara2 += (mme.M.G .^2 - mme.M.meanVara2)/nsamples
-                end
-                if estimateScale == true
-                    mme.M.meanScaleVara += (mme.M.scale - mme.M.meanScaleVara)/nsamples
-                    mme.M.meanScaleVara2 += (mme.M.scale .^2 - mme.M.meanScaleVara2)/nsamples
+                    if Mi.estimatePi == true
+                        Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
+                        Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
+                    end
+                    if Mi.method != "BayesB"
+                        Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+                        Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+                    end
+                    if estimateScale == true
+                        Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
+                        Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+                    end
                 end
             end
         end

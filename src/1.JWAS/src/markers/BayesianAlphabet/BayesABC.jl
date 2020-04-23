@@ -1,8 +1,7 @@
 function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
-    nLoci = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+    Mi.nLoci = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
                       ycorr,genotypes.α,genotypes.β,genotypes.δ,mme.RNew,
                       locus_effect_variances,genotypes.π)
-    return nLoci
 end
 
 function BayesABC!(xArray,xRinvArray,xpRinvx,
