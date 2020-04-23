@@ -80,76 +80,53 @@ end
 #
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
-function get_genotypes(file::AbstractString,G=false;
-                       method = "RR-BLUP",
-                       G_is_marker_variance = false,
-                       df = 4.0,
-                       separator=',',
-                       header=true,
-                       center=true)
-    printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
-    printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
-
-    #get marker IDs
-    myfile = open(file)
-    row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
-    if header==true
-      markerID=string.(row1[2:end])  #skip header
+#2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
+function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},
+                       G=false;G_is_marker_variance = false,df = 4.0,
+                       method = "RR-BLUP",Pi = 0.0,estimatePi = true,
+                       separator=',',header=true,center=true,
+                       rowID=false)
+    if typeof(file) <: AbstractString
+        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
+        printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
+        #get marker IDs
+        myfile = open(file)
+        row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
+        if header==true
+            markerID=string.(row1[2:end])  #skip header
+        else
+            markerID=string.(1:length(row1[2:end]))
+        end
+        #set type for each column
+        ncol= length(row1)
+        etv = Array{DataType}(undef,ncol)
+        fill!(etv,Float64)
+        etv[1]=String
+        close(myfile)
+        #read a large genotype file
+        df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
+        obsID     = map(string,df[!,1])
+        genotypes = map(Float32,convert(Matrix,df[!,2:end]))
     else
-      markerID=string.(1:length(row1[2:end]))
+        if length(header) != (size(file,2)+1)
+            header = ["id"; string.(1:size(file,2))]
+            printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
+        end
+        if length(rowID) != size(file,1)
+            rowID = string.(1:size(file,1))
+            printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
+        end
+        markerID  = string.(header[2:end])
+        obsID     = map(string,rowID)
+        genotypes = map(Float32,convert(Matrix,file))
     end
-    #set type for each column
-    ncol= length(row1)
-    etv = Array{DataType}(undef,ncol)
-    fill!(etv,Float64)
-    etv[1]=String
-    close(myfile)
-    #read a large genotype file
-    df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
-    obsID     = map(string,df[!,1])
-    genotypes = map(Float32,convert(Matrix,df[!,2:end]))
+
+
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
-    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
-    genotypes.df  = df
-    if G_is_marker_variance == true
-        genotypes.G = G
-    else
-        genotypes.genetic_variance = G
-    end
-    genotypes.method = method
-
-    return genotypes
-end
-
-#2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
-function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                       method = "RR-BLUP",
-                       df = 4.0,
-                       G_is_marker_variance = false,
-                       rowID=false,
-                       header=false,
-                       center=true)
-    if length(header) != (size(M,2)+1)
-        header = ["id"; string.(1:size(M,2))]
-        printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
-    end
-    if length(rowID) != size(M,1)
-        rowID = string.(1:size(M,1))
-        printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
-    end
-    markerID  = string.(header[2:end])
-    obsID     = map(string,rowID)
-    genotypes = map(Float32,convert(Matrix,M))
-    #preliminary summary of genotype (duplication of the function above)
-    nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
-    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
-    p             = markerMeans/2.0       #allele frequency
-    sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
-
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
     genotypes.df  = df
     if G_is_marker_variance == true
