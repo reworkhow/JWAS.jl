@@ -90,6 +90,8 @@ mutable struct Genotypes
   scale             #scale parameter for marker effect variance (G)
   df                #degree of freedom
 
+  method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
+
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
   mpRinvm           #a collection of matrices used in Bayesian Alphabet

@@ -81,6 +81,7 @@ end
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
 function get_genotypes(file::AbstractString,G=false;
+                       method = "RR-BLUP",
                        G_is_marker_variance = false,
                        df = 4.0,
                        separator=',',
@@ -119,12 +120,14 @@ function get_genotypes(file::AbstractString,G=false;
     else
         genotypes.genetic_variance = G
     end
+    genotypes.method = method
 
     return genotypes
 end
 
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
 function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
+                       method = "RR-BLUP",
                        df = 4.0,
                        G_is_marker_variance = false,
                        rowID=false,
@@ -154,6 +157,7 @@ function get_genotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},D
     else
         genotypes.genetic_variance = G
     end
+    genotypes.method = method
 
     return genotypes
 end
