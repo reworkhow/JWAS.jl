@@ -81,9 +81,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
     whichterm += 1
   end
   if length(genotypes) != 0
-    mme.M = genotypes[1]
+    mme.M = genotypes
   end
-  
+
   return mme
 end
 
