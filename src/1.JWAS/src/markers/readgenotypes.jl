@@ -104,9 +104,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         etv[1]=String
         close(myfile)
         #read a large genotype file
-        df        = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
-        obsID     = map(string,df[!,1])
-        genotypes = map(Float32,convert(Matrix,df[!,2:end]))
+        data      = CSV.read(file,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
+        obsID     = map(string,data[!,1])
+        genotypes = map(Float32,convert(Matrix,data[!,2:end]))
     else
         if length(header) != (size(file,2)+1)
             header = ["id"; string.(1:size(file,2))]
@@ -128,13 +128,15 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
-    genotypes.df  = df
     if G_is_marker_variance == true
         genotypes.G = G
     else
         genotypes.genetic_variance = G
     end
-    genotypes.method = method
+    genotypes.method     = method
+    genotypes.estimatePi = estimatePi
+    genotypes.Pi         = Pi
+    genotypes.df         = df
 
     return genotypes
 end

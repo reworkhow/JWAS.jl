@@ -26,6 +26,7 @@ include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
 include("markers/BayesianAlphabet/BayesC0L.jl")
+include("markers/BayesianAlphabet/GBLUP.jl")
 include("markers/BayesianAlphabet/MTBayesABC.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
@@ -255,8 +256,7 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo.starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
-        Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
-        mme.MCMCinfo.Pi = Pi
+        set_marker_hyperparameters_variances_and_pi(mme)
     end
 
     if mme.output_ID!=0
@@ -401,8 +401,6 @@ function check_genotypes(mme)
         end
     end
 end
-
-
 
 function check_outputID(mme)
     #Genotyped individuals are usaully not many, and are used in GWAS (complete
@@ -579,9 +577,9 @@ function init_mixed_model_equations(mme,df,sol)
     if mme.M == 0                          #PBLUP
         nsol = size(mme.mmeLhs,1)
     elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
-        nsol = size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels
+        nsol = size(mme.mmeLhs,1)+sum(Mi.nMarkers for Mi in mme.M)
     elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
-        nsol = size(mme.mmeLhs,1)+mme.M.nObs*mme.nModels
+        nsol = size(mme.mmeLhs,1)+mme.M[1].nObs*mme.nModels
     else
         error("Starting values are not allowed.")
     end

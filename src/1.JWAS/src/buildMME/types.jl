@@ -93,6 +93,7 @@ mutable struct Genotypes
   df                #degree of freedom
 
   method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
+  estimatePi
 
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
@@ -101,7 +102,7 @@ mutable struct Genotypes
   α                 #array of current MCMC samples
   β
   δ
-  π
+  Pi
 
   meanAlpha         #arrays of results
   meanAlpha2
@@ -116,7 +117,7 @@ mutable struct Genotypes
   output_genotypes #output genotypes
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,a4,
                                          false,false,false,false,
-                                         false,
+                                         false,false,
                                          false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false)

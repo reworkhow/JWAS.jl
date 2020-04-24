@@ -74,11 +74,13 @@ end
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
     if mme.output_ID != 0 && single_step_analysis==false
-        if mme.output_ID != mme.M.obsID
-            Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,mme.M.obsID))
-            mme.output_genotypes =  Zo*mme.M.genotypes
-        else
-            mme.output_genotypes =  mme.M.genotypes
+        for Mi in mme.M
+            if mme.output_ID != Mi.obsID
+                Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,Mi.obsID))
+                Mi.output_genotypes =  Zo*Mi.genotypes
+            else
+                Mi.output_genotypes =  Mi.genotypes
+            end
         end
     end
     #***************************************************************************
@@ -87,11 +89,13 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     #individuals with repeated records or individuals without records
     #
     #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M.obsID && single_step_analysis==false
-        Z  = map(Float32,mkmat_incidence_factor(mme.obsID,mme.M.obsID))
-        mme.M.genotypes = Z*mme.M.genotypes
-        mme.M.obsID     = mme.obsID
-        mme.M.nObs      = length(mme.M.obsID)
+    if mme.obsID != mme.M[1].obsID && single_step_analysis==false
+        for Mi in mme.M
+            Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+            Mi.genotypes = Z*Mi.genotypes
+            Mi.obsID     = mme.obsID
+            Mi.nObs      = length(mme.obsID)
+        end
     end
 end
 
@@ -120,48 +124,53 @@ end
 ################################################################################
 #Set Marker Effcets Hyperparameters: Variances and Pi
 ################################################################################
-function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
-  #multi-trait (Pi)
-  if mme.nModels !=1 && Pi==0.0 && !(methods in ["RR-BLUP","BayesL"])
-      println()
-      printstyled("Pi (Π) is not provided.\n",bold=false)
-      printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
-      mykey=Array{Float64}(undef,0)
-      ntraits=mme.nModels
-      Pi=Dict{Array{Float64,1},Float64}()
-      #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
-      for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
-        Pi[parse.(Float64, split(i,""))]=0.0
-      end
-      Pi[ones(ntraits)]=1.0
-  end
-  #marker effect variances
-  if mme.M.G == false && methods!="GBLUP"
-      genetic2marker(mme.M,Pi)
-      println()
-      if mme.nModels != 1
-        if !isposdef(mme.M.G) #also work for scalar
-          error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+function set_marker_hyperparameters_variances_and_pi(mme::MME)
+    if mme.M != 0
+        for Mi in mme.M
+            #(1) Pi in multi-trait analysis
+            if mme.nModels !=1 && Mi.Pi==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
+                println()
+                printstyled("Pi (Π) is not provided.\n",bold=false)
+                printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
+                mykey=Array{Float64}(undef,0)
+                ntraits=mme.nModels
+                Pi=Dict{Array{Float64,1},Float64}()
+                #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
+                for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
+                    Pi[parse.(Float64, split(i,""))]=0.0
+                end
+                Pi[ones(ntraits)]=1.0
+                Mi.Pi = Pi
+            end
+            #(2) marker effect variances
+            if Mi.G == false && Mi.method!="GBLUP"
+                genetic2marker(Mi,Pi)
+                println()
+                if mme.nModels != 1
+                  if !isposdef(Mi.G) #also work for scalar
+                    error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+                  end
+                  println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
+                  println("The mean of the prior for the marker effects covariance matrix is:")
+                  Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                else
+                  if !isposdef(Mi.G) #positive scalar (>0)
+                    error("Marker effects variance is negative!")
+                  end
+                  println("The prior for marker effects variance is calculated from the genetic variance and π.")
+                  print("The mean of the prior for the marker effects variance is: ")
+                  print(round.(Mi.G,digits=6))
+                end
+                print("\n\n\n")
+            end
+            #(3) scale parameter for marker effect variance
+            if mme.nModels == 1
+                Mi.scale = Mi.G*(Mi.df-2)/Mi.df
+            else
+                Mi.scale = Mi.G*(Mi.df - mme.nModels - 1)
+            end
         end
-        println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
-        println("The mean of the prior for the marker effects covariance matrix is:")
-        Base.print_matrix(stdout,round.(mme.M.G,digits=6))
-      else
-        if !isposdef(mme.M.G) #positive scalar (>0)
-          error("Marker effects variance is negative!")
-        end
-        println("The prior for marker effects variance is calculated from the genetic variance and π.")
-        print("The mean of the prior for the marker effects variance is: ")
-        print(round.(mme.M.G,digits=6))
-      end
-      print("\n\n\n")
-  end
-  if mme.nModels == 1
-      mme.M.scale = mme.M.G*(mme.df.marker-2)/mme.df.marker #scale parameter for marker effect variance
-  else
-      mme.M.scale = mme.M.G*(mme.df.marker - mme.nModels - 1)
-  end
-  return Pi
+    end
 end
 
 function genetic2marker(M::Genotypes,Pi::Dict)
