@@ -398,18 +398,18 @@ function check_outputID(mme)
     if mme.MCMCinfo.outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0 #all genotyped inds if no output ID
-        mme.output_ID = copy(mme.M.obsID)
+        mme.output_ID = copy(mme.M[1].obsID)
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #all inds in PBLUP
         mme.output_ID = copy(mme.ped.IDs)
     end
 
     single_step_analysis = mme.MCMCinfo.single_step_analysis
     if single_step_analysis == false && mme.M != 0 #complete genomic data
-        if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
+        if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M[1].obsID)
             printstyled("Testing individuals are not a subset of ",
             "genotyped individuals (complete genomic data,non-single-step). ",
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
-            mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
+            mme.output_ID = intersect(mme.output_ID,mme.M[1].obsID)
         end
     elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
@@ -422,7 +422,7 @@ function check_outputID(mme)
     end
     #Set ouput IDs to all genotyped inds in complete genomic data analysis for h² estimation
     if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.M != 0
-        mme.output_ID = copy(mme.M.obsID)
+        mme.output_ID = copy(mme.M[1].obsID)
     end
 
 end
@@ -451,11 +451,11 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     phenoID = df[!,1]
     single_step_analysis = (mme.MCMCinfo != false ? mme.MCMCinfo.single_step_analysis : false)
     if single_step_analysis == false && mme.M != 0 #complete genomic data
-        if !issubset(phenoID,mme.M.obsID)
+        if !issubset(phenoID,mme.M[1].obsID)
             printstyled("Phenotyped individuals are not a subset of ",
             "genotyped individuals (complete genomic data,non-single-step). ",
             "Only use phenotype information for genotyped individuals.",bold=false,color=:red)
-            index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
+            index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
         end
         printstyled("The number of observations with both genotypes and phenotypes used ",
@@ -495,7 +495,7 @@ function set_default_priors_for_variance_components(mme,df)
   phenovar  = diagm(0=>myvar)
   h2        = 0.5
 
-  genetic_random_count    = (mme.M!=0 ? 1 : 0)
+  genetic_random_count    = (mme.M!=0 ? length(mme.M) : 0)
   nongenetic_random_count = 1
   for random_term in mme.rndTrmVec
     if random_term.randomType == "A"
@@ -510,13 +510,17 @@ function set_default_priors_for_variance_components(mme,df)
   vare = phenovar*h2/nongenetic_random_count
 
   #genetic variance or marker effect variance
-  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
-    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    if mme.nModels==1
-      mme.M.genetic_variance = varg[1,1]
-    elseif mme.nModels>1
-      mme.M.genetic_variance = varg
-    end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+  if mme.M!=0
+    for Mi in mme.M
+      if Mi.G == false && Mi.genetic_variance == false
+          printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+          if mme.nModels==1
+              Mi.genetic_variance = varg[1,1]
+          elseif mme.nModels>1
+              Mi.genetic_variance = varg
+          end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+      end
+    end
   end
   #residual effects
   if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
