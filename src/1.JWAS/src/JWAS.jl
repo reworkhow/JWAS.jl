@@ -378,8 +378,12 @@ function check_pedigree(mme,df,pedigree)
     end
     if mme.ped != 0
         pedID=map(string,collect(keys(mme.ped.idMap)))
-        if mme.M!=0 && !issubset(mme.M.obsID,pedID)
-            error("Not all genotyped individuals are found in pedigree!")
+        if mme.M!=0
+            for Mi in mme.M
+                if !issubset(Mi.obsID,pedID)
+                    error("Not all genotyped individuals are found in pedigree!")
+                end
+            end
         end
     end
 end
