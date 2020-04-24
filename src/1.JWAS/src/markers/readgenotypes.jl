@@ -135,7 +135,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     end
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
-    genotypes.Pi         = Pi
+    genotypes.π          = Pi
     genotypes.df         = df
 
     return genotypes

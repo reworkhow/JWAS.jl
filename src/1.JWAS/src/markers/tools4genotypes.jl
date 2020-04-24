@@ -128,7 +128,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
     if mme.M != 0
         for Mi in mme.M
             #(1) Pi in multi-trait analysis
-            if mme.nModels !=1 && Mi.Pi==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
+            if mme.nModels !=1 && Mi.π==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
                 println()
                 printstyled("Pi (Π) is not provided.\n",bold=false)
                 printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
@@ -140,11 +140,11 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                     Pi[parse.(Float64, split(i,""))]=0.0
                 end
                 Pi[ones(ntraits)]=1.0
-                Mi.Pi = Pi
+                Mi.π = Pi
             end
             #(2) marker effect variances
             if Mi.G == false && Mi.method!="GBLUP"
-                genetic2marker(Mi,Pi)
+                genetic2marker(Mi,Mi.π)
                 println()
                 if mme.nModels != 1
                   if !isposdef(Mi.G) #also work for scalar

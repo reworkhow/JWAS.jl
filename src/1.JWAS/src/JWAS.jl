@@ -342,7 +342,7 @@ function errors_args(mme)
             end
 
             if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
-                if Mi.Pi != false
+                if Mi.π != false
                     error(Mi.method," runs with π = false.")
                 elseif Mi.estimatePi == true
                     error(Mi.method," runs with estimatePi = false.")
@@ -360,11 +360,11 @@ function errors_args(mme)
                     error("SSGBLUP is not available")
                 end
             end
-            if mme.nModels > 1 && Mi.Pi != 0.0
-                if round(sum(values(Pi)),digits=2)!=1.0
+            if mme.nModels > 1 && Mi.π != 0.0
+                if round(sum(values(Mi.π)),digits=2)!=1.0
                   error("Summation of probabilities of Pi is not equal to one.")
                 end
-                if typeof(Pi) <: Number
+                if typeof(Mi.π) <: Number
                     error("Pi cannot be a number in multi-trait analysis.")
                 end
             end

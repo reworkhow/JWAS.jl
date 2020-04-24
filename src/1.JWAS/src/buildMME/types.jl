@@ -98,11 +98,12 @@ mutable struct Genotypes
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
   mpRinvm           #a collection of matrices used in Bayesian Alphabet
+  D                 #eigen values used in GBLUP
 
   α                 #array of current MCMC samples
   β
   δ
-  Pi
+  π
 
   meanAlpha         #arrays of results
   meanAlpha2
@@ -118,7 +119,7 @@ mutable struct Genotypes
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,a4,
                                          false,false,false,false,
                                          false,false,
-                                         false,false,false,
+                                         false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false)
 end
