@@ -77,6 +77,8 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
 end
 
 mutable struct Genotypes
+  name                            #name for this category
+
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
   nObs::Int64                     #length of obsID
@@ -94,11 +96,13 @@ mutable struct Genotypes
 
   method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
   estimatePi
+  estimateScale
 
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
   mpRinvm           #a collection of matrices used in Bayesian Alphabet
   D                 #eigen values used in GBLUP
+  gammaArray        #array used in Bayesian LASSO
 
   α                 #array of current MCMC samples
   β
@@ -116,10 +120,10 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,a4,
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,a1,a2,a3,a4,a5,a6,a7,a8,a4,
                                          false,false,false,false,
-                                         false,false,
-                                         false,false,false,false,
+                                         false,false,false,
+                                         false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false)
 end

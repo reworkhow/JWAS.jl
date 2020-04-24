@@ -66,25 +66,29 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 Mi.G   /= 8           #mme.M.G is the scale Matrix, Sigma
                 Mi.scale /= 8
                 gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
-                Mi.gammaArray = rand(gammaDist,mme.M.nMarkers)
+                Mi.gammaArray = rand(gammaDist,Mi.nMarkers)
             end
             Mi.α   = starting_value[(size(mme.mmeLhs,1)+1):end]
             if Mi.method=="GBLUP"
-                D = GBLUP_setup(Mi)
+                Mi.D = GBLUP_setup(Mi)
             end
             Mi.β                               = copy(Mi.α)       #partial marker effeccts used in BayesB
             Mi.δ                               = ones(typeof(Mi.α[1]),Mi.nMarkers)  #inclusion indicator for marker effects
             Mi.meanAlpha,Mi.meanAlpha2         = zero(Mi.α),zero(Mi.α)  #marker effects
-            Mi.meanDelta                       = zero(δ)                #inclusion indicator
+            Mi.meanDelta                       = zero(Mi.δ)                #inclusion indicator
             Mi.mean_pi,Mi.mean_pi2             = 0.0,0.0                #inclusion probability
             Mi.meanVara,Mi.meanVara2           = 0.0,0.0                #marker effect variances
             Mi.meanScaleVara,Mi.meanScaleVara2 = 0.0,0.0                #scale parameter for prior of marker effect variance
         end
     end
     #phenotypes corrected for all effects
-    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
-    if mme.M != 0 && α!=zero(α)
-        ycorr = ycorr - mme.M.genotypes*α
+    ycorr  = vec(Matrix(mme.ySparse)-mme.X*sol)
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.α != zero(Mi.α)
+                ycorr = ycorr - Mi.genotypes*Mi.α
+            end
+        end
     end
     ############################################################################
     #  SET UP OUTPUT MCMC samples
@@ -128,7 +132,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 elseif Mi.method == "BayesL"
                     BayesL!(Mi,ycorr,mme.RNew)
                 elseif Mi.method == "GBLUP"
-                    GBLUP!(Mi,ycorr,mme.Rnew,Rinv,D)
+                    GBLUP!(Mi,ycorr,mme.RNew,Rinv,Mi.D)
                 end
                 if estimatePi == true #method specific pi?
                     Mi.π = samplePi(Mi.nLoci, Mi.nMarkers)
@@ -156,21 +160,21 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         if mme.M != 0 && mme.MCMCinfo.estimate_variance == true #methd specific estimate_variance
             for Mi in mme.M
                 if Mi.method in ["BayesC","RR-BLUP"]
-                    Mi.G  = sample_variance(α, nLoci, mme.df.marker, mme.M.scale)
+                    Mi.G  = sample_variance(Mi.α, Mi.nLoci, Mi.df, Mi.scale)
                 elseif Mi.method == "BayesB"
-                    for j=1:mme.M.nMarkers
-                        Mi.G[j] = sample_variance(β[j],1,mme.df.marker, mme.M.scale)
+                    for j=1:Mi.nMarkers
+                        Mi.G[j] = sample_variance(Mi.β[j],1,Mi.df, Mi.scale)
                     end
                 elseif Mi.method == "BayesL"
                     ssq = 0.0
-                    for i=1:size(α,1)
-                        ssq += α[i]^2/Mi.gammaArray[i]
+                    for i=1:size(Mi.α,1)
+                        ssq += Mi.α[i]^2/Mi.gammaArray[i]
                     end
-                    Mi.G = (ssq + mme.df.marker*Mi.scale)/rand(Chisq(nLoci+mme.df.marker))
+                    Mi.G = (ssq + Mi.df*Mi.scale)/rand(Chisq(Mi.nLoci+Mi.df))
                     # MH sampler of gammaArray (Appendix C in paper)
-                    sampleGammaArray!(Mi.gammaArray,α,mme.M.G)
+                    sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)
                 elseif Mi.method == "GBLUP"
-                    Mi.G  = sample_variance(α./sqrt.(D), Mi.nObs,mme.df.marker, Mi.scale)
+                    Mi.G  = sample_variance(Mi.α./sqrt.(Mi.D), Mi.nObs,Mi.df, Mi.scale)
                 else
                     error("Sampling of marker effect variances is not available")
                 end
@@ -202,9 +206,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             if mme.M != 0
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),mme.M.π,mme.M.α,mme.M.G,outfile)
-            else
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),false,false,false,outfile)
+                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             end
 
             nsamples = (iter-burnin)/output_samples_frequency
@@ -257,23 +259,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
       end
     end
     if methods == "GBLUP"
-        mv(output_file*"_marker_effects_variances.txt",output_file*"_genetic_variance(REML).txt")
+        for Mi in mme.M
+            mv(output_file*"_marker_effects_variances"*"_"*Mi.name*".txt",output_file*"_genetic_variance(REML)"*"_"*Mi.name*".txt")
+        end
     end
     output=output_result(mme,output_file,
                          solMean,meanVare,
                          mme.pedTrmVec!=0 ? G0Mean : false,
-                         mme.M != 0 ? mme.M.meanAlpha : false,
-                         mme.M != 0 ? mme.M.meanDelta : false,
-                         mme.M != 0 ? mme.M.meanVara : false,
-                         mme.M != 0 ? estimatePi : false,
-                         mme.M != 0 ? mme.M.mean_pi : false,
-                         mme.M != 0 ? estimateScale : false,
-                         mme.M != 0 ? mme.M.meanScaleVara : false,
                          solMean2,meanVare2,
-                         mme.pedTrmVec!=0 ? mme.M.G0Mean2 : false,
-                         mme.M != 0 ? mme.M.meanAlpha2 : false,
-                         mme.M != 0 ? mme.M.meanVara2 : false,
-                         mme.M != 0 ? mme.M.mean_pi2 : false,
-                         mme.M != 0 ? mme.M.meanScaleVara2 : false)
+                         mme.pedTrmVec!=0 ? G0Mean2 : false)
     return output
 end

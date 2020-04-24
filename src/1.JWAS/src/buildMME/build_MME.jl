@@ -75,7 +75,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
     if isdefined(Main,term_symbol)
       if typeof(getfield(Main,term_symbol)) == Genotypes
         deleteat!(modelTerms,whichterm)
-        push!(genotypes,getfield(Main,term_symbol))
+        genotypei = getfield(Main,term_symbol)
+        genotypei.name = string(term_symbol)
+        push!(genotypes,genotypei)
       end
     end
     whichterm += 1

@@ -51,15 +51,8 @@ end
 #are calculated from files storing MCMC samples at the end of MCMC.
 ################################################################################
 function output_result(mme,output_file,
-                       solMean,meanVare,
-                       G0Mean,meanAlpha,meanDelta,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,
-                       solMean2      = missing,
-                       meanVare2     = missing,
-                       G0Mean2       = missing,
-                       meanAlpha2    = mme.nModels == 1 ? missing : fill(missing,mme.nModels),
-                       meanVara2     = missing,
-                       mean_pi2      = missing,
-                       meanScaleVar2 = missing)
+                       solMean,meanVare,G0Mean,
+                       solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
   location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
@@ -71,34 +64,35 @@ function output_result(mme,output_file,
   end
 
   if mme.M != 0
-    if mme.nModels == 1
-        meanAlpha =[meanAlpha]
-        meanAlpha2=[meanAlpha2]
-        meanDelta = [meanDelta]
-    end
-    traiti      = 1
-    whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
-    whichmarker = mme.M.markerID
-    whicheffect = meanAlpha[traiti]
-    whicheffectsd = sqrt.(abs.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
-    whichdelta    = meanDelta[traiti]
-    for traiti in 2:mme.nModels
-        whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(mme.M.markerID)))
-        whichmarker    = vcat(whichmarker,mme.M.markerID)
-        whicheffect    = vcat(whicheffect,meanAlpha[traiti])
-        whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)))
-        whichdelta     = vcat(whichdelta,meanDelta[traiti])
-    end
-    output["marker effects"]=
-    DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
+      for Mi in mme.M
+          if mme.nModels == 1
+              Mi.meanAlpha =[Mi.meanAlpha]
+              Mi.meanAlpha2=[Mi.meanAlpha2]
+              Mi.meanDelta =[Mi.meanDelta]
+          end
+          traiti      = 1
+          whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
+          whichmarker = Mi.markerID
+          whicheffect = Mi.meanAlpha[traiti]
+          whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
+          whichdelta    = Mi.meanDelta[traiti]
+          for traiti in 2:mme.nModels
+              whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
+              whichmarker    = vcat(whichmarker,Mi.markerID)
+              whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
+              whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
+              whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+          end
+          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
 
-    output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
-    if estimatePi == true
-        output["Pi"] = dict2dataframe(mean_pi,mean_pi2)
-    end
-    if estimateScale == true
-        output["ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
-    end
+          output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
+          if Mi.estimatePi == true
+              output["Pi"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+          end
+          if Mi.estimateScale == true
+              output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVar,Mi.meanScaleVar2)
+          end
+      end
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
@@ -173,7 +167,7 @@ end
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
 """
-function getEBV(mme,sol,α,traiti)
+function getEBV(mme,sol,traiti)
     traiti = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
@@ -190,7 +184,13 @@ function getEBV(mme,sol,α,traiti)
     end
 
     if mme.M != 0
-        EBV += mme.output_genotypes*α
+        for Mi in mme.M
+            if mme.nModels == 1
+                EBV += Mi.output_genotypes*Mi.α
+            else
+                EBV += Mi.output_genotypes*Mi.α[traiti]
+            end
+        end
     end
 
     if haskey(mme.output_X,"J") #single-step analyis
@@ -249,11 +249,13 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       push!(outvar,"polygenic_effects_variance")
   end
   if mme.M !=0 #write samples for marker effects to a text file
-      for traiti in 1:ntraits
-          push!(outvar,"marker_effects_"*string(mme.lhsVec[traiti]))
+      for Mi in mme.M
+          for traiti in 1:ntraits
+              push!(outvar,"marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti]))
+          end
+          push!(outvar,"marker_effects_variances"*"_"*Mi.name)
+          push!(outvar,"pi"*"_"*Mi.name)
       end
-      push!(outvar,"marker_effects_variances")
-      push!(outvar,"pi")
   end
 
   #non-marker location parameters
@@ -306,8 +308,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   if mme.M !=0
-      for traiti in 1:ntraits
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID),',')
+      for Mi in mme.M
+          for traiti in 1:ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],transubstrarr(Mi.markerID),',')
+          end
       end
   end
   if mme.pedTrmVec != 0
@@ -329,14 +333,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   return outfile
 end
 """
-    output_MCMC_samples(mme,sol,vRes,G0,π=false,α=false,locusEffectVar=false,outfile=false)
+    output_MCMC_samples(mme,sol,vRes,G0,outfile=false)
 
 (internal function) Save MCMC samples every output_samples_frequency iterations to the text file.
 """
 function output_MCMC_samples(mme,sol,vRes,G0,
-                             π=false,
-                             α=false,
-                             locusEffectVar=false,
                              outfile=false)
   ntraits     = size(mme.lhsVec,1)
   #location parameters
@@ -353,26 +354,28 @@ function output_MCMC_samples(mme,sol,vRes,G0,
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
   end
   if mme.M != 0 && outfile != false
-      if ntraits == 1
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α',',')
-      else
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],α[traiti]',',')
+      for Mi in mme.M
+          if ntraits == 1
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[1])],Mi.α',',')
+          else
+              for traiti in 1:ntraits
+                  writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
+              end
           end
-      end
-      if locusEffectVar!=false
-          writedlm(outfile["marker_effects_variances"],locusEffectVar',',')
-      end
-      writedlm(outfile["pi"],π,',')
-      if !(typeof(π) <: Number) #add a blank line
-          println(outfile["pi"])
+          if Mi.G!=false
+              writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
+          end
+          writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
+          if !(typeof(Mi.π) <: Number) #add a blank line
+              println(outfile["pi"*"_"*Mi.name])
+          end
       end
   end
 
   if mme.MCMCinfo.outputEBV == true #add error message
       if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
-             myEBV = getEBV(mme,sol,α,1)
+             myEBV = getEBV(mme,sol,1)
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
                  mygvar = var(myEBV)
@@ -380,10 +383,10 @@ function output_MCMC_samples(mme,sol,vRes,G0,
                  writedlm(outfile["heritability"],mygvar/(mygvar+vRes),',')
              end
           else
-              EBVmat = myEBV = getEBV(mme,sol,α[1],1)
+              EBVmat = myEBV = getEBV(mme,sol,1)
               writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
               for traiti in 2:ntraits
-                  myEBV = getEBV(mme,sol,α[traiti],traiti) #actually BV
+                  myEBV = getEBV(mme,sol,traiti) #actually BV
                   writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
                   EBVmat = [EBVmat myEBV]
               end

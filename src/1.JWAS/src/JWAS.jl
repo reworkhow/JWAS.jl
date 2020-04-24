@@ -306,7 +306,9 @@ function runMCMC(mme::MME,df;
       CSV.write(replace(key," "=>"_")*".txt",value)
     end
     if methods == "GBLUP"
-        mv("marker_effects_variance.txt","genetic_variance(REML).txt")
+        for Mi in mme.M
+            mv("marker_effects_variance_"*Mi.name*".txt","genetic_variance(REML)_"*Mi.name*".txt")
+        end
     end
     printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
     versioninfo()
@@ -398,6 +400,11 @@ function check_genotypes(mme)
             if obsID != Mi.obsID
                 error("genotypic information is not provided for same individuals")
             end
+        end
+    end
+    if mme.M != 0 && mme.MCMCinfo.single_step_analysis == true
+        if length(mme.M) != 1
+            error("Now only one genomic category is allowed in single-step analysis.")
         end
     end
 end
@@ -705,9 +712,11 @@ function getMCMCinfo(mme)
             if mme.M == 0
                 error("Please add genotypes using add_genotypes().")
             end
-            @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.genetic_variance)
-            @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
-            @printf("%-30s %20s\n","π",MCMCinfo.Pi)
+            for Mi in mme.M
+                @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
+                @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
+                @printf("%-30s %20s\n","π",Mi.π)
+            end
         end
     else
         for i in mme.rndTrmVec
