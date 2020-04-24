@@ -205,6 +205,7 @@ function runMCMC(mme::MME,df;
     #users need to provide high-quality pedigree file
     #println("calling check_pedigree(mme,df,pedigree)")
     check_pedigree(mme,df,pedigree)
+    check_genotypes(mme)
     #user-defined IDs to return genetic values (EBVs), defaulting to all genotyped
     #individuals in genomic analysis
     #println("calling check_outputID(mme)")
@@ -219,8 +220,10 @@ function runMCMC(mme::MME,df;
     #double precision
     if double_precision == true
         if mme.M != 0
-            mme.M.genotypes = map(Float64,mme.M.genotypes)
-            mme.M.G         = map(Float64,mme.M.G)
+            for Mi in mme.M
+                Mi.genotypes = map(Float64,Mi.genotypes)
+                Mi.G         = map(Float64,Mi.G)
+            end
         end
         for random_term in mme.rndTrmVec
             random_term.Vinv  = map(Float64,random_term.Vinv)
@@ -387,6 +390,19 @@ function check_pedigree(mme,df,pedigree)
         end
     end
 end
+
+function check_genotypes(mme)
+    if mme.M != 0
+        obsID = mme.M[1].obsID
+        for Mi in mme.M
+            if obsID != Mi.obsID
+                error("genotypic information is not provided for same individuals")
+            end
+        end
+    end
+end
+
+
 
 function check_outputID(mme)
     #Genotyped individuals are usaully not many, and are used in GWAS (complete
