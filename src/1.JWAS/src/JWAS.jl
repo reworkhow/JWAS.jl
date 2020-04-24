@@ -201,7 +201,7 @@ function runMCMC(mme::MME,df;
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
     #check errors in function arguments
-    errors_args(mme,methods)
+    errors_args(mme)
     #users need to provide high-quality pedigree file
     #println("calling check_pedigree(mme,df,pedigree)")
     check_pedigree(mme,df,pedigree)
@@ -323,7 +323,7 @@ end
 # 6) output IDs
 #
 ################################################################################
-function errors_args(mme,methods)
+function errors_args(mme)
     if mme.mmePos != 1
       error("Please build your model again using the function build_model().")
     end
@@ -332,71 +332,43 @@ function errors_args(mme,methods)
         error("output_samples_frequency should be an integer > 0.")
     end
 
-    Pi         = mme.MCMCinfo.Pi
-    estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP","conventional (no markers)"])
-        error(methods," is not available in JWAS. Please read the documentation.")
-    end
+    if mme.M != 0
+        for Mi in mme.M
+            if !(Mi.method in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP"])
+                error(Mi.method," is not available in JWAS. Please read the documentation.")
+            end
 
-    if methods == "conventional (no markers)"
-        if mme.M!=0
-            error("Conventional analysis runs without genotypes!")
-        elseif estimatePi == true
-            error("conventional (no markers) analysis runs with estimatePi = false.")
-        end
-    elseif methods=="RR-BLUP"
-        if mme.M == 0
-            error("RR-BLUP runs with genotypes")
-        elseif Pi != 0.0
-            error("RR-BLUP runs with π=0.")
-        elseif estimatePi == true
-            error("RR-BLUP runs with estimatePi = false.")
-        end
-    elseif methods=="BayesC"
-        if mme.M == 0
-            error("BayesC runs with genotypes.")
-        end
-    elseif methods=="BayesB"
-        if mme.M==0
-            error("BayesB runs with genotypes.")
-        end
-    elseif methods=="BayesL"
-        if mme.M == 0
-            error("BayesL runs with genotypes.")
-        elseif estimatePi == true
-            error("BayesL runs with estimatePi = false.")
-        end
-    elseif methods=="BayesA"
-        if mme.M==0
-            error("BayesA runs with genotypes.")
-        elseif Pi != 0.0
-            error("BayesA runs with π=0.")
-        elseif estimatePi == true
-            error("BayesA runs with estimatePi = false.")
-        end
-        mme.MCMCinfo.methods = "BayesB"
-        println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
-    elseif methods=="GBLUP"
-        if mme.M == 0
-            error("GBLUP runs with genotypes.")
-        elseif mme.M.genetic_variance == false
-            error("Please provide values for the genetic variance for GBLUP analysis")
-        elseif estimatePi == true
-            error("GBLUP runs with estimatePi = false.")
-        elseif mme.MCMCinfo.single_step_analysis == true
-            error("SSGBLUP is not available")
+            if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
+                if Mi.Pi != false
+                    error(Mi.method," runs with π = false.")
+                elseif Mi.estimatePi == true
+                    error(Mi.method," runs with estimatePi = false.")
+                end
+            end
+            if Mi.method == "BayesA"
+                Mi.method = "BayesB"
+                println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
+            end
+            if Mi.method == "GBLUP"
+                if Mi.genetic_variance == false
+                    error("Please provide values for the genetic variance for GBLUP analysis")
+                end
+                if mme.MCMCinfo.single_step_analysis == true
+                    error("SSGBLUP is not available")
+                end
+            end
+            if mme.nModels > 1 && Mi.Pi != 0.0
+                if round(sum(values(Pi)),digits=2)!=1.0
+                  error("Summation of probabilities of Pi is not equal to one.")
+                end
+                if typeof(Pi) <: Number
+                    error("Pi cannot be a number in multi-trait analysis.")
+                end
+            end
         end
     end
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
-    end
-    if mme.nModels > 1 && mme.M!=0
-        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
-          error("Summation of probabilities of Pi is not equal to one.")
-        end
-        if Pi != 0.0 && typeof(Pi) <: Number
-            error("Pi cannot be a number in multi-trait analysis.")
-        end
     end
 end
 
