@@ -1,6 +1,6 @@
 function SSBRrun(mme,df,big_memory=false)
     obsID    = mme.obsID                    #phenotyped ID
-    geno     = mme.M                        #input genotyps
+    geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
     flush(stdout)
@@ -20,8 +20,8 @@ function SSBRrun(mme,df,big_memory=false)
 
     df[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)
     set_covariate(mme,"J")
-    set_random(mme,"ϵ",mme.M.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
-    if mme.M.genetic_variance == false
+    set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
     end
 
@@ -102,12 +102,11 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
          Mpheno = Z*(lhs\(rhs*Mg))
          Mout   = Zo*(lhs\(rhs*Mg))
     end
-    
-    mme.output_genotypes =  Mout
 
-    mme.M.genotypes = Mpheno
-    mme.M.obsID     = mme.obsID
-    mme.M.nObs      = length(mme.M.obsID)
+    geno.output_genotypes =  Mout
+    geno.genotypes        = Mpheno
+    geno.obsID            = mme.obsID
+    geno.nObs             = length(mme.obsID)
     GC.gc()
 end
 ############################################################################
