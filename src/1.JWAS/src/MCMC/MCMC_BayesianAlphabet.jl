@@ -205,9 +205,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            if mme.M != 0
-                output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            end
+            output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
 
             nsamples = (iter-burnin)/output_samples_frequency
             solMean   += (sol - solMean)/nsamples

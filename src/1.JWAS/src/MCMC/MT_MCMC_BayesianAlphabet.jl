@@ -53,7 +53,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                 Mi.gammaArray = rand(gammaDist,Mi.nMarkers)
             end
             if Mi.method=="GBLUP"
-                Mi.D = GBLUP_setup(Mi)
+                GBLUP_setup(Mi)
             end
             ########################################################################
             ##WORKING VECTORS
@@ -272,9 +272,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            if mme.M != 0
-                output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            end
+            output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             if causal_structure != false
                 writedlm(causal_structure_outfile,sample4λ',',')
             end

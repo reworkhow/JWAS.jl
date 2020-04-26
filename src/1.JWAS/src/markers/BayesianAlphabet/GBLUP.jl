@@ -25,7 +25,7 @@ function GBLUP_setup(Mi::Genotypes) #for both single-trait and multi-trait analy
 end
 
 function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv)
-    ycorr       = ycorr + Mi.genotypes*Mi.α
+    ycorr[:]    = ycorr + Mi.genotypes*Mi.α  #ycor[:] is needed (ycor causes problems)
     lhs         = Rinv .+ vare./(Mi.G*Mi.D)
     mean1       = Mi.genotypes'*(Rinv.*ycorr)./lhs
     Mi.α        = mean1 + randn(Mi.nObs).*sqrt.(vare./lhs)
