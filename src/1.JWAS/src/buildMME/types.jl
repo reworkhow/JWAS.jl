@@ -88,6 +88,7 @@ mutable struct Genotypes
   centered::Bool
   genotypes::Union{Array{Float64,2},Array{Float32,2}}
   nLoci             #number of markers included in the model
+  ntraits           #number of traits included in the model
 
   genetic_variance  #genetic variance
   G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}

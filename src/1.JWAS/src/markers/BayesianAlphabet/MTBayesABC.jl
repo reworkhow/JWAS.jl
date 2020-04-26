@@ -1,5 +1,11 @@
 #MTBayesC requires the support for prior for delta for d is the set
 #of all 2^ntrait outcomes of dj:
+function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances)
+    MTBayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                locus_effect_variances,genotypes.π)
+end
+
 function MTBayesABC!(xArray,xRinvArray,xpRinvx,
                      wArray,betaArray,
                      deltaArray,

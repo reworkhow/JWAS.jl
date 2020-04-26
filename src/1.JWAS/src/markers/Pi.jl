@@ -4,12 +4,12 @@
 #
 ################################################################################
 #single-trait
-function samplePi(nEffects, nTotal)
+function samplePi(nEffects::Integer, nTotal::Integer)
     return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end
 
 #multi-trait
-function samplePi(deltaArray,BigPi,BigPiMean,iter)
+function samplePi(deltaArray::Array{Union{Array{Float64,1},Array{Float32,1}}},BigPi)
   temp = deltaArray[1]
   nTraits = size(deltaArray,1)
   for traiti = 2:nTraits

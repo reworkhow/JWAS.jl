@@ -72,12 +72,19 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
   whichterm = 1
   for term in modelTerms
     term_symbol = Symbol(split(term.trmStr,":")[end])
+    traiti      = term.iModel
     if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
       if typeof(getfield(Main,term_symbol)) == Genotypes
         deleteat!(modelTerms,whichterm)
         genotypei = getfield(Main,term_symbol)
         genotypei.name = string(term_symbol)
-        push!(genotypes,genotypei)
+        genotypei.ntraits = nModels
+        if nModels != 1
+          genotypei.df = genotypei.df + nModels
+        end
+        if traiti == 1 #same genos are required in all traits
+          push!(genotypes,genotypei)
+        end
       end
     end
     whichterm += 1

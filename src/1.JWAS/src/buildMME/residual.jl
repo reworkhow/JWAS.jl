@@ -37,6 +37,7 @@ function mkRi(mme::MME,df::DataFrame,Rinv)
         end
     end
     mme.resVar = resVar
+    vv = map(identity, vv)
     return sparse(ii,jj,vv)
 end
 

@@ -305,9 +305,11 @@ function runMCMC(mme::MME,df;
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
     end
-    if methods == "GBLUP"
+    if mme.M != 0
         for Mi in mme.M
-            mv("marker_effects_variance_"*Mi.name*".txt","genetic_variance(REML)_"*Mi.name*".txt")
+            if Mi.name == "GBLUP"
+                mv("marker_effects_variance_"*Mi.name*".txt","genetic_variance(REML)_"*Mi.name*".txt")
+            end
         end
     end
     printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
@@ -584,7 +586,7 @@ function init_mixed_model_equations(mme,df,sol)
     if mme.M == 0                          #PBLUP
         nsol = size(mme.mmeLhs,1)
     elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
-        nsol = size(mme.mmeLhs,1)+sum(Mi.nMarkers for Mi in mme.M)
+        nsol = size(mme.mmeLhs,1)+sum(Mi.nMarkers for Mi in mme.M)*mme.nModels
     elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
         nsol = size(mme.mmeLhs,1)+mme.M[1].nObs*mme.nModels
     else
@@ -713,6 +715,7 @@ function getMCMCinfo(mme)
                 error("Please add genotypes using add_genotypes().")
             end
             for Mi in mme.M
+                println(Mi.name)
                 @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
                 @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
                 @printf("%-30s %20s\n","π",Mi.π)
@@ -734,22 +737,25 @@ function getMCMCinfo(mme)
             println()
         end
         if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-            @printf("%-30s\n","genetic variances (genomic):")
-            if mme.M.genetic_variance != false
-                Base.print_matrix(stdout,round.(mme.M.genetic_variance,digits=3))
-            end
-            println()
-            @printf("%-30s\n","marker effect variances:")
-            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
-            println()
-            if !(MCMCinfo.methods in ["RR-BLUP","BayesL"])
-                println("\nΠ: (Y(yes):included; N(no):excluded)\n")
-                print(string.(mme.lhsVec))
-                @printf("%20s\n","probability")
-                for (i,j) in MCMCinfo.Pi
-                    i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                    print(i)
-                    @printf("%20s\n",j)
+            for Mi in mme.M
+                println(Mi.name)
+                @printf("%-30s\n","genetic variances (genomic):")
+                if Mi.genetic_variance != false
+                    Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
+                end
+                println()
+                @printf("%-30s\n","marker effect variances:")
+                Base.print_matrix(stdout,round.(Mi.G,digits=3))
+                println()
+                if !(MCMCinfo.methods in ["RR-BLUP","BayesL"])
+                    println("\nΠ: (Y(yes):included; N(no):excluded)\n")
+                    print(string.(mme.lhsVec))
+                    @printf("%20s\n","probability")
+                    for (i,j) in Mi.π
+                        i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
+                        print(i)
+                        @printf("%20s\n",j)
+                    end
                 end
             end
         end

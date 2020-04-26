@@ -136,7 +136,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
-    genotypes.df         = df
+    genotypes.df         = df #It will be modified base on number of traits in build_model()
 
     return genotypes
 end

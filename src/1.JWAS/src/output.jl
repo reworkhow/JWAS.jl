@@ -168,15 +168,15 @@ defaulting to all genotyped individuals. This function is used inside MCMC funct
 one MCMC samples from posterior distributions.
 """
 function getEBV(mme,sol,traiti)
-    traiti = string(mme.lhsVec[traiti])
+    traiti_name = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2dataframe([getNames(mme) sol zero(sol)])
     if mme.pedTrmVec != 0
         for pedtrm in mme.pedTrmVec
             mytrait, effect = split(pedtrm,':')
-            if mytrait == traiti
-                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti),:Estimate])
+            if mytrait == traiti_name
+                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
                 EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
                 EBV += EBV_pedtrm
             end
@@ -362,8 +362,16 @@ function output_MCMC_samples(mme,sol,vRes,G0,
                   writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
               end
           end
-          if Mi.G!=false
-              writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
+          if Mi.G != false
+              if mme.nModels == 1
+                  writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
+              else
+                  if methods in ["BayesC","RR-BLUP","BayesL","GBLUP"]
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],vec(Mi.G),',')
+                  elseif methods == "BayesB"
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],hcat([x for x in Mi.G]...),',')
+                  end
+              end
           end
           writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
           if !(typeof(Mi.π) <: Number) #add a blank line

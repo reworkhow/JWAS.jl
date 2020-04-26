@@ -56,7 +56,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     #marker effects
     if mme.M != 0
         for Mi in mme.M
-            mGibbs                              = GibbsMats(Mi.genotypes,Rinv)
+            Mi.α      = starting_value[(size(mme.mmeLhs,1)+1):end] #ONLY WORK FOR ONE CATEGORY
+            mGibbs    = GibbsMats(Mi.genotypes,Rinv)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
             if Mi.method=="BayesB" #α=β.*δ
@@ -68,9 +69,8 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 gammaDist  = Gamma(1, 8) #8 is the scale parameter of the Gamma distribution (1/8 is the rate parameter)
                 Mi.gammaArray = rand(gammaDist,Mi.nMarkers)
             end
-            Mi.α   = starting_value[(size(mme.mmeLhs,1)+1):end]
             if Mi.method=="GBLUP"
-                Mi.D = GBLUP_setup(Mi)
+                GBLUP_setup(Mi)
             end
             Mi.β                               = copy(Mi.α)       #partial marker effeccts used in BayesB
             Mi.δ                               = ones(typeof(Mi.α[1]),Mi.nMarkers)  #inclusion indicator for marker effects
@@ -132,9 +132,9 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 elseif Mi.method == "BayesL"
                     BayesL!(Mi,ycorr,mme.RNew)
                 elseif Mi.method == "GBLUP"
-                    GBLUP!(Mi,ycorr,mme.RNew,Rinv,Mi.D)
+                    GBLUP!(Mi,ycorr,mme.RNew,Rinv)
                 end
-                if estimatePi == true #method specific pi?
+                if Mi.estimatePi == true #method specific pi?
                     Mi.π = samplePi(Mi.nLoci, Mi.nMarkers)
                 end
             end
