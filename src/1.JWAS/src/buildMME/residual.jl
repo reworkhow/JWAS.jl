@@ -37,6 +37,8 @@ function mkRi(mme::MME,df::DataFrame,Rinv)
         end
     end
     mme.resVar = resVar
+    # This narrows the element type of the vv vector
+    vv = map(identity, vv)
     return sparse(ii,jj,vv)
 end
 
