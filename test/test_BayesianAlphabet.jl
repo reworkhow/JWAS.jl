@@ -15,7 +15,7 @@ end
 mkdir("mytest/")
 cd("mytest/")
 for single_step in [false,true]
-      for test_method in ["GBLUP","BayesA","BayesC","BayesB","RR-BLUP","BayesL"]#,"conventional (no markers)"]
+      for test_method in ["GBLUP","BayesA","BayesC","BayesB","RR-BLUP","BayesL","conventional (no markers)"]
             newdir = "ST_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             cd(newdir)
@@ -30,7 +30,12 @@ for single_step in [false,true]
                   G3 =1.0
                   global geno = get_genotypes(genofile,G3,header=true,separator=',',method=test_method,estimatePi=test_estimatePi);
             end
-            model_equation1  ="y1 = intercept + x1*x3 + x2 + x3 + ID + dam + geno";
+            if test_method != "conventional (no markers)"
+                  model_equation1  ="y1 = intercept + x1*x3 + x2 + x3 + ID + dam + geno";
+            else
+                  model_equation1  ="y1 = intercept + x1*x3 + x2 + x3 + ID + dam";
+            end
+
             R      = 1.0
             model1 = build_model(model_equation1,R);
 
@@ -53,13 +58,13 @@ for single_step in [false,true]
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
-            # if test_method != "conventional (no markers)" && test_method!="GBLUP"
-            #       gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
-            #       show(gwas1)
-            #       println()
-            #       gwas2=GWAS("MCMC_samples_marker_effects_y1.txt",mapfile,model1)
-            #       show(gwas2)
-            # end
+            if test_method != "conventional (no markers)" && test_method!="GBLUP"
+                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  show(gwas1)
+                  println()
+                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model1)
+                  show(gwas2)
+            end
             cd("..")
 
             printstyled("\n\n\n\n\n\n\n\nTest multi-trait $test_method analysis using $(single_step ? "in" : "")complete genomic data\n\n\n",bold=true,color=:green)
@@ -74,9 +79,16 @@ for single_step in [false,true]
                         0.5 0.5 1.0]
                   global geno = get_genotypes(genofile,G3,header=true,separator=',',method=test_method,estimatePi=test_estimatePi);
             end
-            model_equation2 ="y1 = intercept + x1 + x3 + ID + dam + geno
-                              y2 = intercept + x1 + x2 + x3 + ID + geno
-                              y3 = intercept + x1 + x1*x3 + x2 + ID + geno";
+            if test_method != "conventional (no markers)"
+                  model_equation2 ="y1 = intercept + x1 + x3 + ID + dam + geno
+                                    y2 = intercept + x1 + x2 + x3 + ID + geno
+                                    y3 = intercept + x1 + x1*x3 + x2 + ID + geno";
+            else
+                  model_equation2 ="y1 = intercept + x1 + x3 + ID + dam
+                                    y2 = intercept + x1 + x2 + x3 + ID
+                                    y3 = intercept + x1 + x1*x3 + x2 + ID";
+            end
+
 
             R      = [1.0 0.5 0.5
                       0.5 1.0 0.5
@@ -103,13 +115,13 @@ for single_step in [false,true]
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
             end
-            # if test_method != "conventional (no markers)" && test_method!="GBLUP"
-            #       gwas1=GWAS("MCMC_samples_marker_effects_y1.txt")
-            #       show(gwas1)
-            #       println()
-            #       gwas2=GWAS("MCMC_samples_marker_effects_y1.txt",mapfile,model2)
-            #       show(gwas2)
-            # end
+            if test_method != "conventional (no markers)" && test_method!="GBLUP"
+                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  show(gwas1)
+                  println()
+                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model2)
+                  show(gwas2)
+            end
             cd("..")
       end
 end
