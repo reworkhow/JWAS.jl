@@ -174,15 +174,15 @@ defaulting to all genotyped individuals. This function is used inside MCMC funct
 one MCMC samples from posterior distributions.
 """
 function getEBV(mme,sol,α,traiti)
-    traiti = string(mme.lhsVec[traiti])
+    traiti_name = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2dataframe([getNames(mme) sol zero(sol)])
     if mme.pedTrmVec != 0
         for pedtrm in mme.pedTrmVec
             mytrait, effect = split(pedtrm,':')
-            if mytrait == traiti
-                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti),:Estimate])
+            if mytrait == traiti_name
+                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
                 EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
                 EBV += EBV_pedtrm
             end
