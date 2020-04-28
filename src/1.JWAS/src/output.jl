@@ -200,7 +200,6 @@ function getEBV(mme,sol,traiti)
             EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
             EBV   += (EBV_J+EBV_ϵ)
     end
-
     return EBV
 end
 
