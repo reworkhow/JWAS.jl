@@ -194,15 +194,12 @@ function getEBV(mme,sol,α,traiti)
     end
 
     if haskey(mme.output_X,"J") #single-step analyis
-        for traiti in 1:mme.nModels
-            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])[1]
-            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])
+            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==traiti_name),:Estimate])[1]
+            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==traiti_name),:Estimate])
             EBV_J  = mme.output_X["J"]*sol_J
             EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
             EBV   += (EBV_J+EBV_ϵ)
-        end
     end
-
     return EBV
 end
 
