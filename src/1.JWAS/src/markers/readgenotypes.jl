@@ -105,7 +105,7 @@ function readgenotypes(file::AbstractString;
     genotypes = map(Float32,convert(Matrix,df[!,2:end]))
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
-    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
+    markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
 
@@ -128,7 +128,7 @@ function readgenotypes(M::Union{Array{Float64,2},Array{Float32,2},Array{Any,2},D
     genotypes = map(Float32,convert(Matrix,M))
     #preliminary summary of genotype (duplication of the function above)
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
-    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
+    markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
 
