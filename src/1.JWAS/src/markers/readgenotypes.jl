@@ -120,11 +120,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         obsID     = map(string,rowID)
         genotypes = map(Float32,convert(Matrix,file))
     end
-
-
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
-    markerMeans   = center==true ? center!(genotypes) : center(genotypes) #centering genotypes or not
+    markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
