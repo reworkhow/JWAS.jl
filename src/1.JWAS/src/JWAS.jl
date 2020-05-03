@@ -67,10 +67,7 @@ export get_correlations,get_heritability
             output_samples_file      = "MCMC_samples",
             update_priors_frequency  = 0,
             ### Methods
-            methods                  = "conventional (no markers)",
             estimate_variance        = true,
-            Pi                       = 0.0,
-            estimatePi               = false,
             estimateScale            = false,
             single_step_analysis     = false,
             pedigree                 = false,
@@ -101,14 +98,8 @@ export get_correlations,get_heritability
     * Miscellaneous Options
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
-    * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
-    * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
-      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
-      have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
-      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
     * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
-    * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
@@ -133,11 +124,7 @@ function runMCMC(mme::MME,df;
                 output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
                 update_priors_frequency::Integer  = 0,
                 #Methods
-                methods                         = "conventional (no markers)",
                 estimate_variance               = true,
-                Pi                              = 0.0,
-                estimatePi                      = false,
-                estimateScale                   = false,
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
                 categorical_trait               = false,
@@ -183,10 +170,6 @@ function runMCMC(mme::MME,df;
                             output_samples_frequency,
                             printout_model_info,
                             printout_frequency,
-                            methods,
-                            Pi,
-                            estimatePi,
-                            estimateScale,
                             single_step_analysis, #pedigree,
                             missing_phenotypes,
                             constraint,
@@ -585,12 +568,8 @@ function init_mixed_model_equations(mme,df,sol)
     #starting value for sol can be provided
     if mme.M == 0                          #PBLUP
         nsol = size(mme.mmeLhs,1)
-    elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
-        nsol = size(mme.mmeLhs,1)+sum(Mi.nMarkers for Mi in mme.M)*mme.nModels
-    elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
-        nsol = size(mme.mmeLhs,1)+mme.M[1].nObs*mme.nModels
     else
-        error("Starting values are not allowed.")
+        nsol = size(mme.mmeLhs,1)+sum((Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs) for Mi in mme.M)*mme.nModels
     end
     if sol == false #no starting values
         sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
@@ -683,17 +662,12 @@ function getMCMCinfo(mme)
     MCMCinfo = mme.MCMCinfo
     printstyled("MCMC Information:\n\n",bold=true)
 
-    @printf("%-10s %40s\n","methods",MCMCinfo.methods)
-    if !(MCMCinfo.methods in ["conventional (no markers)"])
+    if mme.M != false
       @printf("%51s\n",MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
       @printf("%51s\n",MCMCinfo.single_step_analysis ? "(i.e., single-step analysis)" : "(i.e., non-single-step analysis)")
     end
     @printf("%-30s %20s\n","chain_length",MCMCinfo.chain_length)
     @printf("%-30s %20s\n","burnin",MCMCinfo.burnin)
-    if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-      @printf("%-30s %20s\n","estimatePi",MCMCinfo.estimatePi ? "true" : "false")
-    end
-    @printf("%-30s %20s\n","estimateScale",MCMCinfo.estimateScale ? "true" : "false")
     @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value != zero(MCMCinfo.starting_value) ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",MCMCinfo.printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
@@ -719,6 +693,11 @@ function getMCMCinfo(mme)
                 @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
                 @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
                 @printf("%-30s %20s\n","π",Mi.π)
+                if !(Mi.methods in ["conventional (no markers)", "GBLUP"])
+                  @printf("%-30s %20s\n","estimatePi",MCMCinfo.estimatePi ? "true" : "false")
+                end
+                @printf("%-30s %20s\n","estimateScale",MCMCinfo.estimateScale ? "true" : "false")
+
             end
         end
     else

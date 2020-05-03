@@ -143,10 +143,6 @@ mutable struct MCMCinfo
     output_samples_frequency
     printout_model_info
     printout_frequency
-    methods
-    Pi
-    estimatePi
-    estimateScale
     single_step_analysis
     missing_phenotypes
     constraint
