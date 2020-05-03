@@ -144,7 +144,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             winVarProps       = zeros(nsamples,nWindows)
             winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
-            X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
+            X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
             @showprogress "running GWAS..." for i=1:nsamples
                 α = output[i,:]
                 genVar = var(X*α)
