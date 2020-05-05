@@ -151,7 +151,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         if mme.M != 0
             for Mi in mme.M
                 if Mi.method in ["BayesC","BayesB","BayesA"]
-                    locus_effect_variances = (methods=="BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
+                    locus_effect_variances = (Mi.method=="BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                 elseif Mi.method == "RR-BLUP"
                     MTBayesC0!(Mi,wArray,mme.R)

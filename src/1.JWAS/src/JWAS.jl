@@ -257,11 +257,7 @@ function runMCMC(mme::MME,df;
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
                         burnin                   = burnin,
-                        π                        = Pi,
-                        methods                  = mme.MCMCinfo.methods,
-                        estimatePi               = estimatePi,
                         estimate_variance        = estimate_variance,
-                        estimateScale            = estimateScale,
                         starting_value           = mme.MCMCinfo.starting_value,
                         outFreq                  = printout_frequency,
                         output_samples_frequency = output_samples_frequency,
@@ -271,15 +267,11 @@ function runMCMC(mme::MME,df;
     else #multi-trait analysis
         mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                       Rinv   = mme.invweights,
-                      Pi     = Pi,
                       sol    = mme.MCMCinfo.starting_value,
                       outFreq= printout_frequency,
                       missing_phenotypes=missing_phenotypes,
                       constraint = constraint,
-                      estimatePi = estimatePi,
                       estimate_variance = estimate_variance,
-                      estimateScale     = estimateScale,
-                      methods    = mme.MCMCinfo.methods,
                       output_samples_frequency=output_samples_frequency,
                       output_file=output_samples_file,
                       update_priors_frequency=update_priors_frequency,
@@ -661,11 +653,6 @@ function getMCMCinfo(mme)
     end
     MCMCinfo = mme.MCMCinfo
     printstyled("MCMC Information:\n\n",bold=true)
-
-    if mme.M != false
-      @printf("%51s\n",MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
-      @printf("%51s\n",MCMCinfo.single_step_analysis ? "(i.e., single-step analysis)" : "(i.e., non-single-step analysis)")
-    end
     @printf("%-30s %20s\n","chain_length",MCMCinfo.chain_length)
     @printf("%-30s %20s\n","burnin",MCMCinfo.burnin)
     @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value != zero(MCMCinfo.starting_value) ? "true" : "false")
@@ -677,69 +664,76 @@ function getMCMCinfo(mme)
     @printf("%-30s %20s\n","seed",MCMCinfo.seed)
 
     printstyled("\nHyper-parameters Information:\n\n",bold=true)
-
-    if mme.nModels==1
-        for i in mme.rndTrmVec
-            thisterm= join(i.term_array, ",")
+    for i in mme.rndTrmVec
+        thisterm= join(i.term_array, ",")
+        if mme.nModels == 1
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
-        end
-        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
-        if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-            if mme.M == 0
-                error("Please add genotypes using add_genotypes().")
-            end
-            for Mi in mme.M
-                println(Mi.name)
-                @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
-                @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
-                @printf("%-30s %20s\n","π",Mi.π)
-                if !(Mi.methods in ["conventional (no markers)", "GBLUP"])
-                  @printf("%-30s %20s\n","estimatePi",MCMCinfo.estimatePi ? "true" : "false")
-                end
-                @printf("%-30s %20s\n","estimateScale",MCMCinfo.estimateScale ? "true" : "false")
-
-            end
-        end
-    else
-        for i in mme.rndTrmVec
-            thisterm= join(i.term_array, ",")
+        else
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
             Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
             println()
         end
+    end
+    if mme.pedTrmVec!=0
+        @printf("%-30s\n","genetic variances (polygenic):")
+        Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
+        println()
+    end
+    if mme.nModels == 1
+        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
+    else
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(stdout,round.(mme.R,digits=3))
         println()
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n","genetic variances (polygenic):")
-            Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
+    end
+
+    printstyled("\nGenomic Information:\n\n",bold=true)
+    if mme.M != false
+        print(MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
+        println(MCMCinfo.single_step_analysis ? " (i.e., single-step analysis)" : " (i.e., non-single-step analysis)")
+        for Mi in mme.M
             println()
-        end
-        if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
+            @printf("%-30s %20s\n","Genomic Category", Mi.name)
+            @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
-                println(Mi.name)
-                @printf("%-30s\n","genetic variances (genomic):")
                 if Mi.genetic_variance != false
-                    Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
-                end
-                println()
-                @printf("%-30s\n","marker effect variances:")
-                Base.print_matrix(stdout,round.(Mi.G,digits=3))
-                println()
-                if !(MCMCinfo.methods in ["RR-BLUP","BayesL"])
-                    println("\nΠ: (Y(yes):included; N(no):excluded)\n")
-                    print(string.(mme.lhsVec))
-                    @printf("%20s\n","probability")
-                    for (i,j) in Mi.π
-                        i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                        print(i)
-                        @printf("%20s\n",j)
+                    if mme.nModels == 1
+                        @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
+                    else
+                        @printf("%-30s\n","genetic variances (genomic):")
+                        Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
+                        println()
                     end
                 end
+                if !(Mi.method in ["GBLUP"])
+                    if mme.nModels == 1
+                        @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
+                    else
+                        @printf("%-30s\n","marker effect variances:")
+                        Base.print_matrix(stdout,round.(Mi.G,digits=3))
+                        println()
+                    end
+                end
+                if !(Mi.method in ["RR-BLUP","BayesL","GBLUP"])
+                    if mme.nModels == 1
+                        @printf("%-30s %20s\n","π",Mi.π)
+                    else
+                        println("\nΠ: (Y(yes):included; N(no):excluded)\n")
+                        print(string.(mme.lhsVec))
+                        @printf("%20s\n","probability")
+                        for (i,j) in Mi.π
+                            i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
+                            print(i)
+                            @printf("%20s\n",j)
+                        end
+                        println()
+                    end
+                    @printf("%-30s %20s\n","estimatePi",Mi.estimatePi ? "true" : "false")
+                end
+                @printf("%-30s %20s\n","estimateScale",Mi.estimateScale ? "true" : "false")
             end
         end
     end
-
     printstyled("\nDegree of freedom for hyper-parameters:\n\n",bold=true)
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
     for randomeffect in mme.rndTrmVec
