@@ -80,7 +80,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
         CSV.write("mapfile.temp",mapfile)
     end
 
-    window_size_Mb = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
+    window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
     mapfile = (header == true ? readdlm(map_file,',',header=true)[1] : readdlm(map_file,','))
     chr     = map(string,mapfile[:,2])
     pos     = map(Int64,mapfile[:,3])
@@ -98,32 +98,31 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
     for i in unique(chr)
       pos_on_chri     = pos[chr.== i] #assume chr and pos are sorted
       if sliding_window == false
-          nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_Mb)
+          nwindow_on_chri = ceil(Int64,pos_on_chri[end]/window_size_bp)
       else
-          nwindow_on_chri = findfirst(x -> x >= pos_on_chri[end] - window_size_Mb, pos_on_chri)
+          nwindow_on_chri = findfirst(x -> x >= pos_on_chri[end] - window_size_bp, pos_on_chri)
       end
 
       for j in 1: nwindow_on_chri
         if sliding_window == false
-            thisstart = window_size_Mb*(j-1)
+            thisstart = window_size_bp*(j-1)
         else
             thisstart = pos_on_chri[j]
         end
-        thisend  = thisstart + window_size_Mb
-        push!(window_chr,i)
-        push!(window_pos_start,thisstart)
-        push!(window_pos_end,thisend)
+        thisend  = thisstart + window_size_bp
         snps_window = thisstart .<= pos_on_chri .< thisend
         snps_window_sizej = sum(snps_window)
-        push!(window_size_nSNPs,snps_window_sizej)
-        if sum(snps_window)!=0
+        #empty windows exist in non-sliding window; no empty window in sliding windows
+        #empty windows were deleted
+        if snps_window_sizej!=0
             push!(window_snp_start,pos_on_chri[findfirst(snps_window)])
             push!(window_snp_end,pos_on_chri[findlast(snps_window)])
             push!(window_column_start,index_start)
             push!(window_column_end,index_start+snps_window_sizej-1)
-        else #empty windows exist in non-sliding window; no empty window in sliding windows
-            push!(window_snp_start,0)
-            push!(window_snp_end,0)
+            push!(window_chr,i)
+            push!(window_pos_start,thisstart)
+            push!(window_pos_end,thisend)
+            push!(window_size_nSNPs,snps_window_sizej)
         end
         if sliding_window == false
             index_start += snps_window_sizej
@@ -163,7 +162,19 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             winVarmean = vec(mean(winVar,dims=1))
             winVarstd  = vec(std(winVar,dims=1))
 
+            println(window_column_start)
+            println(window_column_end)
             srtIndx = sortperm(WPPA,rev=true)
+            println(srtIndx)
+            println(window_pos_start)
+            println(window_pos_end)
+            println(window_snp_start)
+            println(window_snp_end)
+            println(winVarmean)
+            println(winVarstd)
+            println(prop_genvar)
+            println(WPPA)
+
             outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
                             window = (1:length(WPPA))[srtIndx],
                             chr    = window_chr[srtIndx],
