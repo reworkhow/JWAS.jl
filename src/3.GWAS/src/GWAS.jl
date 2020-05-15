@@ -162,18 +162,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             winVarmean = vec(mean(winVar,dims=1))
             winVarstd  = vec(std(winVar,dims=1))
 
-            println(window_column_start)
-            println(window_column_end)
             srtIndx = sortperm(WPPA,rev=true)
-            println(srtIndx)
-            println(window_pos_start)
-            println(window_pos_end)
-            println(window_snp_start)
-            println(window_snp_end)
-            println(winVarmean)
-            println(winVarstd)
-            println(prop_genvar)
-            println(WPPA)
 
             outi = DataFrame(trait  = fill(i,length(WPPA))[srtIndx],
                             window = (1:length(WPPA))[srtIndx],
