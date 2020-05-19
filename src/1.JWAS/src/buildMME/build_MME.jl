@@ -65,7 +65,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
   for trm in modelTerms          #make a dict for model terms
     dict[trm.trmStr] = trm
   end
-  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
 
   #add genotypes to mme
   genotypes = []
@@ -75,7 +74,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
     traiti      = term.iModel
     if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
       if typeof(getfield(Main,term_symbol)) == Genotypes
-        deleteat!(modelTerms,whichterm)
+        term.random_type = "genotypes"
         if traiti == 1 #same genos are required in all traits
           genotypei = getfield(Main,term_symbol)
           genotypei.name = string(term_symbol)
@@ -87,8 +86,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
         end
       end
     end
-    whichterm += 1
   end
+  #crear mme with genotypes
+  filter!(x->x.random_type != "genotypes",modelTerms)
+  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes
   end
