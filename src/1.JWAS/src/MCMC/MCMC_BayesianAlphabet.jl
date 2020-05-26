@@ -56,7 +56,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     #marker effects
     if mme.M != 0
         for Mi in mme.M
-            Mi.α      = starting_value[(size(mme.mmeLhs,1)+1):end] #ONLY WORK FOR ONE CATEGORY
+            Mi.α      = zeros(Mi.nMarkers) #SET starting values in get_genotypes
             mGibbs    = GibbsMats(Mi.genotypes,Rinv)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
