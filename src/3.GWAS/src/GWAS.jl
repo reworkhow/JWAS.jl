@@ -189,7 +189,7 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             gcov              = zeros(nsamples,nWindows)
             gcor              = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
-            X = (typeof(mme) <: Array ? mme : mme.output_genotypes)
+            X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
             @showprogress "calculating genomic correlation..." for i=1:nsamples
                 α1 = output1[i,:]
                 α2 = output2[i,:]
