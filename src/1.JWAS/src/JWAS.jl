@@ -189,11 +189,13 @@ function runMCMC(mme::MME,df;
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
-            Mi.π                 = Pi
-            Mi.estimatePi        = estimatePi
-            Mi.estimateScale     = estimateScale
-            Mi.method            = methods
-            Mi.name              = "geno"
+            if Mi.name == false
+                Mi.name              = "geno"
+                Mi.π                 = Pi
+                Mi.estimatePi        = estimatePi
+                Mi.estimateScale     = estimateScale
+                Mi.method            = methods
+            end
         end
     end
     ############################################################################
