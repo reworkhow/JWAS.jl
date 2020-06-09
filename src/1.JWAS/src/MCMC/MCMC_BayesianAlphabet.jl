@@ -70,6 +70,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 Mi.gammaArray = rand(gammaDist,Mi.nMarkers)
             end
             if Mi.method=="GBLUP"
+                Mi.α      = zeros(Mi.nObs) #SET starting values in get_genotypes
                 GBLUP_setup(Mi)
             end
             Mi.β                               = copy(Mi.α)       #partial marker effeccts used in BayesB
