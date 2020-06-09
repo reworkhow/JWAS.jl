@@ -87,7 +87,7 @@ function output_result(mme,output_file,
 
           output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
-              output["Pi"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+              output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
           end
           if Mi.estimateScale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVar,Mi.meanScaleVar2)

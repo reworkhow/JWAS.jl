@@ -20,22 +20,27 @@
   * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 """
 function add_genotypes(mme::MME,M::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                       header=false,rowID=false,separator=',',
+                       header=true,rowID=false,separator=',',
                        center=true,G_is_marker_variance=false,df=4)
     if G != false && size(G,1) != mme.nModels
         error("The covariance matrix is not a ",mme.nModels," by ",mme.nModels," matrix.")
     end
-    mme.M   = get_genotypes(M,G,
+    genotypei   = get_genotypes(M,G,
                             header = header,rowID = rowID,separator = separator,
                             center = center,G_is_marker_variance = G_is_marker_variance,df = df)
+    genotypei.ntraits = mme.nModels
+    if mme.nModels != 1
+      genotypei.df = genotypei.df + mme.nModels
+    end
+    genotypes = []
+    push!(genotypes,genotypei)
+    mme.M = genotypes
     if mme.nModels == 1 #?move to set_marker_hyperparameters_variances_and_pi?
         mme.df.marker = Float32(df)
     else
         νG0   = Float32(df) + mme.nModels
         mme.df.marker = νG0 #final df for inverse wishart
     end
-    writedlm("IDs_for_individuals_with_genotypes.txt",mme.M.obsID)
-    println(size(mme.M.genotypes,2), " markers on ",size(mme.M.genotypes,1)," individuals were added.")
 end
 ################################################################################
 #
@@ -127,6 +132,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.π          = Pi
     genotypes.df         = df #It will be modified base on number of traits in build_model()
     genotypes.estimateScale = estimateScale
+
+    writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
+    println("#markers: ",size(genotypes.genotypes,2),"; #individuals: ",size(genotypes.genotypes,1))
 
     return genotypes
 end

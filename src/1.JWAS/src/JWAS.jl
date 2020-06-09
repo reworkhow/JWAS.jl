@@ -142,7 +142,12 @@ function runMCMC(mme::MME,df;
                 double_precision                = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_samples_file             = "MCMC_samples",
-                output_samples_for_all_parameters = false) #calculare lsmeans
+                output_samples_for_all_parameters = false,
+                #for deprecated JWAS
+                methods                         = "conventional (no markers)",
+                Pi                              = 0.0,
+                estimatePi                      = false,
+                estimateScale                   = false) #calculare lsmeans
 
     ############################################################################
     # Pre-Check
@@ -181,6 +186,16 @@ function runMCMC(mme::MME,df;
                             seed,
                             double_precision,
                             output_samples_file)
+    #for deprecated JWAS fucntions
+    if mme.M != 0
+        for Mi in mme.M
+            Mi.π                 = Pi
+            Mi.estimatePi        = estimatePi
+            Mi.estimateScale     = estimateScale
+            Mi.method            = methods
+            Mi.name              = "geno"
+        end
+    end
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
