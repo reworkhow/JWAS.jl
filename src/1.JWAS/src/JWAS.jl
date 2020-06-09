@@ -26,6 +26,7 @@ include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
 include("markers/BayesianAlphabet/BayesC0L.jl")
+include("markers/BayesianAlphabet/GBLUP.jl")
 include("markers/BayesianAlphabet/MTBayesABC.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
@@ -42,7 +43,7 @@ include("StructureEquationModel/SEM.jl")
 #output
 include("output.jl")
 
-export build_model,set_covariate,set_random,add_genotypes
+export build_model,set_covariate,set_random,add_genotypes,get_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
@@ -66,10 +67,7 @@ export get_correlations,get_heritability
             output_samples_file      = "MCMC_samples",
             update_priors_frequency  = 0,
             ### Methods
-            methods                  = "conventional (no markers)",
             estimate_variance        = true,
-            Pi                       = 0.0,
-            estimatePi               = false,
             estimateScale            = false,
             single_step_analysis     = false,
             pedigree                 = false,
@@ -100,14 +98,8 @@ export get_correlations,get_heritability
     * Miscellaneous Options
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
-    * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
-    * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
-      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
-      have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
-      (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
     * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
-    * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
@@ -132,11 +124,7 @@ function runMCMC(mme::MME,df;
                 output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
                 update_priors_frequency::Integer  = 0,
                 #Methods
-                methods                         = "conventional (no markers)",
                 estimate_variance               = true,
-                Pi                              = 0.0,
-                estimatePi                      = false,
-                estimateScale                   = false,
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
                 categorical_trait               = false,
@@ -154,7 +142,12 @@ function runMCMC(mme::MME,df;
                 double_precision                = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_samples_file             = "MCMC_samples",
-                output_samples_for_all_parameters = false) #calculare lsmeans
+                output_samples_for_all_parameters = false,
+                #for deprecated JWAS
+                methods                         = "conventional (no markers)",
+                Pi                              = 0.0,
+                estimatePi                      = false,
+                estimateScale                   = false) #calculare lsmeans
 
     ############################################################################
     # Pre-Check
@@ -182,10 +175,6 @@ function runMCMC(mme::MME,df;
                             output_samples_frequency,
                             printout_model_info,
                             printout_frequency,
-                            methods,
-                            Pi,
-                            estimatePi,
-                            estimateScale,
                             single_step_analysis, #pedigree,
                             missing_phenotypes,
                             constraint,
@@ -197,14 +186,27 @@ function runMCMC(mme::MME,df;
                             seed,
                             double_precision,
                             output_samples_file)
+    #for deprecated JWAS fucntions
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.name == false
+                Mi.name              = "geno"
+                Mi.π                 = Pi
+                Mi.estimatePi        = estimatePi
+                Mi.estimateScale     = estimateScale
+                Mi.method            = methods
+            end
+        end
+    end
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
     #check errors in function arguments
-    errors_args(mme,methods)
+    errors_args(mme)
     #users need to provide high-quality pedigree file
     #println("calling check_pedigree(mme,df,pedigree)")
     check_pedigree(mme,df,pedigree)
+    check_genotypes(mme)
     #user-defined IDs to return genetic values (EBVs), defaulting to all genotyped
     #individuals in genomic analysis
     #println("calling check_outputID(mme)")
@@ -219,8 +221,10 @@ function runMCMC(mme::MME,df;
     #double precision
     if double_precision == true
         if mme.M != 0
-            mme.M.genotypes = map(Float64,mme.M.genotypes)
-            mme.M.G         = map(Float64,mme.M.G)
+            for Mi in mme.M
+                Mi.genotypes = map(Float64,Mi.genotypes)
+                Mi.G         = map(Float64,Mi.G)
+            end
         end
         for random_term in mme.rndTrmVec
             random_term.Vinv  = map(Float64,random_term.Vinv)
@@ -252,8 +256,7 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo.starting_value,df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
-        Pi = set_marker_hyperparameters_variances_and_pi(mme,Pi,methods)
-        mme.MCMCinfo.Pi = Pi
+        set_marker_hyperparameters_variances_and_pi(mme)
     end
 
     if mme.output_ID!=0
@@ -271,11 +274,7 @@ function runMCMC(mme::MME,df;
         mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
                         Rinv                     = mme.invweights,
                         burnin                   = burnin,
-                        π                        = Pi,
-                        methods                  = mme.MCMCinfo.methods,
-                        estimatePi               = estimatePi,
                         estimate_variance        = estimate_variance,
-                        estimateScale            = estimateScale,
                         starting_value           = mme.MCMCinfo.starting_value,
                         outFreq                  = printout_frequency,
                         output_samples_frequency = output_samples_frequency,
@@ -285,15 +284,11 @@ function runMCMC(mme::MME,df;
     else #multi-trait analysis
         mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                       Rinv   = mme.invweights,
-                      Pi     = Pi,
                       sol    = mme.MCMCinfo.starting_value,
                       outFreq= printout_frequency,
                       missing_phenotypes=missing_phenotypes,
                       constraint = constraint,
-                      estimatePi = estimatePi,
                       estimate_variance = estimate_variance,
-                      estimateScale     = estimateScale,
-                      methods    = mme.MCMCinfo.methods,
                       output_samples_frequency=output_samples_frequency,
                       output_file=output_samples_file,
                       update_priors_frequency=update_priors_frequency,
@@ -302,8 +297,12 @@ function runMCMC(mme::MME,df;
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
     end
-    if methods == "GBLUP"
-        mv("marker_effects_variance.txt","genetic_variance(REML).txt")
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.name == "GBLUP"
+                mv("marker_effects_variance_"*Mi.name*".txt","genetic_variance(REML)_"*Mi.name*".txt")
+            end
+        end
     end
     printstyled("\n\nThe version of Julia and Platform in use:\n\n",bold=true)
     versioninfo()
@@ -323,7 +322,7 @@ end
 # 6) output IDs
 #
 ################################################################################
-function errors_args(mme,methods)
+function errors_args(mme)
     if mme.mmePos != 1
       error("Please build your model again using the function build_model().")
     end
@@ -332,71 +331,43 @@ function errors_args(mme,methods)
         error("output_samples_frequency should be an integer > 0.")
     end
 
-    Pi         = mme.MCMCinfo.Pi
-    estimatePi = mme.MCMCinfo.estimatePi
-    if !(methods in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP","conventional (no markers)"])
-        error(methods," is not available in JWAS. Please read the documentation.")
-    end
+    if mme.M != 0
+        for Mi in mme.M
+            if !(Mi.method in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP"])
+                error(Mi.method," is not available in JWAS. Please read the documentation.")
+            end
 
-    if methods == "conventional (no markers)"
-        if mme.M!=0
-            error("Conventional analysis runs without genotypes!")
-        elseif estimatePi == true
-            error("conventional (no markers) analysis runs with estimatePi = false.")
-        end
-    elseif methods=="RR-BLUP"
-        if mme.M == 0
-            error("RR-BLUP runs with genotypes")
-        elseif Pi != 0.0
-            error("RR-BLUP runs with π=0.")
-        elseif estimatePi == true
-            error("RR-BLUP runs with estimatePi = false.")
-        end
-    elseif methods=="BayesC"
-        if mme.M == 0
-            error("BayesC runs with genotypes.")
-        end
-    elseif methods=="BayesB"
-        if mme.M==0
-            error("BayesB runs with genotypes.")
-        end
-    elseif methods=="BayesL"
-        if mme.M == 0
-            error("BayesL runs with genotypes.")
-        elseif estimatePi == true
-            error("BayesL runs with estimatePi = false.")
-        end
-    elseif methods=="BayesA"
-        if mme.M==0
-            error("BayesA runs with genotypes.")
-        elseif Pi != 0.0
-            error("BayesA runs with π=0.")
-        elseif estimatePi == true
-            error("BayesA runs with estimatePi = false.")
-        end
-        mme.MCMCinfo.methods = "BayesB"
-        println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
-    elseif methods=="GBLUP"
-        if mme.M == 0
-            error("GBLUP runs with genotypes.")
-        elseif mme.M.genetic_variance == false
-            error("Please provide values for the genetic variance for GBLUP analysis")
-        elseif estimatePi == true
-            error("GBLUP runs with estimatePi = false.")
-        elseif mme.MCMCinfo.single_step_analysis == true
-            error("SSGBLUP is not available")
+            if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
+                if Mi.π != false
+                    error(Mi.method," runs with π = false.")
+                elseif Mi.estimatePi == true
+                    error(Mi.method," runs with estimatePi = false.")
+                end
+            end
+            if Mi.method == "BayesA"
+                Mi.method = "BayesB"
+                println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
+            end
+            if Mi.method == "GBLUP"
+                if Mi.genetic_variance == false
+                    error("Please provide values for the genetic variance for GBLUP analysis")
+                end
+                if mme.MCMCinfo.single_step_analysis == true
+                    error("SSGBLUP is not available")
+                end
+            end
+            if mme.nModels > 1 && Mi.π != 0.0
+                if round(sum(values(Mi.π)),digits=2)!=1.0
+                  error("Summation of probabilities of Pi is not equal to one.")
+                end
+                if typeof(Mi.π) <: Number
+                    error("Pi cannot be a number in multi-trait analysis.")
+                end
+            end
         end
     end
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
-    end
-    if mme.nModels > 1 && mme.M!=0
-        if Pi != 0.0 && round(sum(values(Pi)),digits=2)!=1.0
-          error("Summation of probabilities of Pi is not equal to one.")
-        end
-        if Pi != 0.0 && typeof(Pi) <: Number
-            error("Pi cannot be a number in multi-trait analysis.")
-        end
     end
 end
 
@@ -406,8 +377,28 @@ function check_pedigree(mme,df,pedigree)
     end
     if mme.ped != 0
         pedID=map(string,collect(keys(mme.ped.idMap)))
-        if mme.M!=0 && !issubset(mme.M.obsID,pedID)
-            error("Not all genotyped individuals are found in pedigree!")
+        if mme.M!=0
+            for Mi in mme.M
+                if !issubset(Mi.obsID,pedID)
+                    error("Not all genotyped individuals are found in pedigree!")
+                end
+            end
+        end
+    end
+end
+
+function check_genotypes(mme)
+    if mme.M != 0
+        obsID = mme.M[1].obsID
+        for Mi in mme.M
+            if obsID != Mi.obsID
+                error("genotypic information is not provided for same individuals")
+            end
+        end
+    end
+    if mme.M != 0 && mme.MCMCinfo.single_step_analysis == true
+        if length(mme.M) != 1
+            error("Now only one genomic category is allowed in single-step analysis.")
         end
     end
 end
@@ -422,18 +413,18 @@ function check_outputID(mme)
     if mme.MCMCinfo.outputEBV == false
         mme.output_ID = 0
     elseif mme.output_ID == 0 && mme.M != 0 #all genotyped inds if no output ID
-        mme.output_ID = copy(mme.M.obsID)
+        mme.output_ID = copy(mme.M[1].obsID)
     elseif mme.output_ID == 0 && mme.M == 0 && mme.pedTrmVec != 0 #all inds in PBLUP
         mme.output_ID = copy(mme.ped.IDs)
     end
 
     single_step_analysis = mme.MCMCinfo.single_step_analysis
     if single_step_analysis == false && mme.M != 0 #complete genomic data
-        if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M.obsID)
+        if mme.output_ID!=0 && !issubset(mme.output_ID,mme.M[1].obsID)
             printstyled("Testing individuals are not a subset of ",
             "genotyped individuals (complete genomic data,non-single-step). ",
             "Only output EBV for tesing individuals with genotypes.\n",bold=false,color=:red)
-            mme.output_ID = intersect(mme.output_ID,mme.M.obsID)
+            mme.output_ID = intersect(mme.output_ID,mme.M[1].obsID)
         end
     elseif mme.ped != false #1)incomplete genomic data 2)PBLUP
         pedID = map(string,collect(keys(mme.ped.idMap)))
@@ -446,7 +437,7 @@ function check_outputID(mme)
     end
     #Set ouput IDs to all genotyped inds in complete genomic data analysis for h² estimation
     if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.M != 0
-        mme.output_ID = copy(mme.M.obsID)
+        mme.output_ID = copy(mme.M[1].obsID)
     end
 
 end
@@ -475,11 +466,11 @@ function check_phenotypes(mme,df,heterogeneous_residuals)
     phenoID = df[!,1]
     single_step_analysis = (mme.MCMCinfo != false ? mme.MCMCinfo.single_step_analysis : false)
     if single_step_analysis == false && mme.M != 0 #complete genomic data
-        if !issubset(phenoID,mme.M.obsID)
+        if !issubset(phenoID,mme.M[1].obsID)
             printstyled("Phenotyped individuals are not a subset of ",
             "genotyped individuals (complete genomic data,non-single-step). ",
             "Only use phenotype information for genotyped individuals.",bold=false,color=:red)
-            index = [phenoID[i] in mme.M.obsID for i=1:length(phenoID)]
+            index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
         end
         printstyled("The number of observations with both genotypes and phenotypes used ",
@@ -519,7 +510,7 @@ function set_default_priors_for_variance_components(mme,df)
   phenovar  = diagm(0=>myvar)
   h2        = 0.5
 
-  genetic_random_count    = (mme.M!=0 ? 1 : 0)
+  genetic_random_count    = (mme.M!=0 ? length(mme.M) : 0)
   nongenetic_random_count = 1
   for random_term in mme.rndTrmVec
     if random_term.randomType == "A"
@@ -534,13 +525,17 @@ function set_default_priors_for_variance_components(mme,df)
   vare = phenovar*h2/nongenetic_random_count
 
   #genetic variance or marker effect variance
-  if mme.M!=0 && mme.M.G == false && mme.M.genetic_variance == false
-    printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    if mme.nModels==1
-      mme.M.genetic_variance = varg[1,1]
-    elseif mme.nModels>1
-      mme.M.genetic_variance = varg
-    end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+  if mme.M!=0
+    for Mi in mme.M
+      if Mi.G == false && Mi.genetic_variance == false
+          printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
+          if mme.nModels==1
+              Mi.genetic_variance = varg[1,1]
+          elseif mme.nModels>1
+              Mi.genetic_variance = varg
+          end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+      end
+    end
   end
   #residual effects
   if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
@@ -582,12 +577,8 @@ function init_mixed_model_equations(mme,df,sol)
     #starting value for sol can be provided
     if mme.M == 0                          #PBLUP
         nsol = size(mme.mmeLhs,1)
-    elseif mme.MCMCinfo.methods != "GBLUP" #Marker Effects Model
-        nsol = size(mme.mmeLhs,1)+mme.M.nMarkers*mme.nModels
-    elseif mme.MCMCinfo.methods == "GBLUP" #GBLUP
-        nsol = size(mme.mmeLhs,1)+mme.M.nObs*mme.nModels
     else
-        error("Starting values are not allowed.")
+        nsol = size(mme.mmeLhs,1)+sum((Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs) for Mi in mme.M)*mme.nModels
     end
     if sol == false #no starting values
         sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
@@ -679,18 +670,8 @@ function getMCMCinfo(mme)
     end
     MCMCinfo = mme.MCMCinfo
     printstyled("MCMC Information:\n\n",bold=true)
-
-    @printf("%-10s %40s\n","methods",MCMCinfo.methods)
-    if !(MCMCinfo.methods in ["conventional (no markers)"])
-      @printf("%51s\n",MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
-      @printf("%51s\n",MCMCinfo.single_step_analysis ? "(i.e., single-step analysis)" : "(i.e., non-single-step analysis)")
-    end
     @printf("%-30s %20s\n","chain_length",MCMCinfo.chain_length)
     @printf("%-30s %20s\n","burnin",MCMCinfo.burnin)
-    if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-      @printf("%-30s %20s\n","estimatePi",MCMCinfo.estimatePi ? "true" : "false")
-    end
-    @printf("%-30s %20s\n","estimateScale",MCMCinfo.estimateScale ? "true" : "false")
     @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value != zero(MCMCinfo.starting_value) ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",MCMCinfo.printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
@@ -700,58 +681,76 @@ function getMCMCinfo(mme)
     @printf("%-30s %20s\n","seed",MCMCinfo.seed)
 
     printstyled("\nHyper-parameters Information:\n\n",bold=true)
-
-    if mme.nModels==1
-        for i in mme.rndTrmVec
-            thisterm= join(i.term_array, ",")
+    for i in mme.rndTrmVec
+        thisterm= join(i.term_array, ",")
+        if mme.nModels == 1
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
-        end
-        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
-        if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-            if mme.M == 0
-                error("Please add genotypes using add_genotypes().")
-            end
-            @printf("%-30s %20.3f\n","genetic variances (genomic):",mme.M.genetic_variance)
-            @printf("%-30s %20.3f\n","marker effect variances:",mme.M.G)
-            @printf("%-30s %20s\n","π",MCMCinfo.Pi)
-        end
-    else
-        for i in mme.rndTrmVec
-            thisterm= join(i.term_array, ",")
+        else
             @printf("%-30s\n","random effect variances ("*thisterm*"):")
             Base.print_matrix(stdout,round.(inv(i.GiNew),digits=3))
             println()
         end
+    end
+    if mme.pedTrmVec!=0
+        @printf("%-30s\n","genetic variances (polygenic):")
+        Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
+        println()
+    end
+    if mme.nModels == 1
+        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
+    else
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(stdout,round.(mme.R,digits=3))
         println()
-        if mme.pedTrmVec!=0
-            @printf("%-30s\n","genetic variances (polygenic):")
-            Base.print_matrix(stdout,round.(inv(mme.Gi),digits=3))
+    end
+
+    printstyled("\nGenomic Information:\n\n",bold=true)
+    if mme.M != false
+        print(MCMCinfo.single_step_analysis ? "incomplete genomic data" : "complete genomic data")
+        println(MCMCinfo.single_step_analysis ? " (i.e., single-step analysis)" : " (i.e., non-single-step analysis)")
+        for Mi in mme.M
             println()
-        end
-        if !(MCMCinfo.methods in ["conventional (no markers)", "GBLUP"])
-            @printf("%-30s\n","genetic variances (genomic):")
-            if mme.M.genetic_variance != false
-                Base.print_matrix(stdout,round.(mme.M.genetic_variance,digits=3))
-            end
-            println()
-            @printf("%-30s\n","marker effect variances:")
-            Base.print_matrix(stdout,round.(mme.M.G,digits=3))
-            println()
-            if !(MCMCinfo.methods in ["RR-BLUP","BayesL"])
-                println("\nΠ: (Y(yes):included; N(no):excluded)\n")
-                print(string.(mme.lhsVec))
-                @printf("%20s\n","probability")
-                for (i,j) in MCMCinfo.Pi
-                    i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
-                    print(i)
-                    @printf("%20s\n",j)
+            @printf("%-30s %20s\n","Genomic Category", Mi.name)
+            @printf("%-30s %20s\n","Method",Mi.method)
+            for Mi in mme.M
+                if Mi.genetic_variance != false
+                    if mme.nModels == 1
+                        @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
+                    else
+                        @printf("%-30s\n","genetic variances (genomic):")
+                        Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
+                        println()
+                    end
                 end
+                if !(Mi.method in ["GBLUP"])
+                    if mme.nModels == 1
+                        @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
+                    else
+                        @printf("%-30s\n","marker effect variances:")
+                        Base.print_matrix(stdout,round.(Mi.G,digits=3))
+                        println()
+                    end
+                end
+                if !(Mi.method in ["RR-BLUP","BayesL","GBLUP"])
+                    if mme.nModels == 1
+                        @printf("%-30s %20s\n","π",Mi.π)
+                    else
+                        println("\nΠ: (Y(yes):included; N(no):excluded)\n")
+                        print(string.(mme.lhsVec))
+                        @printf("%20s\n","probability")
+                        for (i,j) in Mi.π
+                            i = replace(string.(i),"1.0"=>"Y","0.0"=>"N")
+                            print(i)
+                            @printf("%20s\n",j)
+                        end
+                        println()
+                    end
+                    @printf("%-30s %20s\n","estimatePi",Mi.estimatePi ? "true" : "false")
+                end
+                @printf("%-30s %20s\n","estimateScale",Mi.estimateScale ? "true" : "false")
             end
         end
     end
-
     printstyled("\nDegree of freedom for hyper-parameters:\n\n",bold=true)
     @printf("%-30s %20.3f\n","residual variances:",mme.df.residual)
     for randomeffect in mme.rndTrmVec

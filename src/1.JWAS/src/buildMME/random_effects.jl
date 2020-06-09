@@ -112,6 +112,9 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
           printstyled(trm," is not found in model equation ",string(m),".\n",bold=false,color=:green)
         end
       end
+      if length(res) == 0
+        error(trm," is not found in model equation.")
+      end
     end                                               # "y1:litter"; "y2:litter"; "y1:group"
     ############################################################################
     #Set type of model terms

@@ -1,3 +1,13 @@
+function MTBayesL!(genotypes,ycorr_array,vare)
+    MTBayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            ycorr_array,genotypes.α,genotypes.gammaArray,vare,genotypes.G)
+end
+
+function MTBayesC0!(genotypes,ycorr_array,vare)
+    MTBayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            ycorr_array,genotypes.α,[1.0],vare,genotypes.G)
+end
+
 function MTBayesL!(xArray,xRinvArray,xpRinvx,
                    wArray,alphaArray,gammaArray,
                    vare,varEffect)
@@ -39,9 +49,6 @@ function MTBayesL!(xArray,xRinvArray,xpRinvx,
         end
     end
 end
-
-MTBayesC0!(xArray,xRinvArray,xpRinvx,wArray,alphaArray,vare,varEffect) =
-  MTBayesL!(xArray,xRinvArray,xpRinvx,wArray,alphaArray,[1.0],vare,varEffect)
 
 function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     Gi = inv(mmeMG)

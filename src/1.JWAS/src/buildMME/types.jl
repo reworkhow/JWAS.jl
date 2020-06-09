@@ -77,6 +77,8 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
 end
 
 mutable struct Genotypes
+  name                            #name for this category
+
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
   nObs::Int64                     #length of obsID
@@ -85,10 +87,46 @@ mutable struct Genotypes
   sum2pq::AbstractFloat
   centered::Bool
   genotypes::Union{Array{Float64,2},Array{Float32,2}}
+  nLoci             #number of markers included in the model
+  ntraits           #number of traits included in the model
+
   genetic_variance  #genetic variance
   G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
   scale             #scale parameter for marker effect variance (G)
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(a1,a2,a3,a4,a5,a6,a7,a8,false,false,false)
+  df                #degree of freedom
+
+  method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
+  estimatePi
+  estimateScale
+
+  mArray            #a collection of matrices used in Bayesian Alphabet
+  mRinvArray        #a collection of matrices used in Bayesian Alphabet
+  mpRinvm           #a collection of matrices used in Bayesian Alphabet
+  D                 #eigen values used in GBLUP
+  gammaArray        #array used in Bayesian LASSO
+
+  α                 #array of current MCMC samples
+  β
+  δ
+  π
+
+  meanAlpha         #arrays of results
+  meanAlpha2
+  meanDelta
+  mean_pi
+  mean_pi2
+  meanVara
+  meanVara2
+  meanScaleVara
+  meanScaleVara2
+
+  output_genotypes #output genotypes
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,a1,a2,a3,a4,a5,a6,a7,a8,a4,
+                                         false,false,false,false,
+                                         false,false,false,
+                                         false,false,false,false,false,
+                                         false,false,false,false,
+                                         false,false,false,false,false,false,false,false,false)
 end
 
 mutable struct DF
@@ -105,10 +143,6 @@ mutable struct MCMCinfo
     output_samples_frequency
     printout_model_info
     printout_frequency
-    methods
-    Pi
-    estimatePi
-    estimateScale
     single_step_analysis
     missing_phenotypes
     constraint
