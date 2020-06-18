@@ -11,21 +11,26 @@ function SSBRrun(mme,df,big_memory=false)
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
-    add_term(mme,"J") #centering parameter
+    if mme.MCMCinfo.fitting_J_vector == true
+        add_term(mme,"J") #centering parameter
+    end
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
     data_ϵ    = deepcopy(obsID)
     data_ϵ[.!isnongeno].="missing"
     df[!,Symbol("ϵ")]=data_ϵ
 
-    df[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)
-    set_covariate(mme,"J")
+    if mme.MCMCinfo.fitting_J_vector == true
+        df[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)
+        set_covariate(mme,"J")
+    end
     set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
     end
-
-    outputMCMCsamples(mme,"J")
+    if mme.MCMCinfo.fitting_J_vector == true
+        outputMCMCsamples(mme,"J")
+    end
     outputMCMCsamples(mme,"ϵ")
 end
 

@@ -103,12 +103,16 @@ function get_breeding_values(mme,output_file,chain_length,output_samples_frequen
 
     if haskey(mme.output_X,"J") #single-step analyis
         for traiti in 1:mme.nModels
-            file_J     = output_file*"_"*string(traiti)*":J"*".txt"
-            file_ϵ     = output_file*"_"*string(traiti)*":ϵ"*".txt"
-
+            file_J      = output_file*"_"*string(traiti)*":J"*".txt"
             BVsamples_J = mme.output_X["J"]*(readdlm(file_J,',',header=true)[1])'
+            BVsamples[string(mme.lhsVec[traiti])] += BVsamples_J
+        end
+    end
+    if haskey(mme.output_X,"ϵ") #single-step analyis
+        for traiti in 1:mme.nModels
+            file_ϵ     = output_file*"_"*string(traiti)*":ϵ"*".txt"
             BVsamples_ϵ = mme.output_X["ϵ"]*(readdlm(file_ϵ,',',header=true)[1])'
-            BVsamples[string(mme.lhsVec[traiti])] += (BVsamples_J+BVsamples_ϵ)
+            BVsamples[string(mme.lhsVec[traiti])] += BVsamples_ϵ
         end
     end
 

@@ -144,6 +144,7 @@ mutable struct MCMCinfo
     printout_model_info
     printout_frequency
     single_step_analysis
+    fitting_J_vector
     missing_phenotypes
     constraint
     estimate_variance

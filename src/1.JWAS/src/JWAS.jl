@@ -127,6 +127,7 @@ function runMCMC(mme::MME,df;
                 estimate_variance               = true,
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
+                fitting_J_vector                = true,
                 categorical_trait               = false,
                 missing_phenotypes              = true,
                 constraint                      = false,
@@ -176,6 +177,7 @@ function runMCMC(mme::MME,df;
                             printout_model_info,
                             printout_frequency,
                             single_step_analysis, #pedigree,
+                            fitting_J_vector,
                             missing_phenotypes,
                             constraint,
                             estimate_variance,
