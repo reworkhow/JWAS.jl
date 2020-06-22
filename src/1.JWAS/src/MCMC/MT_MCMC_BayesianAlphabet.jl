@@ -1,16 +1,12 @@
 function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                         Rinv                       = false,
                         burnin                     = 0,
-                        Pi                         = 0.0,
-                        estimatePi                 = false,
-                        estimate_variance          = true,
-                        estimateScale              = false,
                         sol                        = false,
                         outFreq                    = 1000,
-                        output_samples_frequency   = 0,
-                        methods                    = "conventional (no markers)",
                         missing_phenotypes         = false,
                         constraint                 = false,
+                        estimate_variance          = true,
+                        output_samples_frequency   = 0,
                         update_priors_frequency    = 0,
                         output_file                = "MCMC_samples",
                         causal_structure           = false)
@@ -139,7 +135,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     #MCMC
     ############################################################################
-    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    @showprogress "running MCMC..." for iter=1:nIter
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################

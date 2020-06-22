@@ -286,6 +286,7 @@ function runMCMC(mme::MME,df;
     else #multi-trait analysis
         mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
                       Rinv   = mme.invweights,
+                      burnin = burnin,
                       sol    = mme.MCMCinfo.starting_value,
                       outFreq= printout_frequency,
                       missing_phenotypes=missing_phenotypes,

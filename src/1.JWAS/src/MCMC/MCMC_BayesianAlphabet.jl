@@ -16,16 +16,12 @@
 function MCMC_BayesianAlphabet(nIter,mme,df;
                      Rinv                       = false,
                      burnin                     = 0,
-                     π                          = 0.0,
-                     estimatePi                 = false,
                      estimate_variance          = false,
-                     estimateScale              = false,
                      starting_value             = false,
                      outFreq                    = 1000,
-                     methods                    = "BayesC",
                      output_samples_frequency   = 0,
-                     update_priors_frequency    = 0,
                      output_file                = "MCMC_samples",
+                     update_priors_frequency    = 0,
                      categorical_trait          = false)
 
     ############################################################################
@@ -100,7 +96,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    @showprogress "running MCMC ..." for iter=1:nIter
         ########################################################################
         # 0. Categorical traits (liabilities)
         ########################################################################
@@ -197,10 +193,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 2.6 sample Scale parameter in prior for marker effect variances
         ########################################################################
-        if estimateScale == true
-            a = size(mme.M.G,1)*mme.df.marker/2   + 1
-            b = sum(mme.df.marker ./ (2*mme.M.G )) + 1
-            mme.M.scale = rand(Gamma(a,1/b))
+        if mme.M != 0
+            for Mi in mme.M
+                if Mi.estimateScale == true
+                    a = size(Mi.G,1)*Mi.df/2   + 1
+                    b = sum(Mi.df ./ (2*Mi.G)) + 1
+                    Mi.scale = rand(Gamma(a,1/b))
+                end
+            end
         end
         ########################################################################
         # 3.1 Save MCMC samples
@@ -232,7 +232,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                         Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
                         Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
                     end
-                    if estimateScale == true
+                    if Mi.estimateScale == true
                         Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
                         Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
                     end
