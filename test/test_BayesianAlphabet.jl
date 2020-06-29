@@ -119,7 +119,7 @@ for single_step in [false,true]
                   gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model2)
+                  gwas2=GWAS(model2,mapfile,"MCMC_samples_marker_effects_geno_y1.txt","MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
                   show(gwas2)
             end
             cd("..")
@@ -226,7 +226,7 @@ for single_step in [false,true]
                   gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model2)
+                  gwas2=GWAS(model2,mapfile,"MCMC_samples_marker_effects_geno_y1.txt","MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
                   show(gwas2)
             end
             cd("..")
