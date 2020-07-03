@@ -79,7 +79,7 @@ end
     * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                       method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimateScale=false,
+                       method = "RR-BLUP",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0)
     if typeof(file) <: AbstractString
@@ -131,7 +131,8 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
     genotypes.df         = df #It will be modified base on number of traits in build_model()
-    genotypes.estimateScale = estimateScale
+    genotypes.estimateScale    = estimateScale
+    genotypes.estimateVariance = estimateVariance
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("#markers: ",size(genotypes.genotypes,2),"; #individuals: ",size(genotypes.genotypes,1))

@@ -104,20 +104,21 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
         end
         ########################################################################
-        # 1.1. Non-Marker Location Parameters
+        # 1. Non-Marker Location Parameters
         ########################################################################
+        # 1.1 Update Left-hand-side of MME
+        addVinv(mme)
+        # 1.2 Update Right-hand-side of MME
         ycorr = ycorr + mme.X*sol
         if Rinv == false
             rhs = mme.X'ycorr
         else
             rhs = mme.X'Diagonal(Rinv)*ycorr
         end
-
         Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
-
         ycorr = ycorr - mme.X*sol
         ########################################################################
-        # 1.2 Marker Effects
+        # 2. Marker Effects
         ########################################################################
         if mme.M !=0
             for Mi in mme.M
@@ -131,50 +132,59 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 elseif Mi.method == "GBLUP"
                     GBLUP!(Mi,ycorr,mme.RNew,Rinv)
                 end
-                if Mi.estimatePi == true #method specific pi?
+                ########################################################################
+                # Marker Inclusion Probability
+                ########################################################################
+                if Mi.estimatePi == true
                     Mi.π = samplePi(Mi.nLoci, Mi.nMarkers)
+                end
+                ########################################################################
+                # Marker Effects Variance
+                ########################################################################
+                if Mi.estimateVariance == true #methd specific estimate_variance
+                    if Mi.method in ["BayesC","RR-BLUP"]
+                        Mi.G  = sample_variance(Mi.α, Mi.nLoci, Mi.df, Mi.scale)
+                    elseif Mi.method == "BayesB"
+                        for j=1:Mi.nMarkers
+                            Mi.G[j] = sample_variance(Mi.β[j],1,Mi.df, Mi.scale)
+                        end
+                    elseif Mi.method == "BayesL"
+                        ssq = 0.0
+                        for i=1:size(Mi.α,1)
+                            ssq += Mi.α[i]^2/Mi.gammaArray[i]
+                        end
+                        Mi.G = (ssq + Mi.df*Mi.scale)/rand(Chisq(Mi.nLoci+Mi.df))
+                        # MH sampler of gammaArray (Appendix C in paper)
+                        sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)
+                    elseif Mi.method == "GBLUP"
+                        Mi.G  = sample_variance(Mi.α./sqrt.(Mi.D), Mi.nObs,Mi.df, Mi.scale)
+                    end
+                end
+                ########################################################################
+                # Scale Parameter in Priors for Marker Effect Variances
+                ########################################################################
+                if Mi.estimateScale == true
+                    a = size(Mi.G,1)*Mi.df/2   + 1
+                    b = sum(Mi.df ./ (2*Mi.G)) + 1
+                    Mi.scale = rand(Gamma(a,1/b))
                 end
             end
         end
         ########################################################################
-        # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
-        # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
+        # 3. Non-marker Variance Components
         ########################################################################
         if mme.MCMCinfo.estimate_variance == true
+            ########################################################################
+            # 3.1 Variance of Non-marker Random Effects
+            # e.g, iid; polygenic effects (pedigree)
+            ########################################################################
             sampleVCs(mme,sol)
-            addVinv(mme)
-        end
-        ########################################################################
-        # 2.3 Residual Variance
-        ########################################################################
-        if categorical_trait == false && mme.MCMCinfo.estimate_variance == true
-            mme.ROld = mme.RNew
-            mme.RNew = sample_variance(ycorr.* (Rinv!=false ? sqrt.(Rinv) : 1.0), length(ycorr), mme.df.residual, mme.scaleRes)
-        end
-        ########################################################################
-        # 2.4 Marker Effects Variance
-        ########################################################################
-        if mme.M != 0 && mme.MCMCinfo.estimate_variance == true #methd specific estimate_variance
-            for Mi in mme.M
-                if Mi.method in ["BayesC","RR-BLUP"]
-                    Mi.G  = sample_variance(Mi.α, Mi.nLoci, Mi.df, Mi.scale)
-                elseif Mi.method == "BayesB"
-                    for j=1:Mi.nMarkers
-                        Mi.G[j] = sample_variance(Mi.β[j],1,Mi.df, Mi.scale)
-                    end
-                elseif Mi.method == "BayesL"
-                    ssq = 0.0
-                    for i=1:size(Mi.α,1)
-                        ssq += Mi.α[i]^2/Mi.gammaArray[i]
-                    end
-                    Mi.G = (ssq + Mi.df*Mi.scale)/rand(Chisq(Mi.nLoci+Mi.df))
-                    # MH sampler of gammaArray (Appendix C in paper)
-                    sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)
-                elseif Mi.method == "GBLUP"
-                    Mi.G  = sample_variance(Mi.α./sqrt.(Mi.D), Mi.nObs,Mi.df, Mi.scale)
-                else
-                    error("Sampling of marker effect variances is not available")
-                end
+            ########################################################################
+            # 3.2 Residual Variance
+            ########################################################################
+            if categorical_trait == false
+                mme.ROld = mme.RNew
+                mme.RNew = sample_variance(ycorr.* (Rinv!=false ? sqrt.(Rinv) : 1.0), length(ycorr), mme.df.residual, mme.scaleRes)
             end
         end
         ########################################################################
@@ -189,18 +199,6 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
             end
             mme.scaleRes  =  meanVare*(mme.df.residual-2)/mme.df.residual
             println("\n Update priors from posteriors.")
-        end
-        ########################################################################
-        # 2.6 sample Scale parameter in prior for marker effect variances
-        ########################################################################
-        if mme.M != 0
-            for Mi in mme.M
-                if Mi.estimateScale == true
-                    a = size(Mi.G,1)*Mi.df/2   + 1
-                    b = sum(Mi.df ./ (2*Mi.G)) + 1
-                    Mi.scale = rand(Gamma(a,1/b))
-                end
-            end
         end
         ########################################################################
         # 3.1 Save MCMC samples
