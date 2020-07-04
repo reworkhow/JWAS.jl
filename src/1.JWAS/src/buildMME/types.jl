@@ -122,12 +122,14 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,a1,a2,a3,a4,a5,a6,a7,a8,a4,
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,
+                                         a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,
-                                         false,false,false,false,
-                                         false,false,false,false,false,false,false,false,false)
+                                         zeros(a4),false,false,false,
+                                         false,false,false,false,false,false,false,false,false,
+                                         false)
 end
 
 mutable struct DF

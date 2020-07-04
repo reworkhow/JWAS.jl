@@ -81,7 +81,8 @@ end
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                        method = "RR-BLUP",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
                        separator=',',header=true,rowID=false,
-                       center=true,G_is_marker_variance = false,df = 4.0)
+                       center=true,G_is_marker_variance = false,df = 4.0,
+                       starting_value=false)
     if typeof(file) <: AbstractString
         printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
@@ -136,6 +137,18 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("#markers: ",size(genotypes.genotypes,2),"; #individuals: ",size(genotypes.genotypes,1))
+
+    #starting values for marker effects
+    if starting_value != false
+        printstyled("Starting values are provided for marker efffects. The order of starting values should be\n",
+        "markers for each traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
+        nsol = (method != "GBLUP" ? nMarkers : nObs)
+        if length(starting_value)%nsol != 0 #work for both single and multiple traits
+            error("length of starting values is wrong.")
+        end
+        genotypes.α = starting_value
+    end
+
 
     return genotypes
 end
