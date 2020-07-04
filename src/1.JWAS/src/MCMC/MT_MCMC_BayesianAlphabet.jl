@@ -89,11 +89,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     end
     ##Phenotypes CORRECTED for all effects
     ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
-    if mme.M != 0 && α!=zero(α)
-        nObs     = mme.M.nObs
-        nMarkers = mme.M.nMarkers
-        for traiti in 1:mme.nModels
-            ycorr[(traiti-1)*nObs+1 : traiti*nObs] = ycorr[(traiti-1)*nObs+1 : traiti*nObs] - mme.M.genotypes*α[(traiti-1)*nMarkers+1 : traiti*nMarkers]
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.α != zero(Mi.α)
+                for traiti in 1:mme.nModels
+                    ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs] = ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs]
+                                                                   - Mi.genotypes*α[(traiti-1)*Mi.nMarkers+1 : traiti*Mi.nMarkers]
+                end
+            end
         end
     end
     wArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits)
@@ -103,21 +106,9 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         wArray[traiti]        = unsafe_wrap(Array,ptr,nObs)
     end
 
-    #if starting values for marker effects are provided,
-    #re-calculate mmeLhs and mmeRhs (non-genomic mixed model equation)
-    if mme.M != 0 && α!=zero(α)
-        ycorr[:]   = ycorr[:] + X*sol
-        Ri         = mkRi(mme,df,mme.invweights)
-        mme.mmeLhs = mme.X'Ri*mme.X
-        mme.mmeRhs = mme.X'Ri*ycorr
-        for random_term in mme.rndTrmVec
-          random_term.GiOld = zero(random_term.GiOld)
-        end
-        addVinv(mme)
-        for random_term in mme.rndTrmVec
-          random_term.GiOld = copy(random_term.GiNew)
-        end
-    end
+    #Starting value for Ri is made based on missing value pattern
+    #(imputed phenotypes will not used to compute first mmeRhs)
+    Ri         = mkRi(mme,df,mme.invweights)
     ############################################################################
     # Starting values for SEM
     ############################################################################
@@ -137,12 +128,22 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     ############################################################################
     @showprogress "running MCMC..." for iter=1:nIter
         ########################################################################
-        # 1.1. Non-Marker Location Parameters
+        # 1. Non-Marker Location Parameters
         ########################################################################
+        if mme.MCMCinfo.missing_phenotypes==true
+          ycorr[:]=sampleMissingResiduals(mme,ycorr)
+        end
+        # 1.1 Update Left-hand-side of MME
+        mme.mmeLhs =  mme.X'Ri* mme.X #LHS for normal equation (no random effects)
+        addVinv(mme)
+        # 1.2 Update Right-hand-side of MME
+        ycorr[:]   = ycorr[:] + mme.X*sol
+        mme.mmeRhs =  mme.X'Ri*ycorr
+
         Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
         ycorr[:] = ycorr[:] - mme.X*sol
         ########################################################################
-        # 1.2 Marker Effects
+        # 2. Marker Effects
         ########################################################################
         if mme.M != 0
             for Mi in mme.M
@@ -156,101 +157,84 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
                 elseif Mi.method == "GBLUP"
                     MTGBLUP!(Mi,wArray,ycorr,mme.R,Rinv)
                  end
+                 ########################################################################
+                 # Marker Inclusion Probability
+                 ########################################################################
                 if Mi.estimatePi == true
                     samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
                 end
-            end
-        end
-        ########################################################################
-        # 2.1 Residual Covariance Matrix
-        ########################################################################
-        resVec = ycorr #here resVec is alias for ycor ***
-
-        if missing_phenotypes==true
-          resVec[:]=sampleMissingResiduals(mme,resVec)
-        end
-
-        if estimate_variance == true
-            sample_variance(mme,resVec,Rinv,constraint=constraint)
-        end
-        Ri = kron(inv(mme.R),spdiagm(0=>Rinv))
-        ########################################################################
-        # -- LHS and RHS for conventional MME (No Markers)
-        # -- Position: between new Ri and new Ai
-        ########################################################################
-        X          = mme.X
-        mme.mmeLhs = X'Ri*X #LHS for normal equation (no random effects)
-        ycorr[:]   = ycorr[:] + X*sol #same to ycorr[:]=resVec+X*sol
-        mme.mmeRhs = X'Ri*ycorr
-        ########################################################################
-        # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
-        # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
-        ########################################################################
-        if estimate_variance == true
-            sampleVCs(mme,sol)
-            addVinv(mme)
-        end
-        ########################################################################
-        # 2.3 Marker Covariance Matrix
-        ########################################################################
-
-        if mme.M != 0 && mme.MCMCinfo.estimate_variance == true
-            for Mi in mme.M
-                SM    = zero(Mi.scale)
-                if Mi.method == "BayesC"
-                    for traiti = 1:Mi.ntraits
-                        for traitj = traiti:Mi.ntraits
-                            SM[traiti,traitj]   = (Mi.β[traiti]'Mi.β[traitj])
-                            SM[traitj,traiti]   = SM[traiti,traitj]
+                ########################################################################
+                # Marker Effects Variance
+                ########################################################################
+                if Mi.estimateVariance == true
+                    SM    = zero(Mi.scale)
+                    if Mi.method == "BayesC"
+                        for traiti = 1:Mi.ntraits
+                            for traitj = traiti:Mi.ntraits
+                                SM[traiti,traitj]   = (Mi.β[traiti]'Mi.β[traitj])
+                                SM[traitj,traiti]   = SM[traiti,traitj]
+                            end
                         end
-                    end
-                    Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-                elseif Mi.method == "RR-BLUP"
-                    for traiti = 1:Mi.ntraits
-                        for traitj = traiti:Mi.ntraits
-                            SM[traiti,traitj]   = (Mi.α[traiti]'Mi.α[traitj])
-                            SM[traitj,traiti]   = SM[traiti,traitj]
+                        Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
+                    elseif Mi.method == "RR-BLUP"
+                        for traiti = 1:Mi.ntraits
+                            for traitj = traiti:Mi.ntraits
+                                SM[traiti,traitj]   = (Mi.α[traiti]'Mi.α[traitj])
+                                SM[traitj,traiti]   = SM[traiti,traitj]
+                            end
                         end
-                    end
-                    Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-                elseif Mi.method == "BayesL"
-                    for traiti = 1:Mi.ntraits
-                        alphai = Mi.α[traiti]./Mi.gammaArray
-                        for traitj = traiti:Mi.ntraits
-                            SM[traiti,traitj]   = (alphai'Mi.α[traitj])
-                            SM[traitj,traiti]   = SM[traiti,traitj]
+                        Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
+                    elseif Mi.method == "BayesL"
+                        for traiti = 1:Mi.ntraits
+                            alphai = Mi.α[traiti]./Mi.gammaArray
+                            for traitj = traiti:Mi.ntraits
+                                SM[traiti,traitj]   = (alphai'Mi.α[traitj])
+                                SM[traitj,traiti]   = SM[traiti,traitj]
+                            end
                         end
-                    end
-                    Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-                    sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)# MH sampler of gammaArray (Appendix C in paper)
-                elseif Mi.method == "BayesB"
-                    marker_effects_matrix = Mi.β[1]
-                    for traiti = 2:Mi.ntraits
-                        marker_effects_matrix = [marker_effects_matrix Mi.β[traiti]]
-                    end
-                    marker_effects_matrix = marker_effects_matrix'
-                    beta2 = [marker_effects_matrix[:,i]*marker_effects_matrix[:,i]' for i=1:size(marker_effects_matrix,2)]
-                    for markeri = 1:Mi.nMarkers
-                        Mi.G[markeri] = rand(InverseWishart(Mi.df + 1, convert(Array,Symmetric(Mi.scale + beta2[markeri]))))
-                    end
-                elseif Mi.method == "GBLUP"
-                    for traiti = 1:Mi.ntraits
-                        for traitj = traiti:Mi.ntraits
-                            alphaArrayi         = Mi.α[traiti]
-                            alphaArrayj         = Mi.α[traitj]
-                            SM[traiti,traitj]   = alphaArrayi'*Diagonal(1 ./Mi.D)*alphaArrayj
-                            SM[traitj,traiti]   = SM[traiti,traitj]
+                        Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
+                        sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)# MH sampler of gammaArray (Appendix C in paper)
+                    elseif Mi.method == "BayesB"
+                        marker_effects_matrix = Mi.β[1]
+                        for traiti = 2:Mi.ntraits
+                            marker_effects_matrix = [marker_effects_matrix Mi.β[traiti]]
                         end
+                        marker_effects_matrix = marker_effects_matrix'
+                        beta2 = [marker_effects_matrix[:,i]*marker_effects_matrix[:,i]' for i=1:size(marker_effects_matrix,2)]
+                        for markeri = 1:Mi.nMarkers
+                            Mi.G[markeri] = rand(InverseWishart(Mi.df + 1, convert(Array,Symmetric(Mi.scale + beta2[markeri]))))
+                        end
+                    elseif Mi.method == "GBLUP"
+                        for traiti = 1:Mi.ntraits
+                            for traitj = traiti:Mi.ntraits
+                                alphaArrayi         = Mi.α[traiti]
+                                alphaArrayj         = Mi.α[traitj]
+                                SM[traiti,traitj]   = alphaArrayi'*Diagonal(1 ./Mi.D)*alphaArrayj
+                                SM[traitj,traiti]   = SM[traiti,traitj]
+                            end
+                        end
+                        Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
                     end
-                    Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-                else
-                    error("Sampling of marker effect variances is not available")
                 end
             end
         end
-
         ########################################################################
-        # 2.4 Causal Relationships among phenotypes (Structure Equation Model)
+        # 3. Non-marker Variance Components
+        ########################################################################
+        if mme.MCMCinfo.estimate_variance == true
+            ########################################################################
+            # 3.1 Variance of Non-marker Random Effects
+            # e.g, iid; polygenic effects (pedigree)
+            ########################################################################
+            sampleVCs(mme,sol)
+            ########################################################################
+            # 3.2 Residual Variance
+            ########################################################################
+            sample_variance(mme,ycorr,Rinv,constraint=constraint)
+            Ri = kron(inv(mme.R),spdiagm(0=>Rinv))
+        end
+        ########################################################################
+        # 4. Causal Relationships among Phenotypes (Structure Equation Model)
         ########################################################################
         if causal_structure != false
             sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes

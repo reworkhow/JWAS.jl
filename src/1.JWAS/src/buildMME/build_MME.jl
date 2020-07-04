@@ -282,14 +282,17 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Random effects parts in MME
-    #trick to enable addLambdas() 1st time ???
-    #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
-    for random_term in mme.rndTrmVec
-      random_term.GiOld = zero(random_term.GiOld)
-    end
-    addVinv(mme)
-    for random_term in mme.rndTrmVec
-      random_term.GiOld = copy(random_term.GiNew)
+    if mme.nModels == 1
+      #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
+      for random_term in mme.rndTrmVec #trick
+        random_term.GiOld = zero(random_term.GiOld)
+      end
+      addVinv(mme)
+      for random_term in mme.rndTrmVec #trick
+        random_term.GiOld = copy(random_term.GiNew)
+      end
+    else
+      addVinv(mme)
     end
 
     dropzeros!(mme.mmeLhs)
