@@ -13,32 +13,31 @@
 #2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
 #Heredity, 110(3), 213–219.
 ################################################################################
-function MCMC_BayesianAlphabet(nIter,mme,df;
-                     Rinv                       = false,
-                     burnin                     = 0,
-                     estimate_variance          = false,
-                     starting_value             = false,
-                     outFreq                    = 1000,
-                     output_samples_frequency   = 0,
-                     output_file                = "MCMC_samples",
-                     update_priors_frequency    = 0,
-                     categorical_trait          = false)
-
+function MCMC_BayesianAlphabet(mme,df)
+    ############################################################################
+    chain_length             = mme.MCMCinfo.chain_length
+    burnin                   = mme.MCMCinfo.burnin
+    output_samples_frequency = mme.MCMCinfo.output_samples_frequency
+    output_samples_file      = mme.MCMCinfo.output_samples_file
+    estimate_variance        = mme.MCMCinfo.estimate_variance
+    Rinv                     = mme.invweights
+    update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
+    categorical_trait        = mme.MCMCinfo.categorical_trait
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
     if categorical_trait == true
-        category_obs,threshold = categorical_trait_setup(mme,starting_value)
+        category_obs,threshold = categorical_trait_setup!(mme)
     end
     ############################################################################
     # Working Variables
-    # 1) samples at current iteration (starting values at the beginning, defaulting to zeros)
+    # 1) samples at current iteration (starting values default to zeros)
     # 2) posterior mean and variance at current iteration (zeros at the beginning)
-    # 3) ycorr, phenotypes corrected for all effects
+    # 3) ycorr: phenotypes corrected for all effects
     ############################################################################
     #location parameters
-    sol                = starting_value[1:size(mme.mmeLhs,1)]
-    solMean, solMean2  = zero(sol),zero(sol)
+    #mme.sol (starting values were set in runMCMC)
+    mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
     if categorical_trait == false
         meanVare = meanVare2 = 0.0
@@ -52,7 +51,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     #marker effects
     if mme.M != 0
         for Mi in mme.M
-            Mi.α      = zeros(Mi.nMarkers) #SET starting values in get_genotypes
+            #Mi.α  (starting values were set in get_genotypes)
             mGibbs    = GibbsMats(Mi.genotypes,Rinv)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
@@ -66,7 +65,6 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
                 Mi.gammaArray = rand(gammaDist,Mi.nMarkers)
             end
             if Mi.method=="GBLUP"
-                Mi.α      = zeros(Mi.nObs) #SET starting values in get_genotypes
                 GBLUP_setup(Mi)
             end
             Mi.β                               = copy(Mi.α)       #partial marker effeccts used in BayesB
@@ -79,7 +77,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         end
     end
     #phenotypes corrected for all effects
-    ycorr  = vec(Matrix(mme.ySparse)-mme.X*sol)
+    ycorr  = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
     if mme.M != 0
         for Mi in mme.M
             if Mi.α != zero(Mi.α)
@@ -91,12 +89,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-        outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
+        outfile=output_MCMC_samples_setup(mme,chain_length-burnin,
+                                          output_samples_frequency,
+                                          output_samples_file)
     end
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    @showprogress "running MCMC ..." for iter=1:nIter
+    @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical traits (liabilities)
         ########################################################################
@@ -109,14 +109,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 1.1 Update Left-hand-side of MME
         addVinv(mme)
         # 1.2 Update Right-hand-side of MME
-        ycorr = ycorr + mme.X*sol
+        ycorr = ycorr + mme.X*mme.sol
         if Rinv == false
             rhs = mme.X'ycorr
         else
             rhs = mme.X'Diagonal(Rinv)*ycorr
         end
-        Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
-        ycorr = ycorr - mme.X*sol
+        Gibbs(mme.mmeLhs,mme.sol,rhs,mme.RNew)
+        ycorr = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
@@ -173,12 +173,12 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 3. Non-marker Variance Components
         ########################################################################
-        if mme.MCMCinfo.estimate_variance == true
+        if estimate_variance == true
             ########################################################################
             # 3.1 Variance of Non-marker Random Effects
             # e.g, iid; polygenic effects (pedigree)
             ########################################################################
-            sampleVCs(mme,sol)
+            sampleVCs(mme,mme.sol)
             ########################################################################
             # 3.2 Residual Variance
             ########################################################################
@@ -204,13 +204,13 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+            output_MCMC_samples(mme,mme.sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
 
-            nsamples = (iter-burnin)/output_samples_frequency
-            solMean   += (sol - solMean)/nsamples
-            solMean2  += (sol .^2 - solMean2)/nsamples
-            meanVare  += (mme.RNew - meanVare)/nsamples
-            meanVare2 += (mme.RNew .^2 - meanVare2)/nsamples
+            nsamples       = (iter-burnin)/output_samples_frequency
+            mme.solMean   += (mme.sol - mme.solMean)/nsamples
+            mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
+            meanVare      += (mme.RNew - meanVare)/nsamples
+            meanVare2     += (mme.RNew .^2 - meanVare2)/nsamples
 
             if mme.pedTrmVec != 0
                 G0Mean  += (inv(mme.Gi)  - G0Mean )/nsamples
@@ -241,7 +241,7 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 3.2 Printout
         ########################################################################
-        if iter%outFreq==0 && iter>burnin
+        if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual variance: ",round(meanVare,digits=6))
         end
@@ -257,13 +257,14 @@ function MCMC_BayesianAlphabet(nIter,mme,df;
     end
     if methods == "GBLUP"
         for Mi in mme.M
-            mv(output_file*"_marker_effects_variances"*"_"*Mi.name*".txt",output_file*"_genetic_variance(REML)"*"_"*Mi.name*".txt")
+            mv(output_samples_file*"_marker_effects_variances"*"_"*Mi.name*".txt",
+               output_samples_file*"_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-    output=output_result(mme,output_file,
-                         solMean,meanVare,
+    output=output_result(mme,output_samples_file,
+                         mme.solMean,meanVare,
                          mme.pedTrmVec!=0 ? G0Mean : false,
-                         solMean2,meanVare2,
+                         mme.solMean2,meanVare2,
                          mme.pedTrmVec!=0 ? G0Mean2 : false)
     return output
 end

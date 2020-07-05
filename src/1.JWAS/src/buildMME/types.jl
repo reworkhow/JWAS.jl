@@ -127,7 +127,7 @@ mutable struct Genotypes
                                          false,false,false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,
-                                         zeros(a4),false,false,false,
+                                         false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
                                          false)
 end
@@ -141,7 +141,6 @@ end
 
 mutable struct MCMCinfo
     chain_length
-    starting_value
     burnin
     output_samples_frequency
     printout_model_info
@@ -226,6 +225,10 @@ mutable struct MME
 
     MCMCinfo
 
+    sol
+    solMean
+    solMean2
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
       if nModels==1    #single-trait
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
@@ -240,7 +243,8 @@ mutable struct MME
                    DF(ν,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
-                   0)
+                   0,
+                   false,false,false)
       elseif nModels>1 #multi-trait
         ν,k      = ν, nModels
         νR0      = ν + k
@@ -257,7 +261,8 @@ mutable struct MME
                    DF(νR0,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
-                   0)
+                   0,
+                   false,false,false)
       end
     end
 end

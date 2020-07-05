@@ -1,22 +1,24 @@
-function MT_MCMC_BayesianAlphabet(nIter,mme,df;
-                        Rinv                       = false,
-                        burnin                     = 0,
-                        sol                        = false,
-                        outFreq                    = 1000,
-                        missing_phenotypes         = false,
-                        constraint                 = false,
-                        estimate_variance          = true,
-                        output_samples_frequency   = 0,
-                        update_priors_frequency    = 0,
-                        output_file                = "MCMC_samples",
-                        causal_structure           = false)
-
+function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
     ############################################################################
-    # Pre-Check
+    chain_length             = mme.MCMCinfo.chain_length
+    burnin                   = mme.MCMCinfo.burnin
+    output_samples_frequency = mme.MCMCinfo.output_samples_frequency
+    output_samples_file      = mme.MCMCinfo.output_samples_file
+    estimate_variance        = mme.MCMCinfo.estimate_variance
+    Rinv                     = mme.invweights
+    update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
+    missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
+    constraint               = mme.MCMCinfo.constraint
+    causal_structure         = causal_structure
     ############################################################################
-    #starting values for location parameters(no marker) are sol
-    sol,α              = sol[1:size(mme.mmeLhs,1)],sol[(size(mme.mmeLhs,1)+1):end]
-    solMean, solMean2  = zero(sol),zero(sol)
+    # Working Variables
+    # 1) samples at current iteration (starting values default to zeros)
+    # 2) posterior mean and variance at current iteration (zeros at the beginning)
+    # 3) ycorr: phenotypes corrected for all effects
+    ############################################################################
+    #location parameters
+    #mme.sol (starting values were set in runMCMC)
+    mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)  end
     ############################################################################
     # PRIORS
@@ -60,16 +62,16 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             #In BayesA, B and C, alphaArray,deltaArray, betaArray are used.
             ########################################################################
             #starting values for marker effects(zeros) and location parameters (sol)
+            #Mi.α  (starting values were set in get_genotypes)
             Mi.β          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
             Mi.δ          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
             Mi.meanDelta  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
-            Mi.α          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC,BayesC0
             Mi.meanAlpha  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
             Mi.meanAlpha2 = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+
             for traiti = 1:Mi.ntraits
-                Mi.α[traiti]          = copy(α[(traiti-1)*Mi.nMarkers+1:traiti*Mi.nMarkers])
-                Mi.β[traiti]          = copy(α[(traiti-1)*Mi.nMarkers+1:traiti*Mi.nMarkers])
-                Mi.δ[traiti]          = ones(typeof(α[1]),Mi.nMarkers)
+                Mi.β[traiti]          = copy(Mi.α[traiti])
+                Mi.δ[traiti]          = ones(typeof(Mi.α[traiti][1]),Mi.nMarkers)
                 Mi.meanDelta[traiti]  = zero(Mi.δ[traiti])
                 Mi.meanAlpha[traiti]  = zero(Mi.α[traiti])
                 Mi.meanAlpha2[traiti] = zero(Mi.α[traiti])
@@ -88,13 +90,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         end
     end
     ##Phenotypes CORRECTED for all effects
-    ycorr       = vec(Matrix(mme.ySparse)-mme.X*sol)
+    ycorr       = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
     if mme.M != 0
         for Mi in mme.M
-            if Mi.α != zero(Mi.α)
-                for traiti in 1:mme.nModels
+            for traiti in 1:mme.nModels
+                if Mi.α[traiti] != zero(Mi.α[traiti])
                     ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs] = ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs]
-                                                                   - Mi.genotypes*α[(traiti-1)*Mi.nMarkers+1 : traiti*Mi.nMarkers]
+                                                                 - Mi.genotypes*Mi.α[traiti]
                 end
             end
         end
@@ -120,13 +122,13 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
     # SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-          outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
+          outfile=output_MCMC_samples_setup(mme,chain_length-burnin,output_samples_frequency,output_samples_file)
     end
 
     ############################################################################
     #MCMC
     ############################################################################
-    @showprogress "running MCMC..." for iter=1:nIter
+    @showprogress "running MCMC..." for iter=1:chain_length
         ########################################################################
         # 1. Non-Marker Location Parameters
         ########################################################################
@@ -137,11 +139,11 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         mme.mmeLhs =  mme.X'Ri* mme.X #LHS for normal equation (no random effects)
         addVinv(mme)
         # 1.2 Update Right-hand-side of MME
-        ycorr[:]   = ycorr[:] + mme.X*sol
+        ycorr[:]   = ycorr[:] + mme.X*mme.sol
         mme.mmeRhs =  mme.X'Ri*ycorr
 
-        Gibbs(mme.mmeLhs,sol,mme.mmeRhs)
-        ycorr[:] = ycorr[:] - mme.X*sol
+        Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs)
+        ycorr[:] = ycorr[:] - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
@@ -226,7 +228,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
             # 3.1 Variance of Non-marker Random Effects
             # e.g, iid; polygenic effects (pedigree)
             ########################################################################
-            sampleVCs(mme,sol)
+            sampleVCs(mme,mme.sol)
             ########################################################################
             # 3.2 Residual Variance
             ########################################################################
@@ -256,14 +258,14 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            output_MCMC_samples(mme,sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+            output_MCMC_samples(mme,mme.sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             if causal_structure != false
                 writedlm(causal_structure_outfile,sample4λ',',')
             end
 
             nsamples = (iter-burnin)/output_samples_frequency
-            solMean   += (sol - solMean)/nsamples
-            solMean2  += (sol .^2 - solMean2)/nsamples
+            mme.solMean   += (mme.sol - mme.solMean)/nsamples
+            mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
             meanVare  += (mme.R - meanVare)/nsamples
             meanVare2 += (mme.R .^2 - meanVare2)/nsamples
 
@@ -294,7 +296,7 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         ########################################################################
         # 3.2 Printout
         ########################################################################
-        if iter%outFreq==0 && iter>burnin
+        if iter%output_samples_frequency==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
             println("Residual covariance matrix: \n",round.(meanVare,digits=6))
         end
@@ -311,10 +313,10 @@ function MT_MCMC_BayesianAlphabet(nIter,mme,df;
         close(causal_structure_outfile)
       end
     end
-    output=output_result(mme,output_file,
-                         solMean,meanVare,
+    output=output_result(mme,output_samples_file,
+                         mme.solMean,meanVare,
                          mme.pedTrmVec!=0 ? G0Mean : false,
-                         solMean2,meanVare2,
+                         mme.solMean2,meanVare2,
                          mme.pedTrmVec!=0 ? G0Mean2 : false)
     return output
 end

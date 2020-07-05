@@ -20,7 +20,13 @@ function GBLUP_setup(Mi::Genotypes) #for both single-trait and multi-trait analy
     end
     Mi.markerID  = string.(1:Mi.nObs) #pseudo markers of length=nObs
     Mi.genotypes = L
-    Mi.α         = L'Mi.α
+    if Mi.ntraits == 1
+        Mi.α         = L'Mi.α
+    else
+        for traiti = 1:Mi.ntraits
+            Mi.α[traiti] = L'Mi.α[traiti]
+        end
+    end
     Mi.D         = D
 end
 

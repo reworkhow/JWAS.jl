@@ -171,7 +171,6 @@ function runMCMC(mme::MME,df;
         end
     end
     mme.MCMCinfo = MCMCinfo(chain_length,
-                            starting_value,
                             burnin,
                             output_samples_frequency,
                             printout_model_info,
@@ -226,6 +225,7 @@ function runMCMC(mme::MME,df;
             for Mi in mme.M
                 Mi.genotypes = map(Float64,Mi.genotypes)
                 Mi.G         = map(Float64,Mi.G)
+                Mi.α         = map(Float64,Mi.α)
             end
         end
         for random_term in mme.rndTrmVec
@@ -255,7 +255,7 @@ function runMCMC(mme::MME,df;
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
     ############################################################################
     # initiate Mixed Model Equations and check starting values
-    mme.MCMCinfo.starting_value,df = init_mixed_model_equations(mme,df,starting_value)
+    df = init_mixed_model_equations(mme,df,starting_value)
 
     if mme.M!=0
         set_marker_hyperparameters_variances_and_pi(mme)
@@ -273,29 +273,9 @@ function runMCMC(mme::MME,df;
     # Double Precision or not
     ############################################################################
     if mme.nModels ==1 #single-trait analysis
-        mme.output=MCMC_BayesianAlphabet(chain_length,mme,df,
-                        Rinv                     = mme.invweights,
-                        burnin                   = burnin,
-                        estimate_variance        = estimate_variance,
-                        starting_value           = mme.MCMCinfo.starting_value,
-                        outFreq                  = printout_frequency,
-                        output_samples_frequency = output_samples_frequency,
-                        output_file              = output_samples_file,
-                        update_priors_frequency  = update_priors_frequency,
-                        categorical_trait        = categorical_trait)
+        mme.output=MCMC_BayesianAlphabet(mme,df)
     else #multi-trait analysis
-        mme.output=MT_MCMC_BayesianAlphabet(chain_length,mme,df,
-                      Rinv   = mme.invweights,
-                      burnin = burnin,
-                      sol    = mme.MCMCinfo.starting_value,
-                      outFreq= printout_frequency,
-                      missing_phenotypes=missing_phenotypes,
-                      constraint = constraint,
-                      estimate_variance = estimate_variance,
-                      output_samples_frequency=output_samples_frequency,
-                      output_file=output_samples_file,
-                      update_priors_frequency=update_priors_frequency,
-                      causal_structure = causal_structure)
+        mme.output=MT_MCMC_BayesianAlphabet(mme,df,causal_structure=causal_structure)
     end
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
@@ -575,26 +555,44 @@ function set_default_priors_for_variance_components(mme,df)
 end
 
 
-function init_mixed_model_equations(mme,df,sol)
+function init_mixed_model_equations(mme,df,starting_value)
     getMME(mme,df)
-    #starting value for sol can be provided
-    if mme.M == 0                          #PBLUP
-        nsol = size(mme.mmeLhs,1)
-    else
-        nsol = size(mme.mmeLhs,1)+sum((Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs) for Mi in mme.M)*mme.nModels
-    end
-    if sol == false #no starting values
-        sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
+    ############################################################################
+    #starting value for non-marker location parameters (sol) can be provided
+    ############################################################################
+    nsol = size(mme.mmeLhs,1)
+    #nsol = size(mme.mmeLhs,1)+sum((Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs) for Mi in mme.M)*mme.nModels
+    if starting_value == false #no starting values
+        mme.sol = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol)
     else            #besure type is Float64
-        printstyled("Starting values are provided. The order of starting values for location parameters and\n",
-        "marker effects should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
-        "obtained by getNames(model)) and then markers for all traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
-        if length(sol) != nsol || typeof(sol) <: AbstractString
-            error("length or type of starting values is wrong.")
+        printstyled("Starting values are provided. The order of starting values for location parameters\n",
+        "should be the order of location parameters in the Mixed Model Equation for all traits (This can be\n",
+        "obtained by getNames(model)).\n",bold=false,color=:green)
+        if length(starting_value) != nsol
+            error("length of starting values for non-marker location parameters is wrong.")
         end
-        sol = map((mme.MCMCinfo.double_precision ? Float64 : Float32),sol)
+        mme.sol = map((mme.MCMCinfo.double_precision ? Float64 : Float32),starting_value)
     end
-    return sol,df
+    ############################################################################
+    #starting value marker effects
+    ############################################################################
+    if mme.M != 0
+        for Mi in mme.M
+            nsol = Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs
+            if Mi.α == false
+                Mi.α = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol*Mi.ntraits)
+            else
+                if length(Mi.α) != nsol*Mi.ntraits
+                    error("length of starting values for marker effects is wrong.")
+                end
+                Mi.α = map((mme.MCMCinfo.double_precision ? Float64 : Float32),Mi.α)
+            end
+            if Mi.ntraits != 1
+                Mi.α = [Mi.α[(traiti-1)*nsol+1:traiti*nsol] for traiti = 1:Mi.ntraits]
+            end
+        end
+    end
+    return df
 end
 
 ################################################################################
@@ -675,7 +673,7 @@ function getMCMCinfo(mme)
     printstyled("MCMC Information:\n\n",bold=true)
     @printf("%-30s %20s\n","chain_length",MCMCinfo.chain_length)
     @printf("%-30s %20s\n","burnin",MCMCinfo.burnin)
-    @printf("%-30s %20s\n","starting_value",MCMCinfo.starting_value != zero(MCMCinfo.starting_value) ? "true" : "false")
+    @printf("%-30s %20s\n","starting_value",mme.sol != false ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",MCMCinfo.printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
     @printf("%-30s %20s\n","constraint",MCMCinfo.constraint ? "true" : "false")

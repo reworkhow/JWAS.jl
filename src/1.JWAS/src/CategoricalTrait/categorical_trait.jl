@@ -1,4 +1,4 @@
-function categorical_trait_setup(mme,starting_value)
+function categorical_trait_setup!(mme)
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
     # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
     #Then liabilities are sampled and stored in mme.ySparse
@@ -7,6 +7,7 @@ function categorical_trait_setup(mme,starting_value)
     #-Inf,t1,t2,...,t_{#c-1},Inf, where t1=0 and t_{#c-1}<1
     thresholds = [-Inf;range(0, length=ncategories,stop=1)[1:(end-1)];Inf]
 
+    starting_value = mme.sol
     cmean      = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
     for i in 1:length(category_obs) #1,2,2,3,1...
         whichcategory = category_obs[i]
