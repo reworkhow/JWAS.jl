@@ -1,11 +1,11 @@
 function BayesL!(genotypes,ycorr,vare)
     BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-            ycorr,genotypes.α,genotypes.gammaArray,vare,genotypes.G)
+            ycorr,genotypes.α[1],genotypes.gammaArray,vare,genotypes.G)
 end
 
 function BayesC0!(genotypes,ycorr,vare)
     BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-            ycorr,genotypes.α,[1.0],vare,genotypes.G)
+            ycorr,genotypes.α[1],[1.0],vare,genotypes.G)
 end
 
 function BayesL!(xArray,xRinvArray,xpRinvx,

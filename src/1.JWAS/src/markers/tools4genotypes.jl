@@ -168,10 +168,10 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
 end
 
 function genetic2marker(M::Genotypes,Pi::Dict)
-  nTraits = size(M.genetic_variance,1)
-  denom   = zeros(nTraits,nTraits)
-  for i in 1:nTraits
-    for j in i:nTraits
+  ntraits = size(M.genetic_variance,1)
+  denom   = zeros(ntraits,ntraits)
+  for i in 1:ntraits
+    for j in i:ntraits
       pi_selected = filter(d->d.first[i]==1.0 && d.first[j]==1.0,Pi)
 
       denom[i,j] = M.sum2pq*sum(values(pi_selected))

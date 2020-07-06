@@ -1,6 +1,6 @@
 function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
     genotypes.nLoci = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                      ycorr,genotypes.α,genotypes.β,genotypes.δ,vare,
+                      ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
                       locus_effect_variances,genotypes.π)
 end
 

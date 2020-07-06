@@ -65,11 +65,6 @@ function output_result(mme,output_file,
 
   if mme.M != 0
       for Mi in mme.M
-          if mme.nModels == 1
-              Mi.meanAlpha =[Mi.meanAlpha]
-              Mi.meanAlpha2=[Mi.meanAlpha2]
-              Mi.meanDelta =[Mi.meanDelta]
-          end
           traiti      = 1
           whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
           whichmarker = Mi.markerID
@@ -185,11 +180,7 @@ function getEBV(mme,sol,traiti)
 
     if mme.M != 0
         for Mi in mme.M
-            if mme.nModels == 1
-                EBV += Mi.output_genotypes*Mi.α
-            else
-                EBV += Mi.output_genotypes*Mi.α[traiti]
-            end
+            EBV += Mi.output_genotypes*Mi.α[traiti]
         end
     end
 
@@ -355,12 +346,8 @@ function output_MCMC_samples(mme,sol,vRes,G0,
   end
   if mme.M != 0 && outfile != false
       for Mi in mme.M
-          if ntraits == 1
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[1])],Mi.α',',')
-          else
-              for traiti in 1:ntraits
-                  writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
-              end
+          for traiti in 1:ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -433,4 +420,46 @@ function transubstrarr(vec)
         res[1,i]=vec[i]
     end
     return res
+end
+
+
+#output mean and variance of posterior distribution of parameters of interest
+function output_posterior_mean_variance(mme,nsamples)
+    mme.solMean   += (mme.sol - mme.solMean)/nsamples
+    mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
+    mme.meanVare  += (mme.R - mme.meanVare)/nsamples
+    mme.meanVare2 += (mme.R .^2 - mme.meanVare2)/nsamples
+
+    if mme.pedTrmVec != 0
+        mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
+        mme.G0Mean2 += (inv(mme.Gi) .^2  - mme.G0Mean2 )/nsamples
+    end
+    if mme.M != 0
+        for Mi in mme.M
+            for trait in 1:Mi.ntraits
+                Mi.meanAlpha[trait] += (Mi.α[trait] - Mi.meanAlpha[trait])/nsamples
+                Mi.meanAlpha2[trait]+= (Mi.α[trait].^2 - Mi.meanAlpha2[trait])/nsamples
+                Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
+            end
+            if Mi.estimatePi == true
+                if Mi.ntraits == 1
+                    Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
+                    Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
+                else
+                    for i in keys(Mi.π)
+                      Mi.mean_pi[i] += (Mi.π[i]-Mi.mean_pi[i])/nsamples
+                      Mi.mean_pi2[i] += (Mi.π[i].^2-Mi.mean_pi2[i])/nsamples
+                    end
+                end
+            end
+            if Mi.method != "BayesB"
+                Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+                Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+            end
+            if Mi.estimateScale == true
+                Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
+                Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+            end
+        end
+    end
 end

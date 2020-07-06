@@ -185,13 +185,13 @@ end
 #
 ################################################################################
 #NOTE: SINGLE TRAIT
-#The equation Ai*(GiNew*RNew - GiOld*ROld) is used to update Ai part in LHS
+#The equation Ai*(GiNew*R - GiOld*ROld) is used to update Ai part in LHS
 #The 1st time to add Ai to set up MME,
-#mme.GiOld == zeros(G),mme.GiNew == inv(G),mme.Rnew == mme.Rold= R
+#mme.GiOld == zeros(G),mme.GiNew == inv(G),mme.R == mme.Rold= R
 #After that, if variances are constant,
-#mme.GiOld == mme.GiNew; mme.Rnew == mme.Rold
+#mme.GiOld == mme.GiNew; mme.R == mme.Rold
 #If sampling genetic variances, mme.Ginew is updated with a new sample, then
-#LHS is update as Ai*(GiNew*RNew - GiOld*ROld), then GiOld = Ginew
+#LHS is update as Ai*(GiNew*R - GiOld*ROld), then GiOld = Ginew
 #if sample residual variances, similar approaches to update the LHS is used.
 ################################################################################
 function addVinv(mme::MME)
@@ -208,7 +208,7 @@ function addVinv(mme::MME)
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
             #lamda version (single trait) or not (multi-trait)
-            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.RNew - random_term.GiOld[i,j]*mme.ROld))
+            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.R - random_term.GiOld[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddVinv
           end

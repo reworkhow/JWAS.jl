@@ -2,7 +2,7 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
                       sol=false,outFreq=100,thin=100,
                       output_files="marker_effects")
 
-    #Pi is of length nTrait^2
+    #Pi is of length ntraits^2
 
     if size(mme.mmeRhs)==()
        getMME(mme,df)
@@ -18,12 +18,12 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
     #priors for residual covariance matrix
     ν       = 4
     nObs    = size(df,1)
-    nTraits = size(mme.lhsVec,1)
-    νR0     = ν + nTraits
+    ntraits = size(mme.lhsVec,1)
+    νR0     = ν + ntraits
     R0      = mme.R
-    PRes    = R0*(νR0 - nTraits - 1)
-    SRes    = zeros(Float64,nTraits,nTraits)
-    R0Mean  = zeros(Float64,nTraits,nTraits)
+    PRes    = R0*(νR0 - ntraits - 1)
+    SRes    = zeros(Float64,ntraits,ntraits)
+    R0Mean  = zeros(Float64,ntraits,ntraits)
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -54,25 +54,25 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
         #mme.M.G = make_valpha(mme.M.G,Pi;option="sqrt")
 
         vEff    = mme.M.G #already converted to marker effect variance
-        νGM     = dfEffectVar + nTraits
-        PM      = vEff*(νGM - nTraits - 1)
-        SM      = zeros(Float64,nTraits,nTraits)
-        GMMean  = zeros(Float64,nTraits,nTraits)
+        νGM     = dfEffectVar + ntraits
+        PM      = vEff*(νGM - ntraits - 1)
+        SM      = zeros(Float64,ntraits,ntraits)
+        GMMean  = zeros(Float64,ntraits,ntraits)
     end
 
     #starting values for marker effects are all zeros
     #starting values for other location parameters are sol
 
     ycorr          = vec(full(mme.ySparse))
-    wArray         = Array(Array{Float64,1},nTraits)
-    alphaArray     = Array(Array{Float64,1},nTraits)
-    meanAlphaArray = Array(Array{Float64,1},nTraits)
-    deltaArray     = Array(Array{Float64,1},nTraits)
-    meanDeltaArray = Array(Array{Float64,1},nTraits)
-    uArray         = Array(Array{Float64,1},nTraits)
-    meanuArray     = Array(Array{Float64,1},nTraits)
+    wArray         = Array(Array{Float64,1},ntraits)
+    alphaArray     = Array(Array{Float64,1},ntraits)
+    meanAlphaArray = Array(Array{Float64,1},ntraits)
+    deltaArray     = Array(Array{Float64,1},ntraits)
+    meanDeltaArray = Array(Array{Float64,1},ntraits)
+    uArray         = Array(Array{Float64,1},ntraits)
+    meanuArray     = Array(Array{Float64,1},ntraits)
 
-    for traiti = 1:nTraits
+    for traiti = 1:ntraits
         startPosi              = (traiti-1)*nObs  + 1
         ptr                    = pointer(ycorr,startPosi)
         wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
@@ -91,8 +91,8 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
       BigPiMean[key]=0.0
     end
 
-    BigPi     = zeros(2^nTraits)
-    BigPiMean = zeros(2^nTraits)
+    BigPi     = zeros(2^ntraits)
+    BigPiMean = zeros(2^ntraits)
 
     #label δs ([0,1,1,0]) as 7 = 6+1 =2^2*1+2^1*1 +1
     #add one to make "0000" label 1
@@ -126,12 +126,12 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
 
 
         temp = deltaArray[1]
-        for traiti = 2:nTraits
+        for traiti = 2:ntraits
           temp = [temp deltaArray[traiti]]
         end
 
         iloci = 1
-        nLoci_array=zeros(2^nTraits)
+        nLoci_array=zeros(2^ntraits)
         for i in keys(BigPi) #assume order of key won't change
           temp2 = broadcast(-,temp,i')
           nLoci =  sum(mean(abs(temp2),2).==0.0)
@@ -154,10 +154,10 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
         resVec = ycorr
         sampleMissingResiduals(mme,resVec)
 
-        for traiti = 1:nTraits
+        for traiti = 1:ntraits
             startPosi = (traiti-1)*nObs + 1
             endPosi   = startPosi + nObs - 1
-            for traitj = traiti:nTraits
+            for traitj = traiti:ntraits
                 startPosj = (traitj-1)*nObs + 1
                 endPosj   = startPosj + nObs - 1
                 SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
@@ -221,13 +221,13 @@ function MCMC_BayesCC(nIter,mme,df,Pi;
         end
 
         #if iter%thin==0
-        #  for traiti in 1:nTraits
+        #  for traiti in 1:ntraits
         #    writedlm(outfile[traiti],meanAlphaArray[traiti]')
         #  end
         #end
     end
 
-    #for traiti in 1:nTraits
+    #for traiti in 1:ntraits
     #  close(outfile[traiti])
     #end
 

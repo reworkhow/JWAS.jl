@@ -48,7 +48,7 @@ end
 
 ################################################################################
 #A class for residual covariance matrix for all observations of size (nob*nModel)
-#where Ri is modified based on missing pattern (number of Ri= 2^nTrait-1)
+#where Ri is modified based on missing pattern (number of Ri= 2^ntraits-1)
 #It allows using the same incidence matrix X for all traits in multi-trait analyses
 #In JWAS, ONLY used when residual variance is constant
 #or missing phenotypes are not imputed at each step of MCMC (no marker effects).
@@ -195,6 +195,8 @@ mutable struct MME
     GiOld                                         #specific for lambda version of MME (single-trait)
     GiNew                                         #specific for lambda version of MME (single-trait)
     scalePed
+    G0Mean
+    G0Mean2
 
     rndTrmVec::Array{RandomEffect,1}              #General (including i.i.d.) random effects
                                                   #may merge pedTrmVec here
@@ -203,9 +205,10 @@ mutable struct MME
     R                                             #residual covariance matrix (multi-trait) ::Array{Union{Float64,Float32},2}
     missingPattern                                #for impuation of missing residual
     resVar                                        #for impuation of missing residual
-    ROld::AbstractFloat                           #residual variance (single-trait) for
-    RNew::AbstractFloat                           #lambda version of MME (single-trait)
+    ROld                #initilized to 0 ??       #residual variance (single-trait) for
     scaleRes                                      #scale parameters
+    meanVare
+    meanVare2
 
     invweights                                    #heterogeneous residuals
 
@@ -229,31 +232,22 @@ mutable struct MME
     solMean
     solMean2
 
+    causal_structure
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
-      if nModels==1    #single-trait
+        if nModels == 1
+            scaleRes = R*(ν-2)/ν
+            νR0      = ν
+        else
+            ν,k      = ν, nModels
+            νR0      = ν + k
+            scaleRes = R*(νR0 - k - 1)
+        end
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
-                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
+                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),false,false,
                    [],
-                   zeros(1,1),0,0,R,R,R*(ν-2)/ν,
-                   [],
-                   0,
-                   1,
-                   [],
-                   DF(ν,4,4,4),
-                   0,0,Dict{String,Any}(),
-                   0,
-                   0,
-                   false,false,false)
-      elseif nModels>1 #multi-trait
-        ν,k      = ν, nModels
-        νR0      = ν + k
-        scaleRes = R*(νR0 - k - 1)
-        return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
-                   0,0,[],0,0,
-                   0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),
-                   [],
-                   R,0,0,0.0,0.0,scaleRes,
+                   R,0,0,R,scaleRes,false,false,
                    [],
                    0,
                    1,
@@ -262,7 +256,7 @@ mutable struct MME
                    0,0,Dict{String,Any}(),
                    0,
                    0,
-                   false,false,false)
-      end
+                   false,false,false,
+                   false)
     end
 end

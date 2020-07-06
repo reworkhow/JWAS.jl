@@ -283,7 +283,7 @@ function getMME(mme::MME, df::DataFrame)
 
     #Random effects parts in MME
     if mme.nModels == 1
-      #random_term.GiNew*mme.RNew - random_term.GiOld*mme.ROld
+      #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
       for random_term in mme.rndTrmVec #trick
         random_term.GiOld = zero(random_term.GiOld)
       end

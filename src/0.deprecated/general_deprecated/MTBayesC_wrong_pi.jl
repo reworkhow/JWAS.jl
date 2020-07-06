@@ -5,21 +5,21 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
                                     invR0,invG0,iIter,logPi)
 
     nMarkers = length(xArray)
-    nTraits = length(alphaArray)
+    ntraits = length(alphaArray)
     Ginv     = invG0
     Rinv     = invR0
 
-       α = zeros(nTraits)
-    newu = zeros(nTraits)
-       δ = zeros(nTraits)
+       α = zeros(ntraits)
+    newu = zeros(ntraits)
+       δ = zeros(ntraits)
 
-       w = zeros(nTraits) #for rhs
+       w = zeros(ntraits) #for rhs
 
     for j=1:nMarkers
 
         x    = xArray[j]
 
-        for k=1:nTraits
+        for k=1:ntraits
                α[k] = alphaArray[k][j]
             newu[k] = uArray[k][j]
                δ[k] = deltaArray[k][j]
@@ -32,14 +32,14 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
         #newu = u[j,:]
         #oldu = u[j,:]
 
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             w[trait] = dot(x,wArray[trait])+xpx[j]*oldu[trait]
             #w    = x'yCor+xpx[j]*oldu #adjust y except locus j
         end
 
-        for k=1:nTraits
+        for k=1:ntraits
             Ginv11 = Ginv[k,k]
-            nok    = deleteat!(collect(1:nTraits),k)
+            nok    = deleteat!(collect(1:ntraits),k)
             Ginv12 = Ginv[k,nok]
             C11    = Ginv11+Rinv[k,k]*xpx[j]
             #C12    = Ginv12+mpm[j]*Rinv[k,nok]*diagm(δ[nok])#work for Rinv_sub
@@ -69,7 +69,7 @@ function sampleMarkerEffectsBayesC!(xArray,xpx,wArray,alphaArray,meanAlphaArray,
         #yCor[:,:] = yCor + m*(oldu-newu)
 
         # adjust for locus j
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             #wArray[trait][:] = wArray[trait][:] - x*alphaArray[trait][j]
             BLAS.axpy!(oldu[trait]-newu[trait],x,wArray[trait])
             meanAlphaArray[trait][j] += (α[trait] - meanAlphaArray[trait][j])/iIter

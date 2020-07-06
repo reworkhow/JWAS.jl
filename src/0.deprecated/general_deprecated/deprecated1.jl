@@ -44,11 +44,11 @@ function sample_effects_ycorr!(xArray,xpx,yCorr,alphaArray,meanAlpha,invR0,invG0
 
     nEffects = length(xArray)
     α = alphaArray[traiti] # vector of effects for traiti across all loci
-    nTraits = length(alphaArray)
-    β = zeros(nTraits)     # vector of effects for locus j across all traits
+    ntraits = length(alphaArray)
+    β = zeros(ntraits)     # vector of effects for locus j across all traits
                            #2x1 vector
     for j=1:nEffects
-        for k=1:nTraits
+        for k=1:ntraits
             β[k] = alphaArray[k][j]
         end
         x        = xArray[j]
@@ -84,12 +84,12 @@ function sampleMCMC(nIter,mme,df;sol=false,outFreq=100,thin=100)
     #priors for residual covariance matrix
     ν       = 4
     nObs    = size(df,1)
-    nTraits = size(mme.lhsVec,1)
-    νR0     = ν + nTraits
+    ntraits = size(mme.lhsVec,1)
+    νR0     = ν + ntraits
     R0      = mme.R
-    PRes    = R0*(νR0 - nTraits - 1)
-    SRes    = zeros(Float64,nTraits,nTraits)
-    R0Mean  = zeros(Float64,nTraits,nTraits)
+    PRes    = R0*(νR0 - ntraits - 1)
+    SRes    = zeros(Float64,ntraits,ntraits)
+    R0Mean  = zeros(Float64,ntraits,ntraits)
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -111,10 +111,10 @@ function sampleMCMC(nIter,mme,df;sol=false,outFreq=100,thin=100)
         nObs,nMarkers  = size(mme.M.X)
 
         vEff    = mme.M.G/mme.M.mean2pq
-        νGM     = dfEffectVar + nTraits
-        PM      = vEff*(νGM - nTraits - 1)
-        SM      = zeros(Float64,nTraits,nTraits)
-        GMMean  = zeros(Float64,nTraits,nTraits)
+        νGM     = dfEffectVar + ntraits
+        PM      = vEff*(νGM - ntraits - 1)
+        SM      = zeros(Float64,ntraits,ntraits)
+        GMMean  = zeros(Float64,ntraits,ntraits)
         mme.M.G = vEff
 
         mArray = mme.M.xArray
@@ -128,10 +128,10 @@ function sampleMCMC(nIter,mme,df;sol=false,outFreq=100,thin=100)
     #starting values for other location parameters are sol
 
     ycorr          = vec(full(mme.ySparse))
-    wArray         = Array(Array{Float64,1},nTraits)
-    alphaArray     = Array(Array{Float64,1},nTraits)
-    meanAlphaArray = Array(Array{Float64,1},nTraits)
-    for traiti = 1:nTraits
+    wArray         = Array(Array{Float64,1},ntraits)
+    alphaArray     = Array(Array{Float64,1},ntraits)
+    meanAlphaArray = Array(Array{Float64,1},ntraits)
+    for traiti = 1:ntraits
         startPosi              = (traiti-1)*nObs  + 1
         ptr                    = pointer(ycorr,startPosi)
         wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
@@ -156,9 +156,9 @@ function sampleMCMC(nIter,mme,df;sol=false,outFreq=100,thin=100)
         #####################################
         iR0 = inv(mme.R)
         iGM = inv(mme.M.G)
-        for traiti = 1:nTraits # sample alpha_i for each trait
+        for traiti = 1:ntraits # sample alpha_i for each trait
             initVec(0.0,yCorr)
-            for traitj =1:nTraits # making yCorr for trait i
+            for traitj =1:ntraits # making yCorr for trait i
                 yCorr[:] = yCorr[:] + iR0[traiti,traitj]*wArray[traitj]
             end
             #sample marker effetcs for trait
@@ -179,10 +179,10 @@ function sampleMCMC(nIter,mme,df;sol=false,outFreq=100,thin=100)
         resVec = ycorr
         #sampleMissingResiduals(mme,resVec)
 
-        for traiti = 1:nTraits
+        for traiti = 1:ntraits
             startPosi = (traiti-1)*nObs + 1
             endPosi   = startPosi + nObs - 1
-            for traitj = traiti:nTraits
+            for traitj = traiti:ntraits
                 startPosj = (traitj-1)*nObs + 1
                 endPosj   = startPosj + nObs - 1
                 SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]

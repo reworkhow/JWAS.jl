@@ -153,6 +153,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
+    mme.causal_structure = causal_structure
     if seed != false
         Random.seed!(seed)
     end
@@ -272,11 +273,8 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Double Precision or not
     ############################################################################
-    if mme.nModels ==1 #single-trait analysis
-        mme.output=MCMC_BayesianAlphabet(mme,df)
-    else #multi-trait analysis
-        mme.output=MT_MCMC_BayesianAlphabet(mme,df,causal_structure=causal_structure)
-    end
+    mme.output=MCMC_BayesianAlphabet(mme,df)
+
     for (key,value) in mme.output
       CSV.write(replace(key," "=>"_")*".txt",value)
     end
@@ -351,6 +349,12 @@ function errors_args(mme)
     end
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
+    end
+    if mme.causal_structure != false && mme.nModles == 1
+        error("Causal strutures are only allowed in multi-trait analysis")
+    end
+    if mme.MCMCinfo.categorical_trait != false && mme.nModles != 1
+        error("Categorical traits are only allowed in single trait analysis")
     end
 end
 
@@ -521,10 +525,10 @@ function set_default_priors_for_variance_components(mme,df)
     end
   end
   #residual effects
-  if mme.nModels==1 && isposdef(mme.RNew) == false #single-trait
+  if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.RNew = mme.ROld = vare[1,1]
-    mme.scaleRes = mme.RNew*(mme.df.residual-2)/mme.df.residual
+    mme.R = vare[1,1]
+    mme.scaleRes = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = vare
@@ -587,9 +591,7 @@ function init_mixed_model_equations(mme,df,starting_value)
                 end
                 Mi.α = map((mme.MCMCinfo.double_precision ? Float64 : Float32),Mi.α)
             end
-            if Mi.ntraits != 1
-                Mi.α = [Mi.α[(traiti-1)*nsol+1:traiti*nsol] for traiti = 1:Mi.ntraits]
-            end
+            Mi.α = [Mi.α[(traiti-1)*nsol+1:traiti*nsol] for traiti = 1:Mi.ntraits]
         end
     end
     return df
@@ -698,7 +700,7 @@ function getMCMCinfo(mme)
         println()
     end
     if mme.nModels == 1
-        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.RNew))
+        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.R))
     else
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(stdout,round.(mme.R,digits=3))

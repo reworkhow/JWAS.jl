@@ -13,30 +13,30 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
                      vare,varEffects,
                      BigPi)
     nMarkers = length(xArray)
-    nTraits  = length(alphaArray)
+    ntraits  = length(alphaArray)
 
     Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
     Ginv     = inv.(varEffects)
 
-    β        = zeros(typeof(betaArray[1][1]),nTraits)
-    newα     = zeros(typeof(alphaArray[1][1]),nTraits)
-    oldα     = zeros(typeof(alphaArray[1][1]),nTraits)
-    δ        = zeros(typeof(deltaArray[1][1]),nTraits)
-    w        = zeros(typeof(wArray[1][1]),nTraits) #for rhs
+    β        = zeros(typeof(betaArray[1][1]),ntraits)
+    newα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    δ        = zeros(typeof(deltaArray[1][1]),ntraits)
+    w        = zeros(typeof(wArray[1][1]),ntraits) #for rhs
 
     for marker=1:nMarkers
         x, xRinv = xArray[marker], xRinvArray[marker]
 
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             β[trait]  = betaArray[trait][marker]
          oldα[trait]  = newα[trait] = alphaArray[trait][marker]
             δ[trait]  = deltaArray[trait][marker]
             w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]
         end
 
-        for k=1:nTraits
+        for k=1:ntraits
             Ginv11 = Ginv[marker][k,k]
-            nok    = deleteat!(collect(1:nTraits),k)
+            nok    = deleteat!(collect(1:ntraits),k)
             Ginv12 = Ginv[marker][k,nok]
             C11    = Ginv11+Rinv[k,k]*xpRinvx[marker]
             C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
@@ -70,7 +70,7 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
                 end
             end
         end
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             betaArray[trait][marker]       = β[trait]
             deltaArray[trait][marker]      = δ[trait]
             alphaArray[trait][marker]      = newα[trait]

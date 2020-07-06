@@ -10,11 +10,11 @@ function get_BV_samples(M::Array{Float64,2},marker_file;header=true)
 end
 
 function get_breeding_values(M::Array{Float64,2},files...;header=true)
-    nTraits = length(files)
-    BV  = Array{Array{Float64,2}}(nTraits)
+    ntraits = length(files)
+    BV  = Array{Array{Float64,2}}(ntraits)
     traiti=1
 
-    EBV = Array{Any}(nTraits)
+    EBV = Array{Any}(ntraits)
     for i in files
         BV[traiti] = get_BV_samples(M,i,header=header)
         EBV[traiti]= DataFrame(EBV=vec(mean(BV[traiti],2)),PEV=vec(var(BV[traiti],2)))
@@ -24,8 +24,8 @@ function get_breeding_values(M::Array{Float64,2},files...;header=true)
 end
 
 function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true)
-    nTraits = length(files)
-    BV  = Array{Array{Float64,2}}(undef,nTraits)
+    ntraits = length(files)
+    BV  = Array{Array{Float64,2}}(undef,ntraits)
     traiti=1
     for i in files
         BV[traiti] = get_BV_samples(M,i,header=header)
@@ -33,15 +33,15 @@ function get_additive_genetic_variances(M::Array{Float64,2},files...;header=true
     end
 
     num_samples = size(BV[1],2)
-    if nTraits == 1
+    if ntraits == 1
         G=Array{Float64,1}()
     else
         G=Array{Array{Float64,2},1}()
     end
-#    G = zeros(nTraits^2,num_samples)
+#    G = zeros(ntraits^2,num_samples)
     for i = 1:num_samples
         BVi = vec(BV[1][:,i])
-        for j = 2:nTraits
+        for j = 2:ntraits
             BVi = [BVi BV[j][:,i]]
         end
         push!(G,cov(BVi))

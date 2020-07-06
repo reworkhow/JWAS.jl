@@ -23,7 +23,7 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
     ############################################################################
     # PRIORS
     ############################################################################
-    nTraits        = mme.nModels
+    ntraits        = mme.nModels
     nObs           = length(mme.obsID)
     #save posterior mean for residual variance
     meanVare  = zero(mme.R)
@@ -55,7 +55,7 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
             end
             ########################################################################
             ##WORKING VECTORS
-            wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits)#wArray is list reference of ycor
+            wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits)#wArray is list reference of ycor
             ########################################################################
             #Arrays to save solutions for marker effects
             #In RR-BLUP and BayesL, only alphaArray is used.
@@ -63,11 +63,11 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
             ########################################################################
             #starting values for marker effects(zeros) and location parameters (sol)
             #Mi.α  (starting values were set in get_genotypes)
-            Mi.β          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
-            Mi.δ          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
-            Mi.meanDelta  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
-            Mi.meanAlpha  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
-            Mi.meanAlpha2 = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits) #BayesC
+            Mi.β          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits) #BayesC
+            Mi.δ          = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits) #BayesC
+            Mi.meanDelta  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits) #BayesC
+            Mi.meanAlpha  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits) #BayesC
+            Mi.meanAlpha2 = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits) #BayesC
 
             for traiti = 1:Mi.ntraits
                 Mi.β[traiti]          = copy(Mi.α[traiti])
@@ -101,7 +101,7 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
             end
         end
     end
-    wArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,nTraits)
+    wArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntraits)
     for traiti = 1:mme.nModels
         startPosi             = (traiti-1)*nObs  + 1
         ptr                   = pointer(ycorr,startPosi)
@@ -246,7 +246,7 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0
-                mme.M.scale = meanVara*(mme.df.marker-nTraits-1)
+                mme.M.scale = meanVara*(mme.df.marker-ntraits-1)
             end
             if mme.pedTrmVec != 0
                 mme.scalePed  = G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
@@ -275,7 +275,7 @@ function MT_MCMC_BayesianAlphabet(mme,df;causal_structure=false)
             end
             if mme.M != 0
                 for Mi in mme.M
-                    for trait in 1:nTraits
+                    for trait in 1:ntraits
                         Mi.meanAlpha[trait] += (Mi.α[trait] - Mi.meanAlpha[trait])/nsamples
                         Mi.meanAlpha2[trait]+= (Mi.α[trait].^2 - Mi.meanAlpha2[trait])/nsamples
                         Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples

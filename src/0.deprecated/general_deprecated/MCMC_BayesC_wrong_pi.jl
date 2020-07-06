@@ -16,12 +16,12 @@ function MCMC_BayesC(nIter,mme,df,Pi;
     #priors for residual covariance matrix
     ν       = 4
     nObs    = size(df,1)
-    nTraits = size(mme.lhsVec,1)
-    νR0     = ν + nTraits
+    ntraits = size(mme.lhsVec,1)
+    νR0     = ν + ntraits
     R0      = mme.R
-    PRes    = R0*(νR0 - nTraits - 1)
-    SRes    = zeros(Float64,nTraits,nTraits)
-    R0Mean  = zeros(Float64,nTraits,nTraits)
+    PRes    = R0*(νR0 - ntraits - 1)
+    SRes    = zeros(Float64,ntraits,ntraits)
+    R0Mean  = zeros(Float64,ntraits,ntraits)
 
     #priors for genetic variance matrix
     if mme.ped != 0
@@ -51,25 +51,25 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         #makre marker effect variance considering π
         mme.M.G = make_valpha(mme.M.G,Pi;option="sqrt")
         vEff    = mme.M.G #already converted to marker effect variance
-        νGM     = dfEffectVar + nTraits
-        PM      = vEff*(νGM - nTraits - 1)
-        SM      = zeros(Float64,nTraits,nTraits)
-        GMMean  = zeros(Float64,nTraits,nTraits)
+        νGM     = dfEffectVar + ntraits
+        PM      = vEff*(νGM - ntraits - 1)
+        SM      = zeros(Float64,ntraits,ntraits)
+        GMMean  = zeros(Float64,ntraits,ntraits)
     end
 
     #starting values for marker effects are all zeros
     #starting values for other location parameters are sol
 
     ycorr          = vec(full(mme.ySparse))
-    wArray         = Array(Array{Float64,1},nTraits)
-    alphaArray     = Array(Array{Float64,1},nTraits)
-    meanAlphaArray = Array(Array{Float64,1},nTraits)
-    deltaArray     = Array(Array{Float64,1},nTraits)
-    meanDeltaArray = Array(Array{Float64,1},nTraits)
-    uArray         = Array(Array{Float64,1},nTraits)
-    meanuArray     = Array(Array{Float64,1},nTraits)
+    wArray         = Array(Array{Float64,1},ntraits)
+    alphaArray     = Array(Array{Float64,1},ntraits)
+    meanAlphaArray = Array(Array{Float64,1},ntraits)
+    deltaArray     = Array(Array{Float64,1},ntraits)
+    meanDeltaArray = Array(Array{Float64,1},ntraits)
+    uArray         = Array(Array{Float64,1},ntraits)
+    meanuArray     = Array(Array{Float64,1},ntraits)
 
-    for traiti = 1:nTraits
+    for traiti = 1:ntraits
         startPosi              = (traiti-1)*nObs  + 1
         ptr                    = pointer(ycorr,startPosi)
         wArray[traiti]         = pointer_to_array(ptr,nObs) #ycorr for different traits
@@ -84,13 +84,13 @@ function MCMC_BayesC(nIter,mme,df,Pi;
 
     logPi = [log(Pi);log(1-Pi)]
 
-    outfile = Array{IOStream}(nTraits)
-    for traiti in 1:nTraits
+    outfile = Array{IOStream}(ntraits)
+    for traiti in 1:ntraits
       outfile[traiti]=open(output_files*"_"*string(mme.lhsVec[traiti])*"_$(now()).txt","w")
     end
 
     if mme.M.markerID[1]!="NA"
-      for traiti in 1:nTraits
+      for traiti in 1:ntraits
         writedlm(outfile[traiti],mme.M.markerID')
       end
     end
@@ -122,10 +122,10 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         resVec = ycorr
         #sampleMissingResiduals(mme,resVec)
 
-        for traiti = 1:nTraits
+        for traiti = 1:ntraits
             startPosi = (traiti-1)*nObs + 1
             endPosi   = startPosi + nObs - 1
-            for traitj = traiti:nTraits
+            for traitj = traiti:ntraits
                 startPosj = (traitj-1)*nObs + 1
                 endPosj   = startPosj + nObs - 1
                 SRes[traiti,traitj] = (resVec[startPosi:endPosi]'resVec[startPosj:endPosj])[1,1]
@@ -185,13 +185,13 @@ function MCMC_BayesC(nIter,mme,df,Pi;
         end
 
         if iter%thin==0
-          for traiti in 1:nTraits
+          for traiti in 1:ntraits
             writedlm(outfile[traiti],meanAlphaArray[traiti]')
           end
         end
     end
 
-    for traiti in 1:nTraits
+    for traiti in 1:ntraits
       close(outfile[traiti])
     end
 
