@@ -19,7 +19,6 @@ include("buildMME/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
-include("MCMC/MT_MCMC_BayesianAlphabet.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")

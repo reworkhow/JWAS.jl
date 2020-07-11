@@ -40,16 +40,16 @@ function MCMC_BayesianAlphabet(mme,df)
     # 3) ycorr: phenotypes corrected for all effects
     ############################################################################
     #location parameters
-    #mme.sol (starting values were set in runMCMC)
+    #mme.sol (its starting values were set in runMCMC)
     mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
     if categorical_trait == true
-        mme.R     = mme.meanVare = mme.meanVare2 = 1.0
+        mme.R  = mme.meanVare = mme.meanVare2 = 1.0
     else
         mme.meanVare  = zero(mme.R)
         mme.meanVare2 = zero(mme.R)
     end
-    #polygenic effects (A), e.g, Animal+ Maternal
+    #polygenic effects (pedigree), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
@@ -91,7 +91,7 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.meanScaleVara      = zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
             Mi.meanScaleVara2     = zero(mme.R)  #variable to save Scale parameter for prior of marker effect variance
             if !is_multi_trait
-                Mi.mean_pi,Mi.mean_pi2             = 0.0,0.0                #inclusion probability
+                Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0                #inclusion probability
             else
                 Mi.π,Mi.mean_pi,Mi.mean_pi2 = copy(Mi.π),copy(Mi.π),copy(Mi.π)
                 if Mi.estimatePi == true
@@ -100,6 +100,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     Mi.mean_pi2[key]=0.0
                   end
                 end
+                #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)  end
             end
         end
     end
