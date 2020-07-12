@@ -234,6 +234,9 @@ mutable struct MME
 
     causal_structure
 
+    latent_traits
+    nonlinear_function
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
             scaleRes = R*(ν-2)/ν
@@ -257,6 +260,8 @@ mutable struct MME
                    0,
                    0,
                    false,false,false,
+                   false,
+                   false,
                    false)
     end
 end

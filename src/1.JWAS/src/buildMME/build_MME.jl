@@ -34,7 +34,17 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString, R = false; df = 4.0)
+function build_model(model_equations::AbstractString, R = false; df = 4.0,
+                     num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+  if num_latent_traits != false
+    lhs, rhs = strip.(split(model_equations,"="))
+    model_equations = ""
+    for i = 1:num_latent_traits
+      model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+    end
+    model_equations = model_equations[1:(end-1)]
+  end
+
   if R != false && !isposdef(map(AbstractFloat,R))
     error("The covariance matrix is not positive definite.")
   end
@@ -82,6 +92,11 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
           if nModels != 1
             genotypei.df = genotypei.df + nModels
           end
+          if genotypei.G != false || genotypei.genetic_variance != false
+            if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
+              error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
+            end
+          end
           push!(genotypes,genotypei)
         end
       end
@@ -92,6 +107,14 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes
+  end
+
+  #laten traits
+  if num_latent_traits != false
+    mme.latent_traits = true
+  end
+  if nonlinear_function != false
+    mme.nonlinear_function = nonlinear_function
   end
 
   return mme

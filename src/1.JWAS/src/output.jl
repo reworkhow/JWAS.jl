@@ -156,17 +156,17 @@ function dict2dataframe(mean_pi,mean_pi2)
 end
 
 """
-    getEBV(model::MME,sol,α,traiti)
+    getEBV(model::MME,traiti)
 
 (internal function) Get breeding values for individuals defined by outputEBV(),
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
 """
-function getEBV(mme,sol,traiti)
+function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
-    location_parameters = reformat2dataframe([getNames(mme) sol zero(sol)])
+    location_parameters = reformat2dataframe([getNames(mme) mme.sol zero(mme.sol)])
     if mme.pedTrmVec != 0
         for pedtrm in mme.pedTrmVec
             mytrait, effect = split(pedtrm,':')
@@ -324,15 +324,15 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   return outfile
 end
 """
-    output_MCMC_samples(mme,sol,vRes,G0,outfile=false)
+    output_MCMC_samples(mme,vRes,G0,outfile=false)
 
 (internal function) Save MCMC samples every output_samples_frequency iterations to the text file.
 """
-function output_MCMC_samples(mme,sol,vRes,G0,
+function output_MCMC_samples(mme,vRes,G0,
                              outfile=false)
   ntraits     = size(mme.lhsVec,1)
   #location parameters
-  output_location_parameters_samples(mme,sol,outfile)
+  output_location_parameters_samples(mme,mme.sol,outfile)
   #random effects variances
   for effect in  mme.rndTrmVec
     trmStri   = join(effect.term_array, "_")
@@ -370,7 +370,7 @@ function output_MCMC_samples(mme,sol,vRes,G0,
   if mme.MCMCinfo.outputEBV == true #add error message
       if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
-             myEBV = getEBV(mme,sol,1)
+             myEBV = getEBV(mme,1)
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
                  mygvar = var(myEBV)
@@ -378,10 +378,10 @@ function output_MCMC_samples(mme,sol,vRes,G0,
                  writedlm(outfile["heritability"],mygvar/(mygvar+vRes),',')
              end
           else
-              EBVmat = myEBV = getEBV(mme,sol,1)
+              EBVmat = myEBV = getEBV(mme,1)
               writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
               for traiti in 2:ntraits
-                  myEBV = getEBV(mme,sol,traiti) #actually BV
+                  myEBV = getEBV(mme,traiti) #actually BV
                   writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
                   EBVmat = [EBVmat myEBV]
               end

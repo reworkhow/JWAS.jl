@@ -39,6 +39,9 @@ include("CategoricalTrait/categorical_trait.jl")
 #Structure Equation Models
 include("StructureEquationModel/SEM.jl")
 
+#Latent Traits
+include("NonLinear/nonlinear.jl")
+
 #output
 include("output.jl")
 
@@ -152,10 +155,16 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
-    mme.causal_structure = causal_structure
+    mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
+                   printout_model_info,printout_frequency, single_step_analysis,
+                   fitting_J_vector,missing_phenotypes,constraint,estimate_variance,
+                   update_priors_frequency,outputEBV,output_heritability,categorical_trait,
+                   seed,double_precision,output_samples_file)
+    #random number seed
     if seed != false
         Random.seed!(seed)
     end
+    #save MCMC samples for all parameters (?seperate function user call)
     if output_samples_for_all_parameters == true
         allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
         allparameters=unique(allparameters)
@@ -163,6 +172,8 @@ function runMCMC(mme::MME,df;
             outputMCMCsamples(mme,parameter)
         end
     end
+    #structure equation model
+    mme.causal_structure = causal_structure
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
         missing_phenotypes, constraint = false, true
@@ -170,23 +181,6 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-    mme.MCMCinfo = MCMCinfo(chain_length,
-                            burnin,
-                            output_samples_frequency,
-                            printout_model_info,
-                            printout_frequency,
-                            single_step_analysis, #pedigree,
-                            fitting_J_vector,
-                            missing_phenotypes,
-                            constraint,
-                            estimate_variance,
-                            update_priors_frequency,
-                            outputEBV,
-                            output_heritability,
-                            categorical_trait,
-                            seed,
-                            double_precision,
-                            output_samples_file)
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -197,6 +191,13 @@ function runMCMC(mme::MME,df;
                 Mi.estimateScale     = estimateScale
                 Mi.method            = methods
             end
+        end
+    end
+    #Nonlinear
+    if mme.latent_traits == true
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        for i in mme.lhsVec
+            df[!,i]= yobs
         end
     end
     ############################################################################
@@ -249,7 +250,7 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
-        SSBRrun(mme,df,big_memory)
+        SSBRrun(mme,df,big_memory) #?move up for default variance assignment
     end
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)

@@ -27,6 +27,8 @@ function MCMC_BayesianAlphabet(mme,df)
     constraint               = mme.MCMCinfo.constraint
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
+    latent_traits            = mme.latent_traits
+    nonlinear_function       = mme.nonlinear_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -117,6 +119,14 @@ function MCMC_BayesianAlphabet(mme,df)
         end
     end
     ############################################################################
+    # Latent Traits
+    ############################################################################
+    #mme.ySparse: latent traits
+    #yobs       : observed trait
+    if latent_traits == true
+        yobs = mme.ySparse[1:length(mme.obsID)]
+    end
+    ############################################################################
     #More on Multi-Trait
     ############################################################################
     if is_multi_trait
@@ -137,7 +147,6 @@ function MCMC_BayesianAlphabet(mme,df)
     if causal_structure != false
         Y,Λy,causal_structure_outfile = SEM_setup(wArray,causal_structure,mme)
     end
-
     ############################################################################
     #  SET UP OUTPUT MCMC samples
     ############################################################################
@@ -275,6 +284,12 @@ function MCMC_BayesianAlphabet(mme,df)
             sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
+        # 5. Latent Traits
+        ########################################################################
+        if latent_traits == true
+            sample_latent_traits(yobs,mme,ycorr,1.0,nonlinear_function)
+        end
+        ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
@@ -299,7 +314,7 @@ function MCMC_BayesianAlphabet(mme,df)
             nsamples       = (iter-burnin)/output_samples_frequency
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
-            output_MCMC_samples(mme,mme.sol,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             if causal_structure != false
                 writedlm(causal_structure_outfile,sample4λ',',')
             end
