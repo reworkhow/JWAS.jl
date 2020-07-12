@@ -19,18 +19,18 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
 
     if nonlinear_function == "Neural Network" #need an intercept??
         #sample weights
-        X       = tanh.(ylats_old)
+        X       = [ones(nobs) tanh.(ylats_old)]
         lhs     = X'X + I*0.00001
         Ch      = cholesky(lhs)
         L       = Ch.L
         iL      = inv(L)
         rhs     = X'yobs
-        weights = Ch\rhs + iL'randn(size(ylats_old,2))*sqrt(σ2_yobs)
+        weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
         #weights = rand(MvNormal(lhs\rhs,inv(lhs)*σ2_yobs))
 
-        μ_yobs_current_all    = tanh.(ylats_old)*weights
+        μ_yobs_current_all    = X*weights
         candidates_all        = μ_ylats+randn(size(μ_ylats))
-        μ_yobs_candidate_all  = tanh.(candidates_all)*weights
+        μ_yobs_candidate_all  = [ones(nobs) tanh.(candidates_all)]*weights
     end
 
     for i = 1:nobs
@@ -53,15 +53,15 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
     ycorr[:]    = ycorr + vec(ylats_new - ylats_old)
     mme.ySparse = vec(ylats_new)
 
-    # #sample σ2_yobs
-    # if nonlinear_function != "Neural Network"
-    #     sse=0
-    #     for i = 1:nobs
-    #         sse += (yobs[i]-nonlinear_function(Tuple(ylats_new[i,:])...))^2
-    #     end
-    #     mme.σ2_yobs= sse/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-    # else
-    #     yobs_corr = yobs-ylats_new*weights
-    #     mme.σ2_yobs= dot(yobs_corr,yobs_corr)/rand(Chisq(nobs))
-    # end
+    #sample σ2_yobs
+    if nonlinear_function != "Neural Network"
+        sse=0
+        for i = 1:nobs
+            sse += (yobs[i]-nonlinear_function(Tuple(ylats_new[i,:])...))^2
+        end
+        mme.σ2_yobs= sse/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+    else
+        yobs_corr = yobs-[ones(nobs) ylats_new]*weights
+        mme.σ2_yobs= dot(yobs_corr,yobs_corr)/rand(Chisq(nobs))
+    end
 end
