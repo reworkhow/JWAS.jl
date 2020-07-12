@@ -52,4 +52,16 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
 
     ycorr[:]    = ycorr + vec(ylats_new - ylats_old)
     mme.ySparse = vec(ylats_new)
+
+    # #sample σ2_yobs
+    # if nonlinear_function != "Neural Network"
+    #     sse=0
+    #     for i = 1:nobs
+    #         sse += (yobs[i]-nonlinear_function(Tuple(ylats_new[i,:])...))^2
+    #     end
+    #     mme.σ2_yobs= sse/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+    # else
+    #     yobs_corr = yobs-ylats_new*weights
+    #     mme.σ2_yobs= dot(yobs_corr,yobs_corr)/rand(Chisq(nobs))
+    # end
 end
