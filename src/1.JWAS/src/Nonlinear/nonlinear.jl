@@ -61,7 +61,7 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
         end
         mme.σ2_yobs= sse/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
     else
-        yobs_corr = yobs-[ones(nobs) ylats_new]*weights
+        yobs_corr = yobs-[ones(nobs) tanh.(ylats_new)]*weights
         mme.σ2_yobs= dot(yobs_corr,yobs_corr)/rand(Chisq(nobs))
     end
 end
