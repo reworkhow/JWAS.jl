@@ -41,12 +41,13 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
         else
             μ_yobs_current   = μ_yobs_current_all[i]
             μ_yobs_candidate = μ_yobs_candidate_all[i]
+            candidates       = candidates_all[i,:]
         end
         llh_current      = -0.5*(yobs[i] - μ_yobs_current )^2/σ2_yobs
         llh_candidate    = -0.5*(yobs[i] - μ_yobs_candidate)^2/σ2_yobs
         mhRatio = exp(llh_candidate - llh_current)
         if rand() < mhRatio
-            ylats_new[i,:] = candidates_all[i,:]
+            ylats_new[i,:] = candidates
         end
     end
 
