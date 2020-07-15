@@ -1,3 +1,12 @@
+# function manyBayesABC!(genotypes,wArray,vare,locus_effect_variances)
+#     for i in 1:length(wArray) #ntraits
+#         genotypes.nLoci[i] = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+#                                        wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare,
+#                                        locus_effect_variances[i],genotypes.π[i])
+#     end
+# end
+
+
 function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
     genotypes.nLoci = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
                       ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
