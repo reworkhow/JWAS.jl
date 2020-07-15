@@ -112,9 +112,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   #laten traits
   if num_latent_traits != false
     mme.latent_traits = true
-  end
-  if nonlinear_function != false
-    mme.nonlinear_function = nonlinear_function
+    if nonlinear_function != false
+      mme.nonlinear_function = nonlinear_function
+    end
   end
 
   return mme

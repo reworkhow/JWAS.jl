@@ -236,6 +236,7 @@ mutable struct MME
 
     latent_traits
     nonlinear_function
+    weights_NN
     σ2_yobs
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
@@ -262,8 +263,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,
-                   false,
-                   1.0)
+                   false,false,false,1.0)
     end
 end
