@@ -91,8 +91,11 @@ function output_result(mme,output_file,
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
-      for traiti in 1:mme.nModels
-          EBVkey         = "EBV"*"_"*string(mme.lhsVec[traiti])
+      EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      if mme.latent_traits == true
+          push!(EBVkeys, "EBV_NonLinear")
+      end
+      for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
           EBV            = vec(mean(EBVsamples,dims=1))
@@ -103,6 +106,7 @@ function output_result(mme,output_file,
               error("The EBV file is wrong.")
           end
       end
+
       if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
           for i in ["genetic_variance","heritability"]
               samplesfile = output_file*"_"*i*".txt"
@@ -112,7 +116,6 @@ function output_result(mme,output_file,
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
           end
       end
-
   end
   return output
 end
@@ -270,6 +273,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           push!(outvar,"genetic_variance")
           push!(outvar,"heritability")
       end
+      if mme.latent_traits == true
+          push!(outvar,"EBV_NonLinear")
+      end
   end
 
   for i in outvar
@@ -319,6 +325,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
+      if mme.latent_traits == true
+          writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
+      end
   end
 
   return outfile
@@ -330,21 +339,21 @@ end
 """
 function output_MCMC_samples(mme,vRes,G0,
                              outfile=false)
-  ntraits     = size(mme.lhsVec,1)
-  #location parameters
-  output_location_parameters_samples(mme,mme.sol,outfile)
-  #random effects variances
-  for effect in  mme.rndTrmVec
+    ntraits     = size(mme.lhsVec,1)
+    #location parameters
+    output_location_parameters_samples(mme,mme.sol,outfile)
+    #random effects variances
+    for effect in  mme.rndTrmVec
     trmStri   = join(effect.term_array, "_")
     writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
-  end
+    end
 
-  writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
+    writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
 
-  if mme.pedTrmVec != 0
+    if mme.pedTrmVec != 0
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
-  end
-  if mme.M != 0 && outfile != false
+    end
+    if mme.M != 0 && outfile != false
       for Mi in mme.M
           for traiti in 1:ntraits
               writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
@@ -365,9 +374,9 @@ function output_MCMC_samples(mme,vRes,G0,
               println(outfile["pi"*"_"*Mi.name])
           end
       end
-  end
+    end
 
-  if mme.MCMCinfo.outputEBV == true #add error message
+    if mme.MCMCinfo.outputEBV == true #add error message
       if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
              myEBV = getEBV(mme,1)
@@ -392,7 +401,15 @@ function output_MCMC_samples(mme,vRes,G0,
               end
           end
        end
-  end
+    end
+    if mme.latent_traits == true
+        if mme.nonlinear_function != "Neural Network"
+            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
+        else
+            BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*mme.weights_NN
+        end
+        writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+    end
 end
 """
     output_location_parameters_samples(mme::MME,sol,outfile)
