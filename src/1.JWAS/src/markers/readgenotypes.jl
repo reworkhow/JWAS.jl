@@ -82,7 +82,8 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        method = "RR-BLUP",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
-                       starting_value=false)
+                       starting_value=false,
+                       quality_control=false)
     if typeof(file) <: AbstractString
         printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
@@ -117,10 +118,34 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         obsID     = map(string,rowID)
         genotypes = map(Float32,convert(Matrix,file))
     end
+
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
+
+    #Naive Quality Control 1, replace missing values with column means
+    if quality_control == true
+        for genoi in eachcolumn(genotypes)
+            missing_obs        = find(x->x==9.0,genoi)
+            nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
+            genoi[missing_obs] .= mean(genoi[nonmissing_obs])
+        end
+    end
+
     markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
     p             = markerMeans/2.0       #allele frequency
+
+    #Naive Quality Control 2, minor allel frequency & fixed loci
+    if quality_control == true
+         MAF       = 0.01
+         select1   = MAF .< vec(p) .< 1-MAF
+         select2   = vec(var(genotypes,dims=1)) .!= 0
+         select    = select1 .& select2
+         genotypes = genotypes[:,select]
+         p         = p[select]
+         markerID  = markerID[select]
+    end
+
+    nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
     if G_is_marker_variance == true

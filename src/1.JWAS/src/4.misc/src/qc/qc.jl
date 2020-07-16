@@ -63,37 +63,6 @@ function QC(infile,outfile;separator=' ',header=true,missing=false,MAF=0.1)
     writetable(outfile, df, separator=separator)
 end
 
-
-function missing2mean!(X::DataFrames.DataFrame;id4row=true,missing=9.0)
-    if missing == false
-        return
-    end
-    nrow,ncol = size(X)
-    start = 1
-    if id4row==true
-      start+=1
-    end
-    for i=start:ncol
-        index=find(x->x==missing,X[:,i])
-        cols = collect(1:nrow)
-        deleteat!(cols,index)
-        #X[index,i]=round(Int,mean(X[cols,i]))
-        X[index,i]=mean(X[cols,i])
-    end
-end
-
-#remove problematic loci: 1) minor allele frequence 2)fixed
-function deleteMAF!(M;MAF=0.01)
-    select1 = MAF.< vec(mean(M,1)/2) .< 1-MAF
-    fixed   = vec(var(df,1));
-    select2 = fixed.!=0;
-    select  = select1 .& select2
-    M       = M[:,select];
-    return M
-end
-# show distritbuion of allele frequencies
-
-
 #covert 3 parameters: 1)heritability; 2)genetic variance; 3)residual variance
 function H2GR(;heritability=false,genetic_variance=false,residual_variance=false)
     if heritability == false
