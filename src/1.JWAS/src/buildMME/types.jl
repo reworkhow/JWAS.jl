@@ -83,7 +83,7 @@ mutable struct Genotypes
   markerID
   nObs::Int64                     #length of obsID
   nMarkers::Int64
-  alleleFreq::Union{Array{Float64,2},Array{Float32,2}}
+  alleleFreq
   sum2pq::AbstractFloat
   centered::Bool
   genotypes::Union{Array{Float64,2},Array{Float32,2}}
