@@ -14,8 +14,6 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits)
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
-    ylats_new     = copy(ylats_old)
-
 
     if nonlinear_function == "Neural Network" #sample weights
         X       = [ones(nobs) tanh.(ylats_old)]
@@ -28,6 +26,7 @@ function sample_latent_traits(yobs,mme,ycorr,var,nonlinear_function)
         mme.weights_NN = weights
         #weights = rand(MvNormal(lhs\rhs,inv(lhs)*σ2_yobs))
     end
+
     candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
     if nonlinear_function == "Neural Network"
         μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights
