@@ -124,8 +124,8 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     #Naive Quality Control 1, replace missing values with column means
     if quality_control == true
-        for genoi in eachcolumn(genotypes)
-            missing_obs        = find(x->x==9.0,genoi)
+        for genoi in eachcol(genotypes)
+            missing_obs        = findall(x->x==9.0,genoi)
             nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
             genoi[missing_obs] .= mean(genoi[nonmissing_obs])
         end
@@ -141,7 +141,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
          select2   = vec(var(genotypes,dims=1)) .!= 0
          select    = select1 .& select2
          genotypes = genotypes[:,select]
-         p         = p[select]
+         p         = p[:,select]
          markerID  = markerID[select]
     end
 
