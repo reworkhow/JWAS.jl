@@ -330,7 +330,7 @@ function errors_args(mme)
                 println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
             end
             if Mi.method == "GBLUP"
-                if Mi.genetic_variance == false
+                if Mi.genetic_variance == false && Mi.G != false
                     error("Please provide values for the genetic variance for GBLUP analysis")
                 end
                 if mme.MCMCinfo.single_step_analysis == true
