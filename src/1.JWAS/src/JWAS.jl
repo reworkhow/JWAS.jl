@@ -40,7 +40,7 @@ include("CategoricalTrait/categorical_trait.jl")
 include("StructureEquationModel/SEM.jl")
 
 #Latent Traits
-include("NonLinear/nonlinear.jl")
+include("Nonlinear/nonlinear.jl")
 
 #output
 include("output.jl")
