@@ -349,10 +349,10 @@ function errors_args(mme)
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
     end
-    if mme.causal_structure != false && mme.nModles == 1
+    if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
     end
-    if mme.MCMCinfo.categorical_trait != false && mme.nModles != 1
+    if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
         error("Categorical traits are only allowed in single trait analysis")
     end
 end
