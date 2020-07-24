@@ -53,7 +53,7 @@ end
 function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     Gi = inv(mmeMG)
     nMarkers = size(gammaArray,1)
-    ntraits  = length(alphaArray[1])==1 ? 1 : length(alphaArray)
+    ntraits  = length(alphaArray)
 
     Q  = zeros(nMarkers)
     ntraits > 1 ? calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)

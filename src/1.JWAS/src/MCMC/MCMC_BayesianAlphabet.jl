@@ -227,8 +227,8 @@ function MCMC_BayesianAlphabet(mme,df)
                     end
                 elseif Mi.method == "BayesL"
                     if is_multi_trait
-                        if is_mega_trait
-                            megaBayesL!(Mi,wArray,mme.R,locus_effect_variances)
+                        if is_mega_trait #problem with sampleGammaArray
+                            megaBayesL!(Mi,wArray,mme.R)
                         else
                             MTBayesL!(Mi,wArray,mme.R)
                         end
@@ -238,7 +238,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method == "GBLUP"
                     if is_multi_trait
                         if is_mega_trait
-                            megaGBLUP!(Mi,wArray,mme.R,locus_effect_variances)
+                            megaGBLUP!(Mi,wArray,mme.R,Rinv)
                         else
                             MTGBLUP!(Mi,wArray,mme.R)
                         end

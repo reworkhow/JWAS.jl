@@ -26,6 +26,15 @@ function GBLUP_setup(Mi::Genotypes) #for both single-trait and multi-trait analy
     Mi.D         = D
 end
 
+function megaGBLUP!(Mi::Genotypes,wArray,vare,Rinv)
+    for i in 1:length(wArray) #ntraits
+        temp = Mi.G
+        Mi.G = Mi.G[i,i]
+        GBLUP!(Mi,wArray[i],vare[i,i],Rinv)
+        Mi.G = temp
+    end
+end
+
 function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv)
     ycorr[:]    = ycorr + Mi.genotypes*Mi.α[1]  #ycor[:] is needed (ycor causes problems)
     lhs         = Rinv .+ vare./(Mi.G*Mi.D)
