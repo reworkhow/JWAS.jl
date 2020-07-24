@@ -287,7 +287,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits
         ########################################################################
         if latent_traits == true
-            sample_latent_traits(yobs,mme,ycorr,1.0,nonlinear_function)
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
