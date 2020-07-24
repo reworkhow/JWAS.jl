@@ -1,6 +1,20 @@
+function megaBayesL!(genotypes,wArray,vare)
+    for i in 1:length(wArray) #ntraits
+        BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            wArray[i],genotypes.α[i],genotypes.gammaArray,vare[i,i],genotypes.G[i,i])
+    end
+end
+
 function BayesL!(genotypes,ycorr,vare)
     BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
             ycorr,genotypes.α[1],genotypes.gammaArray,vare,genotypes.G)
+end
+
+function megaBayesC0!(genotypes,wArray,vare)
+    for i in 1:length(wArray) #ntraits
+        BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                wArray[i],genotypes.α[i],[1.0],vare[i,i],genotypes.G[i,i])
+    end
 end
 
 function BayesC0!(genotypes,ycorr,vare)

@@ -134,6 +134,7 @@ function runMCMC(mme::MME,df;
                 missing_phenotypes              = true,
                 constraint                      = false,
                 causal_structure                = false,
+                mega_trait                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,  #complete or incomplete genomic data
@@ -157,7 +158,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
-                   fitting_J_vector,missing_phenotypes,constraint,estimate_variance,
+                   fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,categorical_trait,
                    seed,double_precision,output_samples_file)
     #random number seed

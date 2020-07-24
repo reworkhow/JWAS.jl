@@ -149,6 +149,7 @@ mutable struct MCMCinfo
     fitting_J_vector
     missing_phenotypes
     constraint
+    mega_trait
     estimate_variance
     update_priors_frequency
     outputEBV

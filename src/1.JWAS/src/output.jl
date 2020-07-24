@@ -459,7 +459,7 @@ function output_posterior_mean_variance(mme,nsamples)
                 Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
             end
             if Mi.estimatePi == true
-                if Mi.ntraits == 1
+                if Mi.ntraits == 1 || mme.MCMCinfo.mega_trait
                     Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
                     Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
                 else

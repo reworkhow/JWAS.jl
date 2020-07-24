@@ -1,16 +1,16 @@
-# function manyBayesABC!(genotypes,wArray,vare,locus_effect_variances)
-#     for i in 1:length(wArray) #ntraits
-#         genotypes.nLoci[i] = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-#                                        wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare,
-#                                        locus_effect_variances[i],genotypes.π[i])
-#     end
-# end
+function megaBayesABC!(genotypes,wArray,vare,locus_effect_variances)
+     for i in 1:length(wArray) #ntraits
+         BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                    wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare[i,i],
+                    [vari[i,i] for vari in locus_effect_variances],genotypes.π[i])
+     end
+end
 
 
 function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
-    genotypes.nLoci = BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                      ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
-                      locus_effect_variances,genotypes.π)
+    BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+              ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
+              locus_effect_variances,genotypes.π)
 end
 
 function BayesABC!(xArray,xRinvArray,xpRinvx,
@@ -24,7 +24,6 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
     invVarRes     = 1/vare
     invVarEffects = 1 ./  varEffects
     logVarEffects = log.(varEffects)
-    nLoci         = 0
     nMarkers      = length(α)
 
     for j=1:nMarkers
@@ -42,7 +41,6 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
             β[j] = gHat + randn()*sqrt(invLhs)
             α[j] = β[j]
             BLAS.axpy!(oldAlpha-α[j],x,yCorr)
-            nLoci = nLoci + 1
         else
             if (oldAlpha!=0)
                 BLAS.axpy!(oldAlpha,x,yCorr)
@@ -52,5 +50,4 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
             α[j] = 0
         end
     end
-    return nLoci
 end

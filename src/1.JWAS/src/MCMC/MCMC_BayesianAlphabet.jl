@@ -27,6 +27,7 @@ function MCMC_BayesianAlphabet(mme,df)
     constraint               = mme.MCMCinfo.constraint
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
+    is_mega_trait            = mme.MCMCinfo.mega_trait
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
     ############################################################################
@@ -64,9 +65,6 @@ function MCMC_BayesianAlphabet(mme,df)
 
             if Mi.method=="BayesB" #α=β.*δ
                 Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayeB
-                if is_multi_trait
-                    Mi.nLoci = zeros(Mi.ntraits)
-                end
             end
             if Mi.method=="BayesL"         #in the MTBayesLasso paper
                 if mme.nModels == 1
@@ -92,17 +90,23 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.meanVara2          = zero(mme.R)  #variable to save variance for marker effect
             Mi.meanScaleVara      = zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
             Mi.meanScaleVara2     = zero(mme.R)  #variable to save Scale parameter for prior of marker effect variance
-            if !is_multi_trait
-                Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0                #inclusion probability
-            else
-                Mi.π,Mi.mean_pi,Mi.mean_pi2 = copy(Mi.π),copy(Mi.π),copy(Mi.π)
-                if Mi.estimatePi == true
-                  for key in keys(Mi.mean_pi)
-                    Mi.mean_pi[key]=0.0
-                    Mi.mean_pi2[key]=0.0
-                  end
+            if is_multi_trait
+                if is_mega_trait
+                    Mi.π        = zeros(Mi.ntraits)
+                    Mi.mean_pi  = zeros(Mi.ntraits)
+                    Mi.mean_pi2 = zeros(Mi.ntraits)
+                else
+                    Mi.π,Mi.mean_pi,Mi.mean_pi2 = copy(Mi.π),copy(Mi.π),copy(Mi.π)
+                    if Mi.estimatePi == true
+                      for key in keys(Mi.mean_pi)
+                        Mi.mean_pi[key]=0.0
+                        Mi.mean_pi2[key]=0.0
+                      end
+                    end
+                    #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)
                 end
-                #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)  end
+            else
+                Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
             end
         end
     end
@@ -203,25 +207,41 @@ function MCMC_BayesianAlphabet(mme,df)
                 if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait
-                        MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                        if is_mega_trait
+                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                        else
+                            MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                        end
                     else
                         BayesABC!(Mi,ycorr,mme.R,locus_effect_variances)
                     end
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait
-                        MTBayesC0!(Mi,wArray,mme.R)
+                        if is_mega_trait
+                            megaBayesC0!(Mi,wArray,mme.R,locus_effect_variances)
+                        else
+                            MTBayesC0!(Mi,wArray,mme.R)
+                        end
                     else
                         BayesC0!(Mi,ycorr,mme.R)
                     end
                 elseif Mi.method == "BayesL"
                     if is_multi_trait
-                        MTBayesL!(Mi,wArray,mme.R)
+                        if is_mega_trait
+                            megaBayesL!(Mi,wArray,mme.R,locus_effect_variances)
+                        else
+                            MTBayesL!(Mi,wArray,mme.R)
+                        end
                     else
                         BayesL!(Mi,ycorr,mme.R)
                     end
                 elseif Mi.method == "GBLUP"
                     if is_multi_trait
-                        MTGBLUP!(Mi,wArray,ycorr,mme.R,Rinv)
+                        if is_mega_trait
+                            megaGBLUP!(Mi,wArray,mme.R,locus_effect_variances)
+                        else
+                            MTGBLUP!(Mi,wArray,mme.R)
+                        end
                     else
                         GBLUP!(Mi,ycorr,mme.R,Rinv)
                     end
@@ -231,9 +251,13 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.estimatePi == true
                     if is_multi_trait
-                        samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
+                        if is_mega_trait
+                            Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
+                        else
+                            samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
+                        end
                     else
-                        Mi.π = samplePi(Mi.nLoci, Mi.nMarkers)
+                        Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
                     end
                 end
                 ########################################################################

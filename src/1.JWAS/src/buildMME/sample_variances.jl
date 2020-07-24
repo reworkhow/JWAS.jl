@@ -96,7 +96,7 @@ end
 function sample_marker_effect_variance(Mi)
     if Mi.ntraits == 1
         if Mi.method in ["BayesC","RR-BLUP"]
-            Mi.G  = sample_variance(Mi.α[1], Mi.nLoci, Mi.df, Mi.scale)
+            Mi.G  = sample_variance(Mi.α[1], sum(Mi.δ[1]), Mi.df, Mi.scale)
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers
                 Mi.G[j] = sample_variance(Mi.β[1][j],1,Mi.df, Mi.scale)
