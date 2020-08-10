@@ -379,7 +379,7 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.MCMCinfo.outputEBV == true #add error message
       if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
           if ntraits == 1
-             myEBV = getEBV(mme,1)
+             EBVmat = myEBV = getEBV(mme,1)
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
                  mygvar = var(myEBV)
@@ -403,6 +403,7 @@ function output_MCMC_samples(mme,vRes,G0,
        end
     end
     if mme.latent_traits == true
+        EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
         if mme.nonlinear_function != "Neural Network"
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else
