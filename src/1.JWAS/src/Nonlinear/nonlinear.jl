@@ -8,6 +8,7 @@
 function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old = mme.ySparse         # current values of each latent trait
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait
+                                    # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
     σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
 
     #reshape the vector to nind X ntraits
@@ -24,7 +25,6 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         rhs     = X'yobs
         weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
         mme.weights_NN = weights
-        #weights = rand(MvNormal(lhs\rhs,inv(lhs)*σ2_yobs))
     end
 
     candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
@@ -41,8 +41,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     updateus         = rand(nobs) .< mhRatio
     ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
 
-    ycorr[:]    = ycorr + vec(ylats_new - ylats_old)
     mme.ySparse = vec(ylats_new)
+    ycorr[:]    = mme.ySparse - vec(μ_ylats)
 
     #sample σ2_yobs
     if nonlinear_function != "Neural Network"
