@@ -218,7 +218,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait
                         if is_mega_trait
-                            megaBayesC0!(Mi,wArray,mme.R,locus_effect_variances)
+                            megaBayesC0!(Mi,wArray,mme.R)
                         else
                             MTBayesC0!(Mi,wArray,mme.R)
                         end
