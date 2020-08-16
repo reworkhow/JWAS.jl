@@ -201,6 +201,20 @@ function runMCMC(mme::MME,df;
             df[!,i]= yobs
         end
     end
+    #mega_trait
+    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
+        mme.MCMCinfo.constraint = true
+        ##sample from scale-inv-⁠χ2, not InverseWishart
+        mme.df.residual  = mme.df.residual - mme.nModels
+        mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
+        if mme.M != 0
+            for Mi in mme.M
+                Mi.df        = Mi.df - mme.nModels
+                Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
+            end
+        end
+    end
+
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -529,11 +543,11 @@ function set_default_priors_for_variance_components(mme,df)
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = vare[1,1]
-    mme.scaleRes = mme.R*(mme.df.residual-2)/mme.df.residual
+    mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = vare
-    mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
+    mme.scaleR = mme.R*(mme.df.residual - mme.nModels - 1)
   end
   #random effects
   if length(mme.rndTrmVec) != 0
