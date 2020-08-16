@@ -116,6 +116,16 @@ function output_result(mme,output_file,
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
           end
       end
+
+      if mme.latent_traits == true && mme.nonlinear_function == "Neural Network"
+          myvar         = "neural_networks_bias_and_weights"
+          samplesfile   = output_file*"_"*myvar*".txt"
+          samples       = readdlm(samplesfile,',',header=false)
+          names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
+          samplemean    = vec(mean(samples,dims=1))
+          samplevar     = vec(std(samples,dims=1))
+          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:Std_Error])
+      end
   end
   return output
 end
@@ -275,6 +285,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       if mme.latent_traits == true
           push!(outvar,"EBV_NonLinear")
+          if mme.nonlinear_function == "Neural Network"
+              push!(outvar,"neural_networks_bias_and_weights")
+          end
       end
   end
 
@@ -408,6 +421,7 @@ function output_MCMC_samples(mme,vRes,G0,
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else
             BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*mme.weights_NN
+            writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
     end
