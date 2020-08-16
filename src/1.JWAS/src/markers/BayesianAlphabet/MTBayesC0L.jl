@@ -56,7 +56,7 @@ function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
     ntraits  = length(alphaArray)
 
     Q  = zeros(nMarkers)
-    ntraits > 1 ? calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray,Gi)
+    ntraits > 1 ? calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray[1],Gi)
     gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
     candidateArray = 1 ./ rand(gammaDist,nMarkers)
     uniformArray = rand(nMarkers)

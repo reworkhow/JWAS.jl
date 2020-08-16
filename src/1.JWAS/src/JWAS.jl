@@ -201,20 +201,6 @@ function runMCMC(mme::MME,df;
             df[!,i]= yobs
         end
     end
-    #mega_trait
-    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
-        mme.MCMCinfo.constraint = true
-        ##sample from scale-inv-⁠χ2, not InverseWishart
-        mme.df.residual  = mme.df.residual - mme.nModels
-        mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
-        if mme.M != 0
-            for Mi in mme.M
-                Mi.df        = Mi.df - mme.nModels
-                Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
-            end
-        end
-    end
-
     ############################################################################
     # Check Arguments, Pedigree, Phenotypes, and output individual IDs (before align_genotypes)
     ############################################################################
@@ -275,6 +261,23 @@ function runMCMC(mme::MME,df;
 
     if mme.M!=0
         set_marker_hyperparameters_variances_and_pi(mme)
+    end
+
+    #mega_trait
+    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
+        if mme.nModels == 1
+            error("more than 1 trait is required for MegaLMM analysis.")
+        end
+        mme.MCMCinfo.constraint = true
+        ##sample from scale-inv-⁠χ2, not InverseWishart
+        mme.df.residual  = mme.df.residual - mme.nModels
+        mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
+        if mme.M != 0
+            for Mi in mme.M
+                Mi.df        = Mi.df - mme.nModels
+                Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
+            end
+        end
     end
 
     if mme.output_ID!=0

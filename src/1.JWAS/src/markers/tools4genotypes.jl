@@ -137,31 +137,35 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 Mi.π = Pi
             end
             #(2) marker effect variances
-            if Mi.G == false && Mi.method!="GBLUP"
-                genetic2marker(Mi,Mi.π)
-                println()
-                if mme.nModels != 1
-                  if !isposdef(Mi.G) #also work for scalar
-                    error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
-                  end
-                  println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
-                  println("The mean of the prior for the marker effects covariance matrix is:")
-                  Base.print_matrix(stdout,round.(Mi.G,digits=6))
-                else
-                  if !isposdef(Mi.G) #positive scalar (>0)
-                    error("Marker effects variance is negative!")
-                  end
-                  println("The prior for marker effects variance is calculated from the genetic variance and π.")
-                  print("The mean of the prior for the marker effects variance is: ")
-                  print(round.(Mi.G,digits=6))
+            if Mi.G == false
+                if Mi.method!="GBLUP"
+                    genetic2marker(Mi,Mi.π)
+                    println()
+                    if mme.nModels != 1
+                      if !isposdef(Mi.G) #also work for scalar
+                        error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+                      end
+                      println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
+                      println("The mean of the prior for the marker effects covariance matrix is:")
+                      Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                    else
+                      if !isposdef(Mi.G) #positive scalar (>0)
+                        error("Marker effects variance is negative!")
+                      end
+                      println("The prior for marker effects variance is calculated from the genetic variance and π.")
+                      print("The mean of the prior for the marker effects variance is: ")
+                      print(round.(Mi.G,digits=6))
+                    end
+                    print("\n\n\n")
+                elseif Mi.method == "GBLUP"
+                    Mi.G  = Mi.genetic_variance
                 end
-                print("\n\n\n")
             end
             #(3) scale parameter for marker effect variance
-            if mme.nModels == 1
-                Mi.scale = Mi.G*(Mi.df-2)/Mi.df
+            if Mi.ntraits == 1
+                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
             else
-                Mi.scale = Mi.G*(Mi.df - mme.nModels - 1)
+                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
             end
         end
     end

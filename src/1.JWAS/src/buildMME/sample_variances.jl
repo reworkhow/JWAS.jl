@@ -1,60 +1,100 @@
-#  Distributions.jl package always returns Float64
 ################################################################################
-#  SAMPLE VARIANCES FOR MARKER OR RESIDUAL EFFECTS (GIBBS SAMPLER)             #
+# SAMPLE VARIANCES of MARKER, RESIDUAL and other Random EFFECTS (GIBBS SAMPLER)#
 #*******************************************************************************
-#sample from scaled-Inv-χ2 (n+df, (dot(x,x) + df*scale)/(n+df))                *
-#Given X ~ Inv-⁠χ2(df) <=> Y = (df*scale)*X ~ Scale-Inv-⁠χ2(df,scale)            *
-#Given X ~ Inv-⁠χ2(df) <=> Y = 1/X ~ χ2(df)                                     *
-#These transformations are indicated by names already                          *
+#singel-trait i.i.d (residual variance, marker effect variance)
 #*******************************************************************************
+#sample from Scale-Inv-chi2(ν,SSE/ν)  which is a conjugate prior,
+#1st parameter: degree of freedom, 2nd parameter: scale,
+#ν is (posterior) degree of freedom, and SSE is (posterior) sum of square (SSE).
+#
+# ν=n+df, SSE = dot(x,x) + df*scale (in conditional posterior)
+# x    : data, e.g., residuals (ycorr) or marker effects (α or β)
+# n    : length(x)
+# df   : degree of freedom for the prior
+# scale: scale parameters for the prior (different from scale in InverseWishart)
+#
+#How to sample from scale-inv-⁠χ2(ν,scale) with scale = SSE/ν
+# (1) X ~ Scale-Inv-⁠χ2(ν,SSE/ν)
+# <=> X = (df*(SSE/ν))*Y = SSE*Y and Y ~ Inv-⁠χ2(ν)
+# (2) Y ~ Inv-⁠χ2(ν)
+# <=> Y = 1/Z and Z ~ χ2(ν)
+# Thus, X = SSE/Z and Z ~ χ2(ν)
+#
+#*******************************************************************************
+#multi-trait i.i.d (residual variance)
+#*******************************************************************************
+#sample from InverseWishart(ν,SSE), which is a conjugate prior,
+#1st parameter: degree of freedom, 2nd parameter: scale,
+#ν is (posterior) degree of freedom, and SSE is (posterior) sum of square (SSE).
+#
+# ν = n+df, SSE = scale + SSE* (in conditional posterior)
+# SSE* : ∑residuals_i^2 on diagonal for variance of trait i,
+#        ∑(residuals_i*residuals_j) on off-diagonal for covariance between trait i and j
+# n    : number of observations
+# df   : degree of freedom for the prior
+# scale: scale parameters for the prior (different from scale in Scale-Inv-chi2)
+#
+#*******************************************************************************
+# single/multiple trait i.i.d/non-i.i.d random effects (others)
+# (e.g.,polygenic effects in Pedigree-based BLUP)
+#*******************************************************************************
+#Given Scale-Inverse-Wishart(ν,SSE)=Inverse-Gamma(ν/2,SSE/2)=Scale-Inv-chi2(ν,SSE/ν),
+#1st parameter: df or shape, 2nd parameter: scale,
+#ν is (posterior) df, and SSE is the (posterior) sum of square.
+#(wikipedia:Inverse-Wishart distribution;Scaled inverse chi-squared distribution)
+#
+#covariance matrix should be sampled from Scale-Inverse-Wishart(ν,SSE) and scalar
+#variance from Scale-Inv-chi2(ν,SSE/ν), for coding simplicity, scalar variance,
+#e.g., scaled-Inv-χ2 in single-trait PBLUP without correlated maternal effect,
+#is treated as a 1x1 matrix and all are sampled from Scale-Inverse-Wishart(ν,SSE).
+#*******************************************************************************
+
+#*******************************************************************************
+#Note:
+#1. Scale parameters (2nd parameter) is SSE/df in scale-inv-⁠χ2(df,scale)
+#   but sum of square (SSE) in scale-Inv-Wishart(df,scale)
+#   (from distributions.jl/wikipedia)
+#2. Distributions.jl package always returns values of type Float64
+#*******************************************************************************
+#single-trait i.i.d (residuzl, marker effect variance)
 function sample_variance(x, n, df, scale)
     return (dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
 
-function sample_variance(mme,resVec,Rinv;constraint=false)
-    νR0     = mme.df.residual
-    PRes    = mme.scaleRes
-    SRes    = zero(PRes)
+function sample_variance(x, n, df, scale, invweights)
+    sample_variance(x.* (invweights!=false ? sqrt.(invweights) : 1.0),n,df,scale)
+end
 
-    ntraits = mme.nModels
-    nObs    = div(length(resVec),ntraits)
-    Ri      = Diagonal(Rinv)
+#multi-trait i.i.d  #?reduce(hcat,array of array)' may be used to replace loops with matrix multiplication
+function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint)
+    if invweights != false
+        invweights  = Diagonal(invweights)
+    end
+    ntraits = length(ycorr_array)
+    SSE   = zeros(ntraits,ntraits)
     for traiti = 1:ntraits
-        startPosi = (traiti-1)*nObs + 1
-        endPosi   = startPosi + nObs - 1
+        ycorri    = ycorr_array[traiti]
         for traitj = traiti:ntraits
-            startPosj = (traitj-1)*nObs + 1
-            endPosj   = startPosj + nObs - 1
-            SRes[traiti,traitj] = resVec[startPosi:endPosi]'*Ri*resVec[startPosj:endPosj]
-            SRes[traitj,traiti] = SRes[traiti,traitj]
+            ycorrj    = ycorr_array[traitj]
+            SSE[traiti,traitj] = (invweights == false) ? dot(ycorri,ycorrj) : ycorri'*invweights*ycorrj
+            if constraint == true #diagonal elements only
+                break
+            end
+            SSE[traitj,traiti] = SSE[traiti,traitj]
         end
     end
     if constraint == false
-        mme.R  = rand(InverseWishart(νR0 + nObs, convert(Array,Symmetric(PRes + SRes))))
-    else     #for constraint R, chisq
-        ν        = νR0 - ntraits
-        scaleRes = diag(mme.scaleRes/(νR0 - ntraits - 1))*(ν-2)/ν #diag(R_prior)*(ν-2)/ν
+        R  = rand(InverseWishart(df + nobs, convert(Array,Symmetric(scale + SSE))))
+    else  #diagonal elements only, from scale-inv-⁠χ2
+        R  = zeros(ntraits,ntraits)
         for traiti = 1:ntraits
-            mme.R[traiti,traiti]= (SRes[traiti,traiti]+ν*scaleRes[traiti])/rand(Chisq(nObs+ν))
+            R[traiti,traiti]= (SSE[traiti,traiti]+df*scale[traiti])/rand(Chisq(nobs+df))
         end
     end
-    if mme.MCMCinfo.double_precision == false
-        mme.R = Float32.(mme.R)
-    end
+    return R
 end
-################################################################################
-#  SAMPLE VARIANCES FOR OTHER RANDOM EFFECTS (GIBBS SAMPLER)                   #
-#*******************************************************************************
-#Given Scale-Inverse-Wishart(ν,S)=Inverse-Gamma(ν/2,S/2)=Scale-Inv-chi2(ν,S/ν) *
-#variances for random effects (non-marker) are sampled from                    *
-#Scale-Inverse-Wishart(ν,S) for coding simplicity under all situations         *
-#even when the prior is a scalar (e.g., scaled-Inv-χ2 in single-trait PBLUP    *
-#and no maternal) by treating it as a 1x1 matrix.                              *
-#*******************************************************************************
 
-################################################################################
-# sample variances for random location effects
-################################################################################
+#Futher update is needed
 function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
@@ -88,78 +128,42 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
        end
     end
 end
-
-
 ########################################################################
 # Marker Effects Variance
 ########################################################################
-function sample_marker_effect_variance(Mi)
+function sample_marker_effect_variance(Mi,constraint=false)
+    if Mi.method == "BayesL"
+        invweights = 1 ./sqrt.(Mi.gammaArray)
+    elseif Mi.method == "GBLUP"
+        invweights = 1 ./sqrt.(Mi.D)
+    else
+        invweights = Mi.ntraits==1 ? 1.0 : false
+    end
     if Mi.ntraits == 1
-        if Mi.method in ["BayesC","RR-BLUP"]
-            Mi.G  = sample_variance(Mi.α[1], sum(Mi.δ[1]), Mi.df, Mi.scale)
+        if Mi.method in ["BayesC","BayesL","RR-BLUP","GBLUP"]
+            nloci = Mi.method == "BayesC" ? sum(Mi.δ[1]) : Mi.nMarkers
+            Mi.G  = sample_variance(Mi.α[1], nloci, Mi.df, Mi.scale, invweights)
+            if Mi.method == "BayesL"
+                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G) # MH sampler of gammaArray (Appendix C in paper)
+            end
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers
                 Mi.G[j] = sample_variance(Mi.β[1][j],1,Mi.df, Mi.scale)
             end
-        elseif Mi.method == "BayesL"
-            ssq = 0.0
-            for i=1:size(Mi.α[1],1)
-                ssq += Mi.α[1][i]^2/Mi.gammaArray[i]
-            end
-            Mi.G = (ssq + Mi.df*Mi.scale)/rand(Chisq(Mi.nLoci+Mi.df))
-            # MH sampler of gammaArray (Appendix C in paper)
-            sampleGammaArray!(Mi.gammaArray,Mi.α[1],Mi.G)
-        elseif Mi.method == "GBLUP"
-            Mi.G  = sample_variance(Mi.α[1]./sqrt.(Mi.D), Mi.nObs,Mi.df, Mi.scale)
         end
     else
-        SM    = zero(Mi.scale)
-        if Mi.method == "BayesC"
-            for traiti = 1:Mi.ntraits
-                for traitj = traiti:Mi.ntraits
-                    SM[traiti,traitj]   = (Mi.β[traiti]'Mi.β[traitj])
-                    SM[traitj,traiti]   = SM[traiti,traitj]
-                end
+        if Mi.method in ["RR-BLUP","BayesC","BayesL","GBLUP"]
+            data = (Mi.method == "BayesC" ? Mi.β : Mi.α)
+            Mi.G =sample_variance(data, Mi.nMarkers, Mi.df, Mi.scale, invweights, constraint)
+            if Mi.method == "BayesL"
+                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G) #MH sampler of gammaArray (Appendix C in paper)
             end
-            Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-        elseif Mi.method == "RR-BLUP"
-            for traiti = 1:Mi.ntraits
-                for traitj = traiti:Mi.ntraits
-                    SM[traiti,traitj]   = (Mi.α[traiti]'Mi.α[traitj])
-                    SM[traitj,traiti]   = SM[traiti,traitj]
-                end
+        elseif Mi.method == "BayesB" #potential slowdown (scalar multiplication is used instead of matrices)
+            marker_effects_matrix = reduce(hcat,Mi.β)'
+            for i = 1:Mi.nMarkers
+                data    = marker_effects_matrix[:,i]
+                Mi.G[i] = sample_variance(data, 1, Mi.df, Mi.scale, false, constraint)
             end
-            Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-        elseif Mi.method == "BayesL"
-            for traiti = 1:Mi.ntraits
-                alphai = Mi.α[traiti]./Mi.gammaArray
-                for traitj = traiti:Mi.ntraits
-                    SM[traiti,traitj]   = (alphai'Mi.α[traitj])
-                    SM[traitj,traiti]   = SM[traiti,traitj]
-                end
-            end
-            Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
-            sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G)# MH sampler of gammaArray (Appendix C in paper)
-        elseif Mi.method == "BayesB"
-            marker_effects_matrix = Mi.β[1]
-            for traiti = 2:Mi.ntraits
-                marker_effects_matrix = [marker_effects_matrix Mi.β[traiti]]
-            end
-            marker_effects_matrix = marker_effects_matrix'
-            beta2 = [marker_effects_matrix[:,i]*marker_effects_matrix[:,i]' for i=1:size(marker_effects_matrix,2)]
-            for markeri = 1:Mi.nMarkers
-                Mi.G[markeri] = rand(InverseWishart(Mi.df + 1, convert(Array,Symmetric(Mi.scale + beta2[markeri]))))
-            end
-        elseif Mi.method == "GBLUP"
-            for traiti = 1:Mi.ntraits
-                for traitj = traiti:Mi.ntraits
-                    alphaArrayi         = Mi.α[traiti]
-                    alphaArrayj         = Mi.α[traitj]
-                    SM[traiti,traitj]   = alphaArrayi'*Diagonal(1 ./Mi.D)*alphaArrayj
-                    SM[traitj,traiti]   = SM[traiti,traitj]
-                end
-            end
-            Mi.G = rand(InverseWishart(Mi.df + Mi.nMarkers, convert(Array,Symmetric(Mi.scale + SM))))
         end
     end
 end
