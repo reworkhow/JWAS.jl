@@ -10,12 +10,14 @@ using .PedModule
 import StatsBase: describe #a new describe is exported
 
 #Models
-include("buildMME/types.jl")
-include("buildMME/build_MME.jl")
-include("buildMME/random_effects.jl")
-include("buildMME/residual.jl")
-include("buildMME/sample_variances.jl")
-include("buildMME/solver.jl")
+include("types.jl")
+include("build_MME.jl")
+include("random_effects.jl")
+include("residual.jl")
+include("variance_components.jl")
+
+#Iterative Solver
+include("iterative_solver/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
@@ -34,13 +36,13 @@ include("markers/Pi.jl")
 include("SSBR/SSBR.jl")
 
 #Categorical trait
-include("CategoricalTrait/categorical_trait.jl")
+include("categorical_trait/categorical_trait.jl")
 
 #Structure Equation Models
-include("StructureEquationModel/SEM.jl")
+include("structure_equation_model/SEM.jl")
 
 #Latent Traits
-include("Nonlinear/nonlinear.jl")
+include("nonlinear/nonlinear.jl")
 
 #output
 include("output.jl")
