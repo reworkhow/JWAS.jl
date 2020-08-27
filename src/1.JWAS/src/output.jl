@@ -50,7 +50,7 @@ end
 #when MCMC is running; Other paramters (e.g., EBV), which is a function of those
 #are calculated from files storing MCMC samples at the end of MCMC.
 ################################################################################
-function output_result(mme,output_file,
+function output_result(mme,output_folder,
                        solMean,meanVare,G0Mean,
                        solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
@@ -91,6 +91,7 @@ function output_result(mme,output_file,
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
+      output_file = output_folder*"/MCMC_samples"
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
       if mme.latent_traits == true
           push!(EBVkeys, "EBV_NonLinear")

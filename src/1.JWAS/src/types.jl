@@ -157,7 +157,7 @@ mutable struct MCMCinfo
     categorical_trait
     seed
     double_precision
-    output_samples_file
+    output_folder
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

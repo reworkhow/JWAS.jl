@@ -18,7 +18,7 @@ function MCMC_BayesianAlphabet(mme,df)
     chain_length             = mme.MCMCinfo.chain_length
     burnin                   = mme.MCMCinfo.burnin
     output_samples_frequency = mme.MCMCinfo.output_samples_frequency
-    output_samples_file      = mme.MCMCinfo.output_samples_file
+    output_folder            = mme.MCMCinfo.output_folder
     estimate_variance        = mme.MCMCinfo.estimate_variance
     invweights               = mme.invweights
     update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
@@ -157,7 +157,7 @@ function MCMC_BayesianAlphabet(mme,df)
     if output_samples_frequency != 0
         outfile=output_MCMC_samples_setup(mme,chain_length-burnin,
                                           output_samples_frequency,
-                                          output_samples_file)
+                                          output_folder*"/MCMC_samples")
     end
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
@@ -372,11 +372,11 @@ function MCMC_BayesianAlphabet(mme,df)
     end
     if methods == "GBLUP"
         for Mi in mme.M
-            mv(output_samples_file*"_marker_effects_variances"*"_"*Mi.name*".txt",
-               output_samples_file*"_genetic_variance(REML)"*"_"*Mi.name*".txt")
+            mv(output_folder*"/MCMC_samples_marker_effects_variances"*"_"*Mi.name*".txt",
+               output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-    output=output_result(mme,output_samples_file,
+    output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
                          mme.solMean2,mme.meanVare2,

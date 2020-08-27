@@ -52,17 +52,17 @@ for single_step in [false,true]
                   out1=runMCMC(model1,phenotypes,estimate_variance=true,heterogeneous_residuals=false,
                                double_precision=true,
                                chain_length=100,output_samples_frequency=10,
-                               printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
+                               printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out1=runMCMC(model1,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,
                               chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
+                              single_step_analysis=true,pedigree=pedigree,seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
-                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  gwas1=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model1)
+                  gwas2=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt",mapfile,model1)
                   show(gwas2)
             end
             cd("..")
@@ -109,17 +109,17 @@ for single_step in [false,true]
 
             if single_step == false
                   out2=runMCMC(model2,phenotypes,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
-                              chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
+                              chain_length=100,output_samples_frequency=10,printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
                               chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
+                              single_step_analysis=true,pedigree=pedigree,seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
-                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  gwas1=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS(model2,mapfile,"MCMC_samples_marker_effects_geno_y1.txt","MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
+                  gwas2=GWAS(model2,mapfile,"results/MCMC_samples_marker_effects_geno_y1.txt","results/MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
                   show(gwas2)
             end
             cd("..")
@@ -166,17 +166,17 @@ for single_step in [false,true]
                   out1=runMCMC(model1,phenotypes,estimate_variance=true,heterogeneous_residuals=false,
                                methods=test_method,estimatePi=test_estimatePi,double_precision=true,
                                chain_length=100,output_samples_frequency=10,
-                               printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
+                               printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out1=runMCMC(model1,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
+                              single_step_analysis=true,pedigree=pedigree,seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
-                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  gwas1=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS("MCMC_samples_marker_effects_geno_y1.txt",mapfile,model1)
+                  gwas2=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt",mapfile,model1)
                   show(gwas2)
             end
             cd("..")
@@ -216,17 +216,17 @@ for single_step in [false,true]
 
             if single_step == false
                   out2=runMCMC(model2,phenotypes,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
-                              methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,output_samples_file = "MCMC_samples",seed=314);
+                              methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
                   out2=runMCMC(model2,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
                               methods=test_method,estimatePi=test_estimatePi,chain_length=100,output_samples_frequency=10,printout_frequency=50,
-                              single_step_analysis=true,pedigree=pedigree,output_samples_file = "MCMC_samples",seed=314);
+                              single_step_analysis=true,pedigree=pedigree,seed=314);
             end
             if test_method != "conventional (no markers)" && test_method!="GBLUP"
-                  gwas1=GWAS("MCMC_samples_marker_effects_geno_y1.txt")
+                  gwas1=GWAS("results/MCMC_samples_marker_effects_geno_y1.txt")
                   show(gwas1)
                   println()
-                  gwas2=GWAS(model2,mapfile,"MCMC_samples_marker_effects_geno_y1.txt","MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
+                  gwas2=GWAS(model2,mapfile,"results/MCMC_samples_marker_effects_geno_y1.txt","results/MCMC_samples_marker_effects_geno_y2.txt",genetic_correlation=true)
                   show(gwas2)
             end
             cd("..")

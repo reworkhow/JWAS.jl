@@ -68,7 +68,7 @@ export get_correlations,get_heritability
             starting_value           = false,
             burnin                   = 0,
             output_samples_frequency = chain_length/1000,
-            output_samples_file      = "MCMC_samples",
+            output_folder            = results,
             update_priors_frequency  = 0,
             ### Methods
             estimate_variance        = true,
@@ -91,8 +91,8 @@ export get_correlations,get_heritability
 
 * Markov chain Monte Carlo
     * The first `burnin` iterations are discarded at the beginning of a MCMC chain of length `chain_length`.
-    * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to files `output_samples_file`,
-      defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
+    * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to a folder `output_folder`,
+      defaulting to `results`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
       MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
       down the computation.
     * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
@@ -147,7 +147,7 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
-                output_samples_file             = "MCMC_samples",
+                output_folder                   = "results",
                 output_samples_for_all_parameters = false,
                 #for deprecated JWAS
                 methods                         = "conventional (no markers)",
@@ -158,11 +158,17 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
+    if !ispath(output_folder)
+        mkdir(output_folder)
+    else
+        error("The folder $output_folder already exists. The file "*file_i*" already exists!!! It is overwritten by the new output.")
+    end
+
     mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,categorical_trait,
-                   seed,double_precision,output_samples_file)
+                   seed,double_precision,output_folder)
     #random number seed
     if seed != false
         Random.seed!(seed)
@@ -296,7 +302,7 @@ function runMCMC(mme::MME,df;
     mme.output=MCMC_BayesianAlphabet(mme,df)
 
     for (key,value) in mme.output
-      CSV.write(replace(key," "=>"_")*".txt",value)
+      CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
     if mme.M != 0
         for Mi in mme.M
