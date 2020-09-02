@@ -33,7 +33,8 @@ include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
 
 #Incomplete Genomic Data (Single-step Methods)
-include("SSBR/SSBR.jl")
+include("single_step/SSBR.jl")
+include("single_step/SSGBLUP.jl")
 
 #Categorical trait
 include("categorical_trait/categorical_trait.jl")
