@@ -11,7 +11,6 @@ function get_Hi(pedigree,genotypes)
     M,p,freq = genotypes.genotypes, genotypes.nMarkers, genotypes.alleleFreq #already centered
     M        = M ./ sqrt.(2*freq.*(1 .- freq))
     G        = (M*M'+ I*0.00001)/p
-    Gi       =
 
     IDs      = ped.IDs
     Hi       = Ai
