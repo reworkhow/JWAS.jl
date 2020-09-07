@@ -79,8 +79,7 @@ function output_result(mme,output_folder,
               whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
           end
           output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
-
-          output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
+          #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
           end
@@ -485,10 +484,8 @@ function output_posterior_mean_variance(mme,nsamples)
                     end
                 end
             end
-            if Mi.method != "BayesB"
-                Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
-                Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
-            end
+            Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+            Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
             if Mi.estimateScale == true
                 Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
                 Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
