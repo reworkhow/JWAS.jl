@@ -162,7 +162,7 @@ function runMCMC(mme::MME,df;
     if !ispath(output_folder)
         mkdir(output_folder)
     else
-        error("The folder $output_folder already exists. The file "*file_i*" already exists!!! It is overwritten by the new output.")
+        error("The folder $output_folder already exists.")#It is overwritten by the new output.
     end
 
     mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
