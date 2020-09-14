@@ -43,7 +43,7 @@ include("categorical_trait/categorical_trait.jl")
 include("structure_equation_model/SEM.jl")
 
 #Latent Traits
-include("nonlinear/nonlinear.jl")
+include("Nonlinear/nonlinear.jl")
 
 #output
 include("output.jl")
