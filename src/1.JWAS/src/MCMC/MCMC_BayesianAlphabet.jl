@@ -168,6 +168,7 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         if categorical_trait == true
             ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
+            writedlm(outfile["threshold"],threshold',',')
         end
         ########################################################################
         # 1. Non-Marker Location Parameters
@@ -368,6 +369,9 @@ function MCMC_BayesianAlphabet(mme,df)
       end
       if causal_structure != false
         close(causal_structure_outfile)
+      end
+      if categorical_trait == true
+         close(outfile["threshold"])
       end
     end
     if methods == "GBLUP"

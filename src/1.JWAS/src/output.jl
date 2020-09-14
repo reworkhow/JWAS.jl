@@ -290,6 +290,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           end
       end
   end
+  #categorical traits
+  if mme.MCMCinfo.categorical_trait == true
+      push!(outvar,"threshold")
+  end
 
   for i in outvar
       file_i    = file_name*"_"*replace(i,":"=>".")*".txt" #replace ":" by "." to avoid reserved characters in Windows
@@ -484,8 +488,10 @@ function output_posterior_mean_variance(mme,nsamples)
                     end
                 end
             end
-            Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
-            Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+            if Mi.method != "BayesB"
+                Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+                Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+            end
             if Mi.estimateScale == true
                 Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
                 Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
