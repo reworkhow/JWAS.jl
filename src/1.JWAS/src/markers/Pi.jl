@@ -4,7 +4,7 @@
 #
 ################################################################################
 #single-trait
-function samplePi(nEffects::Integer, nTotal::Integer)
+function samplePi(nEffects::Number, nTotal::Number)
     return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end
 

@@ -42,9 +42,7 @@ end
 # Pedigree
 ############################################################################
 function calc_Ai(ped,geno,mme)
-    #***********************************************************************
-    #***reorder in A (ped) as genotyped id then non-genotyped id
-    #***********************************************************************
+    #reorder Ai to [non-genotyped ids; genotyped ids]
     num_pedn = PedModule.genoSet!(geno.obsID,ped)
     #calculate Ai, Ai_nn, Ai_ng
     Ai       = PedModule.AInverse(ped)
@@ -108,7 +106,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
          Mout   = Zo*(lhs\(rhs*Mg))
     end
 
-    geno.output_genotypes =  Mout
+    geno.output_genotypes = Mout
     geno.genotypes        = Mpheno
     geno.obsID            = mme.obsID
     geno.nObs             = length(mme.obsID)

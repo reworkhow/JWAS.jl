@@ -12,18 +12,21 @@ function GBLUP_setup(Mi::Genotypes) #for both single-trait and multi-trait analy
     M2Mt = M2*Mi.genotypes'/Mi.nMarkers
     Mi.output_genotypes = M2Mt*L*Diagonal(1 ./D)
     #reset parameter in mme.M
-    Mi.G         = Mi.genetic_variance
-    if Mi.ntraits == 1
-        Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
-    else
-        Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
-    end
     Mi.markerID  = string.(1:Mi.nObs) #pseudo markers of length=nObs
     Mi.genotypes = L
     for traiti = 1:Mi.ntraits
         Mi.α[traiti] = L'Mi.α[traiti]
     end
     Mi.D         = D
+end
+
+function megaGBLUP!(Mi::Genotypes,wArray,vare,Rinv)
+    for i in 1:length(wArray) #ntraits
+        temp = Mi.G
+        Mi.G = Mi.G[i,i]
+        GBLUP!(Mi,wArray[i],vare[i,i],Rinv)
+        Mi.G = temp
+    end
 end
 
 function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv)

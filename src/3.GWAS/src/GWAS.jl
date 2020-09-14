@@ -178,7 +178,8 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                             WPPA     = WPPA[srtIndx],
                             PPA_t  = cumsum(WPPA[srtIndx]) ./ (1:length(WPPA)))
              push!(out,outi)
-             CSV.write("GWAS_"*string.(marker_effects_file[i])*".txt", outi)
+             outfile="GWAS_"*replace(string.(marker_effects_file[i]),"/"=>"_")
+             CSV.write(outfile, outi)
         end
     end
     if genetic_correlation == true && length(marker_effects_file) ==2
@@ -221,7 +222,8 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                             estimate_cor = gcormean,
                             std_cor      = gcorstd)
              push!(out,outi)
-             CSV.write("GWAS_"*string.(marker_effects_file[1])*"_"*string.(marker_effects_file[2])*".txt", outi)
+             outfile="GWAS_"*replace(string.(marker_effects_file[1]),"/"=>"_")*"_"*replace(string.(marker_effects_file[2]),"/"=>"_")
+             CSV.write(outfile, outi)
     end
     return output_winVarProps ? (Tuple(out),winVarProps) : Tuple(out)
 end
