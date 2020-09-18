@@ -149,6 +149,7 @@ mutable struct MCMCinfo
     fitting_J_vector
     missing_phenotypes
     constraint
+    mega_trait
     estimate_variance
     update_priors_frequency
     outputEBV
@@ -156,7 +157,7 @@ mutable struct MCMCinfo
     categorical_trait
     seed
     double_precision
-    output_samples_file
+    output_folder
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...
@@ -206,7 +207,7 @@ mutable struct MME
     missingPattern                                #for impuation of missing residual
     resVar                                        #for impuation of missing residual
     ROld                #initilized to 0 ??       #residual variance (single-trait) for
-    scaleRes                                      #scale parameters
+    scaleR                                        #scale parameters
     meanVare
     meanVare2
 
@@ -234,20 +235,25 @@ mutable struct MME
 
     causal_structure
 
+    latent_traits
+    nonlinear_function
+    weights_NN
+    σ2_yobs
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
-            scaleRes = R*(ν-2)/ν
+            scaleR   = R*(ν-2)/ν
             νR0      = ν
         else
             ν,k      = ν, nModels
             νR0      = ν + k
-            scaleRes = R*(νR0 - k - 1)
+            scaleR   = R*(νR0 - k - 1)
         end
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),false,false,
                    [],
-                   R,0,0,R,scaleRes,false,false,
+                   R,0,0,R,scaleR,false,false,
                    [],
                    0,
                    1,
@@ -257,6 +263,7 @@ mutable struct MME
                    0,
                    0,
                    false,false,false,
-                   false)
+                   false,
+                   false,false,false,1.0)
     end
 end

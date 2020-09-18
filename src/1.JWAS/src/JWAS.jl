@@ -10,12 +10,14 @@ using .PedModule
 import StatsBase: describe #a new describe is exported
 
 #Models
-include("buildMME/types.jl")
-include("buildMME/build_MME.jl")
-include("buildMME/random_effects.jl")
-include("buildMME/residual.jl")
-include("buildMME/sample_variances.jl")
-include("buildMME/solver.jl")
+include("types.jl")
+include("build_MME.jl")
+include("random_effects.jl")
+include("residual.jl")
+include("variance_components.jl")
+
+#Iterative Solver
+include("iterative_solver/solver.jl")
 
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
@@ -31,13 +33,17 @@ include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
 
 #Incomplete Genomic Data (Single-step Methods)
-include("SSBR/SSBR.jl")
+include("single_step/SSBR.jl")
+include("single_step/SSGBLUP.jl")
 
 #Categorical trait
-include("CategoricalTrait/categorical_trait.jl")
+include("categorical_trait/categorical_trait.jl")
 
 #Structure Equation Models
-include("StructureEquationModel/SEM.jl")
+include("structure_equation_model/SEM.jl")
+
+#Latent Traits
+include("Nonlinear/nonlinear.jl")
 
 #output
 include("output.jl")
@@ -63,7 +69,7 @@ export get_correlations,get_heritability
             starting_value           = false,
             burnin                   = 0,
             output_samples_frequency = chain_length/1000,
-            output_samples_file      = "MCMC_samples",
+            output_folder            = results,
             update_priors_frequency  = 0,
             ### Methods
             estimate_variance        = true,
@@ -86,8 +92,8 @@ export get_correlations,get_heritability
 
 * Markov chain Monte Carlo
     * The first `burnin` iterations are discarded at the beginning of a MCMC chain of length `chain_length`.
-    * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to files `output_samples_file`,
-      defaulting to `MCMC_samples.txt`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
+    * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to a folder `output_folder`,
+      defaulting to `results`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
       MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
       down the computation.
     * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
@@ -131,6 +137,7 @@ function runMCMC(mme::MME,df;
                 missing_phenotypes              = true,
                 constraint                      = false,
                 causal_structure                = false,
+                mega_trait                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,  #complete or incomplete genomic data
@@ -141,7 +148,7 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
-                output_samples_file             = "MCMC_samples",
+                output_folder                   = "results",
                 output_samples_for_all_parameters = false,
                 #for deprecated JWAS
                 methods                         = "conventional (no markers)",
@@ -152,10 +159,25 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Pre-Check
     ############################################################################
-    mme.causal_structure = causal_structure
+    myfolder,folderi = output_folder, 1
+    while ispath(output_folder)
+        printstyled("The folder $output_folder already exists.\n" ,bold=false,color=:red)
+        output_folder = myfolder*string(folderi)
+        folderi += 1
+    end
+    mkdir(output_folder)
+    printstyled("The folder $output_folder is created to save results.\n" ,bold=false,color=:green)
+
+    mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
+                   printout_model_info,printout_frequency, single_step_analysis,
+                   fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
+                   update_priors_frequency,outputEBV,output_heritability,categorical_trait,
+                   seed,double_precision,output_folder)
+    #random number seed
     if seed != false
         Random.seed!(seed)
     end
+    #save MCMC samples for all parameters (?seperate function user call)
     if output_samples_for_all_parameters == true
         allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
         allparameters=unique(allparameters)
@@ -163,6 +185,8 @@ function runMCMC(mme::MME,df;
             outputMCMCsamples(mme,parameter)
         end
     end
+    #structure equation model
+    mme.causal_structure = causal_structure
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
         missing_phenotypes, constraint = false, true
@@ -170,23 +194,6 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-    mme.MCMCinfo = MCMCinfo(chain_length,
-                            burnin,
-                            output_samples_frequency,
-                            printout_model_info,
-                            printout_frequency,
-                            single_step_analysis, #pedigree,
-                            fitting_J_vector,
-                            missing_phenotypes,
-                            constraint,
-                            estimate_variance,
-                            update_priors_frequency,
-                            outputEBV,
-                            output_heritability,
-                            categorical_trait,
-                            seed,
-                            double_precision,
-                            output_samples_file)
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -197,6 +204,13 @@ function runMCMC(mme::MME,df;
                 Mi.estimateScale     = estimateScale
                 Mi.method            = methods
             end
+        end
+    end
+    #Nonlinear
+    if mme.latent_traits == true
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        for i in mme.lhsVec
+            df[!,i]= yobs
         end
     end
     ############################################################################
@@ -249,7 +263,7 @@ function runMCMC(mme::MME,df;
     #2)impute genotypes for non-genotyped individuals
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
-        SSBRrun(mme,df,big_memory)
+        SSBRrun(mme,df,big_memory) #?move up for default variance assignment
     end
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
@@ -259,6 +273,23 @@ function runMCMC(mme::MME,df;
 
     if mme.M!=0
         set_marker_hyperparameters_variances_and_pi(mme)
+    end
+
+    #mega_trait
+    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
+        if mme.nModels == 1
+            error("more than 1 trait is required for MegaLMM analysis.")
+        end
+        mme.MCMCinfo.constraint = true
+        ##sample from scale-inv-⁠χ2, not InverseWishart
+        mme.df.residual  = mme.df.residual - mme.nModels
+        mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
+        if mme.M != 0
+            for Mi in mme.M
+                Mi.df        = Mi.df - mme.nModels
+                Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
+            end
+        end
     end
 
     if mme.output_ID!=0
@@ -275,7 +306,7 @@ function runMCMC(mme::MME,df;
     mme.output=MCMC_BayesianAlphabet(mme,df)
 
     for (key,value) in mme.output
-      CSV.write(replace(key," "=>"_")*".txt",value)
+      CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
     if mme.M != 0
         for Mi in mme.M
@@ -349,10 +380,10 @@ function errors_args(mme)
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
     end
-    if mme.causal_structure != false && mme.nModles == 1
+    if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
     end
-    if mme.MCMCinfo.categorical_trait != false && mme.nModles != 1
+    if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
         error("Categorical traits are only allowed in single trait analysis")
     end
 end
@@ -527,11 +558,11 @@ function set_default_priors_for_variance_components(mme,df)
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = vare[1,1]
-    mme.scaleRes = mme.R*(mme.df.residual-2)/mme.df.residual
+    mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     mme.R = vare
-    mme.scaleRes = mme.R*(mme.df.residual - mme.nModels - 1)
+    mme.scaleR = mme.R*(mme.df.residual - mme.nModels - 1)
   end
   #random effects
   if length(mme.rndTrmVec) != 0
