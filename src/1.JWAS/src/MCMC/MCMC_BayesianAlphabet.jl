@@ -196,6 +196,7 @@ function MCMC_BayesianAlphabet(mme,df)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
+        mme.Mu_all[1] = mme.sol
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
@@ -209,7 +210,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait
                         if is_mega_trait
-                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                            megaBayesABC!(mme,Mi,wArray,mme.R,locus_effect_variances)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end
@@ -319,7 +320,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits
         ########################################################################
         if latent_traits == true
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)  #to update ycorr!
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

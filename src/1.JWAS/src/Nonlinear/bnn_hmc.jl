@@ -1,3 +1,54 @@
+# in total L hidden layers
+# l_l nodes in l-th hidden layer (e.g., l2 nodes in 2nd hidden layer)
+
+###########
+# Z0: marker covariate matrix, n by p, each col is a maker
+
+# Z1: latent layer(1), n by l1 matrix, each col is a latent trait
+# Z2: latent layer(2), n by l2 matrix, each col is a latent trait
+# ...
+# ZL: latent layer(L), n by lL matrix, each col is a latent trait
+
+# y: observed trait, vector of n by 1
+
+# Z_all = [Z1,Z2,Z3,...,ZL]  array of matrix
+###########
+
+###########
+# W0: marker effects, matrix of p by l1, each col is for a latent trait
+
+# W1: weights from latent(1) to latent(2), matrix of l1 by l2, each col is for a latent trait
+# W2: weights from latent(2) to latent(3), matrix of l2 by l3, each col is for a latent trait
+# ...
+# WL: weights from latent(L) to observed trait, vector of lL by 1
+
+# W_all = [W1,...,WL] array of matrix
+###########
+
+###########
+# Mu1: vector of length l1
+# ...
+# MuL: vector of length lL
+# mu: overall mean of obsered trait
+
+# Mu_all = [Mu1,...,ML] array of array
+###########
+
+###########
+# Sigma2z1: in hidden layer 1, residual variance of latent trait, vector of length l1
+# ...
+# Sigma2zL: in hidden layer L, residual variance of latent trait, vector of length lL
+
+# Sigma2z_all = [Sigma2z1,...,Sigma2zL]
+
+# sigma2e: residual variance of observed trait
+###########
+
+# nNodes = [3,4,4,3] # nNodes in each hidden layer
+# L = length(nNodes) # total number of hidden layer
+
+
+
 #helper 1: gradiant of j-th latent trait in l-th hidden layer, zl_j
 function calc_gradient_zl_j(j,l,L,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
     # data to be used
@@ -171,33 +222,6 @@ function hmc_run(j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu;
 end
 
 
-# one iteration in Gibbs sampling: sample all weights and latent traits
-function Gibbs_one_iteration(L,nNodes,Z0,Z_all,y,W0,W_all,Mu_all,mu,Sigma2z_all,sigma2e)
-    for l=1:L
-        ##sample weight and latent trait in l-th hidden layer
-        for j=1:nNodes[l]
-            #sample weight connected to zl_j in the left (wl_mimus_one_j)
-            if l==1
-                #sample marker effect w0_j
-                (Mu_all[1][j], W0[:,j]) = sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all)
-            else
-                #sample weights wl_mimus_one_j
-                (Mu_all[l][j], W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all)
-            end
-
-            #sample latent trait zl_j
-            Z_all = hmc_run(j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
-        end
-    end
-
-    #sample WL (l=L)
-    (mu, W_all[L]) = sample_weights_mu(L+1,999,L,Z0,Z_all,y,W0,W_all)
-
-    return Z_all,W0,W_all,mu,Mu_all
-end
-
-
-
 #helper 5: MME solver to help sample weights & mu
 function MME(y,x;lambda=0.00001)
     lhs= x'x + I*lambda
@@ -236,4 +260,78 @@ function sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all)
     wl_minus_one_j = mu_weight[2:end]  #first is mu
 
     return mul_j,wl_minus_one_j
+end
+
+
+# helper 7: given trained model, and new inputs, calculate predictions
+function cal_prediction(Z0,L,W0,W_all,Mu_all,mu)  #Z0 is marker in testing data
+    n= size(Z0,1)
+
+    Z= ones(n)*(Mu_all[1]') + Z0*W0  # Z1
+    for l in 2:L
+        Z = ones(n)*(Mu_all[l]') + tanh.(Z)*W_all[l-1] #Z2...ZL
+    end
+    y = ones(n)*mu + tanh.(Z)*W_all[L]
+
+    return y
+end
+
+# helper 8: given Z1_hat, W_all ,Mu_all, mu -> y_hat
+function cal_prediction_fromZ1(Z1,L,W_all,Mu_all,mu)
+    n= size(Z1,1)
+    Z=Z1
+
+    for l in 2:L
+        Z = ones(n)*(Mu_all[l]') + tanh.(Z)*W_all[l-1] #Z2...ZL
+    end
+    y = ones(n)*mu + tanh.(Z)*W_all[L]
+
+    return y
+end
+
+function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
+    ylats_old = mme.ySparse         # current values of each latent trait in 1st hidden layer; vec(matrix of n by l1)
+    μ_ylats   = mme.ySparse - ycorr # mean of each latent trait in 1st hidden layer; =Z1-residual;  vec(matrix of n by l1)
+                                    # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
+    σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
+
+    L=mme.L
+    nNodes=mme.nNodes
+
+    #reshape the vector to n by l1
+    nobs, ntraits = length(mme.obsID), mme.nModels
+    ylats_old     = reshape(ylats_old,nobs,ntraits)
+
+
+    ## already have W0, Mu_all[1]
+    ## need to update Z1,W1, Z2,W2, ..., ZL,WL
+    ############# START ##################
+    # sample Z1
+    for j=1:nNodes[1]
+        mme.Z_all = hmc_run(j,1,L,nNodes,mme.M,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mu)
+    end
+    # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
+    for l=2:L
+        #sample latent trait zl_j
+        for j=1:nNodes[l]
+            ##sample weight and latent trait in l-th hidden layer
+            (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,Z_all,yobs,W0,W_all)
+            #sample latent trait zl_j
+            mme.Z_all = hmc_run(j,l,mme.L,mme.nNodes,mme.M,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mu)
+        end
+    end
+    #sample WL (l=L)
+    (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.Z0,mme.Z_all,yobs,mme.W0,mme.W_all)
+    mme.weights_NN = mme.W_all[L]
+    ############# END ##################
+
+    ylats_new        = mme.Z_all[1]
+
+    mme.ySparse = vec(ylats_new)
+    ycorr[:]    = mme.ySparse - μ_ylats  # =(ySparse_new - ySparse_old) + ycorr   change of ycorr due to updating Z1
+
+    #sample σ2_yobs (vare)
+    yhat = cal_prediction(mme.M,L,mme.W0,mme.W_all,mme.Mu_all,mme.mu)
+    residuals = yobs-yhat#[ones(nobs) tanh.(ylats_new)]*weights
+    mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
