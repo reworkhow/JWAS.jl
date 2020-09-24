@@ -162,6 +162,51 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
+    # mme.M[1].genotypes is 5-by-5
+    # Initialize mme for hmc
+    if mme.L != false
+        L=mme.L
+        nNodes=mme.nNodes
+
+        W_all = Vector{Any}(undef,L)
+        Z_all = Vector{Array{Float64,2}}(undef,L)
+        Mu_all = Vector{Array{Float64,1}}(undef,L)
+        Sigma2z_all = Vector{Array{Float64,1}}(undef,L)
+
+        p=mme.M[1].nMarkers
+        W0=randn(p,nNodes[1])  # marker effects
+        Z1=mme.M[1].genotypes * W0  # simulate latent traits
+        Mu1 = mean(Z1,dims=1)
+        Sigma2z1=var(Z1,dims=1)
+
+        Z_all[1] = Z1
+        Mu_all[1] = vec(Mu1)
+        Sigma2z_all[1]=vec(Sigma2z1)
+
+        for l in 1:(L-1)
+           Wl = randn(nNodes[l],nNodes[l+1])
+           W_all[l] = Wl
+
+           Zl_plus_one = tanh.(Z_all[l]) * Wl
+           Mul_plus_one = mean(Zl_plus_one,dims=1) # ~0
+           Sigma2zl_plus_one=var(Zl_plus_one,dims=1)
+           # save
+           Z_all[l+1] = Zl_plus_one#[1:nTrain,:]
+           Mu_all[l+1] = vec(Mul_plus_one)
+           Sigma2z_all[l+1]=vec(Sigma2zl_plus_one)
+        end
+
+        W_all[L]=randn(nNodes[L])
+
+        mme.W_all       = W_all
+        mme.Z_all       = Z_all
+        mme.Mu_all      = Mu_all
+        mme.Sigma2z_all = Sigma2z_all
+        mme.mu          = mean(mme.ySparse)
+        mme.W0          = W0
+    end
+
+
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical traits (liabilities)
@@ -196,7 +241,10 @@ function MCMC_BayesianAlphabet(mme,df)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
-        mme.Mu_all[1] = mme.sol
+
+        if mme.L!=false
+            mme.Mu_all[1] = mme.sol
+        end
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
@@ -319,8 +367,14 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 5. Latent Traits
         ########################################################################
-        if latent_traits == true
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)  #to update ycorr!
+
+        #mme.M[1].genotypes here is 5-by-5
+        if latent_traits == true #to update ycorr!
+            if mme.L == false  #MH
+                sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+            elseif mme.L != false #HMC
+                sample_latent_traits_hmc(yobs,mme,ycorr)
+            end
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

@@ -186,6 +186,7 @@ function hmc_one_iteration(nLeapfrog,epsilon,j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Si
 
     #Step1. update phi ~ N(0,M)
     phi = randn(n)  #rand(n,Normal(0,sigma2phi))
+
     log_p_old = calc_log_p_z(j,l,L,nNodes,Z0,old_Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu) - 0.5*phi.^2  #-0.5*log(sigma2phi)
     #Step2. update (zl_j,phi) from L leapfrog
     phi += 0.5 * epsilon * calc_gradient_zl_j(j,l,L,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
@@ -266,7 +267,6 @@ end
 # helper 7: given trained model, and new inputs, calculate predictions
 function cal_prediction(Z0,L,W0,W_all,Mu_all,mu)  #Z0 is marker in testing data
     n= size(Z0,1)
-
     Z= ones(n)*(Mu_all[1]') + Z0*W0  # Z1
     for l in 2:L
         Z = ones(n)*(Mu_all[l]') + tanh.(Z)*W_all[l-1] #Z2...ZL
@@ -308,21 +308,23 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
     ############# START ##################
     # sample Z1
     for j=1:nNodes[1]
-        mme.Z_all = hmc_run(j,1,L,nNodes,mme.M,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mu)
+        mme.Z_all = hmc_run(j,1,L,nNodes,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)  #Z0=mme.M[1].genotypes
     end
     # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
     for l=2:L
         #sample latent trait zl_j
         for j=1:nNodes[l]
             ##sample weight and latent trait in l-th hidden layer
-            (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,Z_all,yobs,W0,W_all)
+            (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all)
             #sample latent trait zl_j
-            mme.Z_all = hmc_run(j,l,mme.L,mme.nNodes,mme.M,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mu)
+            mme.Z_all = hmc_run(j,l,mme.L,mme.nNodes,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)
         end
     end
     #sample WL (l=L)
-    (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.Z0,mme.Z_all,yobs,mme.W0,mme.W_all)
+    (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all)
+
     mme.weights_NN = mme.W_all[L]
+
     ############# END ##################
 
     ylats_new        = mme.Z_all[1]
@@ -331,7 +333,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
     ycorr[:]    = mme.ySparse - μ_ylats  # =(ySparse_new - ySparse_old) + ycorr   change of ycorr due to updating Z1
 
     #sample σ2_yobs (vare)
-    yhat = cal_prediction(mme.M,L,mme.W0,mme.W_all,mme.Mu_all,mme.mu)
+    yhat = cal_prediction(mme.M[1].genotypes,L,mme.W0,mme.W_all,mme.Mu_all,mme.mu)  #Z0=mme.M[1].genotypes
     residuals = yobs-yhat#[ones(nobs) tanh.(ylats_new)]*weights
     mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end

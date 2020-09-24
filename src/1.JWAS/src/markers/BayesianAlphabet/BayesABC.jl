@@ -3,7 +3,9 @@ function megaBayesABC!(mme,genotypes,wArray,vare,locus_effect_variances)
          BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
                     wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare[i,i],
                     [vari[i,i] for vari in locus_effect_variances],genotypes.π[i])
-         mme.W0[:,i] = genotypes.α[i]
+         if mme.L != false
+             mme.W0[:,i] = genotypes.α[i]
+         end
      end
 end
 
