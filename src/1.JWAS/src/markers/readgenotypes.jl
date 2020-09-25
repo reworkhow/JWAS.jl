@@ -129,7 +129,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             missing_obs        = findall(x->x==9.0,genoi)
             nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
             genoi[missing_obs] .= mean(genoi[nonmissing_obs])
-            if findfirst(x->(x>2.0||x<0.0),genoi) != nothing
+            if findfirst(x->(x>2.0||x<0.0),genoi) != nothing #issue71, genotype score
                 @warn "genotype scores out of the range 0 to 2 are found."
             end
         end
