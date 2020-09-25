@@ -55,6 +55,7 @@ end
                   separator=',',header=true,rowID=false,
                   center=true,G_is_marker_variance = false,df = 4.0)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
+* Missing genotypes should be denoted as `9`, and will be replace by column means. Users can also impute missing genotypes before the analysis.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
   If **G** is not provided, a value is calculated from responses (phenotypes).
 * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
@@ -128,6 +129,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             missing_obs        = findall(x->x==9.0,genoi)
             nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
             genoi[missing_obs] .= mean(genoi[nonmissing_obs])
+            if findfirst(x->(x>2.0||x<0.0),genoi) != nothing
+                @warn "genotype scores out of the range 0 to 2 are found."
+            end
         end
     end
 
