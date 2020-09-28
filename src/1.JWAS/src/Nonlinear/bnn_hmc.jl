@@ -182,7 +182,7 @@ end
 function hmc_one_iteration(nLeapfrog,epsilon,j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
     n = length(y)
     old_Z_all = Z_all
-    z=Z_all[l][:,j]
+    # z=Z_all[l][:,j]
 
     #Step1. update phi ~ N(0,M)
     phi = randn(n)  #rand(n,Normal(0,sigma2phi))
@@ -192,7 +192,7 @@ function hmc_one_iteration(nLeapfrog,epsilon,j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Si
     phi += 0.5 * epsilon * calc_gradient_zl_j(j,l,L,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
     for leap_i in 1:nLeapfrog
        #(b) full step of theta
-       z += epsilon * phi  # * 1/sigma2phi
+       Z_all[l][:,j] += epsilon * phi  # * 1/sigma2phi
        #(c) half step of phi
        if leap_i==nLeapfrog
            phi += 0.5 * epsilon * calc_gradient_zl_j(j,l,L,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu)
@@ -202,15 +202,15 @@ function hmc_one_iteration(nLeapfrog,epsilon,j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Si
     end
 
     #Step3. acceptance rate
-    Z_all[l][:,j] = z #Z_all with z_new for all indvidual, just to calculate r
+    # Z_all[l][:,j] = z #Z_all with z_new for all indvidual, just to calculate r
     log_p_new = calc_log_p_z(j,l,L,nNodes,Z0,Z_all,y,W0,W_all,Sigma2z_all,sigma2e,Mu_all,mu) - 0.5*phi.^2
     r         = exp.(log_p_new - log_p_old)  # (n,1)
 
     # r[r.>1] .= 1   # p_jump, for each r, minimum.([r,1]）
-    jump = rand(n) .< r
-    old_Z_all[l][jump,j] = z[jump] #Z_all with z_new for jumping indviduals
+    nojump = rand(n) .> r
+    Z_all[l][nojump,j] = old_Z_all[l][nojump,j] #Z_all with z_new for jumping indviduals
 
-    return old_Z_all
+    return Z_all
 end
 
 

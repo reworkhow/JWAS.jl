@@ -21,10 +21,10 @@ model_equations = "x1 = intercept + geno"
 
 
 # # #HMC
-# nNodes=[2,3,4]
-# L=3
-# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,nNodes=nNodes,nonlinear_function="Neural Network")
-# out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5)
+nNodes=[2]
+L=1
+model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,nNodes=nNodes,nonlinear_function="Neural Network")
+out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5)
 
 
 # #Linear

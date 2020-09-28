@@ -206,7 +206,6 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.W0          = W0
     end
 
-
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical traits (liabilities)
