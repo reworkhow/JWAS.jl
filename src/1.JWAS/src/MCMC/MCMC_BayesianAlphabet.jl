@@ -177,7 +177,7 @@ function MCMC_BayesianAlphabet(mme,df)
         W0=randn(p,nNodes[1])  # marker effects
         Z1=mme.M[1].genotypes * W0  # simulate latent traits
         Mu1 = mean(Z1,dims=1)
-        Sigma2z1=var(Z1,dims=1)
+        Sigma2z1= ones(nNodes[1]) #var(Z1,dims=1)
 
         Z_all[1] = Z1
         Mu_all[1] = vec(Mu1)
@@ -189,7 +189,7 @@ function MCMC_BayesianAlphabet(mme,df)
 
            Zl_plus_one = tanh.(Z_all[l]) * Wl
            Mul_plus_one = mean(Zl_plus_one,dims=1) # ~0
-           Sigma2zl_plus_one=var(Zl_plus_one,dims=1)
+           Sigma2zl_plus_one= ones(nNodes[l+1]) #var(Zl_plus_one,dims=1)
            # save
            Z_all[l+1] = Zl_plus_one#[1:nTrain,:]
            Mu_all[l+1] = vec(Mul_plus_one)
@@ -370,7 +370,7 @@ function MCMC_BayesianAlphabet(mme,df)
         #mme.M[1].genotypes here is 5-by-5
         if latent_traits == true #to update ycorr!
             if mme.L == false  #MH
-                sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+                sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
             elseif mme.L != false #HMC
                 sample_latent_traits_hmc(yobs,mme,ycorr)
             end
