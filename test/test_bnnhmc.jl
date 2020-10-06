@@ -1,6 +1,6 @@
 using Revise
 
-using CSV,DataFrames,JWAS,JWAS.Datasets,Random
+using CSV,DataFrames,JWAS,JWAS.Datasets,Random,Distributions
 Random.seed!(123)
 
 phenofile       = Datasets.dataset("example","phenotypes.txt")

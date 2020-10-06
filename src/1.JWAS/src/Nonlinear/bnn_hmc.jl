@@ -327,6 +327,6 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
     ycorr[:]    = mme.ySparse - μ_ylats  # =(ySparse_new - ySparse_old) + ycorr   change of ycorr due to updating Z1
 
     #sample σ2_yobs (vare)
-    residuals = yobs-cal_prediction_fromZ1(ylats_new,mme.L,mme.W_all,mme.Mu_all,mme.mu)
+    residuals = yobs-cal_prediction_fromZ1(ylats_new,mme.L,mme.W_all,mme.Mu_all,mme.mu)  #only use training data
     mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end

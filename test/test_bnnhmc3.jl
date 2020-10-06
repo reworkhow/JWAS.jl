@@ -1,5 +1,6 @@
 using Random,Distributions,Statistics
-Random.seed!(1)
+myseed=3
+Random.seed!(myseed)
 
 n=1500
 p=100
@@ -20,9 +21,8 @@ y = g + randn(n)*sqrt(sigma2e)
 
 Z0=DataFrame(Z0)
 insertcols!(Z0, 1, :ID => collect(1:n))
-Z0
 
-CSV.write("C:/Users/ztjsw/.julia/dev/JWAS/src/5.Datasets/data/example/my_x.txt", Z0)
+CSV.write("C:/Users/ztjsw/Box/BNN/simulated_data/my_x.n$n.p$p.nNodes$nNodes.seed$myseed.txt", Z0)
 
 y=DataFrame(ID=collect(1:n),y=y)
-CSV.write("C:/Users/ztjsw/.julia/dev/JWAS/src/5.Datasets/data/example/my_y.txt", y)
+CSV.write("C:/Users/ztjsw/Box/BNN/simulated_data/my_y.n$n.p$p.nNodes$nNodes.seed$myseed.txt", y)
