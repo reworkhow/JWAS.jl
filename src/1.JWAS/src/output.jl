@@ -445,7 +445,8 @@ function output_location_parameters_samples(mme::MME,sol,outfile)
         startPosi  = trmi.startPos
         endPosi    = startPosi + trmi.nLevels - 1
         samples4locations = sol[startPosi:endPosi]
-        writedlm(outfile[trmStr],samples4locations',',')
+
+        (outfile[trmStr],samples4locations',',')
     end
 end
 """

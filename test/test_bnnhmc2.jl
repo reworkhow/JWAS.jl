@@ -1,6 +1,6 @@
 # using Revise
 
-using DataFrames,CSV,Random,JWAS,DelimitedFiles,Statistics
+using DataFrames,CSV,Random,JWAS,DelimitedFiles,Statistics,Plots
 
 
 runseed=1
@@ -138,3 +138,11 @@ end
 open("accuracy_li.nIter$chainLength.runseed$runseed.txt", "w") do io
     writedlm(io, accuracy_li)
 end
+
+
+using Plots
+myfig=plot(collect(10:10:10_000),randn(1000),label="hmc",xlabel="iteration",ylabel="accuracy",legend=:bottomright)
+plot!(collect(10:10:10_000),randn(1000),label="mh")
+plot!(collect(10:10:10_000),randn(1000),label="linear")
+
+savefig(myfig,"accuracy.L$L.nNodes$nNodes_str.runseed$runseed.png")
