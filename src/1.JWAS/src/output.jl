@@ -78,7 +78,7 @@ function output_result(mme,output_folder,
               whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
               whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
           end
-          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
+          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
@@ -113,7 +113,7 @@ function output_result(mme,output_folder,
               samples,names = readdlm(samplesfile,',',header=true)
               samplemean    = vec(mean(samples,dims=1))
               samplevar     = vec(std(samples,dims=1))
-              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
+              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
           end
       end
 
@@ -124,7 +124,7 @@ function output_result(mme,output_folder,
           names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
           samplemean    = vec(mean(samples,dims=1))
           samplevar     = vec(std(samples,dims=1))
-          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:Std_Error])
+          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:SD])
       end
   end
   return output
@@ -144,7 +144,7 @@ function reformat2dataframe(res::Array)
     out_values   = map(Float64,res[:,2])
     out_variance = convert.(Union{Missing, Float64},res[:,3])
     out =[out_names out_values out_variance]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:Std_Error])
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:SD])
     return out
 end
 
@@ -153,7 +153,7 @@ function matrix2dataframe(names,meanVare,meanVare2)
     meanVare  = (typeof(meanVare) <: Union{Number,Missing}) ? meanVare : vec(meanVare)
     meanVare2 = (typeof(meanVare2) <: Union{Number,Missing}) ? meanVare2 : vec(meanVare2)
     stdVare   = sqrt.(abs.(meanVare2 .- meanVare .^2))
-    DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:Std_Error])
+    DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:SD])
 end
 
 function dict2dataframe(mean_pi,mean_pi2)
@@ -165,7 +165,7 @@ function dict2dataframe(mean_pi,mean_pi2)
     mean_pi  = (typeof(mean_pi) <: Union{Number,Missing}) ? mean_pi : collect(values(mean_pi))
     mean_pi2 = (typeof(mean_pi2) <: Union{Number,Missing}) ? mean_pi2 : collect(values(mean_pi2))
     stdpi    = sqrt.(abs.(mean_pi2 .- mean_pi .^2))
-    DataFrame([names mean_pi stdpi],[:π,:Estimate,:Std_Error])
+    DataFrame([names mean_pi stdpi],[:π,:Estimate,:SD])
 end
 
 """
