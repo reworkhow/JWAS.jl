@@ -292,7 +292,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
 
     #reshape the vector to n by l1
     nobs, ntraits = length(mme.obsID), mme.nModels
-    ylats_old     = reshape(ylats_old,nobs,ntraits)
+    ylats_old     = reshape(ylats_old,nobs,ntraits) 
 
 
     ## already have W0, Mu_all[1]
