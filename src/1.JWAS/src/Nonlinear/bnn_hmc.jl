@@ -294,13 +294,21 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits) 
 
-
+    nuRes 		= 4
+    scaleRes  	= 1*(nuRes-2)/nuRes  #vare*(nuRes-2)/nuRes
     ## already have W0, Mu_all[1]
     ## need to update Z1,W1, Z2,W2, ..., ZL,WL
     ############# START ##################
     # sample Z1
     for j=1:nNodes[1]
         mme.Z_all = hmc_one_iteration(10,0.1,j,1,L,nNodes,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)  #Z0=mme.M[1].genotypes
+        ###sample sigma2z1_j
+        #calculate residuls
+        z_real = Z0 * mme.W0[:,j] # (n,1)
+        residual_sigma2z1_j = z_real - mme.Z_all[1][:,j]
+        #sample sigma2z1_j
+        sigma2z1_j= (dot(residual_sigma2z1_j,residual_sigma2z1_j)+nuRes*scaleRes)/rand(Chisq(nNodes[1]+nuRes))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+        mme.Sigma2z_all[1][j]=sigma2z1_j
     end
     # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
     for l=2:L
@@ -311,6 +319,13 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
             (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,lambda)
             #sample latent trait zl_j
             mme.Z_all = hmc_one_iteration(10,0.1,j,l,L,nNodes,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)
+            ###sample sigma2zl_j
+            #calculate residuls
+            z_real_lj = mme.Z_all[l-1] * mme.W_all[l-1][:,j] # (n,1)
+            residual_sigma2zl_j = z_real_lj - mme.Z_all[l][:,j]
+            #sample sigma2zl_j
+            sigma2zl_j= dot(residual_sigma2zl_j,residual_sigma2zl_j+nuRes*scaleRes)/rand(Chisq(nNodes[l]+nuRes))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+            mme.Sigma2z_all[l][j]=sigma2zl_j
         end
     end
     #sample WL (l=L)
