@@ -307,7 +307,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
         z_real = Z0 * mme.W0[:,j] # (n,1)
         residual_sigma2z1_j = z_real - mme.Z_all[1][:,j]
         #sample sigma2z1_j
-        sigma2z1_j= dot(residual_sigma2z1_j,residual_sigma2z1_j+nuRes*scaleRes)/rand(Chisq(nNodes[1]+nuRes))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+        sigma2z1_j= (dot(residual_sigma2z1_j,residual_sigma2z1_j)+nuRes*scaleRes)/rand(Chisq(nNodes[1]+nuRes))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
         mme.Sigma2z_all[1][j]=sigma2z1_j
     end
     # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
