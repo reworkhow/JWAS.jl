@@ -379,10 +379,10 @@ function output_MCMC_samples(mme,vRes,G0,
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
               else
-                  if methods in ["BayesC","RR-BLUP","BayesL","GBLUP"]
-                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],vec(Mi.G),',')
-                  elseif methods == "BayesB"
+                  if Mi.method == "BayesB"
                       writedlm(outfile["marker_effects_variances"*"_"*Mi.name],hcat([x for x in Mi.G]...),',')
+                  else
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G,',')
                   end
               end
           end
