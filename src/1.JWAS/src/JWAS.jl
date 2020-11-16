@@ -38,6 +38,7 @@ include("single_step/SSGBLUP.jl")
 
 #Categorical trait
 include("categorical_trait/categorical_trait.jl")
+include("censored_trait/censored_trait.jl")
 
 #Structure Equation Models
 include("structure_equation_model/SEM.jl")
@@ -108,6 +109,7 @@ export get_correlations,get_heritability
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
+        * Censored traits are allowed if the upper bounds are provided in `censored_trait` as an array, and lower bounds are provided as phenotypes.
         * If `constraint`=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
         * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
@@ -134,6 +136,7 @@ function runMCMC(mme::MME,df;
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,
                 categorical_trait               = false,
+                censored_trait                  = false,
                 missing_phenotypes              = true,
                 constraint                      = false,
                 causal_structure                = false,
@@ -171,7 +174,7 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
-                   update_priors_frequency,outputEBV,output_heritability,categorical_trait,
+                   update_priors_frequency,outputEBV,output_heritability,categorical_trait,censored_trait,
                    seed,double_precision,output_folder)
     #random number seed
     if seed != false
