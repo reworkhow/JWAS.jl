@@ -23,6 +23,7 @@ function MCMC_BayesianAlphabet(mme,df)
     invweights               = mme.invweights
     update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
     categorical_trait        = mme.MCMCinfo.categorical_trait
+    censored_trait           = mme.MCMCinfo.censored_trait
     missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
     constraint               = mme.MCMCinfo.constraint
     causal_structure         = mme.causal_structure
@@ -35,6 +36,9 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     if categorical_trait == true
         category_obs,threshold = categorical_trait_setup!(mme)
+    end
+    if censored_trait != false
+        lower_bound,upper_bound = censored_trait_setup!(mme)
     end
     ############################################################################
     # Working Variables
@@ -169,6 +173,10 @@ function MCMC_BayesianAlphabet(mme,df)
         if categorical_trait == true
             ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
             writedlm(outfile["threshold"],threshold',',')
+        end
+        if censored_trait != false
+            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+            writedlm(outfile["liabilities"],mme.ySparse',',')
         end
         ########################################################################
         # 1. Non-Marker Location Parameters
@@ -372,6 +380,9 @@ function MCMC_BayesianAlphabet(mme,df)
       end
       if categorical_trait == true
          close(outfile["threshold"])
+      end
+      if censored_trait != false
+         close(outfile["liabilities"])
       end
     end
     if methods == "GBLUP"

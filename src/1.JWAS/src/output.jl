@@ -294,6 +294,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   if mme.MCMCinfo.categorical_trait == true
       push!(outvar,"threshold")
   end
+  if mme.MCMCinfo.censored_trait != false
+      push!(outvar,"liabilities")
+  end
 
   for i in outvar
       file_i    = file_name*"_"*replace(i,":"=>".")*".txt" #replace ":" by "." to avoid reserved characters in Windows

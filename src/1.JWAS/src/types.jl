@@ -155,6 +155,7 @@ mutable struct MCMCinfo
     outputEBV
     output_heritability
     categorical_trait
+    censored_trait
     seed
     double_precision
     output_folder
