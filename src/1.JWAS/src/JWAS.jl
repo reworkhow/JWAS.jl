@@ -54,7 +54,7 @@ export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
 #Pedmodule
-export get_pedigree,getinfo
+export get_pedigree,get_info
 #misc
 export GWAS,QC
 export get_additive_genetic_variances,get_breeding_values
