@@ -14,10 +14,10 @@ Modules = [JWAS]
 
 ```@docs
 build_model
+get_pedigree
+get_genotypes
 set_covariate
 set_random
-get_pedigree
-add_genotypes
 runMCMC
 outputEBV
 outputMCMCsamples

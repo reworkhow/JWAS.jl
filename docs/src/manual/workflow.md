@@ -175,13 +175,11 @@ using JWAS,CSV,DataFrames
 ---
 The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for reading text files.
 
-
-## Step 2: Read data
+## Step 2: Read Phenotypic Data
 
 ```julia
 phenotypes = CSV.read("phenotypes.txt",delim = ',',header=true)
-pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
-head(phenotypes)
+first(phenotypes)
 ```
 
 output:
@@ -197,28 +195,48 @@ output:
 │ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │
 ```
 
+---
+The **phenotypic data** is read on line 1. On line 2, the first several rows of the phenotypic data are shown.
+
+## Step 3: Read Genotypic Data
+
+```julia
+pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
+```
+
 - link to documentation for [`get_pedigree`](@ref)
 
 ---
-The **phenotypic data** is read on line 1, and the **pedigree data** is read on line 2. On line 3, the first several rows of data are shown.
+The **pedigree data** is read on line 1.
+
+## Step 6: Use Genomic Information
+
+```julia
+genotypes  = get_genotypes("genotypes.txt",G,method="BayesC",separator=",",header=true) #G is optional
+```
+
+- link to documentation for [`get_genotypes`](@ref)
+
+---
+On line 1, the genomic information is read on line 1 with the genotype file.  and variance `G` (a 3x3 matrix). In Bayesian analysis, the `G` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G` is not provided, a value is calculated from responses (phenotypes).
+
 
 ## Step 3: Build Model Equations
 
 ```julia
-model_equation = "y1 = intercept + x1 + x3 + ID + dam
-                  y2 = intercept + x1 + x2 + x3 + ID  
-                  y3 = intercept + x1 + x1*x3 + x2 + ID"
+model_equation = "y1 = intercept + x1 + x3 + ID + dam + genotypes
+                  y2 = intercept + x1 + x2 + x3 + ID + genotypes
+                  y3 = intercept + x1 + x1*x3 + x2 + ID + genotypes"
 model=build_model(model_equation,R) #R is optional
-
 ```
 
 - link to documentation for [`build_model`](@ref)
 
 ---
-The non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.
-* The effects fitted in the model for trait `y1` are the intercept, `x1`, `x3`, direct genetic effects (`ID`) and maternal genetic effects (`dam`).
-* The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
-* The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
+The model equation for a 3-trait analysis is defined on the first 3 lines.
+* The effects fitted in the model for trait `y1` are the intercept, `x1`, `x3`, direct genetic effects (`ID`), maternal genetic effects (`dam`), and molecular marker effects (`genotypes`).
+* The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3`, direct genetic effects (`ID`), and molecular marker effects (`genotypes`).
+* The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2`, direct genetic effects (`ID`), and , and molecular marker effects (`genotypes`).
 
 On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix). In Bayesian analysis, `R` is the mean for the prior assigned for the residual variance with degree of freedom `df`, defaulting to 4.0. If `R` is not provided, a value is calculated from responses (phenotypes).
 By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables).
@@ -231,7 +249,7 @@ set_covariate(model,"x1")
 - link to documentation for [`set_covariate`](@ref)
 
 ---
-On line 1, the effect `x1` is defined to be a covariate rather than class effect.
+On line 1, the effect `x1` is defined to be a covariate (a quantitative variable) rather than a factor (a categorical variable).
 
 ## Step 5: Set Random or Fixed Effects
 ```julia
@@ -244,21 +262,10 @@ set_random(model,"ID dam",pedigree,G2) #G2 is optional
 On line 1, the `x2` class effect is defined as random with variance `G1`(a 2x2 matrix). On line 2, direct genetic effects and
 maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree. In Bayesian analysis, `G1` and `G2` are the means for the priors assigned for the variances with degree of freedom `df`, defaulting to 4.0. If `G1` or `G2` is not provided, a value is calculated from responses (phenotypes).
 
-## Step 6: Use Genomic Information
-```julia
-add_genotypes(model,"genotypes.txt",G3,separator=',')
-```
-
-- link to documentation for [`add_genotypes`](@ref)
-
----
-On line 1, the genomic part of the model is defined with the genotype file and variance `G3` (a 3x3 matrix).
-In Bayesian analysis, `G3` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G3` is not provided, a value is calculated from responses (phenotypes).
-
 ## Step 7: Run Bayesian Analysis
 ```julia
-outputMCMCsamples(model,"x2")
-out=runMCMC(model,phenotypes,methods="BayesC",output_samples_frequency=100)
+outputMCMCsamples(model,"dam")
+out=runMCMC(model,phenotypes)
 ```
 
 - link to documentation for [`outputMCMCsamples`](@ref)
@@ -277,7 +284,7 @@ to documentation for all [Public functions](@ref).
 
 ## check results
 
-Posterior means of location parameters, most variance components, and marker effects are saved in `out`.
+Posterior means and standard deviations of location parameters, most variance components, and marker effects are saved as the variable `out` and in text files.
 They can be listed and obtained as
 ```julia
 keys(out)
@@ -297,7 +304,7 @@ out["residual variance"]
 
 # output:
 #
-#Covariance	Estimate	Std_Error
+#Covariance	Estimate	SD
 #y1_y1	1.65265	0.29405
 #y1_y2	-0.0290279	0.02347
 #y1_y3	-0.252009	0.048289
