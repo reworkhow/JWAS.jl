@@ -1,4 +1,4 @@
-# using Revise
+using Revise
 
 using DataFrames,CSV,Random,JWAS,DelimitedFiles,Statistics,Plots
 
@@ -11,8 +11,8 @@ chainLength = 10_00
 
 ############ READ DATA ##########
 #read data
-phenofile  = "simulated_data/my_y.n1500.p100.nNodes2.seed1.txt"
-genofile   = "simulated_data/my_x.n1500.p100.nNodes2.seed1.txt"
+phenofile  = "C:/Users/ztjsw/Box/BNN/simulated_data/my_y.n1500.p100.nNodes2.seed1.txt"
+genofile   = "C:/Users/ztjsw/Box/BNN/simulated_data/my_x.n1500.p100.nNodes2.seed1.txt"
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 phenotypes[!,:ID]=string.(phenotypes[!,:ID]);
 

@@ -1,3 +1,4 @@
+# This file is to simulate data
 using Random,Distributions,Statistics
 myseed=3
 Random.seed!(myseed)

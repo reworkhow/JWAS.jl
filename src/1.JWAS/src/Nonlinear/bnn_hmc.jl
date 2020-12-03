@@ -245,6 +245,7 @@ function sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all,lambda)
     end
 
     # lambda = 0.00001 #var(y_mme)/var(wl_minus_one_j) #vary/varw
+    # lambda is given as a parameter in this function
     mu_weight = MME(y_mme,x_mme;lambda=lambda)
 
     mul_j = mu_weight[1]
@@ -306,14 +307,16 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
         #sample latent trait zl_j
         for j=1:nNodes[l]
             ##sample weight and latent trait in l-th hidden layer
-            lambda=mme.Sigma2z_all[l][j]
+            # lambda=mme.Sigma2z_all[l][j]
+            lambda=0.00001
             (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,lambda)
             #sample latent trait zl_j
             mme.Z_all = hmc_one_iteration(10,0.1,j,l,L,nNodes,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)
         end
     end
     #sample WL (l=L)
-    lambda=σ2_yobs
+    #lambda=σ2_yobs
+    lambda=0.00001
     (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all,lambda)
 
     mme.weights_NN = mme.W_all[L] #for output file

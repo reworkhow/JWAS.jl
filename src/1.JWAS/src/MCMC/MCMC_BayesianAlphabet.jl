@@ -165,7 +165,8 @@ function MCMC_BayesianAlphabet(mme,df)
     # mme.M[1].genotypes is 5-by-5
     # Initialize mme for hmc
     if mme.L != false
-        println("Version1010")
+        # println("Version1010")
+        println("Version1202,labmda=0.0001")
         L=mme.L
         nNodes=mme.nNodes
 
