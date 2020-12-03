@@ -237,9 +237,19 @@ mutable struct MME
     causal_structure
 
     latent_traits
-    nonlinear_function
-    weights_NN
+    nonlinear_function  #useless in hmc
+    weights_NN          #useless in hmc
     σ2_yobs
+
+    # tianjing HMC
+    L           #L=3; in total L hidden layers
+    nNodes      #nNodes=[2,3,4]; nNode in each hidden layer
+    Z_all       #Z_all=[Z1,..,ZL]; array of matrix
+    W_all       #W_all=[W1,..,WL]; array of matrix
+    W0          #marker effects, matrix of p by l1, each col is for a latent trait
+    Sigma2z_all #Sigma2z_all=[Sigma2z1,...,Sigma2zL]; array of array
+    Mu_all      #Mu_all=[Mu1,...,ML]; array of array
+    mu          #overall mean of obsered trait; scaler
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -265,6 +275,7 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0)
+                   false,false,false,1.0,
+                   false,false,false,false,false,false,false,false) # <- tianjing hmc
     end
 end

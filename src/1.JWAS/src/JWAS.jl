@@ -6,6 +6,7 @@ using SparseArrays
 using LinearAlgebra
 using ProgressMeter
 using .PedModule
+# using JLD
 
 import StatsBase: describe #a new describe is exported
 
@@ -45,6 +46,7 @@ include("structure_equation_model/SEM.jl")
 
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
+include("Nonlinear/bnn_hmc.jl")
 
 #output
 include("output.jl")
@@ -311,6 +313,29 @@ function runMCMC(mme::MME,df;
     for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
+
+    #save the samples from last iteration to help re-train.
+    if mme.L != false
+        # save(output_folder*"/hmc.jld",
+        #         "L", mme.L,
+        #         "nNodes",mme.nNodes,
+        #         "Z_all",mme.Z_all,
+        #         "W_all",mme.W_all,
+        #         "W0", mme.W0,
+        #         "Sigma2z_all", mme.Sigma2z_all,
+        #         "Mu_all",mme.Mu_all,
+        #         "mu",mme.mu
+        #         )
+        writedlm(output_folder*"/hmc_L.txt",mme.L,',')
+        writedlm(output_folder*"/hmc_nNodes.txt",mme.nNodes,',')
+        writedlm(output_folder*"/hmc_Z_all.txt",mme.Z_all,',')
+        writedlm(output_folder*"/hmc_W_all.txt",mme.W_all,',')
+        writedlm(output_folder*"/hmc_W0.txt",mme.W0,',')
+        writedlm(output_folder*"/hmc_Sigma2z_all.txt",mme.Sigma2z_all,',')
+        writedlm(output_folder*"/hmc_Mu_all.txt",mme.Mu_all,',')
+        writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
+    end
+
     if mme.M != 0
         for Mi in mme.M
             if Mi.name == "GBLUP"

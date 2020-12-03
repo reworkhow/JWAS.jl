@@ -427,7 +427,11 @@ function output_MCMC_samples(mme,vRes,G0,
         if mme.nonlinear_function != "Neural Network"
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else
-            BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*mme.weights_NN
+            if mme.L == false #MH
+                BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*mme.weights_NN
+            elseif mme.L != false #MHC
+                BV_NN = cal_prediction_fromZ1(EBVmat,mme.L,mme.W_all,mme.Mu_all,mme.mu) #given Z1_hat -> y_hat
+            end
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
@@ -444,7 +448,8 @@ function output_location_parameters_samples(mme::MME,sol,outfile)
         startPosi  = trmi.startPos
         endPosi    = startPosi + trmi.nLevels - 1
         samples4locations = sol[startPosi:endPosi]
-        writedlm(outfile[trmStr],samples4locations',',')
+
+        (outfile[trmStr],samples4locations',',')
     end
 end
 """
