@@ -302,13 +302,13 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
     for j=1:nNodes[1]
         mme.Z_all = hmc_one_iteration(10,0.1,j,1,L,nNodes,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)  #Z0=mme.M[1].genotypes
 
-        ###sample sigma2z1_j
-        #calculate residuls
-        z_real = Z0 * mme.W0[:,j] .+ mme.Mu_all[1][j]# (n,1)
-        residual_sigma2z1_j = z_real - mme.Z_all[1][:,j]
-        #sample sigma2z1_j
-        sigma2z1_j= dot(residual_sigma2z1_j,residual_sigma2z1_j)/rand(Chisq(nobs))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-        mme.Sigma2z_all[1][j]=sigma2z1_j
+        # ###sample sigma2z1_j
+        # #calculate residuls
+        # z_real = Z0 * mme.W0[:,j] .+ mme.Mu_all[1][j]# (n,1)
+        # residual_sigma2z1_j = z_real - mme.Z_all[1][:,j]
+        # #sample sigma2z1_j
+        # sigma2z1_j= dot(residual_sigma2z1_j,residual_sigma2z1_j)/rand(Chisq(nobs))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+        # mme.Sigma2z_all[1][j]=sigma2z1_j
     end
     # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
     for l=2:L

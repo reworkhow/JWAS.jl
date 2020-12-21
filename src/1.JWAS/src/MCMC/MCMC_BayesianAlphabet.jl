@@ -172,7 +172,8 @@ function MCMC_BayesianAlphabet(mme,df)
         # println("Version1010")
         # println("Version1202,labmda=0.0001")
         # println("Version1203,sample varz")
-        println("Version1204,only sample varz1")
+        # println("Version1204,only sample varz1")
+        println("fixed varz=1")
         L=mme.L
         nNodes=mme.nNodes
 
