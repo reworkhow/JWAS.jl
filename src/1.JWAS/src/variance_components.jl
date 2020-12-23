@@ -133,11 +133,11 @@ end
 ########################################################################
 function sample_marker_effect_variance(Mi,constraint=false)
     if Mi.method == "BayesL"
-        invweights = 1 ./sqrt.(Mi.gammaArray)
+        invweights = 1 ./ Mi.gammaArray
     elseif Mi.method == "GBLUP"
-        invweights = 1 ./sqrt.(Mi.D)
+        invweights = 1 ./ Mi.D
     else
-        invweights = Mi.ntraits==1 ? 1.0 : false
+        invweights = false
     end
     if Mi.ntraits == 1
         if Mi.method in ["BayesC","BayesL","RR-BLUP","GBLUP"]
@@ -166,4 +166,33 @@ function sample_marker_effect_variance(Mi,constraint=false)
             end
         end
     end
+end
+
+function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
+    Gi = inv(mmeMG)
+    nMarkers = size(gammaArray,1)
+    ntraits  = length(alphaArray)
+
+    Q  = zeros(nMarkers)
+    ntraits > 1 ? calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray[1],Gi)
+    gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
+    candidateArray = 1 ./ rand(gammaDist,nMarkers)
+    uniformArray = rand(nMarkers)
+    acceptProbArray = exp.(Q ./4 .*(2 ./ gammaArray - candidateArray))
+    replace = uniformArray .< acceptProbArray
+    gammaArray[replace] = 2 ./ candidateArray[replace]
+end
+
+function calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi)
+    for locus = 1:nMarkers
+      for traiti = 1:ntraits
+          for traitj = 1:ntraits
+              Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
+          end
+      end
+    end
+end
+
+function calcSTQ!(Q,nMarkers,alphaArray,Gi)
+    Q .= alphaArray.^2 ./Gi
 end
