@@ -141,6 +141,7 @@ function runMCMC(mme::MME,df;
                 constraint                      = false,
                 causal_structure                = false,
                 mega_trait                      = false,
+                group_records                   = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,  #complete or incomplete genomic data
@@ -302,6 +303,22 @@ function runMCMC(mme::MME,df;
     #printout basic MCMC information
     if printout_model_info == true
       describe(mme)
+    end
+
+    #group records
+    if group_records == true
+        if mme.nModels != 1
+            error("Group records analysis is only supported in single-trait analysis!")
+        end
+        T = get_T(df)
+        for i = 1:length(mme.modelTerms) #modify incidence matrix for non-genotype effects
+            mme.modelTerms[i].X=T*mme.modelTerms[i].X
+        end
+        for Mi in mme.M #modify incidence matrix for genotype effects
+            Mi.genotypes =  T*Mi.genotypes
+        end
+        mme.ySparse = T*mme.ySparse #modify phenotypes
+        df[!,"weights"]=diag(T*T')
     end
     ############################################################################
     # Double Precision or not
