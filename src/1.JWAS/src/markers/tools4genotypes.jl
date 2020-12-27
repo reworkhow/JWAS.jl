@@ -94,6 +94,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
 end
 
 #get an incidence matrix Z to reorder uID to yID by yID = Z*uID
+#uID are unique
 function mkmat_incidence_factor(yID,uID)
     Z = spzeros(length(yID),length(uID))
 

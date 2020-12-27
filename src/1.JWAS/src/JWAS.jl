@@ -46,6 +46,9 @@ include("structure_equation_model/SEM.jl")
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
 
+#Group records
+include("group_records/group_records.jl")
+
 #output
 include("output.jl")
 
@@ -110,6 +113,7 @@ export get_correlations,get_heritability
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
         * Censored traits are allowed if the upper bounds are provided in `censored_trait` as an array, and lower bounds are provided as phenotypes.
+        * Group records arer allowed if `group_records` = `true`, and one "group" column is included, and average phenotypes for each group are used as responses.
         * If `constraint`=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
         * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
@@ -307,18 +311,7 @@ function runMCMC(mme::MME,df;
 
     #group records
     if group_records == true
-        if mme.nModels != 1
-            error("Group records analysis is only supported in single-trait analysis!")
-        end
-        T = get_T(df)
-        for i = 1:length(mme.modelTerms) #modify incidence matrix for non-genotype effects
-            mme.modelTerms[i].X=T*mme.modelTerms[i].X
-        end
-        for Mi in mme.M #modify incidence matrix for genotype effects
-            Mi.genotypes =  T*Mi.genotypes
-        end
-        mme.ySparse = T*mme.ySparse #modify phenotypes
-        df[!,"weights"]=diag(T*T')
+        group_records_setup(mme,df)
     end
     ############################################################################
     # Double Precision or not
