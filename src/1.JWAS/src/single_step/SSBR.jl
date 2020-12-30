@@ -25,6 +25,8 @@ function SSBRrun(mme,df,big_memory=false)
         set_covariate(mme,"J")
     end
     set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
+    model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,ped.IDs[1:size(Ai_nn,1)])
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
     end

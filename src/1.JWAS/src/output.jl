@@ -217,12 +217,6 @@ end
 calculation of EBV including J, ϵ, pedTrmVec except marker covariates.
 """
 function get_outputX_others(model,single_step_analysis)
-    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
-    if single_step_analysis == true
-        model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,
-                            PedModule.getIDs(model.ped))[:,1:length(model.ped.setNG)]
-        #Note that model.output_X["J"] is in SSBRrun
-    end
     if model.pedTrmVec != 0
         for i in model.pedTrmVec
             model.output_X[i]=mkmat_incidence_factor(model.output_ID,
