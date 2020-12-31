@@ -144,6 +144,8 @@ function runMCMC(mme::MME,df;
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,  #complete or incomplete genomic data
+                prediction_equation             = false, #e.g.,"y1:animal + y1:geno + y1:age"
+                                                         #if prediction_equation, genetic values are returned.
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
@@ -158,7 +160,6 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false) #calculare lsmeans
-
     ############################################################################
     # Pre-Check
     ############################################################################
@@ -174,7 +175,8 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
-                   update_priors_frequency,outputEBV,output_heritability,categorical_trait,censored_trait,
+                   update_priors_frequency,outputEBV,output_heritability,prediction_equation,
+                   categorical_trait,censored_trait,
                    seed,double_precision,output_folder)
     #random number seed
     if seed != false
