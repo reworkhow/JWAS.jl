@@ -154,6 +154,7 @@ mutable struct MCMCinfo
     update_priors_frequency
     outputEBV
     output_heritability
+    prediction_equation
     categorical_trait
     censored_trait
     seed

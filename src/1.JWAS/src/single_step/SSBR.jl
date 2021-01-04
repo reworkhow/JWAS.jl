@@ -25,6 +25,19 @@ function SSBRrun(mme,df,big_memory=false)
         set_covariate(mme,"J")
     end
     set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
+    mme.output_X["ϵ"]=mkmat_incidence_factor(mme.output_ID,ped.IDs)[:,1:size(Ai_nn,1)]
+
+    #add trait name to output_X
+    for traiti in mme.lhsVec
+        if mme.MCMCinfo.fitting_J_vector == true
+            mme.output_X[string(traiti)*":J"] = mme.output_X["J"]
+        end
+        mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
+    end
+    delete!(mme.output_X, "J")
+    delete!(mme.output_X, "ϵ")
+
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
     end

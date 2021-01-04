@@ -180,32 +180,21 @@ function getEBV(mme,traiti)
     EBV=zeros(length(mme.output_ID))
 
     location_parameters = reformat2dataframe([getNames(mme) mme.sol zero(mme.sol)])
-    if mme.pedTrmVec != 0
-        for pedtrm in mme.pedTrmVec
-            mytrait, effect = split(pedtrm,':')
-            if mytrait == traiti_name
-                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
-                EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-                EBV += EBV_pedtrm
+    for term in keys(mme.output_X)
+        mytrait, effect = split(term,':')
+        if mytrait == traiti_name
+            sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; convert it to a scalar
+                sol_term = sol_term[1]
             end
+            EBV_term = mme.output_X[term]*sol_term
+            EBV += EBV_term
         end
     end
-
     if mme.M != 0
         for Mi in mme.M
             EBV += Mi.output_genotypes*Mi.α[traiti]
         end
-    end
-
-    if haskey(mme.output_X,"J") #single-step analyis
-            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==traiti_name),:Estimate])[1]
-            EBV_J  = mme.output_X["J"]*sol_J
-            EBV   += EBV_J
-    end
-    if haskey(mme.output_X,"ϵ") #single-step analyis
-            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==traiti_name),:Estimate])
-            EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
-            EBV   += EBV_ϵ
     end
     return EBV
 end
@@ -217,16 +206,18 @@ end
 calculation of EBV including J, ϵ, pedTrmVec except marker covariates.
 """
 function get_outputX_others(model,single_step_analysis)
-    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
-    if single_step_analysis == true
-        model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,
-                            PedModule.getIDs(model.ped))[:,1:length(model.ped.setNG)]
-        #Note that model.output_X["J"] is in SSBRrun
-    end
-    if model.pedTrmVec != 0
-        for i in model.pedTrmVec
-            model.output_X[i]=mkmat_incidence_factor(model.output_ID,
-                                                     model.modelTermDict[i].names)
+    if model.MCMCinfo.prediction_equation == false #genetic values are calculated
+        if model.pedTrmVec != 0
+            for i in model.pedTrmVec
+                model.output_X[i]=mkmat_incidence_factor(model.output_ID,model.modelTermDict[i].names)
+            end
+        end
+        #single-step related calculations (ϵ, J) are in SSBR.jl
+    else #user-defined prediction equation
+        model.output_X = Dict{String,Any}()
+        for term in mme.MCMCinfo.prediction_equation
+            Z = mkmat_incidence_factor(model.output_ID,model.obsID)
+            model.output_X[i] = Z*model.modelTermDict[i].X
         end
     end
 end
