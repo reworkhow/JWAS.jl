@@ -173,7 +173,12 @@ function MCMC_BayesianAlphabet(mme,df)
         # println("Version1202,labmda=0.0001")
         # println("Version1203,sample varz")
         # println("Version1204,only sample varz1")
-        println("fixed varz=1")
+        # println("fixed varz=1")
+        if mme.sample_varz==false
+            println("fixed varz=1")
+        elseif mme.sample_varz==true
+            println("sample varz")
+        end
         L=mme.L
         nNodes=mme.nNodes
 
@@ -183,7 +188,7 @@ function MCMC_BayesianAlphabet(mme,df)
         Sigma2z_all = Vector{Array{Float64,1}}(undef,L)
 
         p=mme.M[1].nMarkers
-        W0=rand(Normal(0,1/p),p,nNodes[1])  # marker effects
+        W0=rand(Normal(0,sqrt(1/p)),p,nNodes[1])  # marker effects
         Z1=mme.M[1].genotypes * W0  # simulate latent traits
         Mu1 = zeros(nNodes[1])
         Sigma2z1= ones(nNodes[1]) #var(Z1,dims=1)
@@ -193,7 +198,7 @@ function MCMC_BayesianAlphabet(mme,df)
         Sigma2z_all[1]=vec(Sigma2z1)
 
         for l in 1:(L-1)
-           Wl = rand(Normal(0,1/nNodes[l]),nNodes[l],nNodes[l+1])
+           Wl = rand(Normal(0,sqrt(1/nNodes[l])),nNodes[l],nNodes[l+1])
            W_all[l] = Wl
 
            Zl_plus_one = tanh.(Z_all[l]) * Wl
@@ -205,7 +210,7 @@ function MCMC_BayesianAlphabet(mme,df)
            Sigma2z_all[l+1]=vec(Sigma2zl_plus_one)
         end
 
-        W_all[L]=rand(Normal(0,1/nNodes[L]),nNodes[L])
+        W_all[L]=rand(Normal(0,sqrt(1/nNodes[L])),nNodes[L])
 
         mme.W_all       = W_all
         mme.Z_all       = Z_all

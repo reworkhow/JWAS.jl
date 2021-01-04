@@ -251,6 +251,7 @@ mutable struct MME
     Sigma2z_all #Sigma2z_all=[Sigma2z1,...,Sigma2zL]; array of array
     Mu_all      #Mu_all=[Mu1,...,ML]; array of array
     mu          #overall mean of obsered trait; scaler
+    sample_varz #true or false
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -277,6 +278,6 @@ mutable struct MME
                    false,false,false,
                    false,
                    false,false,false,1.0,
-                   false,false,false,false,false,false,false,false) # <- tianjing hmc
+                   false,false,false,false,false,false,false,false,false) # <- tianjing hmc
     end
 end
