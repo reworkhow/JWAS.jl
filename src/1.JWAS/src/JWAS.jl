@@ -337,6 +337,7 @@ function runMCMC(mme::MME,df;
         writedlm(output_folder*"/hmc_Mu_all.txt",mme.Mu_all,',')
         writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
         writedlm(output_folder*"/hmc_Sigma2z_all_mean.txt",mme.Sigma2z_all_mean,',')
+        writedlm(output_folder*"/hmc_vare_mean.txt",mme.vare_mean,',')
     end
 
     if mme.M != 0

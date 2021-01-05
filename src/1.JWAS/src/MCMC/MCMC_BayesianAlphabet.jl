@@ -196,7 +196,7 @@ function MCMC_BayesianAlphabet(mme,df)
         Z_all[1] = Z1
         Mu_all[1] = vec(Mu1)
         Sigma2z_all[1]=vec(Sigma2z1)
-        Sigma2z_all_mean[1] = ones(nNodes[1])  #starting value is 1
+        Sigma2z_all_mean[1] = zeros(nNodes[1])  #starting value is 1
 
         for l in 1:(L-1)
            Wl = rand(Normal(0,sqrt(1/nNodes[l])),nNodes[l],nNodes[l+1])
@@ -209,7 +209,7 @@ function MCMC_BayesianAlphabet(mme,df)
            Z_all[l+1] = Zl_plus_one#[1:nTrain,:]
            Mu_all[l+1] = vec(Mul_plus_one)
            Sigma2z_all[l+1]=Sigma2zl_plus_one
-           Sigma2z_all_mean[l+1] = ones(nNodes[l+1])
+           Sigma2z_all_mean[l+1] = zeros(nNodes[l+1])
         end
 
         W_all[L]=rand(Normal(0,sqrt(1/nNodes[L])),nNodes[L])
@@ -222,6 +222,7 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.mu          = mean(mme.ySparse)
         mme.W0          = W0
         mme.Sigma2z_all_mean = Sigma2z_all_mean
+        mme.vare_mean = 0 #starting value as 1
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length

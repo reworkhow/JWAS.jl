@@ -11,7 +11,7 @@ phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 
 
 
-geno = get_genotypes(genofile,method="BayesC")
+geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
 
 model_equations = "x1 = intercept + geno"
 

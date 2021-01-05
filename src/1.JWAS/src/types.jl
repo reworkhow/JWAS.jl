@@ -253,6 +253,7 @@ mutable struct MME
     mu          #overall mean of obsered trait; scaler
     sample_varz #true or false
     Sigma2z_all_mean #moving averaged value of Sigma2z_all_mean
+    vare_mean        #moving averaged value of vare
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -279,6 +280,6 @@ mutable struct MME
                    false,false,false,
                    false,
                    false,false,false,1.0,
-                   false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
+                   false,false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
     end
 end
