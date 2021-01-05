@@ -166,8 +166,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    # mme.M[1].genotypes is 5-by-5
-    # Initialize mme for hmc
+    # Initialize mme for hmc before Gibbs
     if mme.L != false
         # println("Version1010")
         # println("Version1202,labmda=0.0001")
@@ -186,6 +185,7 @@ function MCMC_BayesianAlphabet(mme,df)
         Z_all = Vector{Array{Float64,2}}(undef,L)
         Mu_all = Vector{Array{Float64,1}}(undef,L)
         Sigma2z_all = Vector{Array{Float64,1}}(undef,L)
+        Sigma2z_all_mean = Vector{Array{Float64,1}}(undef,L)
 
         p=mme.M[1].nMarkers
         W0=rand(Normal(0,sqrt(1/p)),p,nNodes[1])  # marker effects
@@ -196,6 +196,7 @@ function MCMC_BayesianAlphabet(mme,df)
         Z_all[1] = Z1
         Mu_all[1] = vec(Mu1)
         Sigma2z_all[1]=vec(Sigma2z1)
+        Sigma2z_all_mean[1] = ones(nNodes[1])  #starting value is 1
 
         for l in 1:(L-1)
            Wl = rand(Normal(0,sqrt(1/nNodes[l])),nNodes[l],nNodes[l+1])
@@ -207,10 +208,12 @@ function MCMC_BayesianAlphabet(mme,df)
            # save
            Z_all[l+1] = Zl_plus_one#[1:nTrain,:]
            Mu_all[l+1] = vec(Mul_plus_one)
-           Sigma2z_all[l+1]=vec(Sigma2zl_plus_one)
+           Sigma2z_all[l+1]=Sigma2zl_plus_one
+           Sigma2z_all_mean[l+1] = ones(nNodes[l+1])
         end
 
         W_all[L]=rand(Normal(0,sqrt(1/nNodes[L])),nNodes[L])
+
 
         mme.W_all       = W_all
         mme.Z_all       = Z_all
@@ -218,6 +221,7 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.Sigma2z_all = Sigma2z_all
         mme.mu          = mean(mme.ySparse)
         mme.W0          = W0
+        mme.Sigma2z_all_mean = Sigma2z_all_mean
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length
@@ -390,7 +394,7 @@ function MCMC_BayesianAlphabet(mme,df)
             if mme.L == false  #MH
                 sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
             elseif mme.L != false #HMC
-                sample_latent_traits_hmc(yobs,mme,ycorr)
+                sample_latent_traits_hmc(yobs,mme,ycorr,iter)
             end
         end
         ########################################################################

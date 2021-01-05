@@ -26,9 +26,9 @@ nNodes=[2,3]
 L=2
 model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
                     nNodes=nNodes,nonlinear_function="Neural Network",
-                    sample_varz=false)
+                    sample_varz=true)
 
-out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=2)
+out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5)
 
 
 

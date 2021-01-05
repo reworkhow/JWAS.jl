@@ -281,7 +281,7 @@ function cal_prediction_fromZ1(Z1,L,W_all,Mu_all,mu)
 end
 
 
-function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
+function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     ylats_old = mme.ySparse         # current values of each latent trait in 1st hidden layer; vec(matrix of n by l1)
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait in 1st hidden layer; =Z1-residual;  vec(matrix of n by l1)
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
@@ -309,6 +309,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
             #sample sigma2z1_j
             sigma2z1_j= dot(residual_sigma2z1_j,residual_sigma2z1_j)/rand(Chisq(nobs))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
             mme.Sigma2z_all[1][j]=sigma2z1_j
+            mme.Sigma2z_all_mean[1][j] += (sigma2z1_j - mme.Sigma2z_all_mean[1][j])/iter
         end
     end
     # sample W1, Z2,W2, ... ZL-1,WL-1, ZL
@@ -330,6 +331,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr)  #ycorr is residual
                 #sample sigma2zl_j
                 sigma2zl_j= dot(residual_sigma2zl_j,residual_sigma2zl_j)/rand(Chisq(nobs))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
                 mme.Sigma2z_all[l][j]=sigma2zl_j
+                mme.Sigma2z_all_mean[l][j] += (sigma2zl_j - mme.Sigma2z_all_mean[l][j])/iter
             end
         end
     end
