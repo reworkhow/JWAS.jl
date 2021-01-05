@@ -180,6 +180,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.data = str
+  recode!(val, missing => 0.0)
   trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
 
@@ -261,14 +262,16 @@ left-hand side  : mmeLhs ;
 right-hand side : mmeLhs ;
 """
 function getMME(mme::MME, df::DataFrame)
-    if mme.mmePos != 1
+    if mme.mmeLhs != false
       error("Please build your model again using the function build_model().")
     end
 
     #Make incidence matrices X for each term
     for trm in mme.modelTerms
-      getData(trm,df,mme)
-      getX(trm,mme)
+      if trm.X == false
+        getData(trm,df,mme)
+        getX(trm,mme)
+      end
     end
     #concatenate all terms
     X   = mme.modelTerms[1].X

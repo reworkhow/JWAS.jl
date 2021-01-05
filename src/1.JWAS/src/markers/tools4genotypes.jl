@@ -67,28 +67,30 @@ end
 #Note that Aligning genotypes with phenotypes and output_ID in single-step analysis
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
-    if mme.output_ID != 0 && single_step_analysis==false
-        for Mi in mme.M
-            if mme.output_ID != Mi.obsID
-                Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,Mi.obsID))
-                Mi.output_genotypes =  Zo*Mi.genotypes
-            else
-                Mi.output_genotypes =  Mi.genotypes
+    if single_step_analysis==false
+        if mme.output_ID != 0
+            for Mi in mme.M
+                if mme.output_ID != Mi.obsID
+                    Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,Mi.obsID))
+                    Mi.output_genotypes =  Zo*Mi.genotypes
+                else
+                    Mi.output_genotypes =  Mi.genotypes
+                end
             end
         end
-    end
-    #***************************************************************************
-    #Align genotypes with phenotypes
-    #Change mme.M.genotypes to phenotyped individuals to accommodate
-    #individuals with repeated records or individuals without records
-    #
-    #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M[1].obsID && single_step_analysis==false
-        for Mi in mme.M
-            Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
-            Mi.genotypes = Z*Mi.genotypes
-            Mi.obsID     = mme.obsID
-            Mi.nObs      = length(mme.obsID)
+        #***************************************************************************
+        #Align genotypes with phenotypes
+        #Change mme.M.genotypes to phenotyped individuals to accommodate
+        #individuals with repeated records or individuals without records
+        #
+        #**********CENTERING?*******************************************************
+        if mme.obsID != mme.M[1].obsID
+            for Mi in mme.M
+                Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+                Mi.genotypes = Z*Mi.genotypes
+                Mi.obsID     = mme.obsID
+                Mi.nObs      = length(mme.obsID)
+            end
         end
     end
 end

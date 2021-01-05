@@ -9,6 +9,32 @@
 #*******************************************************************************
 ################################################################################
 """
+    prediction_setup(mme::MME,df::DataFrame)
+
+* (internal function) Create incidence matrices for individuals of interest based on a usere-defined
+prediction equation, defaulting to genetic values including effects defined with genomic and pedigre
+information. For now, genomic data is always included.
+* J and ϵ are always included in single-step analysis (added in SSBR.jl)
+"""
+function prediction_setup(model)
+    if model.MCMCinfo.prediction_equation == false
+        prediction_equation = []
+        if model.pedTrmVec != 0
+            for i in model.pedTrmVec
+                push!(prediction_equation,i)
+            end
+        end
+    else
+        prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
+    end
+    if length(prediction_equation) == 0
+        println("Default or user-defined prediction equation are not available.")
+        model.MCMCinfo.outputEBV = false
+    end
+    model.MCMCinfo.prediction_equation = prediction_equation
+end
+
+"""
     outputEBV(model,IDs::Array)
 
 Output estimated breeding values and prediction error variances for IDs.
@@ -198,29 +224,6 @@ function getEBV(mme,traiti)
     end
     return EBV
 end
-
-"""
-    get_outputX_others(model)
-
-(internal function) Make incidence matrices for effects involved in
-calculation of EBV including J, ϵ, pedTrmVec except marker covariates.
-"""
-function get_outputX_others(model,single_step_analysis)
-    if model.MCMCinfo.prediction_equation == false #genetic values are calculated
-        if model.pedTrmVec != 0
-            for i in model.pedTrmVec
-                model.output_X[i]=mkmat_incidence_factor(model.output_ID,model.modelTermDict[i].names)
-            end
-        end
-        #single-step related calculations (ϵ, J) are in SSBR.jl
-    else #user-defined prediction equation
-        model.output_X = Dict{String,Any}()
-        for term in mme.MCMCinfo.prediction_equation
-            Z = mkmat_incidence_factor(model.output_ID,model.obsID)
-            model.output_X[i] = Z*model.modelTermDict[i].X
-        end
-    end
-end
 ################################################################################
 #*******************************************************************************
 #3. Save MCMC Samples to Text Files
@@ -387,31 +390,19 @@ function output_MCMC_samples(mme,vRes,G0,
       end
     end
 
-    if mme.MCMCinfo.outputEBV == true #add error message
-      if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
-          if ntraits == 1
-             EBVmat = myEBV = getEBV(mme,1)
-             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-             if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
-                 mygvar = var(myEBV)
-                 writedlm(outfile["genetic_variance"],mygvar,',')
-                 writedlm(outfile["heritability"],mygvar/(mygvar+vRes),',')
-             end
-          else
-              EBVmat = myEBV = getEBV(mme,1)
-              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-              for traiti in 2:ntraits
-                  myEBV = getEBV(mme,traiti) #actually BV
-                  writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
-                  EBVmat = [EBVmat myEBV]
-              end
-              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
-                  mygvar = cov(EBVmat)
-                  writedlm(outfile["genetic_variance"],vec(mygvar)',',')
-                  writedlm(outfile["heritability"],(diag(mygvar./(mygvar+vRes)))',',')
-              end
-          end
-       end
+    if mme.MCMCinfo.outputEBV == true
+         EBVmat = myEBV = getEBV(mme,1)
+         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         for traiti in 2:ntraits
+             myEBV = getEBV(mme,traiti) #actually BV
+             writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
+             EBVmat = [EBVmat myEBV]
+         end
+         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+             mygvar = cov(EBVmat)
+             genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
+             heritability     = (ntraits == 1 ? mygvar/(mygvar+vRes) : (diag(mygvar./(mygvar+vRes)))')
+         end
     end
     if mme.latent_traits == true
         EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
