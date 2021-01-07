@@ -207,9 +207,9 @@ function runMCMC(mme::MME,df;
     #       in the Whole Dataset.
     ############################################################################
     errors_args(mme)       #check errors in function arguments
+    df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     prediction_setup(mme)  #set prediction equation, defaulting to genetic values
     check_outputID(mme)    #check individual of interest for prediction
-    df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     df,df_whole = make_dataframes(df,mme)
     set_default_priors_for_variance_components(mme,df)  #check priors (set default priors)
 

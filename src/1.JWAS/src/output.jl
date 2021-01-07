@@ -32,7 +32,7 @@ function prediction_setup(model)
             bold=false,color=:green)
         end
     end
-    if length(prediction_equation) == 0
+    if length(prediction_equation) == 0 && model.M == false
         println("Default or user-defined prediction equation are not available.")
         model.MCMCinfo.outputEBV = false
     end

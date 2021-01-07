@@ -240,7 +240,7 @@ function make_dataframes(df,mme)
     #Whole Data (training + individuals of interest)
     #***************************************************************************
     #expand phenotype dataframe to include individuals of interest (to make incidencee matrices)
-    if !issubset(mme.output_ID,df[!,1])
+    if !issubset(mme.output_ID,df[!,1]) && mme.output_ID != false
         #IDs for some individuals of interest are not included in the phenotypic data.
         #These are added as additional rows with missing values in df_whole.
         df_output = DataFrame(ID=setdiff(mme.output_ID,df[!,1]))
