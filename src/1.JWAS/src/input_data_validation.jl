@@ -23,9 +23,9 @@ function errors_args(mme)
 
             if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
                 if Mi.π != false
-                    error(Mi.method," runs with π = false.")
+                    printstyled(Mi.method," runs with π = false.\n",bold=false,color=:red)
                 elseif Mi.estimatePi == true
-                    error(Mi.method," runs with estimatePi = false.")
+                    printstyled(Mi.method," runs with estimatePi = false.\n",bold=false,color=:red)
                 end
             end
             if Mi.method == "BayesA"
@@ -87,11 +87,6 @@ function check_outputID(mme)
     #Set ouput IDs in heritability (h²) estimation
     #***************************************************************************
     if mme.MCMCinfo.output_heritability == true && mme.M != 0
-        if mme.MCMCinfo.prediction_equation != false
-            printstyled("User-defined prediction equation is provided. ","The heritability is the ",
-            "proportion of phenotypic variance explained by the value defined by the prediction equation\n",
-            bold=false,color=:green)
-        end
         mme.MCMCinfo.outputEBV == true
         if mme.MCMCinfo.single_step_analysis == false
             mme.output_ID = copy(mme.M[1].obsID)
@@ -157,8 +152,8 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
             printstyled("In this complete genomic data (non-single-step) analyis, ",
-            length(index)-sum(index)," phenotyped individuals are not genotyped.",
-            "These are removed from the analysis",bold=false,color=:red)
+            length(index)-sum(index)," phenotyped individuals are not genotyped. ",
+            "These are removed from the analysis.\n",bold=false,color=:red)
         end
     end
     if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
@@ -167,8 +162,8 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
             printstyled("In this incomplete genomic data (single-step) or PBLUP analysis, ",
-            length(index)-sum(index)," phenotyped individuals are not included in the pedigree.",
-            "These are removed from the analysis.",bold=false,color=:red)
+            length(index)-sum(index)," phenotyped individuals are not included in the pedigree. ",
+            "These are removed from the analysis.\n",bold=false,color=:red)
         end
     end
     return df
@@ -246,12 +241,30 @@ function make_dataframes(df,mme)
     #***************************************************************************
     #expand phenotype dataframe to include individuals of interest (to make incidencee matrices)
     if !issubset(mme.output_ID,df[!,1])
-        printstyled("IDs for some individuals of interest are not included in the phenotypic data.",
-        "These are added as additional rows with missing values." ,bold=false,color=:green)
+        #IDs for some individuals of interest are not included in the phenotypic data.
+        #These are added as additional rows with missing values in df_whole.
+        df_output = DataFrame(ID=setdiff(mme.output_ID,df[!,1]))
+        rename!(df_output,"ID"=>names(df)[1])
+        df_whole = outerjoin(df,df_output,on=:ID)
+    else
+        df_whole = df
     end
-    df_output = DataFrame(ID=setdiff(mme.output_ID,df[!,1]))
-    rename!(df_output,"ID"=>names(df)[1])
-    df_whole = outerjoin(df,df_output,on=:ID)
+    df_output = df_whole[[i in mme.output_ID for i in df_whole[!,1]],:]
+    #check individual of interest (output IDs) with prediction equations
+    for term in mme.MCMCinfo.prediction_equation
+        if !haskey(mme.modelTermDict,term)
+            error("Prediction equation is wrong.")
+        end
+        term_value = mme.modelTermDict[term]
+        for i = 1:term_value.nFactors
+          if term_value.factors[i] != :intercept && any(ismissing,df_output[!,term_value.factors[i]])
+            printstyled("Missing values are found in column ",term_value.factors[i]," for some observations.",
+            "Effects of this variable on such observations are considered as zeros. ",
+            "It will be used in prediction. Users may impute missing values before the analysis. \n",
+            bold=false,color=:red)
+          end
+        end
+    end
     #***************************************************************************
     #Training data
     #(non-missing observations, only these ar used in mixed model equations)
@@ -267,6 +280,17 @@ function make_dataframes(df,mme)
     end
     if length(nonmissingindex) != 0
         df = df[nonmissingindex,:]
+    end
+    #check training data with model equations
+    for term in mme.modelTerms
+        for i = 1:term.nFactors
+          if term.factors[i] != :intercept && any(ismissing,df[!,term.factors[i]])
+            printstyled("Missing values are found in column ",term.factors[i]," for some observations.",
+            "Effects of this variable on such observations are considered as zeros. ",
+            "It will be used in the estimation of this effect. Users may impute missing values before the analysis \n",
+            bold=false,color=:red)
+          end
+        end
     end
     printstyled("Phenotypes for ",length(nonmissingindex)," individuals are used in the analysis.",
     "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
@@ -298,13 +322,9 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
     #***************************************************************************
     #individuals of interest (output EBV)
     #***************************************************************************
-    Zout = mkmat_incidence_factor(mme.output_ID,df_whole[!,1])
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
     for term in mme.MCMCinfo.prediction_equation
-        if !haskey(mme.modelTermDict,term)
-            error("Prediction equation is wrong.")
-        end
         #require all levels for output id being observed in training data
         #for any fixed factor or i.i.d random factor
         if mme.modelTermDict[term].random_type in ["fixed","I"] && mme.modelTermDict[term].nLevels > 1
@@ -315,13 +335,16 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
                 error("Some leveles in $term for individuals of interest are not found in training individuals (IDs with non-missing records).")
             end
         end
+        Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
+               vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
         mme.output_X[term] = Zout*mme.modelTermDict[term].X
     end
     #***************************************************************************
     #Training data
     #***************************************************************************
-    Ztrain = mkmat_incidence_factor(df[!,1],df_whole[!,1])
     for term in mme.modelTerms
+        Ztrain = mkmat_incidence_factor(vcat(Tuple([string(i) .* df[!,1] for i=1:mme.nModels])...),
+                 vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
         term.X =Ztrain*term.X
     end
     #***************************************************************************

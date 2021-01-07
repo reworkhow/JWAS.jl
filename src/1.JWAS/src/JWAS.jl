@@ -163,6 +163,18 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false) #calculare lsmeans
+    #for deprecated JWAS fucntions
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.name == false
+                Mi.name              = "geno"
+                Mi.π                 = Pi
+                Mi.estimatePi        = estimatePi
+                Mi.estimateScale     = estimateScale
+                Mi.method            = methods
+            end
+        end
+    end
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
@@ -227,18 +239,6 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-    #for deprecated JWAS fucntions
-    if mme.M != 0
-        for Mi in mme.M
-            if Mi.name == false
-                Mi.name              = "geno"
-                Mi.π                 = Pi
-                Mi.estimatePi        = estimatePi
-                Mi.estimateScale     = estimateScale
-                Mi.method            = methods
-            end
-        end
-    end
     #Nonlinear
     if mme.latent_traits == true
         yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
@@ -286,7 +286,9 @@ function runMCMC(mme::MME,df;
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
     df=make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
-    align_genotypes(mme,output_heritability,single_step_analysis)
+    if mme.M != false
+        align_genotypes(mme,output_heritability,single_step_analysis)
+    end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
 

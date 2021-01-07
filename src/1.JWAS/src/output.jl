@@ -26,6 +26,11 @@ function prediction_setup(model)
         end
     else
         prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
+        if mme.MCMCinfo.output_heritability != false
+            printstyled("User-defined prediction equation is provided. ","The heritability is the ",
+            "proportion of phenotypic variance explained by the value defined by the prediction equation.\n",
+            bold=false,color=:green)
+        end
     end
     if length(prediction_equation) == 0
         println("Default or user-defined prediction equation are not available.")

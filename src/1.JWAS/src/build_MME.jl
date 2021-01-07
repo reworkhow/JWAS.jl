@@ -147,12 +147,6 @@ end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   nObs    = size(df,1)
-  for i = 1:trm.nFactors
-    if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
-    end
-  end
-
   if trm.factors[1] == :intercept #for intercept
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
@@ -180,6 +174,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.data = str
+  val=convert(Array,val)
   recode!(val, missing => 0.0)
   trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
