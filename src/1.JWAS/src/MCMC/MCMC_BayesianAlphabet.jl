@@ -222,7 +222,8 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.mu          = mean(mme.ySparse)
         mme.W0          = W0
         mme.Sigma2z_all_mean = Sigma2z_all_mean
-        mme.vare_mean = 0 #starting value as 1
+        mme.vare_mean = 0
+        mme.varw_mean = 0 
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length
