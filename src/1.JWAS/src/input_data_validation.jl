@@ -325,16 +325,6 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
     for term in mme.MCMCinfo.prediction_equation
-        #require all levels for output id being observed in training data
-        #for any fixed factor or i.i.d random factor
-        if mme.modelTermDict[term].random_type in ["fixed","I"] && mme.modelTermDict[term].nLevels > 1
-            train_select=vec(sum(Ztrain,dims=1).!= 0.0)
-            out_select  =vec(sum(Zout,dims=1) .!= 0.0)
-            if !issubset(unique(mme.modelTermDict[term].data[out_select]),
-                         unique(mme.modelTermDict[term].data[train_select]))
-                error("Some leveles in $term for individuals of interest are not found in training individuals (IDs with non-missing records).")
-            end
-        end
         Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
                vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
         mme.output_X[term] = Zout*mme.modelTermDict[term].X
@@ -346,6 +336,19 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
         Ztrain = mkmat_incidence_factor(vcat(Tuple([string(i) .* df[!,1] for i=1:mme.nModels])...),
                  vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
         term.X =Ztrain*term.X
+    end
+    #***************************************************************************
+    #require all levels for output id being observed in training data
+    #for any fixed factor or i.i.d random factor
+    #***************************************************************************
+    for term in mme.modelTerms
+        if term.nLevels > 1 && term.random_type in ["fixed","I"]
+            train_effects = vec(sum(term.X,dims=1) .!= 0.0)
+            if sum(train_effects) != length(train_effects) #where zero columns exist
+                error("Some levels in $(term.trmStr) for individuals of interest are not found in training individuals (IDs with non-missing records).",
+                      "You may delete those rows or replace those values with missing.")
+            end
+        end
     end
     #***************************************************************************
     # set Riv for heterogeneous residuals
