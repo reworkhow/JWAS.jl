@@ -117,7 +117,9 @@ export get_correlations,get_heritability
         * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
-    * Individual estimted breeding values (EBVs) and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
+    * Predicted values for individuals of interest can be obtained based on an user-defined prediction equation `prediction_equation`, e.g., "y1:animal + y1:geno + y1:age".
+    For now, genomic data is always included. Genetic values including effects defined with genotype and pedigre information are returned if `prediction_equation`= false, defaulting to `false`.
+    * Individual estimted genetic values and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
     variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
@@ -147,8 +149,7 @@ function runMCMC(mme::MME,df;
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,  #complete or incomplete genomic data
-                prediction_equation             = false, #e.g.,"y1:animal + y1:geno + y1:age"
-                                                         #if false, genetic values are returned.
+                prediction_equation             = false,
                 #MISC
                 seed                            = false,
                 printout_model_info             = true,
