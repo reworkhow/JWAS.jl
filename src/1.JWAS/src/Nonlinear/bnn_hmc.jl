@@ -214,20 +214,20 @@ end
 
 
 #helper 5: MME solver to help sample weights & mu
-function MME(y,x;lambda=0.00001)
-    lhs= x'x + I*lambda
+function MME(y,x,var)
+    lhs= x'x + I*0.00001   #here +I*0.00001 is just to keep lhs numerical stable
     rhs= x'y
     Ch = cholesky(lhs)
     iL = inv(Ch.L)
     iLhs = inv(Ch)
     p=size(lhs,2)
-    sol=iLhs * rhs + iL'randn(p)
+    sol=iLhs * rhs + iL'randn(p)*sqrt(var)  #construct a vector alpha_hat+(L')^{-1}z, z~N(0,var)
 
     return sol
 end
 
 #helper 6: sample weight connected to zl_j in the left (wl_mimus_one_j)
-function sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all,lambda)
+function sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all,var)
     if l==L+1
         y_mme = y
     else
@@ -246,7 +246,7 @@ function sample_weights_mu(l,j,L,Z0,Z_all,y,W0,W_all,lambda)
 
     # lambda = 0.00001 #var(y_mme)/var(wl_minus_one_j) #vary/varw
     # lambda is given as a parameter in this function
-    mu_weight = MME(y_mme,x_mme;lambda=lambda)
+    mu_weight = MME(y_mme,x_mme,var)
 
     mul_j = mu_weight[1]
     wl_minus_one_j = mu_weight[2:end]  #first is mu
@@ -318,8 +318,8 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
         for j=1:nNodes[l]
             ##sample weight and latent trait in l-th hidden layer
             # lambda=mme.Sigma2z_all[l][j]
-            lambda=0.00001
-            (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,lambda)
+            var=mme.Sigma2z_all[l][j]
+            (mme.Mu_all[l][j], mme.W_all[l-1][:,j]) = sample_weights_mu(l,j,L,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,var)
             #sample latent trait zl_j
             mme.Z_all = hmc_one_iteration(10,0.1,j,l,L,nNodes,Z0,mme.Z_all,yobs,mme.W0,mme.W_all,mme.Sigma2z_all,σ2_yobs,mme.Mu_all,mme.mu)
 
@@ -336,9 +336,8 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
         end
     end
     #sample WL (l=L)
-    #lambda=σ2_yobs
-    lambda=0.00001
-    (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all,lambda)
+    var=mme.σ2_yobs
+    (mme.mu, mme.W_all[L]) = sample_weights_mu(L+1,999,L,mme.M[1].genotypes,mme.Z_all,yobs,mme.W0,mme.W_all,var)
 
     mme.weights_NN = mme.W_all[L] #for output file
 
@@ -354,4 +353,11 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
     mme.σ2_yobs= σ2_yobs
     mme.vare_mean += (σ2_yobs - mme.vare_mean)/iter
+
+    #sample var_w (var_alpha in paper)
+    df    = 4
+    scale = (df-2)/df
+    varw  = df*scale / rand(Chisq(df)) #full conditional=prior, becasue w is flat prior
+    mme.varw = varw
+    mme.varw_mean += (varw - mme.varw_mean)/iter
 end
