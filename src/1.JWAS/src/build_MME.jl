@@ -36,7 +36,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, L = false, nNodes=false,
-                     nonlinear_function = false, sample_varz=false) #nonlinear_function(x1,x2) = x1+x2
+                     nonlinear_function = false, sample_varz=false, fixed_sigma2z_all=false) #nonlinear_function(x1,x2) = x1+x2
   if num_latent_traits != false
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
@@ -123,6 +123,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
         mme.L           = L
         mme.nNodes      = nNodes
         mme.sample_varz = sample_varz
+        mme.fixed_sigma2z_all = fixed_sigma2z_all  #user-provided varz
     end
     ######## END tianjing
   end

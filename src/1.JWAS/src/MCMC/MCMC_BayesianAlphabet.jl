@@ -174,7 +174,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # println("Version1204,only sample varz1")
         # println("fixed varz=1")
         if mme.sample_varz==false
-            println("fixed varz=1")
+            println("fixed varz")
         elseif mme.sample_varz==true
             println("sample varz")
         end
@@ -218,12 +218,20 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.W_all       = W_all
         mme.Z_all       = Z_all
         mme.Mu_all      = Mu_all
-        mme.Sigma2z_all = Sigma2z_all
         mme.mu          = mean(mme.ySparse)
         mme.W0          = W0
         mme.Sigma2z_all_mean = Sigma2z_all_mean
         mme.vare_mean = 0
-        mme.varw_mean = 0 
+        mme.varw_mean = 0
+        # if mme.fixed_sigma2z_all!=false, which means user provide varz, do not need to initialize it to 1
+        if mme.fixed_sigma2z_all==false #user do not provide varz, fixed to 1.
+            mme.Sigma2z_all = Sigma2z_all
+        else  #user provide varz.
+            mme.Sigma2z_all = mme.fixed_sigma2z_all
+        end
+
+        println("starting varz is:",mme.Sigma2z_all)
+
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length

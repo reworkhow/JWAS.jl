@@ -10,7 +10,6 @@ phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
 
 
 
-
 geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
 
 model_equations = "x1 = intercept + geno"
@@ -24,10 +23,24 @@ model_equations = "x1 = intercept + geno"
 # # #HMC
 nNodes=[2,3]
 L=2
-model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
-                    nNodes=nNodes,nonlinear_function="Neural Network",
-                    sample_varz=true)
+# correct!
+# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
+#                     nNodes=nNodes,nonlinear_function="Neural Network",
+#                     sample_varz=false,fixed_sigma2z_all=false)  #fixed varz=1
 
+# correct!
+# myvarz=[[1.0, 0.5], [0.6, 0.4, 1.5]]
+# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
+#                 nNodes=nNodes,nonlinear_function="Neural Network",
+#                 sample_varz=false,fixed_sigma2z_all=myvarz)  #fixed varz=user-defined
+
+
+# myvarz=[[1.0, 0.5], [0.6, 0.4, 1.5]]
+# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
+#                 nNodes=nNodes,nonlinear_function="Neural Network",
+#                 sample_varz=true,fixed_sigma2z_all=myvarz)
+#
+#
 out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5)
 
 

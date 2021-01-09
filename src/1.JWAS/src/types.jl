@@ -256,6 +256,7 @@ mutable struct MME
     vare_mean        #moving averaged value of vare
     varw        #variance of all weights and bias
     varw_mean   #moving averaged value of varw
+    fixed_sigma2z_all  #user provide fixed value for varz; same dimention as Sigma2z_all
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -282,6 +283,6 @@ mutable struct MME
                    false,false,false,
                    false,
                    false,false,false,1.0,
-                   false,false,false,false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
+                   false,false,false,false,false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
     end
 end
