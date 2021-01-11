@@ -5,11 +5,11 @@ pedfile    = Datasets.dataset("example","pedigree.txt")
 genofile   = Datasets.dataset("example","genotypes.txt")
 mapfile    = Datasets.dataset("example","map.txt")
 
-phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
-phenotypes_ssbr = CSV.read(phenofile_ssbr,delim = ',',header=true,missingstrings=["NA"])
+phenotypes = CSV.read(phenofile,DataFrame,delim = ',',header=true,missingstrings=["NA"])
+phenotypes_ssbr = CSV.read(phenofile_ssbr,DataFrame,delim = ',',header=true,missingstrings=["NA"])
 pedigree   = get_pedigree(pedfile,separator=",",header=true);
-phenotypes_ssbr[:dam]=phenotypes_ssbr[:ID]
-phenotypes[:dam]=phenotypes[:ID]
+phenotypes_ssbr[!,:dam]=phenotypes_ssbr[!,:ID]
+phenotypes[!,:dam]=phenotypes[!,:ID]
 
 if ispath("mytest") == true
       rm("mytest", recursive=true)
