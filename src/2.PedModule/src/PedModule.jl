@@ -22,7 +22,7 @@ d,a,c
 function get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
     printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
 
-    df  = CSV.read(pedfile,types=[String,String,String],
+    df  = CSV.read(pedfile,DataFrame,types=[String,String,String],
                     delim=separator,header=header,missingstrings=missingstrings)
     df[!,1]=strip.(string.(df[!,1]))
     df[!,2]=strip.(string.(df[!,2]))

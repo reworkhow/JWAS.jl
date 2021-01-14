@@ -178,7 +178,7 @@ The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for 
 ## Step 2: Read Phenotypic Data
 
 ```julia
-phenotypes = CSV.read("phenotypes.txt",delim = ',',header=true)
+phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true)
 first(phenotypes)
 ```
 

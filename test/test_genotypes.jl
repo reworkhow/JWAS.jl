@@ -4,7 +4,7 @@ genofile                  = Datasets.dataset("example","genotypes.txt")
 genofile_noheader         = Datasets.dataset("example","genotypes_noheader.txt")
 geno                      = readdlm(genofile,',')
 geno_array,markerIDs,obsID = map(Float64,geno[2:end,2:end]),geno[1,:],geno[2:end,1]
-geno_dataframe            = CSV.read(genofile)[:,2:end]
+geno_dataframe            = CSV.read(genofile,DataFrame)[:,2:end]
 
 println("load genotype ...")
 
