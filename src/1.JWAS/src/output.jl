@@ -414,10 +414,10 @@ function output_MCMC_samples(mme,vRes,G0,
         if mme.nonlinear_function != "Neural Network"
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else
-            if mme.L == false #MH
+            if mme.hmc == false #MH
                 BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*mme.weights_NN
-            elseif mme.L != false #MHC
-                BV_NN = cal_prediction_fromZ1(EBVmat,mme.L,mme.W_all,mme.Mu_all,mme.mu) #given Z1_hat -> y_hat
+            elseif mme.hmc == true #MHC
+                BV_NN = [ones(size(EBVmat,1)) tanh.(EBVmat)]*[mme.mu;mme.W1]
             end
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end

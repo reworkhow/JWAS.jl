@@ -6,42 +6,37 @@ Random.seed!(123)
 
 phenofile       = Datasets.dataset("example","phenotypes.txt")
 genofile   = Datasets.dataset("example","genotypes.txt")
-phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
-
-
-
+phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"],DataFrame)
 geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
-
 model_equations = "x1 = intercept + geno"
 
 
 # #MH
-# model = build_model(model_equations,num_latent_traits = nNodes[1],nonlinear_function="Neural Network");
-# out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5,printout_model_info=false);
+# model = build_model(model_equations,num_latent_traits = 3,nonlinear_function="Neural Network");
+# out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=50,printout_model_info=false);
 
 
 # # #HMC
-nNodes=[2,3]
-L=2
-# correct!
-# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
-#                     nNodes=nNodes,nonlinear_function="Neural Network",
-#                     sample_varz=false,fixed_sigma2z_all=false)  #fixed varz=1
-
-# correct!
-# myvarz=[[1.0, 0.5], [0.6, 0.4, 1.5]]
-# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
-#                 nNodes=nNodes,nonlinear_function="Neural Network",
-#                 sample_varz=false,fixed_sigma2z_all=myvarz)  #fixed varz=user-defined
+#fixed varz=1
+model1 = build_model(model_equations,num_latent_traits=3, nonlinear_function="Neural Network",
+                    hmc=true,sample_varz=false,start_value_sigma2z1=false)
+out_nn1  = runMCMC(model1,phenotypes,mega_trait=true,chain_length=3)
 
 
-# myvarz=[[1.0, 0.5], [0.6, 0.4, 1.5]]
-# model = build_model(model_equations,num_latent_traits = nNodes[1],L=L,
-#                 nNodes=nNodes,nonlinear_function="Neural Network",
-#                 sample_varz=true,fixed_sigma2z_all=myvarz)
-#
-#
-out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5)
+#fixed varz=user-defined
+myvarz=[0.6, 0.5, 0.3]
+model2 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
+                     hmc=true,sample_varz=false,start_value_sigma2z1=myvarz)
+out_nn2  = runMCMC(model2,phenotypes,mega_trait=true,chain_length=3)
+
+
+#sample varz, with user-defined starting value
+myvarz=[0.6, 0.5, 0.3]
+model3 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
+                     hmc=true,sample_varz=true,start_value_sigma2z1=myvarz)
+out_nn3  = runMCMC(model3,phenotypes,mega_trait=true,chain_length=3)
+
+
 
 
 

@@ -243,20 +243,19 @@ mutable struct MME
     σ2_yobs
 
     # tianjing HMC
-    L           #L=3; in total L hidden layers
-    nNodes      #nNodes=[2,3,4]; nNode in each hidden layer
-    Z_all       #Z_all=[Z1,..,ZL]; array of matrix
-    W_all       #W_all=[W1,..,WL]; array of matrix
+    hmc         #true/false using HMC
+    Z1          #Z1, matrix
+    W1          #W1, vector
     W0          #marker effects, matrix of p by l1, each col is for a latent trait
-    Sigma2z_all #Sigma2z_all=[Sigma2z1,...,Sigma2zL]; array of array
-    Mu_all      #Mu_all=[Mu1,...,ML]; array of array
+    Sigma2z1    #Sigma2z1; vector
+    Mu1         #Mu1; vector
     mu          #overall mean of obsered trait; scaler
     sample_varz #true or false
-    Sigma2z_all_mean #moving averaged value of Sigma2z_all_mean
-    vare_mean        #moving averaged value of vare
+    Sigma2z1_mean #moving averaged value of Sigma2z1
+    vare_mean     #moving averaged value of vare
     varw        #variance of all weights and bias
     varw_mean   #moving averaged value of varw
-    fixed_sigma2z_all  #user provide fixed value for varz; same dimention as Sigma2z_all
+    start_value_sigma2z1  #user provide fixed value for varz; same dimention as Sigma2z_all
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -283,6 +282,6 @@ mutable struct MME
                    false,false,false,
                    false,
                    false,false,false,1.0,
-                   false,false,false,false,false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
+                   false,false,false,false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
     end
 end

@@ -166,6 +166,13 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false) #calculare lsmeans
+    #Nonlinear
+    if mme.latent_traits == true
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        for i in mme.lhsVec
+            df[!,i]= yobs
+        end
+    end
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -242,13 +249,7 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-    #Nonlinear
-    if mme.latent_traits == true
-        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
-        for i in mme.lhsVec
-            df[!,i]= yobs
-        end
-    end
+
     # Double Precision
     if double_precision == true
         if mme.M != 0
@@ -312,26 +313,15 @@ function runMCMC(mme::MME,df;
     end
 
     #save the samples from last iteration to help re-train.
-    if mme.L != false
-        # save(output_folder*"/hmc.jld",
-        #         "L", mme.L,
-        #         "nNodes",mme.nNodes,
-        #         "Z_all",mme.Z_all,
-        #         "W_all",mme.W_all,
-        #         "W0", mme.W0,
-        #         "Sigma2z_all", mme.Sigma2z_all,
-        #         "Mu_all",mme.Mu_all,
-        #         "mu",mme.mu
-        #         )
-        writedlm(output_folder*"/hmc_L.txt",mme.L,',')
-        writedlm(output_folder*"/hmc_nNodes.txt",mme.nNodes,',')
-        writedlm(output_folder*"/hmc_Z_all.txt",mme.Z_all,',')
-        writedlm(output_folder*"/hmc_W_all.txt",mme.W_all,',')
+    if mme.hmc == true
+        writedlm(output_folder*"/hmc_n_latent_trait.txt",mme.M[1].ntraits,',')
+        writedlm(output_folder*"/hmc_Z1.txt",mme.Z1,',')
+        writedlm(output_folder*"/hmc_W1.txt",mme.W1,',')
         writedlm(output_folder*"/hmc_W0.txt",mme.W0,',')
-        writedlm(output_folder*"/hmc_Sigma2z_all.txt",mme.Sigma2z_all,',')
-        writedlm(output_folder*"/hmc_Mu_all.txt",mme.Mu_all,',')
+        writedlm(output_folder*"/hmc_Sigma2z1.txt",mme.Sigma2z1,',')
+        writedlm(output_folder*"/hmc_Mu1.txt",mme.Mu1,',')
         writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
-        writedlm(output_folder*"/hmc_Sigma2z_all_mean.txt",mme.Sigma2z_all_mean,',')
+        writedlm(output_folder*"/hmc_Sigma2z1_mean.txt",mme.Sigma2z1_mean,',')
         writedlm(output_folder*"/hmc_vare_mean.txt",mme.vare_mean,',')
         writedlm(output_folder*"/hmc_varw_mean.txt",mme.varw_mean,',')
         writedlm(output_folder*"/hmc_varw.txt",mme.varw,',')

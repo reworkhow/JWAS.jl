@@ -167,70 +167,34 @@ function MCMC_BayesianAlphabet(mme,df)
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
     # Initialize mme for hmc before Gibbs
-    if mme.L != false
-        # println("Version1010")
-        # println("Version1202,labmda=0.0001")
-        # println("Version1203,sample varz")
-        # println("Version1204,only sample varz1")
-        # println("fixed varz=1")
+    if mme.hmc == true
         if mme.sample_varz==false
             println("fixed varz")
         elseif mme.sample_varz==true
             println("sample varz")
         end
-        L=mme.L
-        nNodes=mme.nNodes
+        num_latent_traits=mme.M[1].ntraits
 
-        W_all = Vector{Any}(undef,L)
-        Z_all = Vector{Array{Float64,2}}(undef,L)
-        Mu_all = Vector{Array{Float64,1}}(undef,L)
-        Sigma2z_all = Vector{Array{Float64,1}}(undef,L)
-        Sigma2z_all_mean = Vector{Array{Float64,1}}(undef,L)
+        nMarkers=mme.M[1].nMarkers
+        W0=rand(Normal(0,sqrt(1/nMarkers)),nMarkers,num_latent_traits) # marker effects
+        Z1=mme.M[1].genotypes * W0                                     # starting value for simulate latent traits
+        W1=rand(Normal(0,sqrt(1/num_latent_traits)),num_latent_traits)
 
-        p=mme.M[1].nMarkers
-        W0=rand(Normal(0,sqrt(1/p)),p,nNodes[1])  # marker effects
-        Z1=mme.M[1].genotypes * W0  # simulate latent traits
-        Mu1 = zeros(nNodes[1])
-        Sigma2z1= ones(nNodes[1]) #var(Z1,dims=1)
-
-        Z_all[1] = Z1
-        Mu_all[1] = vec(Mu1)
-        Sigma2z_all[1]=vec(Sigma2z1)
-        Sigma2z_all_mean[1] = zeros(nNodes[1])  #starting value is 1
-
-        for l in 1:(L-1)
-           Wl = rand(Normal(0,sqrt(1/nNodes[l])),nNodes[l],nNodes[l+1])
-           W_all[l] = Wl
-
-           Zl_plus_one = tanh.(Z_all[l]) * Wl
-           Mul_plus_one = zeros(nNodes[l+1])
-           Sigma2zl_plus_one= ones(nNodes[l+1]) #var(Zl_plus_one,dims=1)
-           # save
-           Z_all[l+1] = Zl_plus_one#[1:nTrain,:]
-           Mu_all[l+1] = vec(Mul_plus_one)
-           Sigma2z_all[l+1]=Sigma2zl_plus_one
-           Sigma2z_all_mean[l+1] = zeros(nNodes[l+1])
-        end
-
-        W_all[L]=rand(Normal(0,sqrt(1/nNodes[L])),nNodes[L])
-
-
-        mme.W_all       = W_all
-        mme.Z_all       = Z_all
-        mme.Mu_all      = Mu_all
-        mme.mu          = mean(mme.ySparse)
-        mme.W0          = W0
-        mme.Sigma2z_all_mean = Sigma2z_all_mean
+        mme.W0       = W0
+        mme.Z1       = Z1
+        mme.W1       = W1
+        mme.Mu1      = zeros(num_latent_traits)
+        mme.mu       = mean(mme.ySparse)
+        mme.Sigma2z1_mean = zeros(num_latent_traits)
         mme.vare_mean = 0
         mme.varw_mean = 0
-        # if mme.fixed_sigma2z_all!=false, which means user provide varz, do not need to initialize it to 1
-        if mme.fixed_sigma2z_all==false #user do not provide varz, fixed to 1.
-            mme.Sigma2z_all = Sigma2z_all
-        else  #user provide varz.
-            mme.Sigma2z_all = mme.fixed_sigma2z_all
-        end
 
-        println("starting varz is:",mme.Sigma2z_all)
+        if  mme.start_value_sigma2z1==false #do not provide starting value of Sigma2z1
+            mme.Sigma2z1 = ones(num_latent_traits)
+        else  #user provide starting value of varz.
+            mme.Sigma2z1 = mme.start_value_sigma2z1
+        end
+        println("starting value of varz is:",mme.Sigma2z1)
 
     end
 
@@ -273,8 +237,8 @@ function MCMC_BayesianAlphabet(mme,df)
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        if mme.L!=false
-            mme.Mu_all[1] = mme.sol
+        if mme.hmc == true
+            mme.Mu1 = mme.sol
         end
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
@@ -401,9 +365,9 @@ function MCMC_BayesianAlphabet(mme,df)
 
         #mme.M[1].genotypes here is 5-by-5
         if latent_traits == true #to update ycorr!
-            if mme.L == false  #MH
+            if mme.hmc == false  #MH
                 sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
-            elseif mme.L != false #HMC
+            elseif mme.hmc == true #HMC
                 sample_latent_traits_hmc(yobs,mme,ycorr,iter)
             end
         end
