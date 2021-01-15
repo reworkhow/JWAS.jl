@@ -1,32 +1,32 @@
-#                             |---- Z1_1 ----- Z0*α1
-#yobs ---f(Z1_1,Z1_2,Z1_3)----|---- Z1_2 ----- Z0*α2
-#                             |---- Z1_3 ----- Z0*α3
+#                 |---- Z1[:,1] ----- Z0*W0[:,1]
+#yobs ---f(Z1)----|---- Z1[:,2] ----- Z0*W0[:,2]
+#                 |---- Z1[:,3] ----- Z0*W0[:,3]
 #
+# in total 1 hidden layers, with l1 nodes.
 
-# in total 1 hidden layers, with l1=3 nodes
 ###########
-# Z0: marker covariate matrix, n by p, each col is a maker
-# Z1: latent traits, n by l1 matrix, each col is a latent trait
+# Z0: marker covariate matrix, n by p, each col is for 1 marker
+# Z1: latent traits, n by l1 matrix, each col is for 1 latent trait
 # y: observed trait, vector of n by 1
 ###########
 
 ###########
 # W0: marker effects, matrix of p by l1, each col is for a latent trait
-# W1: weights from latent(1) to observed trait, vector of l1 by 1
+# W1: weights from hidden layer to observed trait, vector of l1 by 1
 ###########
 
 ###########
-# Mu1: vector of length l1
-# mu: overall mean of obsered trait
+# Mu1: bias of latent trait, vector of length l1
+# mu: bias of observed trait, scaler
 ###########
 
 ###########
-# Sigma2z1: in hidden layer 1, residual variance of latent trait, vector of length l1
-# sigma2e: residual variance of observed trait
+# Sigma2z1: residual variance of latent trait, vector of length l1
+# sigma2e: residual variance of observed trait, scaler
 ###########
 
 
-#helper 1: gradiant of j-th latent trait in 1-th hidden layer, z1_j
+#helper 1: calculate gradiant of j-th latent trait
 function calc_gradient_z1_j(j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu1,mu)
     z1_j=Z1[:,j]
     mu1_j = Mu1[j]
@@ -44,7 +44,7 @@ function calc_gradient_z1_j(j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu1,mu)
 end
 
 
-# helper 2: log p(z|y) to help calculate the acceptance rate in sampling of z1_j
+# helper 2: calculate log p(z|y) to help calculate the acceptance rate
 function calc_log_p_z(j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu1,mu)
     z1_j=Z1[:,j]
     mu1_j = Mu1[j]
@@ -60,7 +60,7 @@ function calc_log_p_z(j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu1,mu)
 end
 
 
-#helper 3: one iterations of HMC to sample zl_j
+#helper 3: one iterations of HMC to sample z1_j
 function hmc_one_iteration(nLeapfrog,epsilon,j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu1,mu)
     n = length(y)
     old_Z1 = Z1
@@ -90,8 +90,6 @@ function hmc_one_iteration(nLeapfrog,epsilon,j,Z0,Z1,y,W0,W1,Sigma2z1,sigma2e,Mu
 
     return Z1
 end
-
-
 
 
 
