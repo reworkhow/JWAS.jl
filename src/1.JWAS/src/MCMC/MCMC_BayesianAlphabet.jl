@@ -168,13 +168,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # Initialize mme for hmc before Gibbs
     if mme.hmc == true
-        if mme.sample_varz==false
-            println("fixed varz")
-        elseif mme.sample_varz==true
-            println("sample varz")
-        end
         num_latent_traits=mme.M[1].ntraits
-
         nMarkers=mme.M[1].nMarkers
         W0=rand(Normal(0,sqrt(1/nMarkers)),nMarkers,num_latent_traits) # marker effects
         Z1=mme.M[1].genotypes * W0                                     # starting value for simulate latent traits
@@ -185,17 +179,8 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.W1       = W1
         mme.Mu1      = zeros(num_latent_traits)
         mme.mu       = mean(mme.ySparse)
-        mme.Sigma2z1_mean = zeros(num_latent_traits)
         mme.vare_mean = 0
         mme.varw_mean = 0
-
-        if  mme.start_value_sigma2z1==false #do not provide starting value of Sigma2z1
-            mme.Sigma2z1 = ones(num_latent_traits)
-        else  #user provide starting value of varz.
-            mme.Sigma2z1 = mme.start_value_sigma2z1
-        end
-        println("starting value of varz is:",mme.Sigma2z1)
-
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length

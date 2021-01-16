@@ -17,23 +17,8 @@ model_equations = "x1 = intercept + geno"
 
 
 # # #HMC
-#fixed varz=1
-model1 = build_model(model_equations,num_latent_traits=3, nonlinear_function="Neural Network",
-                    hmc=true,sample_varz=false,start_value_sigma2z1=false)
-out_nn1  = runMCMC(model1,phenotypes,mega_trait=true,chain_length=3)
-
-
-#fixed varz=user-defined
-myvarz=[0.6, 0.5, 0.3]
-model2 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
-                     hmc=true,sample_varz=false,start_value_sigma2z1=myvarz)
-out_nn2  = runMCMC(model2,phenotypes,mega_trait=true,chain_length=3)
-
-
-#sample varz, with user-defined starting value
-myvarz=[0.6, 0.5, 0.3]
 model3 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
-                     hmc=true,sample_varz=true,start_value_sigma2z1=myvarz)
+                     hmc=true)
 out_nn3  = runMCMC(model3,phenotypes,mega_trait=true,chain_length=3)
 
 

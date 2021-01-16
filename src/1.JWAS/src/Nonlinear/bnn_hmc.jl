@@ -100,6 +100,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
     num_latent_traits=mme.M[1].ntraits
     Z0=mme.M[1].genotypes
+    Sigma2z1=diag(mme.R)
 
     #reshape the vector to n by l1
     nobs, ntraits = length(mme.obsID), mme.nModels
@@ -109,15 +110,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     ############# START ##################
     # sample latent trait (Z1)
     for j=1:num_latent_traits
-        mme.Z1 = hmc_one_iteration(10,0.1,j,Z0,mme.Z1,yobs,mme.W0,mme.W1,mme.Sigma2z1,σ2_yobs,mme.Mu1,mme.mu)
-        if mme.sample_varz==true
-            ###sample sigma2z1_j
-            z_real = Z0 * mme.W0[:,j] .+ mme.Mu1[j]# (n,1)
-            residual_sigma2z1_j = z_real - mme.Z1[:,j]
-            sigma2z1_j= dot(residual_sigma2z1_j,residual_sigma2z1_j)/rand(Chisq(nobs))  #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-            mme.Sigma2z1[j]=sigma2z1_j
-            mme.Sigma2z1_mean[j] += (sigma2z1_j - mme.Sigma2z1_mean[j])/iter
-        end
+        mme.Z1 = hmc_one_iteration(10,0.1,j,Z0,mme.Z1,yobs,mme.W0,mme.W1,Sigma2z1,σ2_yobs,mme.Mu1,mme.mu)
     end
 
     #sample weights (W1)
