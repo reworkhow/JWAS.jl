@@ -170,9 +170,9 @@ function MCMC_BayesianAlphabet(mme,df)
     if mme.hmc == true
         num_latent_traits=mme.M[1].ntraits
         nMarkers=mme.M[1].nMarkers
-        W0=rand(Normal(0,sqrt(1/nMarkers)),nMarkers,num_latent_traits) # marker effects
+        W0=zeros(nMarkers,num_latent_traits)#rand(Normal(0,1/nMarkers),nMarkers,num_latent_traits) # marker effects
         Z1=mme.M[1].genotypes * W0                                     # starting value for simulate latent traits
-        W1=rand(Normal(0,sqrt(1/num_latent_traits)),num_latent_traits)
+        W1=zeros(num_latent_traits)#rand(Normal(0,1/num_latent_traits),num_latent_traits)
 
         mme.W0       = W0
         mme.Z1       = Z1

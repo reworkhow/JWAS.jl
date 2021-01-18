@@ -4,7 +4,7 @@ using Revise
 using CSV,DataFrames,JWAS,JWAS.Datasets,Random,Distributions
 Random.seed!(123)
 
-phenofile       = Datasets.dataset("example","phenotypes.txt")
+phenofile  = Datasets.dataset("example","phenotypes.txt")
 genofile   = Datasets.dataset("example","genotypes.txt")
 phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"],DataFrame)
 geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
@@ -13,15 +13,15 @@ model_equations = "x1 = intercept + geno"
 
 #MH
 fixed_varz=[0.1 0 0; 0 0.2 0; 0 0 0.3]
-model = build_model(model_equations,num_latent_traits = 3,nonlinear_function="Neural Network",fixed_varz=fixed_varz);
-out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5);
+model1 = build_model(model_equations,num_latent_traits = 3,nonlinear_function="Neural Network",fixed_varz=fixed_varz);
+out_nn1  = runMCMC(model1,phenotypes,mega_trait=true,chain_length=5);  #mega_trait can be false
 
 
 # #HMC
 fixed_varz=[0.1 0 0; 0 0.2 0; 0 0 0.3]
-model3 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
+model2 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
                      fixed_varz=fixed_varz,hmc=true)
-out_nn3  = runMCMC(model3,phenotypes,mega_trait=true,chain_length=3)
+out_nn2  = runMCMC(model2,phenotypes,mega_trait=true,chain_length=3)  #mega trait must be true
 
 
 
