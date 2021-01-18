@@ -27,7 +27,13 @@ function sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
         mme.weights_NN = weights
     end
 
-    candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
+    # candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
+    if mme.fixed_varz==false
+        Sigma2z1=mme.R           #sampled covariance matrix of latent trait in MCMC_BayesianAlphabet
+    else
+        Sigma2z1=mme.fixed_varz  #user fixed covariance matrix of latent trait
+    end
+    candidates       = μ_ylats+rand(MvNormal(Sigma2z1),nobs)'
     if nonlinear_function == "Neural Network"
         μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights
         μ_yobs_current   = X*weights

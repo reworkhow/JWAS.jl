@@ -100,8 +100,11 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
     num_latent_traits=mme.M[1].ntraits
     Z0=mme.M[1].genotypes
-    Sigma2z1=diag(mme.R)
-
+    if mme.fixed_varz==false
+        Sigma2z1=diag(mme.R)        #sampled covariance matrix of latent trait in MCMC_BayesianAlphabet
+    else
+        Sigma2z1=diag(mme.fixed_varz) #user fixed covariance matrix of latent trait
+    end
     #reshape the vector to n by l1
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits)

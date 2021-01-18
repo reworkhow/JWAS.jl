@@ -11,14 +11,16 @@ geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
 model_equations = "x1 = intercept + geno"
 
 
-# #MH
-# model = build_model(model_equations,num_latent_traits = 3,nonlinear_function="Neural Network");
-# out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=50,printout_model_info=false);
+#MH
+fixed_varz=[0.1 0 0; 0 0.2 0; 0 0 0.3]
+model = build_model(model_equations,num_latent_traits = 3,nonlinear_function="Neural Network",fixed_varz=fixed_varz);
+out_nn  = runMCMC(model,phenotypes,mega_trait=true,chain_length=5);
 
 
-# # #HMC
+# #HMC
+fixed_varz=[0.1 0 0; 0 0.2 0; 0 0 0.3]
 model3 = build_model(model_equations,num_latent_traits=3,nonlinear_function="Neural Network",
-                     hmc=true)
+                     fixed_varz=fixed_varz,hmc=true)
 out_nn3  = runMCMC(model3,phenotypes,mega_trait=true,chain_length=3)
 
 

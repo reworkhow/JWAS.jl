@@ -252,7 +252,7 @@ mutable struct MME
     vare_mean     #moving averaged value of vare
     varw        #variance of all weights and bias
     varw_mean   #moving averaged value of varw
-    start_value_sigma2z1  #user provide fixed value for varz; same dimention as Sigma2z_all
+    fixed_varz  #user provide fixed value for varz; e.g., if 2 latent trait, can be [0.5 0; 0 0.6]
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1

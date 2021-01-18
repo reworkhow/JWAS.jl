@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_latent_traits = false, hmc = false,
+                     num_latent_traits = false, hmc = false, fixed_varz=false,
                      nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
   if num_latent_traits != false
     lhs, rhs = strip.(split(model_equations,"="))
@@ -116,6 +116,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     if nonlinear_function != false
       mme.nonlinear_function = nonlinear_function
     end
+
+    mme.fixed_varz=fixed_varz
 
     if hmc == true
         mme.hmc = hmc
