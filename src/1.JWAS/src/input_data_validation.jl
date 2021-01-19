@@ -245,7 +245,7 @@ function make_dataframes(df,mme)
         #These are added as additional rows with missing values in df_whole.
         df_output = DataFrame(ID=setdiff(mme.output_ID,df[!,1]))
         rename!(df_output,"ID"=>names(df)[1])
-        df_whole = outerjoin(df,df_output,on=:ID)
+        df_whole = outerjoin(df,df_output,on=names(df)[1])
     else
         df_whole = df
     end
