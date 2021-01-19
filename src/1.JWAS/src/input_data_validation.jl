@@ -166,6 +166,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             "These are removed from the analysis.\n",bold=false,color=:red)
         end
     end
+    rename!(df,strip.(names(df)))
     return df
 end
 
