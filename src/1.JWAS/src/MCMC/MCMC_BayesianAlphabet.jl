@@ -170,14 +170,10 @@ function MCMC_BayesianAlphabet(mme,df)
     if mme.hmc == true
         num_latent_traits=mme.M[1].ntraits
         nMarkers=mme.M[1].nMarkers
-        W0=zeros(nMarkers,num_latent_traits)#rand(Normal(0,1/nMarkers),nMarkers,num_latent_traits) # marker effects
-        Z1=mme.M[1].genotypes * W0                                     # starting value for simulate latent traits
-        W1=zeros(num_latent_traits)#rand(Normal(0,1/num_latent_traits),num_latent_traits)
 
-        mme.W0       = W0
-        mme.Z1       = Z1
-        mme.W1       = W1
-        mme.Mu1      = zeros(num_latent_traits)
+        mme.W0       = Array{Float32,2}(undef, nMarkers, num_latent_traits)
+        mme.Z1       = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
+        mme.W1       = zeros(num_latent_traits)
         mme.mu       = mean(mme.ySparse)
         mme.vare_mean = 0
         mme.varw_mean = 0
@@ -238,7 +234,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait
                         if is_mega_trait
-                            megaBayesABC!(mme,Mi,wArray,mme.R,locus_effect_variances)
+                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end
@@ -274,6 +270,12 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     else
                         GBLUP!(Mi,ycorr,mme.R,invweights)
+                    end
+                end
+                #update W0 in HMC (marker effect)
+                if mme.hmc == true
+                    for i in 1:num_latent_traits
+                        mme.W0[:,i] = Mi.α[i]
                     end
                 end
                 ########################################################################

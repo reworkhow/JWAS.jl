@@ -8,7 +8,7 @@ using DataFrames,CSV,Random,JWAS,DelimitedFiles,Statistics,Plots
 rep=1
 num_latent_traits=2
 chainLength = 10_000
-fixed_varz=[1.0 0; 0 1.0]
+fixed_varz=false#[1.0 0; 0 1.0]
 @show rep,num_latent_traits,chainLength,fixed_varz
 
 ############ READ DATA ##########

@@ -1,11 +1,8 @@
-function megaBayesABC!(mme,genotypes,wArray,vare,locus_effect_variances)
+function megaBayesABC!(genotypes,wArray,vare,locus_effect_variances)
      for i in 1:length(wArray) #ntraits
          BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
                     wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare[i,i],
                     [vari[i,i] for vari in locus_effect_variances],genotypes.π[i])
-         if mme.hmc == true
-             mme.W0[:,i] = genotypes.α[i]
-         end
      end
 end
 

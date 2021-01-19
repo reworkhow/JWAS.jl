@@ -118,6 +118,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
 
     mme.fixed_varz=fixed_varz
+    println("fixed_varz=",fixed_varz)
 
     if hmc == true
         mme.hmc = hmc
