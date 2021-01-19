@@ -407,6 +407,8 @@ function output_MCMC_samples(mme,vRes,G0,
              mygvar = cov(EBVmat)
              genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
              heritability     = (ntraits == 1 ? mygvar/(mygvar+vRes) : (diag(mygvar./(mygvar+vRes)))')
+             writedlm(outfile["genetic_variance"],genetic_variance',',')
+             writedlm(outfile["heritability"],heritability,',')
          end
     end
     if mme.latent_traits == true
