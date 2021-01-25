@@ -11,7 +11,7 @@ model1 = build_model(model_equation1,R);
 G3 =1.0
 add_genotypes(model1,genotypes,G3);
 
-@time out1=runMCMC(model1,phenotypes,methods="BayesC",estimatePi=true,chain_length=5);
+@time out1=runMCMC(model1,phenotypes,methods="BayesC",estimatePi=false,Pi=0.87,chain_length=1000);
 
 
 using Revise
