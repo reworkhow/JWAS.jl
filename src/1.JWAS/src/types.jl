@@ -244,10 +244,10 @@ mutable struct MME
 
     # tianjing HMC
     hmc         #true/false using HMC
-    Z1          #Z1, matrix
+    Z           #Z, matrix
     W1          #W1, vector
     W0          #marker effects, matrix of p by l1, each col is for a latent trait
-    Mu1         #Mu1; vector
+    Mu0         #Mu0; vector
     mu          #overall mean of obsered trait; scaler
     vare_mean     #moving averaged value of vare
     varw        #variance of all weights and bias

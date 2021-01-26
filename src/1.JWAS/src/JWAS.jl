@@ -315,12 +315,12 @@ function runMCMC(mme::MME,df;
     #save the samples from last iteration to help re-train.
     if mme.hmc == true
         writedlm(output_folder*"/hmc_n_latent_trait.txt",mme.M[1].ntraits,',')
-        writedlm(output_folder*"/hmc_Z1.txt",mme.Z1,',')
+        writedlm(output_folder*"/hmc_Z.txt",mme.Z,',')
         writedlm(output_folder*"/hmc_W1.txt",mme.W1,',')
         writedlm(output_folder*"/hmc_W0.txt",mme.W0,',')
-        writedlm(output_folder*"/hmc_Mu1.txt",mme.Mu1,',')
+        writedlm(output_folder*"/hmc_Mu0.txt",mme.Mu0,',')
         writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
-        writedlm(output_folder*"/hmc_vare.txt",mme.σ2_yobs,',')
+        writedlm(output_folder*"/hmc_σ2_yobs.txt",mme.σ2_yobs,',')
         writedlm(output_folder*"/hmc_vare_mean.txt",mme.vare_mean,',')
         writedlm(output_folder*"/hmc_varw_mean.txt",mme.varw_mean,',')
         writedlm(output_folder*"/hmc_varw.txt",mme.varw,',')

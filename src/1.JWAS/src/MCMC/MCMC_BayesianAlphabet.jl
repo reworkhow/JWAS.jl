@@ -172,7 +172,7 @@ function MCMC_BayesianAlphabet(mme,df)
         nMarkers=mme.M[1].nMarkers
 
         mme.W0       = Array{Float32,2}(undef, nMarkers, num_latent_traits)
-        mme.Z1       = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
+        mme.Z       = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
         mme.W1       = zeros(num_latent_traits)
         mme.mu       = mean(mme.ySparse)
         mme.vare_mean = 0
@@ -219,7 +219,7 @@ function MCMC_BayesianAlphabet(mme,df)
         end
 
         if mme.hmc == true
-            mme.Mu1 = mme.sol
+            mme.Mu0 = mme.sol
         end
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################

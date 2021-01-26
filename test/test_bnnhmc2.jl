@@ -3,17 +3,16 @@ using Revise
 using DataFrames,CSV,Random,JWAS,DelimitedFiles,Statistics,Plots
 
 
-runseed=1
-nNodes=[2]
-L=1
-chainLength = 10_00
-
+rep=1
+chainLength = 10000
+num_latent_traits=3
+fixed_varz=false
 
 ############ READ DATA ##########
 #read data
-phenofile  = "C:/Users/ztjsw/Box/BNN/simulated_data/my_y.n1500.p100.nNodes2.seed1.txt"
-genofile   = "C:/Users/ztjsw/Box/BNN/simulated_data/my_x.n1500.p100.nNodes2.seed1.txt"
-phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"])
+phenofile  = "/Users/tianjing/Box/BNN/simulated_data/my_y.n1500.p100.nNodes2.seed1.txt"
+genofile   = "/Users/tianjing/Box/BNN/simulated_data/my_x.n1500.p100.nNodes2.seed1.txt"
+phenotypes = CSV.read(phenofile,delim = ',',header=true,missingstrings=["NA"],DataFrame)
 phenotypes[!,:ID]=string.(phenotypes[!,:ID]);
 
 
@@ -22,20 +21,22 @@ trainID = collect(501:1500)
 
 
 
-############ JWAS HMC ##########
-Random.seed!(runseed)
-geno = get_genotypes(genofile,method="BayesC",estimatePi=true,quality_control=true);
-model_equations_hmc = "y = intercept + geno";
 
+############ JWAS HMC ##########
 #run HMC
-model_hmc = build_model(model_equations_hmc,num_latent_traits = nNodes[1],L=L,nNodes=nNodes,nonlinear_function="Neural Network")
+Random.seed!(rep)
+geno = get_genotypes(genofile,method="RR-BLUP",estimatePi=false)
+model_equations_hmc = "y = intercept + geno";
+model_hmc = build_model(model_equations_hmc,num_latent_traits=num_latent_traits,nonlinear_function="Neural Network",
+                     fixed_varz=fixed_varz,hmc=true)
 out_hmc  = runMCMC(model_hmc,phenotypes[trainID,:],mega_trait=true,chain_length=chainLength,output_folder="HMC_res");
+
 
 #calculate cummulated accuracy
 out_hmc_ebv = out_hmc["EBV_NonLinear"]
 out_hmc_ebv[!,:ID] = string.(out_hmc_ebv[!,:ID]);
 
-MCMC_ebv_hmc =CSV.read("HMC_res/MCMC_samples_EBV_NonLinear.txt",delim = ',',header=true)
+MCMC_ebv_hmc =CSV.read("HMC_res/MCMC_samples_EBV_NonLinear.txt",delim = ',',header=true,DataFrame)
 MCMC_ebv_hmc = Matrix(MCMC_ebv_hmc)'  #(p,1000)
 
 cum_ebv_hmc = cumsum(MCMC_ebv_hmc,dims=2)
@@ -52,6 +53,8 @@ accuracy_hmc=zeros(1000)
 for i in 1:1000
     accuracy_hmc[i] = cor(results_hmc[testID,Symbol("x$i")],results_hmc[testID,:y])
 end
+@show accuracy_hmc[end]
+plot(accuracy_hmc)
 
 
 # ############ JWAS MH ##########
