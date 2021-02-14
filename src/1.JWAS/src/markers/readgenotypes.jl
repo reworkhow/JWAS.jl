@@ -82,7 +82,7 @@ end
 
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                       method = "RR-BLUP",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
+                       method = "BayesC",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,

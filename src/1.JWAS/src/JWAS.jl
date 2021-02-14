@@ -36,8 +36,10 @@ include("markers/Pi.jl")
 include("single_step/SSBR.jl")
 include("single_step/SSGBLUP.jl")
 
-#Categorical trait
+#Categorical Traits
 include("categorical_trait/categorical_trait.jl")
+
+#Censored Traits
 include("censored_trait/censored_trait.jl")
 
 #Structure Equation Models
@@ -59,38 +61,48 @@ export showMME,describe
 #Pedmodule
 export get_pedigree,get_info
 #misc
-export GWAS,QC
-export get_additive_genetic_variances,get_breeding_values
-export get_correlations,get_heritability
-#others
+export GWAS
 #export adjust_phenotypes,LOOCV
 
 """
     runMCMC(model::MME,df::DataFrame;
-            weight                   = false,
-            ### MCMC
-            chain_length             = 1000,
-            starting_value           = false,
-            burnin                   = 0,
-            output_samples_frequency = chain_length/1000,
-            output_folder            = results,
-            update_priors_frequency  = 0,
-            ### Methods
-            estimate_variance        = true,
-            estimateScale            = false,
-            single_step_analysis     = false,
-            pedigree                 = false,
-            categorical_trait        = false,
-            missing_phenotypes       = true,
-            constraint               = false,
-            causal_structure         = false,
-            ### Genomic Prediction
-            outputEBV                = true,
-            output_heritability      = true,
-            ### MISC
-            seed                     = false,
-            printout_model_info      = true,
-            printout_frequency       = 0)
+            #Data
+            heterogeneous_residuals           = false,
+            #MCMC
+            chain_length::Integer             = 100,
+            starting_value                    = false,
+            burnin::Integer                   = 0,
+            output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
+            update_priors_frequency::Integer  = 0,
+            #Methods
+            estimate_variance               = true,
+            single_step_analysis            = false, #parameters for single-step analysis
+            pedigree                        = false, #parameters for single-step analysis
+            fitting_J_vector                = true,  #parameters for single-step analysis
+            categorical_trait               = false,
+            censored_trait                  = false,
+            causal_structure                = false,
+            mega_trait                      = false,
+            missing_phenotypes              = true,
+            constraint                      = false,
+            #Genomic Prediction
+            outputEBV                       = true,
+            output_heritability             = true,
+            prediction_equation             = false,
+            #MISC
+            seed                            = false,
+            printout_model_info             = true,
+            printout_frequency              = chain_length+1,
+            big_memory                      = false,
+            double_precision                = false,
+            ##MCMC samples (defaut to marker effects and hyperparametes (variance components))
+            output_folder                     = "results",
+            output_samples_for_all_parameters = false,
+            ##for deprecated JWAS
+            methods                         = "conventional (no markers)",
+            Pi                              = 0.0,
+            estimatePi                      = false,
+            estimateScale                   = false)
 
 **Run MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.**
 
@@ -98,8 +110,8 @@ export get_correlations,get_heritability
     * The first `burnin` iterations are discarded at the beginning of a MCMC chain of length `chain_length`.
     * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to a folder `output_folder`,
       defaulting to `results`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
-      MCMC samples for location parametes can be saved using `output_MCMC_samples()`. Note that saving MCMC samples too frequently slows
-      down the computation.
+      MCMC samples for location parametes can be saved using function `output_MCMC_samples()`. Note that saving MCMC samples too
+      frequently slows down the computation.
     * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
       The order of starting values for location parameters and marker effects should be the order of location parameters in
       the Mixed Model Equation for all traits (This can be obtained by getNames(model)) and then markers for all traits (all
@@ -125,6 +137,7 @@ export get_correlations,get_heritability
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
+  * If `big_memory`=true, defaulting to `false`, a machine with  lots of memory is assumed which may speed up the analysis.
 """
 function runMCMC(mme::MME,df;
                 #Data
@@ -139,16 +152,16 @@ function runMCMC(mme::MME,df;
                 estimate_variance               = true,
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
-                fitting_J_vector                = true,
+                fitting_J_vector                = true,  #parameters for single-step analysis
                 categorical_trait               = false,
                 censored_trait                  = false,
-                missing_phenotypes              = true,
-                constraint                      = false,
                 causal_structure                = false,
                 mega_trait                      = false,
+                missing_phenotypes              = true,
+                constraint                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
-                output_heritability             = true,  #complete or incomplete genomic data
+                output_heritability             = true,
                 prediction_equation             = false,
                 #MISC
                 seed                            = false,
@@ -157,13 +170,13 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
-                output_folder                   = "results",
+                output_folder                     = "results",
                 output_samples_for_all_parameters = false,
                 #for deprecated JWAS
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false) #calculare lsmeans
+                estimateScale                   = false)
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -292,10 +305,6 @@ function runMCMC(mme::MME,df;
     end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
-
-    #printout basic MCMC information
-    if printout_model_info == true
-    end
     ############################################################################
     # MCMC
     ############################################################################
@@ -333,6 +342,9 @@ function describe(model::MME;data=false)
   if model.MCMCinfo == false || model.MCMCinfo.printout_model_info == false
       return "Model information is not printed."
   end
+  if size(model.mmeRhs)==() && data != false
+    getMME(model,data)
+  end
   printstyled("\nA Linear Mixed Model was build using model equations:\n\n",bold=true)
   for i in model.modelVec
     println(i)
@@ -365,12 +377,6 @@ function describe(model::MME;data=false)
     nLevels = i.nLevels
     fixed   = (term in random_effects) ? "random" : "fixed"
     factor  = (nLevels==1) ? "covariate" : "factor"
-
-    if size(model.mmeRhs)==()&&data==false
-      nLevels="NA"
-    elseif size(model.mmeRhs)==()
-      getMME(model,data)
-    end
 
     if term =="intercept"
         factor="factor"
