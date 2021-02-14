@@ -8,9 +8,9 @@ export get_pedigree
 export get_info
 
 """
-    get_pedigree(pedfile::AbstractString;header=false,separator=',')
+    get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
 * Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
-  and **separator** (defaulting to `,`).
+  , **separator** (defaulting to `,`) and missing values (defaulting to ["0"])
 * Pedigree file format:
 
 ```
