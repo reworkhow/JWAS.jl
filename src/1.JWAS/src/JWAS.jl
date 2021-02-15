@@ -62,6 +62,8 @@ export showMME,describe
 export get_pedigree,get_info
 #misc
 export GWAS
+#dataset
+export dataset
 #export adjust_phenotypes,LOOCV
 
 """

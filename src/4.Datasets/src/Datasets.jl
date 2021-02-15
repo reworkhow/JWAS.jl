@@ -1,9 +1,8 @@
 module Datasets
 
 using Printf
-function dataset(dataset_name::AbstractString,file_name::AbstractString)
+function dataset(file_name::AbstractString;dataset_name::AbstractString="")
     basename = joinpath(dirname(@__FILE__), "..", "data", dataset_name)
-
     rdaname = joinpath(basename, string(file_name))
     if isfile(rdaname)
         return rdaname
@@ -13,4 +12,5 @@ function dataset(dataset_name::AbstractString,file_name::AbstractString)
 end
 
 export dataset
+
 end # module
