@@ -1,7 +1,7 @@
 using CSV,DataFrames,JWAS,JWAS.Datasets,DelimitedFiles,CSV
 
 
-genofile   = Datasets.dataset("genotypes.txt",,dataset_name="example")
+genofile   = Datasets.dataset("genotypes.txt",dataset_name="example")
 genofile_noheader    = Datasets.dataset("genotypes_noheader.txt",dataset_name="example")
 geno                      = readdlm(genofile,',')
 geno_array,markerIDs,obsID = map(Float64,geno[2:end,2:end]),geno[1,:],geno[2:end,1]

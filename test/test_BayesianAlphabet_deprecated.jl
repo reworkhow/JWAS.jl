@@ -2,7 +2,7 @@ using CSV,DataFrames,JWAS,JWAS.Datasets
 phenofile       = Datasets.dataset("phenotypes.txt",dataset_name="example")
 phenofile_ssbr  = Datasets.dataset("phenotypes_ssbr.txt",dataset_name="example")
 pedfile    = Datasets.dataset("pedigree.txt",dataset_name="example")
-genofile   = Datasets.dataset("genotypes.txt",,dataset_name="example")
+genofile   = Datasets.dataset("genotypes.txt",dataset_name="example")
 mapfile    = Datasets.dataset("map.txt",dataset_name="example")
 
 phenotypes = CSV.read(phenofile,DataFrame,delim = ',',header=true,missingstrings=["NA"])
