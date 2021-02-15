@@ -1,9 +1,9 @@
 using CSV,DataFrames,JWAS,JWAS.Datasets
-phenofile       = Datasets.dataset("example","phenotypes.txt")
-phenofile_ssbr  = Datasets.dataset("example","phenotypes_ssbr.txt")
-pedfile    = Datasets.dataset("example","pedigree.txt")
-genofile   = Datasets.dataset("example","genotypes.txt")
-mapfile    = Datasets.dataset("example","map.txt")
+phenofile       = Datasets.dataset("phenotypes.txt",dataset_name="example")
+phenofile_ssbr  = Datasets.dataset("phenotypes_ssbr.txt",dataset_name="example")
+pedfile    = Datasets.dataset("pedigree.txt",dataset_name="example")
+genofile   = Datasets.dataset("genotypes.txt",,dataset_name="example")
+mapfile    = Datasets.dataset("map.txt",dataset_name="example")
 
 phenotypes = CSV.read(phenofile,DataFrame,delim = ',',header=true,missingstrings=["NA"])
 phenotypes_ssbr = CSV.read(phenofile_ssbr,DataFrame,delim = ',',header=true,missingstrings=["NA"])
