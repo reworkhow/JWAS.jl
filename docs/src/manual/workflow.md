@@ -175,8 +175,9 @@ using JWAS,CSV,DataFrames
 ---
 The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for reading text files.
 
-## Step 2: Read Phenotypic Data
+## Step 2: Read Data
 
+#### Read Phenotypic Data
 ```julia
 phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true)
 first(phenotypes)
@@ -198,7 +199,7 @@ output:
 ---
 The **phenotypic data** is read on line 1. On line 2, the first several rows of the phenotypic data are shown.
 
-## Step 3: Read Genotypic Data
+#### Read Pedigree Data
 
 ```julia
 pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
@@ -209,7 +210,7 @@ pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
 ---
 The **pedigree data** is read on line 1.
 
-## Step 6: Use Genomic Information
+#### Read Genomic Data
 
 ```julia
 genotypes  = get_genotypes("genotypes.txt",G,method="BayesC",separator=",",header=true) #G is optional
@@ -262,7 +263,7 @@ set_random(model,"ID dam",pedigree,G2) #G2 is optional
 On line 1, the `x2` class effect is defined as random with variance `G1`(a 2x2 matrix). On line 2, direct genetic effects and
 maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree. In Bayesian analysis, `G1` and `G2` are the means for the priors assigned for the variances with degree of freedom `df`, defaulting to 4.0. If `G1` or `G2` is not provided, a value is calculated from responses (phenotypes).
 
-## Step 7: Run Bayesian Analysis
+## Step 6: Run Bayesian Analysis
 ```julia
 outputMCMCsamples(model,"dam")
 out=runMCMC(model,phenotypes)

@@ -146,7 +146,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
     printstyled("Individual IDs (strings) are provided in the first column of the phenotypic data.\n" ,bold=false,color=:green)
     ##remove records according to genotype and pedigree information
-    phenoID = df[!,1] = map(string,strip.(df[!,1])) #make IDs stripped string
+    phenoID = df[!,1] = map(string,strip.(map(string,df[!,1]))) #make IDs stripped string
     if mme.M != false && mme.MCMCinfo.single_step_analysis == false #complete genomic data
         if !issubset(phenoID,mme.M[1].obsID)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
