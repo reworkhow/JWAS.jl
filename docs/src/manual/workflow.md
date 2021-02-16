@@ -99,9 +99,9 @@ body {font-family: Arial;}
 
 <div id="phenotypes" class="tabcontent">
 <p>ID,y1,y2,y3,x1,x2,x3,dam</p>
-<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>
-<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>
-<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>
+<p>a1,-0.06,3.58,-1.18,0.9,2,m,NA</p>
+<p>a2,-0.6,4.9,0.88,0.3,1,f,NA</p>
+<p>a3,-2.07,3.19,0.73,0.7,2,f,NA</p>
 <p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>
 <p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>
 <p>a6,0.93,4.87,-0.01,05,2,f,a3</p>
@@ -179,21 +179,21 @@ The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for 
 
 #### Read Phenotypic Data
 ```julia
-phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true)
+phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true,,missingstrings=["NA"])
 first(phenotypes)
 ```
 
 output:
 ```julia
 6×8 DataFrames.DataFrame
-│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │
-├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤
-│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │
-│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │
-│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │
-│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │
-│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │
-│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │
+│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam       │
+├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼───────────┤
+│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ missing   │
+│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ missing   │
+│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ missing   │
+│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2        │
+│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2        │
+│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3        │
 ```
 
 ---
@@ -279,9 +279,7 @@ MCMC samples for marker effects, location parameters specified on line 1, and al
 are saved every `output_samples_frequency` iterations to files.
 
 ---
-Several steps above can be skipped if no related information is available, e.g., step 6 is skipped
-for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link
-to documentation for all [Public functions](@ref).
+Several steps above can be skipped if no related information is available, e.g., step 4 is skipped if all effects are classed as factors. Several detailed examples are available in the examples section. Here is the link to documentation for all [Public functions](@ref).
 
 ## check results
 
