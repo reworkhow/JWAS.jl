@@ -19,17 +19,6 @@ function GWAS(marker_effects_file;header=true)
     return out
 end
 
-#Chen, C., Steibel, J. P., & Tempelman, R. J. (2017). Genome-Wide Association
-#Analyses Based on Broadly Different Specifications for Prior Distributions,
-#Genomic Windows, and Estimation Methods. Genetics, 206(4), 1791–1806.
-#Also, as per Moser et al. (2015), two different within-chromosome starting positions
-#(starting at location 0 or 0.25 Mb for window sizes 0.5, starting at 0 or 0.5 Mb
-#location for window sizes 1 Mb, starting at 0 or 1 Mb location for window sizes 2 Mb,
-#and starting at 0 or 1.5 Mb location for window sizes 3 Mb) for each chromosome were
-#chosen to partly counteract the chance effect of different LD patterns being associated
-#with nonoverlapping windows. Finally, adaptive window sizes based on clustering SNP
-#by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
-#using the procedure described by Dehman et al. (2015).
 """
     GWAS(model,map_file,marker_effects_file...;
          window_size = "1 Mb",sliding_window = false,
@@ -41,8 +30,8 @@ run genomic window-based GWAS
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
-* **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided, a fake map file
-  will be generated with 100 markers in each 1 Mb window.
+* **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided,
+  i.e., **map_file**=`false`, a fake map file will be generated with 100 markers in each 1 Mb window.
 * If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
 * Statistics are computed for nonoverlapping windows of size *window_size* by default.
   If **sliding_window** = true, those for overlapping sliding windows are calculated.
@@ -58,7 +47,7 @@ m5,2,101135
 ```
 
 """
-function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString...;
+function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               #window
               window_size = "1 Mb",sliding_window = false,
               #GWAS
