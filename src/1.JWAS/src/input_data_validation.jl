@@ -236,6 +236,8 @@ function set_default_priors_for_variance_components(mme,df)
   end
 end
 
+#return a dataframe of all observations;
+#missing values are used for some individuals of interest for which data is not available.
 function make_dataframes(df,mme)
     #***************************************************************************
     #Whole Data (training + individuals of interest)
@@ -271,21 +273,18 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+    missingdf  = ismissing.(convert(Matrix,df_whole[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
-    nonmissingindex = Array{Int64,1}()
+    train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
         if missingdf[i,:] != allmissing
-            push!(nonmissingindex,i)
+            push!(train_index,i)
         end
-    end
-    if length(nonmissingindex) != 0
-        df = df[nonmissingindex,:]
     end
     #check training data with model equations
     for term in mme.modelTerms
         for i = 1:term.nFactors
-          if term.factors[i] != :intercept && any(ismissing,df[!,term.factors[i]])
+          if term.factors[i] != :intercept && any(ismissing,df_whole[train_index,term.factors[i]])
             printstyled("Missing values are found in column ",term.factors[i]," for some observations.",
             "Effects of this variable on such observations are considered as zeros. ",
             "It will be used in the estimation of this effect. Users may impute missing values before the analysis \n",
@@ -293,14 +292,14 @@ function make_dataframes(df,mme)
           end
         end
     end
-    printstyled("Phenotypes for ",length(nonmissingindex)," individuals are used in the analysis.",
+    printstyled("Phenotypes for ",length(train_index)," individuals are used in the analysis.",
     "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
-    writedlm("IDs_for_individuals_with_phenotypes.txt",df[!,1])
+    writedlm("IDs_for_individuals_with_phenotypes.txt",df_whole[train_index,1])
     #***************************************************************************
     # Return
     #***************************************************************************
-    mme.obsID = map(string,df[!,1])
-    return df,df_whole
+    mme.obsID = map(string,df_whole[train_index,1])
+    return df_whole,train_index
 end
 
 """
@@ -311,7 +310,7 @@ calculation of EBV except marker covariates.
 * Both incidence matrices for non-missing observations (used in mixed model equations)
 and individuals of interest (output IDs) are obtained.
 """
-function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
+function make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residuals)
     #***************************************************************************
     #Whole Data
     #***************************************************************************
@@ -334,14 +333,11 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
     #Training data
     #***************************************************************************
     for term in mme.modelTerms
-        Ztrain = mkmat_incidence_factor(vcat(Tuple([string(i) .* df[!,1] for i=1:mme.nModels])...),
-                 vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
-        term.X =Ztrain*term.X
+        term.X = term.X[repeat(train_index,mme.nModels),:]
     end
-    #***************************************************************************
+    df = df_whole[train_index,:]
     #require all levels for output id being observed in training data
     #for any fixed factor or i.i.d random factor
-    #***************************************************************************
     for term in mme.modelTerms
         if term.nLevels > 1 && term.random_type in ["fixed","I"]
             train_effects = vec(sum(term.X,dims=1) .!= 0.0)
@@ -351,9 +347,7 @@ function make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
             end
         end
     end
-    #***************************************************************************
-    # set Riv for heterogeneous residuals
-    #***************************************************************************
+    #heterogeneous residuals
     if heterogeneous_residuals == true
         invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
     else

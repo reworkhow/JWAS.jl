@@ -226,12 +226,12 @@ function runMCMC(mme::MME,df;
     df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     prediction_setup(mme)  #set prediction equation, defaulting to genetic values
     check_outputID(mme)    #check individual of interest for prediction
-    df,df_whole = make_dataframes(df,mme)
-    set_default_priors_for_variance_components(mme,df)  #check priors (set default priors)
+    df_whole,train_index = make_dataframes(df,mme)
+    set_default_priors_for_variance_components(mme,df_whole)  #check priors (set default priors)
 
     if mme.M!=0
         if single_step_analysis == true
-            SSBRrun(mme,df,df_whole,big_memory)
+            SSBRrun(mme,df_whole,train_index,big_memory)
         end
         set_marker_hyperparameters_variances_and_pi(mme)
     end
@@ -257,9 +257,9 @@ function runMCMC(mme::MME,df;
     end
     #Nonlinear
     if mme.latent_traits == true
-        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
         for i in mme.lhsVec
-            df[!,i]= yobs
+            df_whole[!,i]= yobs
         end
     end
     # Double Precision
@@ -300,7 +300,7 @@ function runMCMC(mme::MME,df;
     #and individuals of interest
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
-    df=make_incidence_matrices(mme,df,df_whole,heterogeneous_residuals)
+    df=make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residuals)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)

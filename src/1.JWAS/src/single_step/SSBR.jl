@@ -5,7 +5,7 @@
 * impute genotypes for non-genotyped individuals
 * add ϵ (imputation errors) and J as variables in data for non-genotyped inds
 """
-function SSBRrun(mme,df,df_whole,big_memory=false)
+function SSBRrun(mme,df_whole,train_index,big_memory=false)
     geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -13,7 +13,7 @@ function SSBRrun(mme,df,df_whole,big_memory=false)
     @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
     println("imputing missing genotypes")
     flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory) #impute genotypes for non-genotyped inds
+    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
