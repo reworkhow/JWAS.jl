@@ -333,7 +333,8 @@ function make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residual
     #Training data
     #***************************************************************************
     for term in mme.modelTerms
-        term.X = term.X[repeat(train_index,mme.nModels),:]
+        train_sel = [i in train_index for i=1:size(df_whole,1)]
+        term.X = term.X[repeat(train_sel,mme.nModels),:]
     end
     df = df_whole[train_index,:]
     #require all levels for output id being observed in training data
