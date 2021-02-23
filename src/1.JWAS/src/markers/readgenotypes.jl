@@ -88,7 +88,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        starting_value=false,
                        quality_control=false)
     if typeof(file) <: AbstractString
-        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'. \",bold=false,color=:green)
+        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
         #get marker IDs
         myfile = open(file)
