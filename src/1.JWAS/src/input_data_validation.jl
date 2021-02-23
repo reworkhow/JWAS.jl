@@ -165,6 +165,11 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             length(index)-sum(index)," phenotyped individuals are not included in the pedigree. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
         end
+        if mme.M != false
+            if issubset(phenoID,mme.M[1].obsID) && mme.MCMCinfo.single_step_analysis == true
+                error("All phenotyped individuals arer genotyped. Do not run single step analysis.")
+            end
+        end
     end
     rename!(df,strip.(names(df)))
     return df
