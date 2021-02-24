@@ -23,7 +23,11 @@ function censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
     ########################################################################
     cmean = mme.ySparse - ycorr #liabilities - residuals
     for i in 1:length(mme.ySparse) #1,2,2,3,1...
-        mme.ySparse[i] = rand(truncated(Normal(cmean[i], sqrt(mme.R)), lower_bound[i], upper_bound[i]))
+        if lower_bound[i] != upper_bound[i]
+            mme.ySparse[i] = rand(truncated(Normal(cmean[i], sqrt(mme.R)), lower_bound[i], upper_bound[i]))
+        else
+            mme.ySparse[i] = lower_bound[i]
+        end
     end
     ycorr = mme.ySparse - cmean
     return ycorr
