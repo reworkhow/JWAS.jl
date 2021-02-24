@@ -176,7 +176,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
 end
 
 function set_default_priors_for_variance_components(mme,df)
-  myvar     = [var(skipmissing((df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  myvar     = [var(skipmissing(filter(isfinite,df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
   phenovar  = diagm(0=>myvar)
   h2        = 0.5
 

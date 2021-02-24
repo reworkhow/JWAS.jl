@@ -6,7 +6,13 @@ function censored_trait_setup!(mme)
     cmean          = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
     for i in 1:length(mme.ySparse) #1,2,2,3,1...
         #mme.ySparse[i] = rand(truncated(Normal(cmean[i], sqrt(mme.R)), lower_bound[i], upper_bound[i]))
-        mme.ySparse[i] = rand((lower_bound[i]:upper_bound[i]))
+        if lower_bound[i] == -Inf
+            mme.ySparse[i] = upper_bound[i]
+        elseif upper_bound[i] == Inf
+            mme.ySparse[i] = lower_bound[i]
+        else
+            mme.ySparse[i] = rand(lower_bound[i]:upper_bound[i])
+        end
     end
     return lower_bound,upper_bound
 end
