@@ -30,7 +30,7 @@ mutable struct ModelTerm
                                    #factor*covariate:| nLevels | "A1*age","A2*age"|
 
     startPos::Int64                         #start postion for this term in incidence matrix
-    X::Union{SparseMatrixCSC{Float64,Int64},SparseMatrixCSC{Float32,Int64}} #incidence matrix
+    X                                       #incidence matrix
 
     random_type::String
 
@@ -42,7 +42,7 @@ mutable struct ModelTerm
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,spzeros(0,0),"fixed")
+        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,false,"fixed")
     end
 end
 
@@ -140,6 +140,7 @@ mutable struct DF
 end
 
 mutable struct MCMCinfo
+    heterogeneous_residuals
     chain_length
     burnin
     output_samples_frequency

@@ -308,14 +308,14 @@ function make_dataframes(df,mme)
 end
 
 """
-    make_incidence_matrices(mme,df,heterogeneous_residuals)
+    make_incidence_matrices(mme,df_whole,train_index)
 
 * (internal function) Make incidence matrices for effects involved in
 calculation of EBV except marker covariates.
 * Both incidence matrices for non-missing observations (used in mixed model equations)
 and individuals of interest (output IDs) are obtained.
 """
-function make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residuals)
+function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #Whole Data
     #***************************************************************************
@@ -353,13 +353,6 @@ function make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residual
             end
         end
     end
-    #heterogeneous residuals
-    if heterogeneous_residuals == true
-        invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
-    else
-        invweights = ones(length(mme.obsID))
-    end
-    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     return df
 end
 

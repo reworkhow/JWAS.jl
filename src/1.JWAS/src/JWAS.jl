@@ -211,7 +211,8 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Save MCMC argumenets in MCMCinfo
     ############################################################################
-    mme.MCMCinfo = MCMCinfo(chain_length,burnin,output_samples_frequency,
+    mme.MCMCinfo = MCMCinfo(heterogeneous_residuals,
+                   chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
@@ -300,7 +301,7 @@ function runMCMC(mme::MME,df;
     #and individuals of interest
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
-    df=make_incidence_matrices(mme,df_whole,train_index,heterogeneous_residuals)
+    df=make_incidence_matrices(mme,df_whole,train_index)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)
@@ -341,34 +342,31 @@ end
 * Print out model information.
 """
 function describe(model::MME;data=false)
-  if model.MCMCinfo == false || model.MCMCinfo.printout_model_info == false
-      return "Model information is not printed."
-  end
-  if size(model.mmeRhs)==() && data != false
-    getMME(model,data)
-  end
-  printstyled("\nA Linear Mixed Model was build using model equations:\n\n",bold=true)
-  for i in model.modelVec
-    println(i)
-  end
-  println()
-  printstyled("Model Information:\n\n",bold=true)
-  @printf("%-15s %-12s %-10s %11s\n","Term","C/F","F/R","nLevels")
+    if size(model.mmeRhs)==() && data != false
+      solve(model,data)
+    end
+    printstyled("\nA Linear Mixed Model was build using model equations:\n\n",bold=true)
+    for i in model.modelVec
+        println(i)
+    end
+    println()
+    printstyled("Model Information:\n\n",bold=true)
+    @printf("%-15s %-12s %-10s %11s\n","Term","C/F","F/R","nLevels")
 
-  random_effects=Array{AbstractString,1}()
-  if model.pedTrmVec != 0
+    random_effects=Array{AbstractString,1}()
+    if model.pedTrmVec != 0
     for i in model.pedTrmVec
         push!(random_effects,split(i,':')[end])
     end
-  end
-  for i in model.rndTrmVec
+    end
+    for i in model.rndTrmVec
       for j in i.term_array
           push!(random_effects,split(j,':')[end])
       end
-  end
+    end
 
-  terms=[]
-  for i in model.modelTerms
+    terms=[]
+    for i in model.modelTerms
     term    = split(i.trmStr,':')[end]
     if term in terms
         continue
@@ -387,9 +385,11 @@ function describe(model::MME;data=false)
     end
 
     @printf("%-15s %-12s %-10s %11s\n",term,factor,fixed,nLevels)
-  end
-  println()
-  getMCMCinfo(model)
+    end
+    println()
+    if model.MCMCinfo != false && model.MCMCinfo.printout_model_info == true
+        getMCMCinfo(model)
+    end
 end
 
 """
@@ -398,7 +398,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    if mme.MCMCinfo == 0
+    if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
     end

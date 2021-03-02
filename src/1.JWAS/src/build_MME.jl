@@ -260,7 +260,13 @@ function getMME(mme::MME, df::DataFrame)
     if mme.mmeLhs != false
       error("Please build your model again using the function build_model().")
     end
-
+    #Heterogeneous residuals
+    if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
+        invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
+    else
+        invweights = ones(size(df,1))
+    end
+    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     #Make incidence matrices X for each term
     for trm in mme.modelTerms
       if trm.X == false
@@ -327,21 +333,6 @@ function getMME(mme::MME, df::DataFrame)
         error("No phenotypic data for ",getNames(mme)[i])
       end
     end
-end
-
-################################################################################
-#Get left-hand side and right-hand side of the mixed model equation (no markers)
-################################################################################
-"""
-    showMME(mme::MME,df::DataFrame)
-
-* Show left-hand side and right-hand side of mixed model equations (no markers).
-"""
-function showMME(mme::MME,df::DataFrame)
-   if size(mme.mmeRhs)==()
-     getMME(mme,df)
-   end
-   return [getNames(mme) mme.mmeLhs],[getNames(mme) mme.mmeRhs]
 end
 
 #Get names for variables in Mixed Model Equations in order
