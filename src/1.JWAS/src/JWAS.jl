@@ -181,6 +181,13 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
+    #Nonlinear
+    if mme.latent_traits == true
+        yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        for i in mme.lhsVec
+            df_whole[!,i]= yobs
+        end
+    end
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -259,13 +266,7 @@ function runMCMC(mme::MME,df;
         end
     end
 
-    #Nonlinear
-    if mme.latent_traits == true
-        yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
-        for i in mme.lhsVec
-            df_whole[!,i]= yobs
-        end
-    end
+
 
     # Double Precision
     if double_precision == true
