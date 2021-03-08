@@ -35,7 +35,8 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_latent_traits = false, hmc = false,
+                     nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
   if num_latent_traits != false
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
@@ -109,12 +110,17 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
-  #laten traits
+  #latent traits
   if num_latent_traits != false
     mme.latent_traits = true
     if nonlinear_function != false
       mme.nonlinear_function = nonlinear_function
     end
+
+    if hmc == true
+        mme.hmc = hmc
+    end
+    ######## END tianjing
   end
 
   return mme

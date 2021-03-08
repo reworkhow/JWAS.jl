@@ -47,6 +47,7 @@ include("structure_equation_model/SEM.jl")
 
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
+include("Nonlinear/bnn_hmc.jl")
 
 #input
 include("input_data_validation.jl")
@@ -179,6 +180,7 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false)
+
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -256,6 +258,7 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
+
     #Nonlinear
     if mme.latent_traits == true
         yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
@@ -263,6 +266,7 @@ function runMCMC(mme::MME,df;
             df_whole[!,i]= yobs
         end
     end
+
     # Double Precision
     if double_precision == true
         if mme.M != 0
@@ -320,6 +324,22 @@ function runMCMC(mme::MME,df;
     for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
+
+    #save the samples from last iteration to help re-train.
+    #will be deleted later
+    if mme.hmc == true
+        writedlm(output_folder*"/hmc_n_latent_trait.txt",mme.M[1].ntraits,',')
+        writedlm(output_folder*"/hmc_Z.txt",mme.Z,',')
+        writedlm(output_folder*"/hmc_W1.txt",mme.W1,',')
+        writedlm(output_folder*"/hmc_W0.txt",mme.W0,',')
+        writedlm(output_folder*"/hmc_Mu0.txt",mme.Mu0,',')
+        writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
+        writedlm(output_folder*"/hmc_σ2_yobs.txt",mme.σ2_yobs,',')
+        writedlm(output_folder*"/hmc_vare_mean.txt",mme.vare_mean,',')
+        writedlm(output_folder*"/hmc_varw_mean.txt",mme.varw_mean,',')
+        writedlm(output_folder*"/hmc_varw.txt",mme.varw,',')
+    end
+
     if mme.M != 0
         for Mi in mme.M
             if Mi.name == "GBLUP"
