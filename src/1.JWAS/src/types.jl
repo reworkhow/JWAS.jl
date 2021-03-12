@@ -239,13 +239,11 @@ mutable struct MME
     causal_structure
 
     latent_traits
-    nonlinear_function  #useless in hmc
-    weights_NN          #useless in hmc
+    nonlinear_function #user-provide function, "Neural Network"
+    weights_NN
     σ2_yobs
 
     # tianjing HMC
-    hmc         #true/false using HMC
-    Z           #Z, matrix
     W1          #W1, vector
     W0          #marker effects, matrix of p by l1, each col is for a latent trait
     Mu0         #Mu0; vector

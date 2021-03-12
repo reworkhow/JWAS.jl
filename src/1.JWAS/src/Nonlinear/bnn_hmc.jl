@@ -92,10 +92,10 @@ end
 
 
 function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
-    ylats_old = mme.ySparse         # current values of each latent trait; vec(matrix of n by l1)
-    μ_ylats   = mme.ySparse - ycorr # mean of each latent trait; =Z-residual;  vec(matrix of n by l1)
-                                    # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
-    σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
+    # ylats_old = mme.ySparse         # current values of each latent trait; vec(matrix of n by l1)
+    # μ_ylats   = mme.ySparse - ycorr # mean of each latent trait; =Z-residual;  vec(matrix of n by l1)
+    #                                 # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
+    # σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
     num_latent_traits=mme.M[1].ntraits
     X=mme.M[1].genotypes
     if mme.fixed_varz==false
@@ -110,7 +110,7 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
 
     ############# START ##################
     # sample latent trait (Z)
-    mme.Z = hmc_one_iteration(10,0.1,X,mme.Z,yobs,mme.W0,mme.W1,Sigma2z,σ2_yobs,mme.Mu0,mme.mu)
+    ylats_new = hmc_one_iteration(10,0.1,X,mme.Z,yobs,mme.W0,mme.W1,Sigma2z,σ2_yobs,mme.Mu0,mme.mu)
 
     #sample weights (W1)
     M = [ones(nobs) tanh.(mme.Z)]
@@ -126,8 +126,6 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     mme.weights_NN = mme.W1
 
     ############# END ##################
-
-    ylats_new   = mme.Z
     mme.ySparse = vec(ylats_new)
     ycorr[:]    = mme.ySparse - μ_ylats  # =(ySparse_new - ySparse_old) + ycorr   change of ycorr due to updating Z
 

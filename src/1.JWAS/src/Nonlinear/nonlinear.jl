@@ -5,9 +5,11 @@
 #nonlinear function: e.g.,
 # (1) pig_growth(x1,x2) = sqrt(x1^2 / (x1^2 + x2^2))
 # (2) neural network: a1*tan(x1)+a2*tan(x2)
-function sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
-    ylats_old = mme.ySparse         # current values of each latent trait
-    μ_ylats   = mme.ySparse - ycorr # mean of each latent trait
+
+#nonlinear_function: #user-provide function, "Neural Network"
+function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+    ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
+    μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
     σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
 
