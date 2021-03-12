@@ -15,7 +15,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
 
     #reshape the vector to nind X ntraits
     nobs, ntraits = length(mme.obsID), mme.nModels
-    ylats_old     = reshape(ylats_old,nobs,ntraits)
+    ylats_old     = reshape(ylats_old,nobs,ntraits) #Tianjing's mme.Z
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
 
     if nonlinear_function == "Neural Network" #sample weights
@@ -29,22 +29,26 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         mme.weights_NN = weights
     end
 
-    candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
-    if nonlinear_function == "Neural Network"
-        μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights
-        μ_yobs_current   = X*weights
+    if nonlinear_function == "Neural Network" #HMC
+        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,ycorr)
     else
-        μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
-        μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old,:,i) for i in 1:ntraits])...)
+        candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
+        if nonlinear_function == "Neural Network (MH)"
+            μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights
+            μ_yobs_current   = X*weights
+        else #user-defined non-linear function
+            μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
+            μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old,:,i) for i in 1:ntraits])...)
+        end
+        llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
+        llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
+        mhRatio          = exp.(llh_candidate - llh_current)
+        updateus         = rand(nobs) .< mhRatio
+        ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
     end
-    llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
-    llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
-    mhRatio          = exp.(llh_candidate - llh_current)
-    updateus         = rand(nobs) .< mhRatio
-    ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
 
     mme.ySparse = vec(ylats_new)
-    ycorr[:]    = mme.ySparse - vec(μ_ylats)
+    ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
     #sample σ2_yobs
     if nonlinear_function != "Neural Network"

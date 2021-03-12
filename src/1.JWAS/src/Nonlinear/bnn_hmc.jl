@@ -109,26 +109,26 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
 
     ############# START ##################
     # sample latent trait (Z)
-    ylats_new = hmc_one_iteration(10,0.1,mme.Z,yobs,mme.W0,mme.weights_NN,mme.R,σ2_yobs,mme.Mu0,ycorr)
+    ylats_new = hmc_one_iteration(10,0.1,mme.Z,yobs,mme.weights_NN,mme.R,σ2_yobs,ycorr)
 
     #sample weights (W1)
-    M = [ones(nobs) tanh.(mme.Z)]
-    lhs= M'M + I*0.00001   #here +I*0.00001 is just to keep lhs numerical stable
-    rhs= M'yobs
-    Ch = cholesky(lhs)
-    iL = inv(Ch.L)
-    iLhs = inv(Ch)
-    weights=iLhs * rhs + iL'randn(size(M,2))*sqrt(σ2_yobs)  #construct a vector alpha_hat+(L')^{-1}z, z~N(0,vare)
-    mme.weights_NN = weights
+    # M = [ones(nobs) tanh.(mme.Z)]
+    # lhs= M'M + I*0.00001   #here +I*0.00001 is just to keep lhs numerical stable
+    # rhs= M'yobs
+    # Ch = cholesky(lhs)
+    # iL = inv(Ch.L)
+    # iLhs = inv(Ch)
+    # weights=iLhs * rhs + iL'randn(size(M,2))*sqrt(σ2_yobs)  #construct a vector alpha_hat+(L')^{-1}z, z~N(0,vare)
+    # mme.weights_NN = weights
 
     ############# END ##################
     mme.ySparse = vec(ylats_new)
     ycorr[:]    = mme.ySparse - μ_ylats  # =(ySparse_new - ySparse_old) + ycorr   change of ycorr due to updating Z
 
     #sample σ2_yobs (vare)
-    residuals = yobs .- mme.mu - tanh.(ylats_new)*mme.W1
-    σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-    mme.σ2_yobs= σ2_yobs
-    mme.vare_mean += (σ2_yobs - mme.vare_mean)/iter
+    #residuals = yobs .- mme.mu - tanh.(ylats_new)*mme.weights_NN
+    #σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+    #mme.σ2_yobs= σ2_yobs
+    #mme.vare_mean += (σ2_yobs - mme.vare_mean)/iter
 
 end
