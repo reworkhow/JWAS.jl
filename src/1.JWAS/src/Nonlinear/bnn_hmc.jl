@@ -30,10 +30,11 @@
 
 
 #helper 1: calculate gradiant of all latent traits for all individual
-function calc_gradient_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)
+function calc_gradient_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
     n=length(y)
     tanhZ=tanh.(Z)
-    dlogfz = - (Z - ones(n)*Mu0' - X*W0) * inv(Sigma2z)  #(n,l1)
+    #dlogfz =- (Z - ones(n)*Mu0' - X*W0) * inv(Sigma2z)  #(n,l1)
+    dlogfz = - ycorr * inv(Sigma2z)
     dlogfy = ((y .- mu - tanhZ*W1)/sigma2e) * W1' .* (-tanhZ.^2 .+ 1) #(n,l1)
     gradient_z = dlogfz + dlogfy
 
@@ -42,10 +43,11 @@ end
 
 
 # helper 2: calculate log p(z|y) to help calculate the acceptance rate
-function calc_log_p_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)
+function calc_log_p_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
 
     n=length(y)
-    logfz = -0.5*sum(((Z-ones(n)*Mu0'-X*W0).^2)*inv(Sigma2z),dims=2) .- (0.5*log(prod(diag(Sigma2z))))  #
+    #logfz = -0.5*sum(((Z-ones(n)*Mu0'-X*W0).^2)*inv(Sigma2z),dims=2) .- (0.5*log(prod(diag(Sigma2z))))
+    logfz = -0.5*sum((ycorr.^2)*inv(Sigma2z),dims=2) .- (0.5*log(prod(diag(Sigma2z))))  #
     logfy = -0.5*(y .- mu - tanh.(Z)*W1).^2 /sigma2e .- 0.5*log(sigma2e)
 
     log_p_z = logfz + logfy
@@ -55,28 +57,29 @@ end
 
 
 #helper 3: one iterations of HMC to sample Z
-function hmc_one_iteration(nLeapfrog,epsilon,X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)
+function hmc_one_iteration(nLeapfrog,epsilon,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
     n,l1 = size(Z)
     old_Z = Matrix(Z)
 
     #Step1. update phi ~ N(0,M)
     phi = randn(n,l1)  #rand(n,Normal(0,sigma2phi))
-    log_p_old = calc_log_p_z(X,old_Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu) - 0.5*sum(phi.^2,dims=2)  #(n,1)
+    log_p_old = calc_log_p_z(old_Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr) - 0.5*sum(phi.^2,dims=2)  #(n,1)
     #Step2. update (zl,phi) from 10 leapfrog
-    phi += 0.5 * epsilon * calc_gradient_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)  #(n,l1)
+    phi += 0.5 * epsilon * calc_gradient_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)  #(n,l1)
     for leap_i in 1:nLeapfrog
        #(b) full step of theta
        Z += epsilon * phi  # (n,l1)
+       ycorr += epsilon * phi #update ycorr due to change of Z
        #(c) half step of phi
        if leap_i==nLeapfrog
-           phi += 0.5 * epsilon * calc_gradient_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)
+           phi += 0.5 * epsilon * calc_gradient_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
        else
-           phi += epsilon * calc_gradient_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu)
+           phi += epsilon * calc_gradient_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
        end
     end
 
     #Step3. acceptance rate
-    log_p_new = calc_log_p_z(X,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu) - 0.5*sum(phi.^2,dims=2) #(n,1)
+    log_p_new = calc_log_p_z(Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr) - 0.5*sum(phi.^2,dims=2) #(n,1)
     r         = exp.(log_p_new - log_p_old)  # (n,1)
     nojump = rand(n) .> r  # bool (n,1)
 
@@ -94,23 +97,21 @@ end
 function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     # ylats_old = mme.ySparse         # current values of each latent trait; vec(matrix of n by l1)
     # μ_ylats   = mme.ySparse - ycorr # mean of each latent trait; =Z-residual;  vec(matrix of n by l1)
-    #                                 # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
-    # σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
-    num_latent_traits=mme.M[1].ntraits
-    X=mme.M[1].genotypes
-    if mme.fixed_varz==false
-        Sigma2z=mme.R        #sampled covariance matrix of latent trait in MCMC_BayesianAlphabet
-    else
-        Sigma2z=mme.fixed_varz #user fixed covariance matrix of latent trait
-    end
+    #                                  # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
+    # σ2_yobs   = mme.σ2_yobs         # residual varianum_latent_traits=mme.M[1].ntraits
+
+
+    Sigma2z=mme.R        #sampled covariance matrix of latent trait in MCMC_BayesianAlphabet
+
     #reshape the vector to n by l1
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits)
+    ycorr         = reshape(ycorr,nobs,ntraits)
 
 
     ############# START ##################
     # sample latent trait (Z)
-    ylats_new = hmc_one_iteration(10,0.1,X,mme.Z,yobs,mme.W0,mme.W1,Sigma2z,σ2_yobs,mme.Mu0,mme.mu)
+    ylats_new = hmc_one_iteration(10,0.1,mme.Z,yobs,mme.W0,mme.W1,Sigma2z,σ2_yobs,mme.Mu0,mme.mu,ycorr)
 
     #sample weights (W1)
     M = [ones(nobs) tanh.(mme.Z)]
