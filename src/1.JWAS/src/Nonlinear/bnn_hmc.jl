@@ -57,7 +57,9 @@ end
 
 
 #helper 3: one iterations of HMC to sample Z
-function hmc_one_iteration(nLeapfrog,epsilon,Z,y,W0,W1,Sigma2z,sigma2e,Mu0,mu,ycorr)
+function hmc_one_iteration(nLeapfrog,epsilon,Z,y,W0,mu_W1,Sigma2z,sigma2e,Mu0,ycorr)
+    mu=mu_W1[1]
+    W1=mu_W1[2:end]
     n,l1 = size(Z)
     old_Z = Matrix(Z)
 
@@ -100,18 +102,14 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     #                                  # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
     # σ2_yobs   = mme.σ2_yobs         # residual varianum_latent_traits=mme.M[1].ntraits
 
-
-    Sigma2z=mme.R        #sampled covariance matrix of latent trait in MCMC_BayesianAlphabet
-
     #reshape the vector to n by l1
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits)
     ycorr         = reshape(ycorr,nobs,ntraits)
 
-
     ############# START ##################
     # sample latent trait (Z)
-    ylats_new = hmc_one_iteration(10,0.1,mme.Z,yobs,mme.W0,mme.W1,Sigma2z,σ2_yobs,mme.Mu0,mme.mu,ycorr)
+    ylats_new = hmc_one_iteration(10,0.1,mme.Z,yobs,mme.W0,mme.weights_NN,mme.R,σ2_yobs,mme.Mu0,ycorr)
 
     #sample weights (W1)
     M = [ones(nobs) tanh.(mme.Z)]
@@ -120,11 +118,8 @@ function sample_latent_traits_hmc(yobs,mme,ycorr,iter)  #ycorr is residual
     Ch = cholesky(lhs)
     iL = inv(Ch.L)
     iLhs = inv(Ch)
-    mu_weight=iLhs * rhs + iL'randn(size(M,2))*sqrt(σ2_yobs)  #construct a vector alpha_hat+(L')^{-1}z, z~N(0,vare)
-
-    mme.mu = mu_weight[1]
-    mme.W1 = mu_weight[2:end]
-    mme.weights_NN = mme.W1
+    weights=iLhs * rhs + iL'randn(size(M,2))*sqrt(σ2_yobs)  #construct a vector alpha_hat+(L')^{-1}z, z~N(0,vare)
+    mme.weights_NN = weights
 
     ############# END ##################
     mme.ySparse = vec(ylats_new)
