@@ -172,7 +172,7 @@ function MCMC_BayesianAlphabet(mme,df)
         nMarkers=mme.M[1].nMarkers
 
         mme.W0       = Array{Float32,2}(undef, nMarkers, num_latent_traits)
-        mme.Z       = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
+        mme.Z        = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
         mme.W1       = zeros(num_latent_traits)
         mme.mu       = mean(mme.ySparse)
         mme.vare_mean = 0
@@ -352,11 +352,7 @@ function MCMC_BayesianAlphabet(mme,df)
 
         #mme.M[1].genotypes here is 5-by-5
         if latent_traits == true #to update ycorr!
-            if mme.hmc == false  #MH
-                sample_latent_traits_mh(yobs,mme,ycorr,nonlinear_function)
-            elseif mme.hmc == true #HMC
-                sample_latent_traits_hmc(yobs,mme,ycorr,iter)
-            end
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
