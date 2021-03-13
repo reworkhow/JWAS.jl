@@ -30,7 +30,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     end
 
     if nonlinear_function == "Neural Network" #HMC
-        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,ycorr)
+        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits))
     else
         candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
         if nonlinear_function == "Neural Network (MH)"
