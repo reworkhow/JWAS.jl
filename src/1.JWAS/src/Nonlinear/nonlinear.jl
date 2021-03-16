@@ -18,17 +18,6 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old     = reshape(ylats_old,nobs,ntraits) #Tianjing's mme.Z
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
 
-    if nonlinear_function == "Neural Network" #sample weights
-        X       = [ones(nobs) tanh.(ylats_old)]
-        lhs     = X'X + I*0.00001
-        Ch      = cholesky(lhs)
-        L       = Ch.L
-        iL      = inv(L)
-        rhs     = X'yobs
-        weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
-        mme.weights_NN = weights
-    end
-
     if nonlinear_function == "Neural Network" #HMC
         ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits))
     else
@@ -45,6 +34,17 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         mhRatio          = exp.(llh_candidate - llh_current)
         updateus         = rand(nobs) .< mhRatio
         ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
+    end
+
+    if nonlinear_function == "Neural Network" #sample weights
+        X       = [ones(nobs) tanh.(ylats_new)]
+        lhs     = X'X + I*0.00001
+        Ch      = cholesky(lhs)
+        L       = Ch.L
+        iL      = inv(L)
+        rhs     = X'yobs
+        weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
+        mme.weights_NN = weights
     end
 
     mme.ySparse = vec(ylats_new)

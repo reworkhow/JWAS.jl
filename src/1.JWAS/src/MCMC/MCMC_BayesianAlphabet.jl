@@ -166,17 +166,10 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    # Initialize mme for hmc before Gibbs
-    if mme.hmc == true
-        num_latent_traits=mme.M[1].ntraits
-        nMarkers=mme.M[1].nMarkers
-
-        mme.W0       = Array{Float32,2}(undef, nMarkers, num_latent_traits)
-        mme.Z        = reshape(mme.ySparse,length(mme.obsID),num_latent_traits) #zeros(length(mme.obsID),num_latent_traits)#
-        mme.W1       = zeros(num_latent_traits)
-        mme.mu       = mean(mme.ySparse)
-        mme.vare_mean = 0
-        mme.varw_mean = 0
+    # # Initialize mme for hmc before Gibbs
+    if mme.latent_traits == true
+        num_latent_traits = mme.M[1].ntraits
+        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(num_latent_traits))
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length
@@ -218,9 +211,6 @@ function MCMC_BayesianAlphabet(mme,df)
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        if mme.hmc == true
-            mme.Mu0 = mme.sol
-        end
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
@@ -270,12 +260,6 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     else
                         GBLUP!(Mi,ycorr,mme.R,invweights)
-                    end
-                end
-                #update W0 in HMC (marker effect)
-                if mme.hmc == true
-                    for i in 1:num_latent_traits
-                        mme.W0[:,i] = Mi.α[i]
                     end
                 end
                 ########################################################################
@@ -379,7 +363,6 @@ function MCMC_BayesianAlphabet(mme,df)
             nsamples       = (iter-burnin)/output_samples_frequency
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
-            mme.weights_NN= [mme.mu;mme.W1]
             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             if causal_structure != false
                 writedlm(causal_structure_outfile,sample4λ',',')

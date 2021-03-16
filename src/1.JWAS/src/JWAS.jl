@@ -183,9 +183,9 @@ function runMCMC(mme::MME,df;
 
     #Nonlinear
     if mme.latent_traits == true
-        yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
         for i in mme.lhsVec
-            df_whole[!,i]= yobs
+            df[!,i]= yobs
         end
     end
     #for deprecated JWAS fucntions
@@ -324,21 +324,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
-    end
-
-    #save the samples from last iteration to help re-train.
-    #will be deleted later
-    if mme.hmc == true
-        writedlm(output_folder*"/hmc_n_latent_trait.txt",mme.M[1].ntraits,',')
-        writedlm(output_folder*"/hmc_Z.txt",mme.Z,',')
-        writedlm(output_folder*"/hmc_W1.txt",mme.W1,',')
-        writedlm(output_folder*"/hmc_W0.txt",mme.W0,',')
-        writedlm(output_folder*"/hmc_Mu0.txt",mme.Mu0,',')
-        writedlm(output_folder*"/hmc_mu.txt",mme.mu,',')
-        writedlm(output_folder*"/hmc_σ2_yobs.txt",mme.σ2_yobs,',')
-        writedlm(output_folder*"/hmc_vare_mean.txt",mme.vare_mean,',')
-        writedlm(output_folder*"/hmc_varw_mean.txt",mme.varw_mean,',')
-        writedlm(output_folder*"/hmc_varw.txt",mme.varw,',')
     end
 
     if mme.M != 0

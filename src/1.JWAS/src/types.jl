@@ -243,15 +243,6 @@ mutable struct MME
     weights_NN
     σ2_yobs
 
-    # tianjing HMC
-    W1          #W1, vector
-    W0          #marker effects, matrix of p by l1, each col is for a latent trait
-    Mu0         #Mu0; vector
-    mu          #overall mean of obsered trait; scaler
-    vare_mean     #moving averaged value of vare
-    varw        #variance of all weights and bias
-    varw_mean   #moving averaged value of varw
-    fixed_varz  #user provide fixed value for varz; e.g., if 2 latent trait, can be [0.5 0; 0 0.6]
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -277,7 +268,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0,
-                   false,false,false,false,false,false,false,false,false,false) # <- tianjing hmc
+                   false,false,false,1.0)
     end
 end
