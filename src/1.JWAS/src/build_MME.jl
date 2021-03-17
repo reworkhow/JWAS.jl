@@ -109,7 +109,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
-  #laten traits
+  #latent traits
   if num_latent_traits != false
     mme.latent_traits = true
     if nonlinear_function != false

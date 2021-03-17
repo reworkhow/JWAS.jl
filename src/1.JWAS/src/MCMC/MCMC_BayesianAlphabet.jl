@@ -166,6 +166,12 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
+    # # Initialize mme for hmc before Gibbs
+    if mme.latent_traits == true
+        num_latent_traits = mme.M[1].ntraits
+        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(num_latent_traits))
+    end
+
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical traits (liabilities)
@@ -204,6 +210,7 @@ function MCMC_BayesianAlphabet(mme,df)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
+
         ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
@@ -326,7 +333,9 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 5. Latent Traits
         ########################################################################
-        if latent_traits == true
+
+        #mme.M[1].genotypes here is 5-by-5
+        if latent_traits == true #to update ycorr!
             sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################

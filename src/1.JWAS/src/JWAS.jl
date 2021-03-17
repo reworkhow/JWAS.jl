@@ -47,6 +47,7 @@ include("structure_equation_model/SEM.jl")
 
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
+include("Nonlinear/bnn_hmc.jl")
 
 #input
 include("input_data_validation.jl")
@@ -179,6 +180,14 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false)
+
+    #Nonlinear
+    if mme.latent_traits == true
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+        for i in mme.lhsVec
+            df[!,i]= yobs
+        end
+    end
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -256,13 +265,9 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-    #Nonlinear
-    if mme.latent_traits == true
-        yobs = df_whole[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
-        for i in mme.lhsVec
-            df_whole[!,i]= yobs
-        end
-    end
+
+
+
     # Double Precision
     if double_precision == true
         if mme.M != 0
@@ -320,6 +325,7 @@ function runMCMC(mme::MME,df;
     for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
+
     if mme.M != 0
         for Mi in mme.M
             if Mi.name == "GBLUP"

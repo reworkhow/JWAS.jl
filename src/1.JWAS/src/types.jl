@@ -239,9 +239,10 @@ mutable struct MME
     causal_structure
 
     latent_traits
-    nonlinear_function
+    nonlinear_function #user-provide function, "Neural Network"
     weights_NN
     σ2_yobs
+
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
