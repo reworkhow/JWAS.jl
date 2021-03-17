@@ -129,7 +129,7 @@ export dataset
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
         * Censored traits are allowed if the upper bounds are provided in `censored_trait` as an array, and lower bounds are provided as phenotypes.
         * If `constraint`=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
-        * If `causal_structure` is provided, e.g., causal_structure = [0.0,0.0,0.0;1.0,0.0,0.0;1.0,0.0,0.0] for
+        * If `causal_structure` is provided, e.g., causal_structure = [0.0 0.0 0.0;1.0 0.0 0.0;1.0 0.0 0.0] for
           trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
     * Predicted values for individuals of interest can be obtained based on an user-defined prediction equation `prediction_equation`, e.g., "y1:animal + y1:geno + y1:age".
