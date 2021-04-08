@@ -38,9 +38,25 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
   if num_latent_traits != false
     lhs, rhs = strip.(split(model_equations,"="))
+    rhs_split=strip.(split(rhs,"+"))
+    geno_term=[]
+    for i in rhs_split
+      if isdefined(Main,Symbol(i)) && typeof(getfield(Main,Symbol(i))) == Genotypes
+          push!(geno_term,i)
+      end
+    end
+
+    if length(geno_term) != num_latent_traits
+      @show geno_term
+      error("#genotypes ≠ #hidden nodes")
+    end
+
+    non_gene_term = filter(x->x ∉ geno_term,rhs_split)
+    non_gene_term = join(non_gene_term,"+")
+
     model_equations = ""
     for i = 1:num_latent_traits
-      model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+      model_equations = model_equations*lhs*string(i)*"="*non_gene_term*"+"*geno_term[i]*";"
     end
     model_equations = model_equations[1:(end-1)]
   end
