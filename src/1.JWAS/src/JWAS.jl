@@ -506,3 +506,9 @@ function getMCMCinfo(mme)
     end
     @printf("\n\n\n")
 end
+
+
+function zigui_jwas()
+    println(" I am zigui !")
+end
+
