@@ -31,6 +31,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_mega_trait            = mme.MCMCinfo.mega_trait
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
+    activation_function      = mme.activation_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -167,9 +168,8 @@ function MCMC_BayesianAlphabet(mme,df)
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
     # # Initialize mme for hmc before Gibbs
-    if mme.latent_traits == true
-        num_latent_traits = mme.M[1].ntraits
-        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(num_latent_traits))
+    if latent_traits == true
+        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length
@@ -336,7 +336,7 @@ function MCMC_BayesianAlphabet(mme,df)
 
         #mme.M[1].genotypes here is 5-by-5
         if latent_traits == true #to update ycorr!
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

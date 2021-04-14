@@ -7,7 +7,7 @@
 # (2) neural network: a1*tan(x1)+a2*tan(x2)
 
 #nonlinear_function: #user-provide function, "Neural Network"
-function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+function sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_function)
     ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
@@ -19,8 +19,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
 
     if nonlinear_function == "Neural Network" #HMC
-        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits))
-    else
+        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits),activation_function)
+    else  #user-defined function, MH
         candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
         if nonlinear_function == "Neural Network (MH)"
             μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights

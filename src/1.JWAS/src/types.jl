@@ -242,6 +242,7 @@ mutable struct MME
     nonlinear_function #user-provide function, "Neural Network"
     weights_NN
     σ2_yobs
+    activation_function
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
@@ -268,6 +269,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0)
+                   false,false,false,1.0,false)
     end
 end
