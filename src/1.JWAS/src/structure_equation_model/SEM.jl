@@ -203,9 +203,6 @@ function generate_indirect_marker_effect_sample(phenotypes,output_folder,causal_
 
     end
 
-
-    number_sample = 1
-
     # compute the indirect effect in each sample and write to the target file
     for i in 1:number_sample
         direct_effect_current_sample = zeros(number_traits,number_marker)

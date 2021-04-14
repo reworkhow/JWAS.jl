@@ -36,10 +36,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
-  println("zigui zigui zigui")
-  println("zigui zigui zigui")
-  println("zigui zigui zigui")
-  
+
   if num_latent_traits != false
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
