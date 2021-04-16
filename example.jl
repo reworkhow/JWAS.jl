@@ -1,5 +1,4 @@
 # Step 1: Load packages
-
 using JWAS,DataFrames,CSV,Statistics,JWAS.Datasets,DelimitedFiles
 
 # Step 2: Read data
@@ -27,5 +26,3 @@ my_structure = [0.0 0.0 0.0
                 1.0 0.0 0.0
                 1.0 0.0 0.0]
 out=runMCMC(model,phenotypes,causal_structure=my_structure);
-
-generate_indirect_marker_effect_sample(phenotypes,"results",my_structure,"structure_coefficient_MCMC_samples.txt")

@@ -171,12 +171,11 @@ end
 #  λ13    0     0]       marker1_y3 marker2_y3 ...]       λ13*marker1_y1 λ12*marker2_y1 ]
 # = Λ * [α1,α2,...] = indirect effect
 
-function generate_indirect_marker_effect_sample(phenotypes,output_folder,causal_structure,structure_coefficient_path)
+function generate_indirect_marker_effect_sample(pheno_vec,output_folder,causal_structure,structure_coefficient_path)
 
 
     number_traits = size(causal_structure,1) # the row number of causal structure matrix is number of traits
-    trait_vec     = names(phenotypes)[2:number_traits+1] # vector of trait name, starting from 2 for skipping the "ID"
-
+    trait_vec     = string.(pheno_vec)       # transform the symbol to string
     λ_file        = CSV.read(structure_coefficient_path, DataFrame,header = false)
 
     direct_effect_sample = Dict()

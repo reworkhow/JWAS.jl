@@ -337,7 +337,15 @@ function runMCMC(mme::MME,df;
     versioninfo()
     printstyled("\n\nThe analysis has finished. Results are saved in the returned ",bold=true)
     printstyled("variable and text files. MCMC samples are saved in text files.\n\n\n",bold=true)
+
+    # make MCMC samples for indirect marker effect
+    if causal_structure != false
+        JWAS.generate_indirect_marker_effect_sample(mme.lhsVec,output_folder,causal_structure,"structure_coefficient_MCMC_samples.txt")
+
+    end
+
     return mme.output
+
 end
 ################################################################################
 # Print out Model or MCMC information
@@ -396,6 +404,9 @@ function describe(model::MME;data=false)
     if model.MCMCinfo != false && model.MCMCinfo.printout_model_info == true
         getMCMCinfo(model)
     end
+
+
+
 end
 
 """
@@ -505,10 +516,7 @@ function getMCMCinfo(mme)
         @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
     end
     @printf("\n\n\n")
+
+
+
 end
-
-
-function zigui_jwas()
-    println(" I am zigui !")
-end
-
