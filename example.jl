@@ -26,3 +26,8 @@ my_structure = [0.0 0.0 0.0
                 1.0 0.0 0.0
                 1.0 0.0 0.0]
 out=runMCMC(model,phenotypes,causal_structure=my_structure);
+<<<<<<< HEAD
+=======
+
+JWAS.generate_indirect_marker_effect_sample(phenotypes,"results",my_structure,"structure_coefficient_MCMC_samples.txt")
+>>>>>>> 601430609a680e96e3f6e499282d0faa9eb9f122
