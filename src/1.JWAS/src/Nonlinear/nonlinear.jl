@@ -23,7 +23,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_funct
     else  #user-defined function, MH
         candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
         if nonlinear_function == "Neural Network (MH)"
-            μ_yobs_candidate = [ones(nobs) tanh.(candidates)]*weights
+            μ_yobs_candidate = [ones(nobs) activation_function.(candidates)]*weights
             μ_yobs_current   = X*weights
         else #user-defined non-linear function
             μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
@@ -37,7 +37,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_funct
     end
 
     if nonlinear_function == "Neural Network" #sample weights
-        X       = [ones(nobs) tanh.(ylats_new)]
+        X       = [ones(nobs) activation_function.(ylats_new)]
         lhs     = X'X + I*0.00001
         Ch      = cholesky(lhs)
         L       = Ch.L
@@ -54,7 +54,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_funct
     if nonlinear_function != "Neural Network"
         residuals = yobs-nonlinear_function.(Tuple([view(ylats_new,:,i) for i in 1:ntraits])...)
     else
-        residuals = yobs-[ones(nobs) tanh.(ylats_new)]*weights
+        residuals = yobs-[ones(nobs) activation_function.(ylats_new)]*weights
     end
     mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
