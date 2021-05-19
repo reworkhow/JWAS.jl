@@ -87,8 +87,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
                        quality_control=false, MAF = 0.01)
+    #Read the genotype file
     if typeof(file) <: AbstractString
-        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
+        printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
         #get marker IDs
         myfile = open(file)
@@ -120,6 +121,29 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         markerID  = string.(header[2:end])
         obsID     = map(string,rowID)
         genotypes = map(Float32,convert(Matrix,file))
+    end
+
+    #Check whether a kernel / relationship matrix is provided as genotypes
+    if method == "GBLUP" && issymmetric(genotypes)
+       add_small_value_count = 0
+       while isposdef(genotypes) == false
+           println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
+           genotypes = genotypes + I*0.00001
+           add_small_value_count += 1
+           if add_small_value_count > 10
+               error("Please provide a positive-definite realtionship matrix.")
+           end
+       end
+       isGRM  = true
+       center = false
+       quality_control = false
+       if G_is_marker_variance == true
+           error("Genetic variance is required.")
+       end
+       if starting_value != false
+           error("starting values are not supported for GBLUP now.")
+       end
+       println("A genomic relationship matrix is provided (instead of a genotype covariate matrix).")
     end
 
     #preliminary summary of genotype
@@ -169,7 +193,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")
-    println("#markers: ",size(genotypes.genotypes,2),"; #individuals: ",size(genotypes.genotypes,1))
+    println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
 
     #starting values for marker effects
     if starting_value != false
@@ -181,7 +205,5 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         end
         genotypes.α = starting_value
     end
-
-
     return genotypes
 end
