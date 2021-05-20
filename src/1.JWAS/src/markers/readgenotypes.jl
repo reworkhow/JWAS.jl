@@ -124,6 +124,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     end
 
     #Check whether a kernel / relationship matrix is provided as genotypes
+    isGRM  = false
     if method == "GBLUP" && issymmetric(genotypes)
        add_small_value_count = 0
        while isposdef(genotypes) == false
