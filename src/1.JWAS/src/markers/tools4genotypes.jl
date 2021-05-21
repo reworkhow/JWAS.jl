@@ -132,12 +132,15 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
     if mme.M != 0
         for Mi in mme.M
             #(1) Pi in multi-trait analysis
-            if mme.nModels !=1 && Mi.π==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
+            if (mme.nModels !=1 || mme.MCMCinfo.RRM != false) && Mi.π==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
                 println()
                 printstyled("Pi (Π) is not provided.\n",bold=false)
                 printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
                 mykey=Array{Float64}(undef,0)
                 ntraits=mme.nModels
+                if mme.MCMCinfo.RRM != false
+                    ntraits = size(mme.MCMCinfo.RRM,2)
+                end
                 Pi=Dict{Array{Float64,1},Float64}()
                 #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
                 for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
@@ -151,7 +154,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 if Mi.method!="GBLUP"
                     genetic2marker(Mi,Mi.π)
                     println()
-                    if mme.nModels != 1
+                    if Mi.ntraits != 1 || mme.MCMCinfo.RRM != false #multi-trait or RRM
                       if !isposdef(Mi.G) #also work for scalar
                         error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
                       end
@@ -172,9 +175,9 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 end
             end
             #(3) scale parameter for marker effect variance
-            if Mi.ntraits == 1
+            if Mi.ntraits == 1 && mme.MCMCinfo.RRM == false
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
-            else
+            else #multi-trait or RRM
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
             end
         end
@@ -195,6 +198,6 @@ function genetic2marker(M::Genotypes,Pi::Dict)
   M.G = M.genetic_variance ./ denom
 end
 
-function genetic2marker(M::Genotypes,π::Float64)
+function genetic2marker(M::Genotypes,π::Float64) #single-trait analysis
     M.G = M.genetic_variance/((1-π)*M.sum2pq)
 end

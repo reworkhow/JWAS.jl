@@ -52,6 +52,10 @@ include("Nonlinear/bnn_hmc.jl")
 #input
 include("input_data_validation.jl")
 
+#Random Regression Model
+include("RRM/MCMC_BayesianAlphabet_RRM.jl")
+include("RRM/RRM.jl")
+
 #output
 include("output.jl")
 
@@ -123,6 +127,11 @@ export dataset
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
+    * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
+      a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.2,[0.0; 1.0]=>0.0,[0.0; 0.0]=>0.1)` (all combinations need
+      to be included as keys in the dictionary), defaulting to `all markers have effects (Pi = 0.0)` in single-trait analysis
+      and `all markers have effects on all traits (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis.
+      `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
     * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
@@ -160,6 +169,7 @@ function runMCMC(mme::MME,df;
                 censored_trait                  = false,
                 causal_structure                = false,
                 mega_trait                      = false,
+                RRM                             = false,
                 missing_phenotypes              = true,
                 constraint                      = false,
                 #Genomic Prediction
@@ -225,7 +235,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   categorical_trait,censored_trait,
+                   categorical_trait,censored_trait,RRM,
                    seed,double_precision,output_folder)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
@@ -317,7 +327,22 @@ function runMCMC(mme::MME,df;
     # MCMC
     ############################################################################
     describe(mme)
-    mme.output=MCMC_BayesianAlphabet(mme,df)
+    if mme.nModels ==1 && RRM != false
+        mme.output=MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
+                                  Φ                        = RRM,
+                                  Pi                       = Pi,
+                                  burnin                   = burnin,
+                                  methods                  = methods,
+                                  estimatePi               = estimatePi,
+                                  estimateScale            = estimateScale,
+                                  starting_value           = mme.MCMCinfo.starting_value,
+                                  outFreq                  = printout_frequency,
+                                  output_samples_frequency = output_samples_frequency,
+                                  output_file              = output_samples_file,
+                                  update_priors_frequency  = update_priors_frequency)
+    else
+        mme.output=MCMC_BayesianAlphabet(mme,df)
+    end
 
     ############################################################################
     # Save output to text files
@@ -423,7 +448,7 @@ function getMCMCinfo(mme)
     printstyled("\nHyper-parameters Information:\n\n",bold=true)
     for i in mme.rndTrmVec
         thisterm= join(i.term_array, ",")
-        if mme.nModels == 1
+        if mme.nModels == 1 && mme.MCMCinfo.RRM == false
             @printf("%-30s %20s\n","random effect variances ("*thisterm*"):",Float64.(round.(inv(i.GiNew),digits=3)))
         else
             @printf("%-30s\n","random effect variances ("*thisterm*"):")

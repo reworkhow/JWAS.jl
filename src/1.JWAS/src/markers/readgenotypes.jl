@@ -79,7 +79,6 @@ end
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
-
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                        method = "BayesC",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
@@ -121,6 +120,10 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         markerID  = string.(header[2:end])
         obsID     = map(string,rowID)
         genotypes = map(Float32,convert(Matrix,file))
+    end
+
+    if length(unique(obsID)) != length(obsID)
+        error("Duplicated IDs are found in genotypes.")
     end
 
     #Check whether a kernel / relationship matrix is provided as genotypes
@@ -176,7 +179,6 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
          markerID  = markerID[select]
          printstyled("$(sum(1 .- select)) loci which are fixed or have minor allele frequency < $MAF are removed.\n",bold=true)
     end
-
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)

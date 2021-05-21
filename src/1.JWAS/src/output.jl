@@ -87,8 +87,12 @@ function output_result(mme,output_folder,
   output = Dict()
   location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
-  output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
+  if mme.MCMCinfo.RRM == false
+      output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
+  else
+      output["residual variance"]   = matrix2dataframe(["1"],meanVare,meanVare2)
+  end
 
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)

@@ -158,6 +158,7 @@ mutable struct MCMCinfo
     prediction_equation
     categorical_trait
     censored_trait
+    RRM
     seed
     double_precision
     output_folder

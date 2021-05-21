@@ -240,9 +240,8 @@ function getX(trm::ModelTerm,mme::MME)
 
     #create the design matrix
     #ensure size of X is nObs*nModels X nLevels
-    nModels = size(mme.lhsVec,1)
     #create X
-    trm.X = sparse(xi,xj,xv,nObs*nModels,trm.nLevels)
+    trm.X = sparse(xi,xj,xv,nObs*mme.nModels,trm.nLevels)
     dropzeros!(trm.X)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
