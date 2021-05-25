@@ -6,6 +6,7 @@ using SparseArrays
 using LinearAlgebra
 using ProgressMeter
 using .PedModule
+using ForwardDiff
 
 import StatsBase: describe #a new describe is exported
 
