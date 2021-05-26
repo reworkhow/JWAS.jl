@@ -276,7 +276,7 @@ end
 
 """
 function get_info(pedigree::Pedigree;Ai=false)
-    println("Pedigree informatin:")
+    println("Pedigree information:")
     println("#individuals: ",length(pedigree.idMap))
     sires  = [pednode.sire for pednode in values(pedigree.idMap)]
     dams = [pednode.dam for pednode in values(pedigree.idMap)]

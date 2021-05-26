@@ -69,7 +69,7 @@ end
         * rowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n
         * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 * If `quality_control`=true,
-    * Missing genotypes should be denoted as `9`, and will be replace by column means. Users can also impute missing genotypes before the analysis.
+    * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
     * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
   If **G** is not provided, a value is calculated from responses (phenotypes).
@@ -86,9 +86,10 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
-                       quality_control=false)
+                       quality_control=false, MAF = 0.01)
+    #Read the genotype file
     if typeof(file) <: AbstractString
-        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
+        printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
         #get marker IDs
         myfile = open(file)
@@ -122,6 +123,30 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes = map(Float32,convert(Matrix,file))
     end
 
+    #Check whether a kernel / relationship matrix is provided as genotypes
+    isGRM  = false
+    if method == "GBLUP" && issymmetric(genotypes)
+       add_small_value_count = 0
+       while isposdef(genotypes) == false
+           println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
+           genotypes = genotypes + I*0.00001
+           add_small_value_count += 1
+           if add_small_value_count > 10
+               error("Please provide a positive-definite realtionship matrix.")
+           end
+       end
+       isGRM  = true
+       center = false
+       quality_control = false
+       if G_is_marker_variance == true
+           error("Genetic variance is required.")
+       end
+       if starting_value != false
+           error("starting values are not supported for GBLUP now.")
+       end
+       println("A genomic relationship matrix is provided (instead of a genotype covariate matrix).")
+    end
+
     #preliminary summary of genotype
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
 
@@ -135,6 +160,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                 @warn "genotype scores out of the range 0 to 2 are found."
             end
         end
+        printstyled("Missing values are replaced by column means.\n",bold=true)
     end
 
     markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
@@ -142,13 +168,13 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     #Naive Quality Control 2, minor allel frequency & fixed loci
     if quality_control == true
-         MAF       = 0.01
          select1   = MAF .< vec(p) .< 1-MAF
          select2   = vec(var(genotypes,dims=1)) .!= 0
          select    = select1 .& select2
          genotypes = genotypes[:,select]
          p         = p[:,select]
          markerID  = markerID[select]
+         printstyled("$(sum(1 .- select)) loci which are fixed or have minor allele frequency < $MAF are removed.\n",bold=true)
     end
 
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
@@ -168,7 +194,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")
-    println("#markers: ",size(genotypes.genotypes,2),"; #individuals: ",size(genotypes.genotypes,1))
+    println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
 
     #starting values for marker effects
     if starting_value != false
@@ -180,7 +206,5 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         end
         genotypes.α = starting_value
     end
-
-
     return genotypes
 end

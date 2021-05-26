@@ -37,20 +37,20 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, nonlinear_function = false, activation_function = false) #nonlinear_function(x1,x2) = x1+x2
   if nonlinear_function != false  #NNBayes
-    printstyled("NNBayes is used. \n",bold=false,color=:green)
-
+    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
     #print activation info
     if activation_function != false      #e.g, activation_function="tanh"
-      printstyled("NNBayes: activation function is $activation_function. HMC is used to sample hidden nodes. \n",bold=false,color=:green)
+      printstyled("Activation function: $activation_function.\n Sampler: Hamiltonian Monte Carlo. \n",bold=false,color=:green)
     elseif activation_function == false  #e.g, nonlinear_function=f(z1,z2)
-      printstyled("NNBayes: user-defined nonlinear_function for the relationship between hidden nodes and observed trait. MH is used to sample hidden nodes.\n",bold=false,color=:green)
+      printstyled("Nonlinear function: user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n Sampler: Matropolis-Hastings.\n",bold=false,color=:green)
     end
 
     #print connection info; re-write model equation
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
     if num_latent_traits != false   #e.g. num_latent_traits=5
-      printstyled("NNBayes: fully connected with $num_latent_traits hidden nodes. \n",bold=false,color=:green)
+      printstyled("Neural network:         fully connected neural network \n",bold=false,color=:green)
+      printstyled("Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
       for i = 1:num_latent_traits
         model_equations = model_equations*lhs*string(i)*"="*rhs*";"
       end
@@ -142,7 +142,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.latent_traits = true
     mme.nonlinear_function = nonlinear_function
 
-    if activation_function != false  #e.g., "tanh"  
+    if activation_function != false  #e.g., "tanh"
       if activation_function == "tanh"
          mytanh(x) = tanh(x)
          mme.activation_function = mytanh

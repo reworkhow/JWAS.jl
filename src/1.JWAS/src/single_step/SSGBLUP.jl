@@ -12,7 +12,7 @@ function get_Hi(pedigree,genotypes)
     M        = M ./ sqrt.(2*freq.*(1 .- freq))
     G        = (M*M'+ I*0.00001)/p
 
-    IDs      = ped.IDs
+    IDs      = pedigree.IDs
     Hi       = Ai
     Hi[(num_pedn+1):size(Ai,1),(num_pedn+1):size(Ai,1)] += inv(G)-inv(A_gg)
 

@@ -57,11 +57,13 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               #misc
               header = true, output_winVarProps = false)
 
-    if split(window_size)[2] != "Mb"
-        error("The format for window_size is \"1 Mb\".")
+    if typeof(window_size) == String
+        if split(window_size)[2] != "Mb"
+            error("The format for window_size is \"1 Mb\".")
+        end
     end
-    if map_file == false
-        println("The map file is not provided. A fake map file is generated with 100 markers in each 1 Mb window.")
+    if map_file == false && typeof(window_size) <: Integer
+        println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
         nmarkers=length(readdlm(marker_effect_file,',',header=true)[2])
         mapfile = DataFrame(markerID=1:nmarkers,
                             chromosome=fill(1,nmarkers),
