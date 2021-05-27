@@ -2,18 +2,16 @@
 #MCMC for RR-BLUP, BayesC, BayesCπ and "conventional (no markers).
 #
 ################################################################################
-function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
+function MCMC_BayesianAlphabet_RRM(mme,df;
                      Φ                          = false,
                      burnin                     = 0,
                      Pi                         = 0.0,
-                     estimatePi                 = false,
-                     estimateScale              = false,
                      starting_value             = false,
                      outFreq                    = 1000,
                      methods                    = "BayesC",
                      output_samples_frequency   = 0,
-                     update_priors_frequency    = 0,
-                     output_file                = "MCMC_samples")
+                     nIter                      = 100,
+                     output_folder                = "MCMC_samples")
     ############################################################################
     # Working Variables
     # 1) samples at current iteration (starting values at the beginning, defaulting to zeros)
@@ -21,12 +19,24 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
     # 3) ycorr, phenotypes corrected for all effects
     ############################################################################
     mme.lhsVec = Symbol.(string.(1:size(mme.MCMCinfo.RRM,2)))
+    mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
+    if mme.M != 0
+        for Mi in mme.M
+            Mi.meanVara  = zero(Mi.G) #variable to save variance for marker effect
+            Mi.meanVara2 = zero(Mi.G) #variable to save variance for marker effect
+        end
+    end
     #transition matrix from yfull to yobs
     T,whichzeros = matrix_yfull_to_yobs(df[!,1],mme.ySparse,df[!,:time])
-    Z  = mkmat_incidence_factor(unique(df[!,1]) ,mme.M.obsID)
-    mme.M.genotypes = Z*mme.M.genotypes
-    mme.M.obsID     = unique(df[!,1])
-    mme.M.nObs      = length(mme.M.obsID)
+    Z  = mkmat_incidence_factor(unique(df[!,1]) ,mme.obsID)
+    mme.obsID     = unique(df[!,1])
+
+    if mme.M != 0
+        for Mi in mme.M
+            Mi.genotypes = Z * Mi.genotypes
+            Mi.nObs      = length(mme.obsID)
+        end
+    end
     #size of Φ
     ntime, ncoeff      = size(Φ)
     #location parameters
@@ -34,82 +44,96 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
     solMean, solMean2  = zero(sol),zero(sol)
     #residual variance
     meanVare = meanVare2 = 0.0
-    meanVara  = zero(mme.M.G) #variable to save variance for marker effect
-    meanVara2 = zero(mme.M.G) #variable to save variance for marker effect
-    meanScaleVara  =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
-    meanScaleVara2 =  zero(mme.M.G) #variable to save Scale parameter for prior of marker effect variance
+    if mme.M != 0
+        for Mi in mme.M
+            meanVara  = zero(Mi.G) #variable to save variance for marker effect
+            meanVara2 = zero(Mi.G) #variable to save variance for marker effect
+            meanScaleVara  =  zero(Mi.G) #variable to save Scale parameter for prior of marker effect variance
+            meanScaleVara2 =  zero(Mi.G) #variable to save Scale parameter for prior of marker effect variance
+        end
+    end
     #polygenic effects (A), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
-       G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
+        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
     #marker effects
-    mGibbs                        = GibbsMats(mme.M.genotypes)
-    nObs,nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
-    mArray,mpm,mRinvArray,mpRinvm = mGibbs.xArray,mGibbs.xpx,mGibbs.xRinvArray,mGibbs.xpRinvx
+    #println(size(Mi.genotypes))
+    if mme.M != 0
+        for Mi in mme.M
+            mGibbs                        = GibbsMats(Mi.genotypes, ones(size(Mi.genotypes,1)))
+            Mi.nObs,Mi.nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
+            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
+        end
+    end
 
-    #starting values for marker effects(zeros) and location parameters (sol)
-    betaArray       = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC
-    deltaArray      = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC
-    meandeltaArray  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC
-    alphaArray      = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC,BayesC0
-    meanalphaArray  = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC
-    meanalphaArray2 = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncoeff) #BayesC
-    for coeffi = 1:ncoeff
-        betaArray[coeffi]      = copy(α[(coeffi-1)*nMarkers+1:coeffi*nMarkers])
-        deltaArray[coeffi]     = ones(typeof(α[1]),nMarkers)
-        meandeltaArray[coeffi] = zero(betaArray[coeffi])
-        alphaArray[coeffi]     = copy(α[(coeffi-1)*nMarkers+1:coeffi*nMarkers])
-        meanalphaArray[coeffi] = zero(alphaArray[coeffi])
-        meanalphaArray2[coeffi]= zero(alphaArray[coeffi])
+    if mme.M != 0
+        for Mi in mme.M
+            Mi.β  = [copy(Mi.α[1]) for coeffi = 1:ncoeff] #partial marker effeccts used in BayesB
+            Mi.δ   = [ones(typeof(Mi.α[1][1]),Mi.nMarkers) for coeffi = 1:ncoeff] #inclusion indicator for marker effects
+            Mi.meanDelta  = [zero(Mi.β[coeffi]) for coeffi = 1:ncoeff]
+            Mi.α  = [copy(Mi.α[1]) for coeffi = 1:ncoeff]
+            Mi.meanAlpha  = [zero(Mi.α[coeffi]) for coeffi = 1:ncoeff]
+            Mi.meanAlpha2 = [zero(Mi.α[coeffi]) for coeffi = 1:ncoeff] #marker effects
+        end
     end
 
     #phenotypes corrected for all effects #assumming starting values zeros
-    ycorr    = vec(Matrix(mme.ySparse))
+    ycorr    = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
     yfull    = T'ycorr
     wArray         = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ntime)#wArray is list reference of ycor
-    for timei = 1:ntime
-        startPosi              = (timei-1)*nObs  + 1
-        ptr                    = pointer(yfull,startPosi)
-        wArray[timei]         = unsafe_wrap(Array,ptr,nObs)
+    if mme.M != 0
+        for Mi in mme.M
+            for timei = 1:ntime
+                startPosi              = (timei-1)*Mi.nObs  + 1
+                ptr                    = pointer(yfull,startPosi)
+                wArray[timei]         = unsafe_wrap(Array,ptr,Mi.nObs)
+            end
+
+            #Pi value
+            Mi.π,Mi.mean_pi,Mi.mean_pi2 = copy(Mi.π),copy(Mi.π),copy(Mi.π)
+            if Mi.estimatePi == true
+                for key in keys(Mi.mean_pi)
+                        Mi.mean_pi[key]=0.0
+                        Mi.mean_pi2[key]=0.0
+                end
+            end
+        end
     end
 
-    #Pi value
-    BigPi,BigPiMean,BigPiMean2 = copy(Pi),copy(Pi),copy(Pi)
-    for key in keys(BigPiMean)
-      BigPiMean[key]=0.0
-      BigPiMean2[key]=0.0
-    end
-
-    mΦΦArray=get_mΦΦarray(Φ,T,mArray)
     ############################################################################
     #  SET UP OUTPUT MCMC samples
     ############################################################################
     if output_samples_frequency != 0
-        outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_file)
+        outfile=output_MCMC_samples_setup(mme,nIter-burnin,output_samples_frequency,output_folder*"/MCMC_samples")
     end
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    @showprogress "running MCMC for "*methods*"..." for iter=1:nIter
+    @showprogress "running MCMC ..." for iter=1:nIter
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
-        ycorr = ycorr + mme.X*sol
-        rhs = mme.X'ycorr
-        Gibbs(mme.mmeLhs,sol,rhs,mme.RNew)
-        ycorr = ycorr - mme.X*sol
+        ycorr[:] = ycorr + mme.X*sol
+        mme.mmeRhs =  mme.X'ycorr
+        Gibbs(mme.mmeLhs,mme.sol, mme.mmeRhs, mme.R)
+        ycorr[:] = ycorr - mme.X*sol
 
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
         yfull[:]   = T'ycorr
-        locus_effect_variances = (methods=="BayesC" ? fill(mme.M.G,nMarkers) : mme.M.G)
-        BayesABCRRM!(mArray,mpm,wArray,yfull,
-                    betaArray,
-                    deltaArray,
-                    alphaArray,
-                    mme.RNew,locus_effect_variances,BigPi,
+
+        if mme.M != 0
+            for Mi in mme.M
+                if Mi.method in ["BayesC","BayesB","BayesA"]
+                    locus_effect_variances = (methods=="BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
+                    mΦΦArray=get_mΦΦarray(Φ,T,Mi.mArray)
+                    BayesABCRRM!(Mi,wArray,yfull,
+                    mme.R,locus_effect_variances,
                     Φ, whichzeros, mΦΦArray)
+                end
+            end
+        end
 
         # MTBayesABC!(mArray,mpm,wArray,
         #           betaArray,
@@ -119,83 +143,99 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         ycorr     = T*yfull
 
         #sample Pi
-        if estimatePi == true
-            samplePi(deltaArray,BigPi,BigPiMean,iter)
+        if mme.M != 0
+            for Mi in mme.M
+                if Mi.estimatePi == true
+                    samplePi(Mi.δ,Mi.π)
+                end
+            end
         end
+
         ########################################################################
         # 2.1 Genetic Covariance Matrix (Polygenic Effects) (variance.jl)
         # 2.2 varainces for (iid) random effects;not required(empty)=>jump out
         ########################################################################
-        sampleVCs(mme,sol)
+        sampleVCs(mme,mme.sol)
         addVinv(mme)
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
-        mme.ROld = mme.RNew
-        mme.RNew = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleRes)
+        mme.ROld = mme.R
+        mme.R = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleR, mme.invweights)
 
         ########################################################################
         # 2.4 Marker Effects Variance
         ########################################################################
-        SM    = zero(mme.M.scale)
-        if methods == "BayesC"
-            for coeffi = 1:ncoeff
-                for coeffj = coeffi:ncoeff
-                    SM[coeffi,coeffj]   = (betaArray[coeffi]'betaArray[coeffj])
-                    SM[coeffj,coeffi]   = SM[coeffi,coeffj]
+        if mme.M != 0
+            for Mi in mme.M
+                if Mi.method in ["RR-BLUP","BayesC","GBLUP"]
+                    data = (Mi.method == "BayesC" ? Mi.β : Mi.α)
+                    Mi.G =sample_variance(data, Mi.nMarkers, Mi.df, Mi.scale,false, false)
                 end
             end
-            mme.M.G = rand(InverseWishart(mme.df.marker + nMarkers, convert(Array,Symmetric(mme.M.scale + SM))))
         end
+
         ########################################################################
         # 2.6 sample Scale parameter in prior for marker effect variances
         ########################################################################
-        if estimateScale == true
-            a = size(mme.M.G,1)*mme.df.marker/2   + 1
-            b = sum(mme.df.marker ./ (2*mme.M.G )) + 1
-            mme.M.scale = rand(Gamma(a,1/b))
+        if mme.M != 0
+            for Mi in mme.M
+                if Mi.estimateScale == true
+                    a = size(Mi.G,1)*Mi.df/2  + 1
+                    b = sum(Mi.df ./ (2*Mi.G )) + 1
+                    Mi.scale = rand(Gamma(a,1/b))
+                end
+            end
         end
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            output_MCMC_samples(mme,sol,mme.RNew,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),BigPi,alphaArray,vec(mme.M.G),outfile)
             nsamples = (iter-burnin)/output_samples_frequency
-            solMean   += (sol - solMean)/nsamples
-            solMean2  += (sol .^2 - solMean2)/nsamples
-            meanVare  += (mme.RNew - meanVare)/nsamples
-            meanVare2 += (mme.RNew .^2 - meanVare2)/nsamples
+            mme.solMean   += (mme.sol - mme.solMean)/nsamples
+            mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
+            mme.meanVare  += (mme.R - mme.meanVare)/nsamples
+            mme.meanVare2 += (mme.R .^2 - mme.meanVare2)/nsamples
 
             if mme.pedTrmVec != 0
-                G0Mean  += (inv(mme.Gi)  - G0Mean )/nsamples
-                G0Mean2 += (inv(mme.Gi) .^2  - G0Mean2 )/nsamples
+                mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
+                mme.G0Mean2 += (inv(mme.Gi) .^2  - mme.G0Mean2 )/nsamples
             end
-            for i in 1:ncoeff
-                meanalphaArray[i] += (alphaArray[i] - meanalphaArray[i])/nsamples
-                meanalphaArray2[i]+= (alphaArray[i].^2 - meanalphaArray2[i])/nsamples
-                meandeltaArray[i] += (deltaArray[i] - meandeltaArray[i])/nsamples
-            end
-            if estimatePi == true
-                for i in keys(BigPi)
-                  BigPiMean[i] += (BigPi[i]-BigPiMean[i])/nsamples
-                  BigPiMean2[i] += (BigPi[i].^2-BigPiMean2[i])/nsamples
+
+            if mme.M != 0
+                for Mi in mme.M
+                    for coeffi in 1:ncoeff
+                        Mi.meanAlpha[coeffi] += (Mi.α[coeffi] - Mi.meanAlpha[coeffi])/nsamples
+                        Mi.meanAlpha2[coeffi]+= (Mi.α[coeffi].^2 - Mi.meanAlpha2[coeffi])/nsamples
+                        Mi.meanDelta[coeffi] += (Mi.δ[coeffi] - Mi.meanDelta[coeffi])/nsamples
+                    end
+                    if Mi.estimatePi == true
+                        for i in keys(Mi.π)
+                              Mi.mean_pi[i] += (Mi.π[i]-Mi.mean_pi[i])/nsamples
+                              Mi.mean_pi2[i] += (Mi.π[i].^2-Mi.mean_pi2[i])/nsamples
+                        end
+                    end
+                    if Mi.method != "BayesB"
+                        Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+                        Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+                    end
+                    if Mi.estimateScale == true
+                        Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
+                        Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+                    end
                 end
             end
-            if methods != "BayesB"
-                meanVara += (mme.M.G - meanVara)/nsamples
-                meanVara2 += (mme.M.G .^2 - meanVara2)/nsamples
-            end
-            if estimateScale == true
-                meanScaleVara += (mme.M.scale - meanScaleVara)/nsamples
-                meanScaleVara2 += (mme.M.scale .^2 - meanScaleVara2)/nsamples
-            end
+
+            #mean and variance of posterior distribution
+            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
         end
+
         ########################################################################
         # 3.2 Printout
         ########################################################################
-        if iter%outFreq==0 && iter>burnin
+        if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
             println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round(meanVare,digits=6))
+            println("Residual variance: ",round(mme.meanVare,digits=6))
         end
     end
 
@@ -207,9 +247,12 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
         close(value)
       end
     end
-     output=output_result(mme,output_file,
-                          solMean,meanVare,
-                          mme.pedTrmVec!=0 ? G0Mean : false,
+     output=output_result(mme,output_folder,
+                          mme.solMean,mme.meanVare,
+                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
+                          mme.solMean2,mme.meanVare2,
+                          mme.pedTrmVec!=0 ? mme.G0Mean2 : false
+                          #=
                           mme.M != 0 ? meanalphaArray : false,
                           mme.M != 0 ? meandeltaArray : false,
                           mme.M != 0 ? meanVara : false,
@@ -222,7 +265,8 @@ function MCMC_BayesianAlphabet_RRM(nIter,mme,df;
                           mme.M != 0 ? meanalphaArray2 : false,
                           mme.M != 0 ? meanVara2 : false,
                           mme.M != 0 ? BigPiMean2 : false,
-                          mme.M != 0 ? meanScaleVara2 : false)
+                          mme.M != 0 ? meanScaleVara2 : false
+                          =#)
 
     return output
 end

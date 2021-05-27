@@ -98,7 +98,7 @@ function output_result(mme,output_folder,
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
 
-  if mme.M != 0
+  if mme.M != 0 && mme.MCMCinfo.RRM == false
       for Mi in mme.M
           traiti      = 1
           whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
@@ -122,11 +122,42 @@ function output_result(mme,output_folder,
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
           end
       end
+  elseif mme.M != 0 && mme.MCMCinfo.RRM != false
+      for Mi in mme.M
+          traiti      = 1
+          whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
+          println(mme.lhsVec)
+          whichmarker = Mi.markerID
+          whicheffect = Mi.meanAlpha[traiti]
+          whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
+          whichdelta    = Mi.meanDelta[traiti]
+          for traiti in 2:size(mme.MCMCinfo.RRM,2)
+              whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
+              whichmarker    = vcat(whichmarker,Mi.markerID)
+              whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
+              whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
+              whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+          end
+
+          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+          #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
+          if Mi.estimatePi == true
+              output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+          end
+          if Mi.estimateScale == true
+              output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
+          end
+      end
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
-      EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      if mme.MCMCinfo.RRM == false
+          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      else
+          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:size(mme.MCMCinfo.RRM,2)]
+      end
+
       if mme.latent_traits == true
           push!(EBVkeys, "EBV_NonLinear")
       end
@@ -409,8 +440,8 @@ function output_MCMC_samples(mme,vRes,G0,
          end
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              mygvar = cov(EBVmat)
-             genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
-             heritability     = (ntraits == 1 ? mygvar/(mygvar+vRes) : (diag(mygvar./(mygvar+vRes)))')
+             genetic_variance = (ntraits == 1  ? mygvar : vec(mygvar)')
+             heritability     = (ntraits == 1  ? mygvar/(mygvar+vRes) : (diag(mygvar./(mygvar.+vRes)))')
              writedlm(outfile["genetic_variance"],genetic_variance,',')
              writedlm(outfile["heritability"],heritability,',')
          end
