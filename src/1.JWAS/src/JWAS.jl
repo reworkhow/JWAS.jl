@@ -328,18 +328,15 @@ function runMCMC(mme::MME,df;
     ############################################################################
     describe(mme)
     if mme.nModels ==1 && RRM != false
-        mme.output=MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
+        mme.output=MCMC_BayesianAlphabet_RRM(mme,df,
                                   Φ                        = RRM,
                                   Pi                       = Pi,
                                   burnin                   = burnin,
-                                  methods                  = methods,
-                                  estimatePi               = estimatePi,
-                                  estimateScale            = estimateScale,
-                                  starting_value           = mme.MCMCinfo.starting_value,
+                                  starting_value           = mme.sol,
                                   outFreq                  = printout_frequency,
                                   output_samples_frequency = output_samples_frequency,
-                                  output_file              = output_samples_file,
-                                  update_priors_frequency  = update_priors_frequency)
+                                  nIter                    = chain_length,
+                                  output_folder            = mme.MCMCinfo.output_folder)
     else
         mme.output=MCMC_BayesianAlphabet(mme,df)
     end
@@ -479,18 +476,26 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance != false
-                    if mme.nModels == 1
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
-                    else
+                    elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
+                        @printf("%-30s\n","genetic variances (genomic):")
+                        Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
+                        println()
+                    elseif mme.nModels>1
                         @printf("%-30s\n","genetic variances (genomic):")
                         Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
                         println()
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if mme.nModels == 1
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
-                    else
+                    elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
+                        @printf("%-30s\n","marker effect variances:")
+                        Base.print_matrix(stdout,round.(Mi.G,digits=3))
+                        println()
+                    elseif mme.nModels>1
                         @printf("%-30s\n","marker effect variances:")
                         Base.print_matrix(stdout,round.(Mi.G,digits=3))
                         println()

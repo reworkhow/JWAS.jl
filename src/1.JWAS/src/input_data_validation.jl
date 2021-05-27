@@ -210,7 +210,7 @@ function set_default_priors_for_variance_components(mme,df)
           if mme.nModels==1 && mme.MCMCinfo.RRM == false
               Mi.genetic_variance = varg[1,1]
           elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
-            mme.M.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
+              Mi.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
           elseif mme.nModels>1
               Mi.genetic_variance = varg
           end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
@@ -288,7 +288,7 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(convert(Matrix,df_whole[!,mme.lhsVec]))
+    missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
     train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
