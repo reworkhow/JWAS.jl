@@ -1,17 +1,5 @@
 ################################################################################
 #MCMC for RR-BLUP, GBLUP, BayesABC, and conventional (no markers) methods
-#
-#GBLUP: pseudo markers are used.
-#y = μ + a + e with mean(a)=0,var(a)=Gσ²=MM'σ² and G = LDL' <==>
-#y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
-#y2hat = cov(a2,a)*inv(var(a))*L*αhat =>
-#      = (M2*M')*inv(MM')*L*αhat = (M2*M')*(L(1./D)L')(Lαhat)=(M2*M'*L(1./D))αhat
-#
-#Threshold trait:
-#1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
-#Genetics
-#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
-#Heredity, 110(3), 213–219.
 ################################################################################
 function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
