@@ -341,8 +341,7 @@ function runMCMC(mme::MME,df;
 
     # make MCMC samples for indirect marker effect
     if causal_structure != false
-        JWAS.generate_indirect_marker_effect_sample(mme.lhsVec,output_folder,causal_structure,"structure_coefficient_MCMC_samples.txt")
-
+        generate_indirect_marker_effect_sample(mme.lhsVec,output_folder,causal_structure,"structure_coefficient_MCMC_samples.txt")
     end
 
     return mme.output
