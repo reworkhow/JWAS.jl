@@ -1,3 +1,10 @@
+################################################################################
+#Threshold trait:
+#1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
+#Genetics
+#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
+#Heredity, 110(3), 213–219.
+################################################################################
 function categorical_trait_setup!(mme)
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
     # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.

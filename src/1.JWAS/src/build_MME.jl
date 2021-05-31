@@ -35,13 +35,40 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_latent_traits = false, nonlinear_function = false, activation_function = false) #nonlinear_function(x1,x2) = x1+x2
+  if nonlinear_function != false  #NNBayes
+    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
+    #print activation info
+    if activation_function != false      #e.g, activation_function="tanh"
+      printstyled("Activation function: $activation_function.\n Sampler: Hamiltonian Monte Carlo. \n",bold=false,color=:green)
+    elseif activation_function == false  #e.g, nonlinear_function=f(z1,z2)
+      printstyled("Nonlinear function: user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n Sampler: Matropolis-Hastings.\n",bold=false,color=:green)
+    end
 
-  if num_latent_traits != false
+    #print connection info; re-write model equation
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
-    for i = 1:num_latent_traits
-      model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+    if num_latent_traits != false   #e.g. num_latent_traits=5
+      printstyled("Neural network:         fully connected neural network \n",bold=false,color=:green)
+      printstyled("Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
+      for i = 1:num_latent_traits
+        model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+      end
+    elseif num_latent_traits == false  #partially-connected
+      rhs_split=strip.(split(rhs,"+"))
+      geno_term=[]
+      for i in rhs_split
+        if isdefined(Main,Symbol(i)) && typeof(getfield(Main,Symbol(i))) == Genotypes
+            push!(geno_term,i)
+        end
+      end
+      non_gene_term = filter(x->x ∉ geno_term,rhs_split)
+      non_gene_term = join(non_gene_term,"+")
+      num_latent_traits = length(geno_term)
+      for i = 1:length(geno_term)
+        model_equations = model_equations*lhs*string(i)*"="*non_gene_term*"+"*geno_term[i]*";"
+      end
+      printstyled("NNBayes: partially connected with $num_latent_traits hidden nodes. \n",bold=false,color=:green)
     end
     model_equations = model_equations[1:(end-1)]
   end
@@ -111,10 +138,29 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   end
 
   #latent traits
-  if num_latent_traits != false
+  if nonlinear_function != false  #NNBayes
     mme.latent_traits = true
-    if nonlinear_function != false
-      mme.nonlinear_function = nonlinear_function
+    mme.nonlinear_function = nonlinear_function
+
+    if activation_function != false  #e.g., "tanh"
+      if activation_function == "tanh"
+         mytanh(x) = tanh(x)
+         mme.activation_function = mytanh
+      elseif activation_function == "sigmoid"
+         mysigmoid(x) = 1/(1+exp(-x))
+         mme.activation_function = mysigmoid
+      elseif activation_function == "relu"
+         myrelu(x) = max(0, x)
+         mme.activation_function = myrelu
+      elseif activation_function == "leakyrelu"
+         myleakyrelu(x) = max(0.01x, x)
+         mme.activation_function = myleakyrelu
+      elseif activation_function == "linear"
+         mylinear(x) = x
+         mme.activation_function = mylinear
+      else
+         error("Please select the activation function from tanh/sigmoid/relu/leakyrelu/linear.")
+      end
     end
   end
 

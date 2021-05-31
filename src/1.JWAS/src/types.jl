@@ -122,14 +122,17 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,
+
+  isGRM  #whether genotypes or relationship matirx is provided
+  
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false)
+                                         false,a9)
 end
 
 mutable struct DF
@@ -242,6 +245,7 @@ mutable struct MME
     nonlinear_function #user-provide function, "Neural Network"
     weights_NN
     σ2_yobs
+    activation_function
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
@@ -268,6 +272,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0)
+                   false,false,false,1.0,false)
     end
 end
