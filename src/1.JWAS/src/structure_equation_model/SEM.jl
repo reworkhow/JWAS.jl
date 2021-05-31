@@ -61,6 +61,13 @@ function SEM_setup(wArray,causal_structure,mme)
     return Y,Λy,causal_structure_outfile
 end
 # Get Y for all individuals ordered as individuals within traits (fully simultaneous model)
+# Λy = [y1 - λ_12⋅y2 - λ_13⋅y3
+#       y2 - λ_21⋅y1 - λ_23⋅y3
+#       y3 - λ_31⋅y1 - λ_32⋅y2]
+#       = y - Yλ
+# Obtain the matrix Y =  [y2 y3 0  0  0  0
+#                        0  0  y1 y3  0  0
+#                        0  0  0  0  y1 y2]
 function get_sparse_Y_FSM(wArray)
     ntraits = length(wArray)
     data = wArray[1]
@@ -87,6 +94,14 @@ function get_sparse_Y_FSM(wArray)
 end
 
 # Get Y for all individuals ordered as individuals within traits (fully recursive model)
+# Get Y for FRM from Y for FSM
+# Λy = [y1
+#       y2 - λ_21⋅y1
+#       y3 - λ_31⋅y1 - λ_32⋅y2]
+#       = y - Yλ
+# Obtain the matrix Y =  [ 0  0  0
+#                          y1  0  0
+#                          0  y1 y2]
 function get_sparse_Y_FRM(wArray,causal_structure)
     Y        = get_sparse_Y_FSM(wArray)
     ntraits  = length(wArray)
