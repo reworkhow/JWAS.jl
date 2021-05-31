@@ -1,9 +1,10 @@
 
-#Devloped by Zigui Wang (zigwang97@gmail.com) and Hao Cheng (qtlcheng@ucdavis.edu)
-#Code based on
-#Gianola, D., & Sorensen, D. (2004). Quantitative Genetic Models for Describing
-#Simultaneous and Recursive Relationships Between Phenotypes. Genetics, 167(3),
-#1407–1424. http://doi.org/10.1534/genetics.103.025734
+#fully recursive model implemented by
+#Zigui Wang (zigwang97@gmail.com) and Hao Cheng (qtlcheng@ucdavis.edu)
+#
+#Wang, Z., Chapman, D., Morota, G. & Cheng, H. A Multiple-Trait Bayesian Variable
+#Selection Regression Method for Integrating Phenotypic Causal Networks in Genome-Wide
+#Association Studies. G3 (Bethesda, Md.) 10, g3.401618.2020-4448 (2020).
 
 # for one individual, with fully simultaneous model (this not fully recursive model)
 # Λy =
@@ -44,11 +45,11 @@
 #    0   0    0   0  yl1 yl2
 
 
-#1)starting values for structural coefficient λij (i≂̸j) is zero,
+#1)The starting values for structural coefficient λij (i≂̸j) is zero,
 #2)the variable "ycorr" is used for "Λycorr" for coding convinience,
 #and starting values for ycorr (i.e., Λycorr) is the ycorr obtained above
 #3)no missing phenotypes in SEM
-#4)Λ is (I-Λ) in Wang et al. 2020 BioRxiv.
+#4)Λ is actually (I-Λ) in Wang et al. 2020 G3.
 function SEM_setup(wArray,causal_structure,mme)
     ntraits = length(wArray)
     nobs    = length(wArray[1])
@@ -57,9 +58,6 @@ function SEM_setup(wArray,causal_structure,mme)
     Λy = kron(Λ,sparse(1.0I,nobs,nobs))*mme.ySparse
     causal_structure_filename = "structure_coefficient_MCMC_samples.txt"
     causal_structure_outfile  = open(causal_structure_filename,"w")   #write MCMC samples for Λ to a txt file
-
-
-
     return Y,Λy,causal_structure_outfile
 end
 # Get Y for all individuals ordered as individuals within traits (fully simultaneous model)
@@ -110,7 +108,6 @@ end
 
 #sample Λ and update Λycorr
 function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
-
     ntraits = size(R,1)
     nind    = div(length(Λycorr),ntraits)
     #Define residual matrix
@@ -137,9 +134,10 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
     mu        = vec(first_inv*second)
     var       = Symmetric(first_inv)
 
-    # λ =  [λ12;λ21]
-    # Λ =  [1 -λ12
-    #      -λ21 1]
+    # λ     =  [λ12;λ21]
+    # Λ     =  [1 -λ12
+    #          -λ21 1]
+    # λ_vec = vec(Λ)=[1, -λ12, -λ21, 1]]
     λ = rand(MvNormal(mu,var))
 
     causal_matrix = tranform_lambda(λ,causal_structure)
@@ -148,7 +146,7 @@ function get_Λ(Y,R,Λycorr,Λy,y,causal_structure)
 
     Λy[:]      = kron(Λ,sparse(1.0I,nind,nind))*y
     Λycorr[:]  = ycorr - y + Λy #add new Λy
-    return λ,λ_vec
+    return λ, λ_vec
 end
 
 function tranform_lambda(lambda,causal_structure)
