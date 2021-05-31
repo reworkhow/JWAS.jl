@@ -389,13 +389,6 @@ function MCMC_BayesianAlphabet(mme,df)
         end
     end
 
-
-    ############################################################################
-    # Compute the indirect marker effects
-    ############################################################################
-    output_folder
-
-
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,

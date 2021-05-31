@@ -405,9 +405,6 @@ function describe(model::MME;data=false)
     if model.MCMCinfo != false && model.MCMCinfo.printout_model_info == true
         getMCMCinfo(model)
     end
-
-
-
 end
 
 """
@@ -517,7 +514,4 @@ function getMCMCinfo(mme)
         @printf("%-30s %20.3f\n","marker effect variances:",mme.df.marker)
     end
     @printf("\n\n\n")
-
-
-
 end
