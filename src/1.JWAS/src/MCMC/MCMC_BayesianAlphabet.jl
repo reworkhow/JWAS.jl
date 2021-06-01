@@ -1,17 +1,5 @@
 ################################################################################
 #MCMC for RR-BLUP, GBLUP, BayesABC, and conventional (no markers) methods
-#
-#GBLUP: pseudo markers are used.
-#y = μ + a + e with mean(a)=0,var(a)=Gσ²=MM'σ² and G = LDL' <==>
-#y = μ + Lα +e with mean(α)=0,var(α)=D*σ² : L orthogonal
-#y2hat = cov(a2,a)*inv(var(a))*L*αhat =>
-#      = (M2*M')*inv(MM')*L*αhat = (M2*M')*(L(1./D)L')(Lαhat)=(M2*M'*L(1./D))αhat
-#
-#Threshold trait:
-#1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
-#Genetics
-#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
-#Heredity, 110(3), 213–219.
 ################################################################################
 function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
@@ -328,7 +316,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 4. Causal Relationships among Phenotypes (Structure Equation Model)
         ########################################################################
         if is_multi_trait && causal_structure != false
-            sample4λ = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+            sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
         # 5. Latent Traits
@@ -365,7 +353,7 @@ function MCMC_BayesianAlphabet(mme,df)
             #mean and variance of posterior distribution
             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
             if causal_structure != false
-                writedlm(causal_structure_outfile,sample4λ',',')
+                writedlm(causal_structure_outfile,sample4λ_vec',',')
             end
         end
         ########################################################################
@@ -400,6 +388,7 @@ function MCMC_BayesianAlphabet(mme,df)
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
+
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,

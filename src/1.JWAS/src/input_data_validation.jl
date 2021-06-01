@@ -297,9 +297,9 @@ function make_dataframes(df,mme)
           end
         end
     end
-    printstyled("Phenotypes for ",length(train_index)," individuals are used in the analysis.",
+    printstyled("Phenotypes for ",length(train_index)," observations are used in the analysis.",
     "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
-    writedlm("IDs_for_individuals_with_phenotypes.txt",df_whole[train_index,1])
+    writedlm("IDs_for_individuals_with_phenotypes.txt",unique(df_whole[train_index,1]))
     #***************************************************************************
     # Return
     #***************************************************************************

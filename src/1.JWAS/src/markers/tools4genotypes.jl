@@ -76,7 +76,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
                 else
                     Mi.output_genotypes =  Mi.genotypes #why this is a copy
                 end
-                if isposdef(Mi.genotypes) #relationship matrix is provided
+                if Mi.isGRM #relationship matrix is provided
                     Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
                     Mi.output_genotypes = Mi.output_genotypes*Z'
                 end
@@ -92,7 +92,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
             for Mi in mme.M
                 Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
                 genotypes = Z*Mi.genotypes
-                if isposdef(Mi.genotypes) #relationship matrix is provided
+                if Mi.isGRM #relationship matrix is provided
                     genotypes = genotypes*Z'
                 end
                 Mi.genotypes = genotypes

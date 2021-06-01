@@ -123,28 +123,20 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes = map(Float32,convert(Matrix,file))
     end
 
-    #Check whether a kernel / relationship matrix is provided as genotypes
-    isGRM  = false
-    if method == "GBLUP" && issymmetric(genotypes)
-       add_small_value_count = 0
-       while isposdef(genotypes) == false
-           println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
-           genotypes = genotypes + I*0.00001
-           add_small_value_count += 1
-           if add_small_value_count > 10
-               error("Please provide a positive-definite realtionship matrix.")
-           end
-       end
-       isGRM  = true
-       center = false
-       quality_control = false
-       if G_is_marker_variance == true
-           error("Genetic variance is required.")
-       end
-       if starting_value != false
-           error("starting values are not supported for GBLUP now.")
-       end
-       println("A genomic relationship matrix is provided (instead of a genotype covariate matrix).")
+    isGRM = false
+    if method == "GBLUP" #fix and check some parameters in GBLUP
+        if issymmetric(genotypes) #a kernel / relationship matrix is provided
+            center = false
+            quality_control = false
+            isGRM = true
+            println("A genomic relationship matrix is provided (instead of a genotype covariate matrix).")
+        end
+        if G_is_marker_variance == true
+            error("Genetic variance is required.")
+        end
+        if starting_value != false
+            error("starting values are not supported for GBLUP now.")
+        end
     end
 
     #preliminary summary of genotype
@@ -176,10 +168,29 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
          markerID  = markerID[select]
          printstyled("$(sum(1 .- select)) loci which are fixed or have minor allele frequency < $MAF are removed.\n",bold=true)
     end
-
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
     sum2pq        = (2*p*(1 .- p)')[1,1]  #∑2pq
-    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes)
+
+    #a kernel / relationship matrix or genotypes are provided in GBLUP
+    if method == "GBLUP"
+        if !isGRM #calculate the relationship matrix from the genotype covariate matrix
+            genotypes  = genotypes ./ sqrt.(2*p.*(1 .- p))
+            genotypes  = (genotypes*genotypes'+ I*0.00001)/nMarkers
+            println("A genomic relationship matrix is computed from genotypes.")
+            isGRM  = true
+        end
+        add_small_value_count = 0
+        while isposdef(genotypes) == false
+            println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
+            genotypes = genotypes + I*0.00001
+            add_small_value_count += 1
+            if add_small_value_count > 10
+                error("Please provide a positive-definite realtionship matrix.")
+            end
+        end
+    end
+
+    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes,isGRM)
     if G_is_marker_variance == true
         genotypes.G = G
     else
