@@ -19,11 +19,16 @@ c,a,b
 d,a,c
 ```
 """
-function get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
-    printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
-
-    df  = CSV.read(pedfile,DataFrame,types=[String,String,String],
-                    delim=separator,header=header,missingstrings=missingstrings)
+function get_pedigree(pedfile::Union{AbstractString,DataFrames.DataFrame};header=false,separator=',',missingstrings=["0"])
+    if typeof(pedfile) <: AbstractString
+        printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
+        df  = CSV.read(pedfile,DataFrame,types=[String,String,String],
+                        delim=separator,header=header,missingstrings=missingstrings)
+    elseif typeof(pedfile) == DataFrames.DataFrame
+        df  = pedfile
+    else
+        error("Please provide a file path or a dataframe.")
+    end
     df[!,1]=strip.(string.(df[!,1]))
     df[!,2]=strip.(string.(df[!,2]))
     df[!,3]=strip.(string.(df[!,3]))
