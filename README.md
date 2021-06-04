@@ -37,3 +37,31 @@ JWAS.jl
 1. Show this README file in REPL or notebook using `?JWAS`
 2. For help on a specific function above, type ? followed by its name, e.g. `?runMCMC` and press enter.
 3. Run `Pkg.add(PackageSpec(name="JWAS", rev="master"))` to get the newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the official one.
+
+### Examples
+
+ * [Single Trait Analysis](Single-Trait-Analysis)
+
+ * [Multiple Trait Analysis](Multiple-Trait-Analysis)
+
+ * [Repeated Measures](Repeated-Measures)
+
+ * [Single Step Analysis](Single-Step-Analysis)
+
+ * [Categorical Trait Analysis](Categorical-Trait-Analysis)
+
+ * [Censored Trait Analysis](Censored-Trait-Analysis)
+
+ * [Neural Networks](Neural-Networks)
+
+ * [Cross Validation](Cross-Validation)	
+
+ * [Genome Wide Association Study](GWAS)	
+
+ * [Integrating Phenotypic Causal Networks in GWAS](Integrating-Phenotypic-Causal-Networks-in-GWAS)
+
+ * [single trait and multiple trait GBLUP by providing the relationship matrix directly](single-trait-and-multiple-trait-GBLUP-by-providing-the-relationship-matrix-directly)
+
+ * [Description of Mixed Effects Model](Description-of-Mixed-Effects-Model)
+
+ * [Quality Control of Genotypes](Quality-Control-of-Genotypes)
