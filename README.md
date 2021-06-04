@@ -40,28 +40,28 @@ JWAS.jl
 
 ### Examples
 
- * [Single Trait Analysis](Single-Trait-Analysis)
+ * [Single Trait Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Single-Trait-Analysis)
 
- * [Multiple Trait Analysis](Multiple-Trait-Analysis)
+ * [Multiple Trait Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Multiple-Trait-Analysis)
 
- * [Repeated Measures](Repeated-Measures)
+ * [Repeated Measures](https://github.com/reworkhow/JWAS.jl/wiki/Repeated-Measures)
 
- * [Single Step Analysis](Single-Step-Analysis)
+ * [Single Step Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Single-Step-Analysis)
 
- * [Categorical Trait Analysis](Categorical-Trait-Analysis)
+ * [Categorical Trait Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Categorical-Trait-Analysis)
 
- * [Censored Trait Analysis](Censored-Trait-Analysis)
+ * [Censored Trait Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Censored-Trait-Analysis)
 
- * [Neural Networks](Neural-Networks)
+ * [Neural Networks](https://github.com/reworkhow/JWAS.jl/wiki/Neural-Networks)
 
- * [Cross Validation](Cross-Validation)	
+ * [Cross Validation](https://github.com/reworkhow/JWAS.jl/wiki/Cross-Validation)	
 
- * [Genome Wide Association Study](GWAS)	
+ * [Genome Wide Association Study](https://github.com/reworkhow/JWAS.jl/wiki/GWAS)	
 
- * [Integrating Phenotypic Causal Networks in GWAS](Integrating-Phenotypic-Causal-Networks-in-GWAS)
+ * [Integrating Phenotypic Causal Networks in GWAS](https://github.com/reworkhow/JWAS.jl/wiki/Integrating-Phenotypic-Causal-Networks-in-GWAS)
 
- * [single trait and multiple trait GBLUP by providing the relationship matrix directly](single-trait-and-multiple-trait-GBLUP-by-providing-the-relationship-matrix-directly)
+ * [single trait and multiple trait GBLUP by providing the relationship matrix directly](https://github.com/reworkhow/JWAS.jl/wiki/single-trait-and-multiple-trait-GBLUP-by-providing-the-relationship-matrix-directly)
 
- * [Description of Mixed Effects Model](Description-of-Mixed-Effects-Model)
+ * [Description of Mixed Effects Model](https://github.com/reworkhow/JWAS.jl/wiki/Description-of-Mixed-Effects-Model)
 
- * [Quality Control of Genotypes](Quality-Control-of-Genotypes)
+ * [Quality Control of Genotypes](https://github.com/reworkhow/JWAS.jl/wiki/Quality-Control-of-Genotypes)
