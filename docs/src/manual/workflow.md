@@ -322,3 +322,30 @@ files in your working directory. They can be obtained as
 ```julia
 res=readdlm("MCMC_samples_marker_effects_y1.txt",',',header=true)
 ```
+
+Output files:
+
+Below files contained results averaged from all MCMC chains.
+
+| file name      | description |
+| -----------    | ----------- |
+| EBV_y1.txt     | estimated breeding value for trait named "y1"       |
+| EBV_y2.txt     | estimated breeding value for trait named "y2"       |
+| EBV_y3.txt     | estimated breeding value for trait named "y3"       |
+|genetic_variance.txt| estimated genetic variance-covariance for all traits     |
+|heritability.txt   | estimated heritability|
+| location_parameters.txt | estimated non-genetic effects |
+|marker_effects_genotypes.txt| estimated marker effects for all traits|
+
+Below files contained detailed results in each MCMC chain.
+
+| file name      | description |
+| -----------    | ----------- |
+| MCMC_samples_EBV_y1.txt     | MCMC samples for estimated breeding value for trait named "y1"       |
+| MCMC_samples_EBV_y2.txt     | MCMC samples for estimated breeding value for trait named "y2"       |
+| MCMC_samples_EBV_y3.txt     | MCMC samples for estimated breeding value for trait named "y3"       |
+|MCMC_samples_genetic_variance.txt| MCMC samples for  estimated genetic variance-covariance for all traits     |
+|genetic_variance.txt| estimated genetic variance-covariance for all traits     |
+|heritability.txt   | estimated heritability|
+| location_parameters.txt | estimated non-genetic effects |
+|marker_effects_genotypes.txt| estimated marker effects for all traits|
