@@ -325,27 +325,37 @@ res=readdlm("MCMC_samples_marker_effects_y1.txt",',',header=true)
 
 Output files:
 
-Below files contained results averaged from all MCMC chains.
+Below files contained results averaged from all sampled MCMC chains.
 
 | file name      | description |
 | -----------    | ----------- |
 | EBV_y1.txt     | estimated breeding value for trait named "y1"       |
 | EBV_y2.txt     | estimated breeding value for trait named "y2"       |
 | EBV_y3.txt     | estimated breeding value for trait named "y3"       |
-|genetic_variance.txt| estimated genetic variance-covariance for all traits     |
-|heritability.txt   | estimated heritability|
-| location_parameters.txt | estimated non-genetic effects |
-|marker_effects_genotypes.txt| estimated marker effects for all traits|
+|genetic_variance.txt                   | estimated genetic variance-covariance for all traits |
+|heritability.txt                       | estimated heritability                               |
+| location_parameters.txt               | estimated non-genetic effects                        |
+|pi_genotypes.txt                       | estimated pi                                         |
+|polygenic_effects_covariance_matrix.txt| estimated variance-covariance between y1_ID, y2_ID, y3_ID, y1_dam|
+|marker_effects_genotypes.txt           | estimated marker effects for all traits              |
+|residual_variance.txt                  | estimated residual variance-covariance for all traits| 
 
-Below files contained detailed results in each MCMC chain.
+Below files contained detailed results in each sampled MCMC chain.
 
 | file name      | description |
 | -----------    | ----------- |
 | MCMC_samples_EBV_y1.txt     | MCMC samples for estimated breeding value for trait named "y1"       |
 | MCMC_samples_EBV_y2.txt     | MCMC samples for estimated breeding value for trait named "y2"       |
 | MCMC_samples_EBV_y3.txt     | MCMC samples for estimated breeding value for trait named "y3"       |
-|MCMC_samples_genetic_variance.txt| MCMC samples for  estimated genetic variance-covariance for all traits     |
-|genetic_variance.txt| estimated genetic variance-covariance for all traits     |
-|heritability.txt   | estimated heritability|
-| location_parameters.txt | estimated non-genetic effects |
-|marker_effects_genotypes.txt| estimated marker effects for all traits|
+|MCMC_samples_genetic_variance.txt                   | MCMC samples for estimated genetic variance-covariance for all traits   |
+|MCMC_samples_heritability.txt                       | MCMC samples for estimated heritability                                 | 
+|MCMC_samples_marker_effects_genotypes_y1            |MCMC samples for estimated marker effects for trait named "y1"           |
+|MCMC_samples_marker_effects_genotypes_y2            |MCMC samples for estimated marker effects for trait named "y2"           |
+|MCMC_samples_marker_effects_genotypes_y3            |MCMC samples for estimated marker effects for trait named "y3"           |
+|MCMC_samples_marker_effects_variances_genotypes.txt | MCMC samples for estimated marker effect variance for all traits        |
+|MCMC_samples_pi_genotypes.txt                       | MCMC samples for estimated pi                                           |
+|MCMC_samples_polygenic_effects_variance.txt         |  MCMC samples for variance-covariance between y1_ID, y2_ID, y3_ID, y1_dam|
+|MCMC_samples_residual_variance.txt                  |  MCMC samples for estimated residual variance-covariance for all traits |
+|MCMC_samples_y1.dam.txt                             | MCMC samples for dam effect for y1|
+|MCMC_samples_y1.ID_y2.ID_y3.ID_y1.dam_variances.txt | MCMC samples for variance-covariance between y1_ID, y2_ID, y3_ID, y1_dam|
+|MCMC_samples_y2.x2_y3.x2_variances.txt              | MCMC samples for variance-covariance between y2_x2 and y3_x2| 
