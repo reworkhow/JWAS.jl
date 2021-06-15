@@ -49,6 +49,7 @@ include("structure_equation_model/SEM.jl")
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
 include("Nonlinear/bnn_hmc.jl")
+include("Nonlinear/nnbayes_check.jl")
 
 #input
 include("input_data_validation.jl")
