@@ -105,3 +105,58 @@ function nnbayes_activation(activation_function)
           error("invalid actication function")
       end
 end
+
+
+# below function is to modify mme from multi-trait model to multiple single trait models
+# coded by Hao
+function nnbayes_mega_trait(mme)
+    #mega_trait
+    if mme.nModels == 1
+        error("more than 1 trait is required for MegaLMM analysis.")
+    end
+    mme.MCMCinfo.constraint = true
+
+    ##sample from scale-inv-⁠χ2, not InverseWishart
+    mme.df.residual  = mme.df.residual - mme.nModels
+    mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
+    if mme.M != 0
+        for Mi in mme.M
+            Mi.df        = Mi.df - mme.nModels
+            Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
+        end
+    end
+
+end
+
+
+# below function is to modify essential parameters for partial connected NN
+function nnbayes_partial_para_modify(mme)
+    mme.nnbayes_partial=true
+    for Mi in mme.M
+      Mi.ntraits=1
+    end
+end
+
+
+# below function is to modify essential parameters for partial connected NN
+function nnbayes_partial_para_modify2(mme)
+    for Mi in mme.M
+      Mi.scale = Mi.scale[1]
+      Mi.G = Mi.G[1,1]
+      Mi.genetic_variance=Mi.genetic_variance[1,1]
+    end
+end
+
+
+# below function is to modify essential parameters for partial connected NN
+function nnbayes_partial_para_modify3(mme)
+    for Mi in mme.M
+      Mi.meanVara  = Mi.meanVara[1]
+      Mi.meanVara2 = Mi.meanVara2[1]
+      Mi.meanScaleVara = Mi.meanScaleVara[1]
+      Mi.meanScaleVara2 = Mi.meanScaleVara2[1]
+      Mi.π = Mi.π[1]
+      Mi.mean_pi = Mi.mean_pi[1]
+      Mi.mean_pi2 = Mi.mean_pi2[1]
+    end
+end

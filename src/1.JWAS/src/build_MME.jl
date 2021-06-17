@@ -80,7 +80,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   whichterm = 1
   for term in modelTerms
     term_symbol = Symbol(split(term.trmStr,":")[end])
-    traiti      = term.iModel
     if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
       if typeof(getfield(Main,term_symbol)) == Genotypes
         term.random_type = "genotypes"
@@ -101,6 +100,27 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
     end
   end
+
+  ## add trait_name for genotype
+  #step1. make a dict for genotype =>trait names
+  dict_gene_trait =Dict()
+  for term in modelTerms
+    if term.random_type == "genotypes"
+      gene_name=term.factors[1]
+      trait_name=term.iTrait
+      if !haskey(dict_gene_trait, gene_name) #new genotype
+        dict_gene_trait[gene_name] = [trait_name]  # e.g., :geno1 => ["y1"]
+      else  #existing key
+        dict_gene_trait[gene_name] = append!(dict_gene_trait[gene_name],[trait_name])  # e.g., :geno1 = ["y1","y2"]
+      end
+    end
+  end
+  #step2. add trait names for each genotype
+  for genotypei in genotypes
+    gene_name = Symbol(genotypei.name)
+    genotypei.trait_name = dict_gene_trait[gene_name]
+  end
+
   #crear mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
@@ -108,10 +128,16 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
-  #latent traits
-  if nonlinear_function != false  #NNBayes
+
+  #NNBayes:
+  if nonlinear_function != false
     #NNBayes: check parameters again
     nnbayes_check_nhiddennode(num_latent_traits,mme)
+
+    #NNBayes: change parameters for partial-connected NN
+    if num_latent_traits == false
+      nnbayes_partial_para_modify(mme)
+    end
 
     mme.latent_traits       = true
     mme.nonlinear_function  = nonlinear_function

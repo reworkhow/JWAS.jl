@@ -102,7 +102,7 @@ function output_result(mme,output_folder,
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
           whichdelta    = Mi.meanDelta[traiti]
-          for traiti in 2:mme.nModels
+          for traiti in 2:Mi.ntraits
               whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
               whichmarker    = vcat(whichmarker,Mi.markerID)
               whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
@@ -253,8 +253,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.M !=0 #write samples for marker effects to a text file
       for Mi in mme.M
-          for traiti in 1:ntraits
-              push!(outvar,"marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti]))
+          for traiti in Mi.trait_name
+              push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
           push!(outvar,"pi"*"_"*Mi.name)
@@ -325,8 +325,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],transubstrarr(Mi.markerID),',')
+          for traiti in Mi.trait_name
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
       end
   end
@@ -374,8 +374,8 @@ function output_MCMC_samples(mme,vRes,G0,
     end
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
+          for traiti in 1:Mi.ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_name[traiti]],Mi.α[traiti],',')
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -396,12 +396,22 @@ function output_MCMC_samples(mme,vRes,G0,
     end
 
     if mme.MCMCinfo.outputEBV == true
-         EBVmat = myEBV = getEBV(mme,1)
-         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-         for traiti in 2:ntraits
-             myEBV = getEBV(mme,traiti) #actually BV
-             writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
-             EBVmat = [EBVmat myEBV]
+         if mme.nnbayes_partial==false
+             EBVmat = myEBV = getEBV(mme,1)
+             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+             for traiti in 2:ntraits
+                 myEBV = getEBV(mme,traiti) #actually BV
+                 writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
+                 EBVmat = [EBVmat myEBV]
+             end
+         else  #NNBayes_partial
+             EBVmat = myEBV = mme.M[1].output_genotypes*mme.M[1].α[1]
+             writedlm(outfile["EBV_"*mme.M[1].trait_name[1]],myEBV',',')
+             for i in 2:length(mme.M)
+                 myEBV=mme.M[i].output_genotypes*mme.M[i].α[1]
+                 writedlm(outfile["EBV_"*mme.M[i].trait_name[1]],myEBV',',')
+                 EBVmat = [EBVmat myEBV]
+             end
          end
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              mygvar = cov(EBVmat)

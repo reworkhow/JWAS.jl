@@ -77,7 +77,8 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
 end
 
 mutable struct Genotypes
-  name                            #name for this category
+  name                            #name for this category, eg. "geno1"
+  trait_name                      #name for the corresponding trait, eg."y1"
 
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
@@ -124,8 +125,8 @@ mutable struct Genotypes
   output_genotypes #output genotypes
 
   isGRM  #whether genotypes or relationship matirx is provided
-  
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,
+
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
@@ -246,6 +247,7 @@ mutable struct MME
     weights_NN
     σ2_yobs
     activation_function
+    nnbayes_partial
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
@@ -272,6 +274,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0,false)
+                   false,false,false,1.0,false,false)
     end
 end
