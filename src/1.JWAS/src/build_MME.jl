@@ -200,6 +200,9 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   else                            #for ModelTerm e.g. "1:A*B" (or "1:A")
     myDf = df[!,trm.factors]                        #:A,:B
     if trm.factors[1] in mme.covVec                 #if A is a covariate
+      if !(typeof(df[!,trm.factors[1]][1]) <: Number)
+        error("$(trm.factors[1]) is fitted as a covariate (continuous variables). The data type should be numbers.")
+      end
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
       val = df[!,trm.factors[1]]                    #df[:A]
     else                                              #if A is a factor (animal or maternal effects)
@@ -211,6 +214,9 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     for i=2:trm.nFactors
       if trm.factors[i] in mme.covVec
         #["A * B","A * B",...] or ["A1 * B","A2 * B",...]
+        if !(typeof(df[!,trm.factors[i]][1]) <: Number)
+          error("$(trm.factors[i]) is fitted as a covariate (continuous variables). The data type should be numbers.")
+        end
         str = str .* fill(" * "*string(trm.factors[i]),nObs)
         val = val .* df[!,trm.factors[i]]
       else
