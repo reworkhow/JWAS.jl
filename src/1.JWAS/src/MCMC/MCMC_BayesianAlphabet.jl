@@ -269,7 +269,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.estimateVariance == true #methd specific estimate_variance
                     sample_marker_effect_variance(Mi,constraint)
-                    if mme.MCMCinfo.double_precision == false
+                    if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
                         Mi.G = Float32.(Mi.G)
                     end
                 end
