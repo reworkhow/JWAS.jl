@@ -37,40 +37,11 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, nonlinear_function = false, activation_function = false) #nonlinear_function(x1,x2) = x1+x2
   if nonlinear_function != false  #NNBayes
-    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
-    #print activation info
-    if activation_function != false      #e.g, activation_function="tanh"
-      printstyled("Activation function: $activation_function.\n Sampler: Hamiltonian Monte Carlo. \n",bold=false,color=:green)
-    elseif activation_function == false  #e.g, nonlinear_function=f(z1,z2)
-      printstyled("Nonlinear function: user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n Sampler: Matropolis-Hastings.\n",bold=false,color=:green)
-    end
+    #NNBayes: check parameters
+    nnbayes_partial = nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,activation_function)
 
-    #print connection info; re-write model equation
-    lhs, rhs = strip.(split(model_equations,"="))
-    model_equations = ""
-    if num_latent_traits != false   #e.g. num_latent_traits=5
-      printstyled("Neural network:         fully connected neural network \n",bold=false,color=:green)
-      printstyled("Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
-      for i = 1:num_latent_traits
-        model_equations = model_equations*lhs*string(i)*"="*rhs*";"
-      end
-    elseif num_latent_traits == false  #partially-connected
-      rhs_split=strip.(split(rhs,"+"))
-      geno_term=[]
-      for i in rhs_split
-        if isdefined(Main,Symbol(i)) && typeof(getfield(Main,Symbol(i))) == Genotypes
-            push!(geno_term,i)
-        end
-      end
-      non_gene_term = filter(x->x ∉ geno_term,rhs_split)
-      non_gene_term = join(non_gene_term,"+")
-      num_latent_traits = length(geno_term)
-      for i = 1:length(geno_term)
-        model_equations = model_equations*lhs*string(i)*"="*non_gene_term*"+"*geno_term[i]*";"
-      end
-      printstyled("NNBayes: partially connected with $num_latent_traits hidden nodes. \n",bold=false,color=:green)
-    end
-    model_equations = model_equations[1:(end-1)]
+    #NNBayes: re-write model equation
+    model_equations = nnbayes_model_equation(model_equations,num_latent_traits)
   end
 
   if R != false && !isposdef(map(AbstractFloat,R))
@@ -109,14 +80,16 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   whichterm = 1
   for term in modelTerms
     term_symbol = Symbol(split(term.trmStr,":")[end])
-    traiti      = term.iModel
     if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
       if typeof(getfield(Main,term_symbol)) == Genotypes
         term.random_type = "genotypes"
-        if traiti == 1 #same genos are required in all traits
-          genotypei = getfield(Main,term_symbol)
-          genotypei.name = string(term_symbol)
-          genotypei.ntraits = nModels
+        genotypei = getfield(Main,term_symbol)
+        genotypei.name = string(term_symbol)
+        trait_names=[term.iTrait]
+        if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
+          is_nnbayes_partial = nonlinear_function != false && nnbayes_partial==true
+          genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
+          genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
           if nModels != 1
             genotypei.df = genotypei.df + nModels
           end
@@ -130,6 +103,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
     end
   end
+
   #crear mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
@@ -137,31 +111,16 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
-  #latent traits
-  if nonlinear_function != false  #NNBayes
-    mme.latent_traits = true
-    mme.nonlinear_function = nonlinear_function
+  #NNBayes:
+  if nonlinear_function != false
+    #NNBayes: check parameters again
+    nnbayes_check_nhiddennode(num_latent_traits,mme)
 
-    if activation_function != false  #e.g., "tanh"
-      if activation_function == "tanh"
-         mytanh(x) = tanh(x)
-         mme.activation_function = mytanh
-      elseif activation_function == "sigmoid"
-         mysigmoid(x) = 1/(1+exp(-x))
-         mme.activation_function = mysigmoid
-      elseif activation_function == "relu"
-         myrelu(x) = max(0, x)
-         mme.activation_function = myrelu
-      elseif activation_function == "leakyrelu"
-         myleakyrelu(x) = max(0.01x, x)
-         mme.activation_function = myleakyrelu
-      elseif activation_function == "linear"
-         mylinear(x) = x
-         mme.activation_function = mylinear
-      else
-         error("Please select the activation function from tanh/sigmoid/relu/leakyrelu/linear.")
-      end
-    end
+
+    mme.latent_traits       = true
+    mme.nnbayes_partial     = nnbayes_partial
+    mme.nonlinear_function  = nonlinear_function
+    mme.activation_function = activation_function!=false ? nnbayes_activation(activation_function) : false
   end
 
   return mme

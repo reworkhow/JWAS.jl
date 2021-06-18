@@ -102,7 +102,7 @@ function output_result(mme,output_folder,
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
           whichdelta    = Mi.meanDelta[traiti]
-          for traiti in 2:mme.nModels
+          for traiti in 2:Mi.ntraits
               whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
               whichmarker    = vcat(whichmarker,Mi.markerID)
               whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
@@ -205,6 +205,12 @@ end
 (internal function) Get breeding values for individuals defined by outputEBV(),
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
+e.g.,
+non-NNBayes_partial (multi-classs Bayes) : y1=M1*α1[1]+M2*α2[1]+M3*α3[1]
+                                           y2=M1*α1[2]+M2*α2[2]+M3*α3[2];
+NNBayes_partial:     y1=M1*α1[1]
+                     y2=M2*α2[1]
+                     y3=M3*α3[1];
 """
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
@@ -223,8 +229,15 @@ function getEBV(mme,traiti)
         end
     end
     if mme.M != 0
-        for Mi in mme.M
-            EBV += Mi.output_genotypes*Mi.α[traiti]
+        for i in 1:length(mme.M)
+            Mi=mme.M[i]
+            if mme.nnbayes_partial==false  #non-NNBayes_partial
+                EBV += Mi.output_genotypes*Mi.α[traiti]
+            else  #NNBayes_partial
+                if i==traiti
+                    EBV = Mi.output_genotypes*mme.M[i].α[1]
+                end
+            end
         end
     end
     return EBV
@@ -253,8 +266,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.M !=0 #write samples for marker effects to a text file
       for Mi in mme.M
-          for traiti in 1:ntraits
-              push!(outvar,"marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti]))
+          for traiti in Mi.trait_names
+              push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
           push!(outvar,"pi"*"_"*Mi.name)
@@ -325,8 +338,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],transubstrarr(Mi.markerID),',')
+          for traiti in Mi.trait_names
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
       end
   end
@@ -374,8 +387,8 @@ function output_MCMC_samples(mme,vRes,G0,
     end
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
+          for traiti in 1:Mi.ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti],',')
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -400,9 +413,11 @@ function output_MCMC_samples(mme,vRes,G0,
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              myEBV = getEBV(mme,traiti) #actually BV
-             writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
+             trait_name = mme.nnbayes_partial ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
+             writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
+
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              mygvar = cov(EBVmat)
              genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
