@@ -253,7 +253,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.M !=0 #write samples for marker effects to a text file
       for Mi in mme.M
-          for traiti in Mi.trait_name
+          for traiti in Mi.trait_names
               push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
@@ -325,7 +325,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0
       for Mi in mme.M
-          for traiti in Mi.trait_name
+          for traiti in Mi.trait_names
               writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
       end
@@ -375,7 +375,7 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.M != 0 && outfile != false
       for Mi in mme.M
           for traiti in 1:Mi.ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_name[traiti]],Mi.α[traiti],',')
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti],',')
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -406,10 +406,10 @@ function output_MCMC_samples(mme,vRes,G0,
              end
          else  #NNBayes_partial
              EBVmat = myEBV = mme.M[1].output_genotypes*mme.M[1].α[1]
-             writedlm(outfile["EBV_"*mme.M[1].trait_name[1]],myEBV',',')
+             writedlm(outfile["EBV_"*mme.M[1].trait_names[1]],myEBV',',')
              for i in 2:length(mme.M)
                  myEBV=mme.M[i].output_genotypes*mme.M[i].α[1]
-                 writedlm(outfile["EBV_"*mme.M[i].trait_name[1]],myEBV',',')
+                 writedlm(outfile["EBV_"*mme.M[i].trait_names[1]],myEBV',',')
                  EBVmat = [EBVmat myEBV]
              end
          end

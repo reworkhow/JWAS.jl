@@ -78,7 +78,7 @@ end
 
 mutable struct Genotypes
   name                            #name for this category, eg. "geno1"
-  trait_name                      #name for the corresponding trait, eg."y1"
+  trait_names                     #names for the corresponding traits, eg.["y1","y2"]
 
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
