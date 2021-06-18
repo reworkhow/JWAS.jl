@@ -205,6 +205,12 @@ end
 (internal function) Get breeding values for individuals defined by outputEBV(),
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
+e.g.,
+non-NNBayes_partial: y1=M1*α1[1]+M2*α2[1]+M3*α3[1]
+                     y2=M1*α1[2]+M2*α2[2]+M3*α3[2];
+NNBayes_partial:     y1=M1*α1[1]
+                     y2=M2*α2[1]
+                     y3=M3*α3[1];
 """
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
@@ -223,8 +229,15 @@ function getEBV(mme,traiti)
         end
     end
     if mme.M != 0
-        for Mi in mme.M
-            EBV += Mi.output_genotypes*Mi.α[traiti]
+        for i in 1:length(mme.M)
+            Mi=mme.M[i]
+            if mme.nnbayes_partial==false  #non-NNBayes_partial
+                EBV += Mi.output_genotypes*Mi.α[traiti]
+            else  #NNBayes_partial
+                if i==traiti
+                    EBV = Mi.output_genotypes*mme.M[i].α[1]
+                end
+            end
         end
     end
     return EBV
@@ -396,23 +409,15 @@ function output_MCMC_samples(mme,vRes,G0,
     end
 
     if mme.MCMCinfo.outputEBV == true
-         if mme.nnbayes_partial==false
-             EBVmat = myEBV = getEBV(mme,1)
-             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-             for traiti in 2:ntraits
-                 myEBV = getEBV(mme,traiti) #actually BV
-                 writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
-                 EBVmat = [EBVmat myEBV]
-             end
-         else  #NNBayes_partial
-             EBVmat = myEBV = mme.M[1].output_genotypes*mme.M[1].α[1]
-             writedlm(outfile["EBV_"*mme.M[1].trait_names[1]],myEBV',',')
-             for i in 2:length(mme.M)
-                 myEBV=mme.M[i].output_genotypes*mme.M[i].α[1]
-                 writedlm(outfile["EBV_"*mme.M[i].trait_names[1]],myEBV',',')
-                 EBVmat = [EBVmat myEBV]
-             end
+         EBVmat = myEBV = getEBV(mme,1)
+         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         for traiti in 2:ntraits
+             myEBV = getEBV(mme,traiti) #actually BV
+             trait_name = mme.nnbayes_partial ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
+             writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             EBVmat = [EBVmat myEBV]
          end
+
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              mygvar = cov(EBVmat)
              genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
