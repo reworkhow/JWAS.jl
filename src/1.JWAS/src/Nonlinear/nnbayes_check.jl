@@ -6,8 +6,10 @@ function nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,acti
     if typeof(num_latent_traits) == Int64         #fully-connected. e.g, num_latent_traits=5
         printstyled(" - Neural network:         fully connected neural network \n",bold=false,color=:green)
         printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
+        nnbayes_partial=false
     elseif num_latent_traits == false   #partial-connected.
         printstyled(" - Neural network:         partially connected neural network \n",bold=false,color=:green)
+        nnbayes_partial=true
     else
         error("Please check you number of latent traits")
     end
@@ -30,6 +32,7 @@ function nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,acti
     else
         error("nonlinear_function can only be Neural Network or a user-defined nonlinear function")
     end
+    return nnbayes_partial
 end
 
 
@@ -131,7 +134,6 @@ end
 
 # below function is to modify essential parameters for partial connected NN
 function nnbayes_partial_para_modify(mme)
-    mme.nnbayes_partial=true
     for Mi in mme.M
       Mi.ntraits=1
     end

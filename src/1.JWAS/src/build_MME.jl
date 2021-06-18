@@ -38,7 +38,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_latent_traits = false, nonlinear_function = false, activation_function = false) #nonlinear_function(x1,x2) = x1+x2
   if nonlinear_function != false  #NNBayes
     #NNBayes: check parameters
-    nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,activation_function)
+    nnbayes_partial = nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,activation_function)
 
     #NNBayes: re-write model equation
     model_equations = nnbayes_model_equation(model_equations,num_latent_traits)
@@ -85,8 +85,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
         term.random_type = "genotypes"
         genotypei = getfield(Main,term_symbol)
         genotypei.name = string(term_symbol)
+        trait_names=[term.iTrait]
         if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
           genotypei.ntraits = nModels
+          genotypei.trait_names = nonlinear_function != false && nnbayes_partial==true ? trait_names : string.(lhsVec)
           if nModels != 1
             genotypei.df = genotypei.df + nModels
           end
@@ -101,33 +103,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
   end
 
-  ## add trait_names for genotype
-  #step1. make a dict for genotype =>trait names
-  dict_gene_trait =Dict()
-  for term in modelTerms
-    if term.random_type == "genotypes"
-      gene_name=term.factors[1]
-      trait_names=term.iTrait
-      if !haskey(dict_gene_trait, gene_name) #new genotype
-        dict_gene_trait[gene_name] = [trait_names]  # e.g., :geno1 => ["y1"]
-      else  #existing genotype
-        dict_gene_trait[gene_name] = append!(dict_gene_trait[gene_name],[trait_names])  # e.g., :geno1 = ["y1","y2"]
-      end
-    end
-  end
-  #step2. add trait names for each genotype
-  for genotypei in genotypes
-    gene_name = Symbol(genotypei.name)
-    genotypei.trait_names = dict_gene_trait[gene_name]
-  end
-
   #crear mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes
   end
-
 
   #NNBayes:
   if nonlinear_function != false
@@ -140,6 +121,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
 
     mme.latent_traits       = true
+    mme.nnbayes_partial     = nnbayes_partial
     mme.nonlinear_function  = nonlinear_function
     mme.activation_function = activation_function!=false ? nnbayes_activation(activation_function) : false
   end
