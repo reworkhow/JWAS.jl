@@ -87,8 +87,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
         genotypei.name = string(term_symbol)
         trait_names=[term.iTrait]
         if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
-          genotypei.ntraits = nModels
-          genotypei.trait_names = nonlinear_function != false && nnbayes_partial==true ? trait_names : string.(lhsVec)
+          is_nnbayes_partial = nonlinear_function != false && nnbayes_partial==true
+          genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
+          genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
           if nModels != 1
             genotypei.df = genotypei.df + nModels
           end
@@ -115,10 +116,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     #NNBayes: check parameters again
     nnbayes_check_nhiddennode(num_latent_traits,mme)
 
-    #NNBayes: change parameters for partial-connected NN
-    if num_latent_traits == false
-      nnbayes_partial_para_modify(mme)
-    end
 
     mme.latent_traits       = true
     mme.nnbayes_partial     = nnbayes_partial

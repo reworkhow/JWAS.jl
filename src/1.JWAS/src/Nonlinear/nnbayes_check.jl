@@ -132,13 +132,6 @@ function nnbayes_mega_trait(mme)
 end
 
 
-# below function is to modify essential parameters for partial connected NN
-function nnbayes_partial_para_modify(mme)
-    for Mi in mme.M
-      Mi.ntraits=1
-    end
-end
-
 
 # below function is to modify essential parameters for partial connected NN
 function nnbayes_partial_para_modify2(mme)

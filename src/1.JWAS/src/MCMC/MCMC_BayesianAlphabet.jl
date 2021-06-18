@@ -20,7 +20,6 @@ function MCMC_BayesianAlphabet(mme,df)
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
     activation_function      = mme.activation_function
-    partial                  = mme.nnbayes_partial
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
