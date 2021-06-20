@@ -1,15 +1,17 @@
 #Below function is to check parameters for NNBayes and print information
-function nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,activation_function)
+function nnbayes_check_print_parameter(nnbayes_partial,num_latent_traits,nonlinear_function,activation_function)
     printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
 
     #part1: fully/partial-connected NN
-    if typeof(num_latent_traits) == Int64         #fully-connected. e.g, num_latent_traits=5
+    if nnbayes_partial == false  #fully-connected.
         printstyled(" - Neural network:         fully connected neural network \n",bold=false,color=:green)
+        if typeof(num_latent_traits) !== Int64
+            error("for fully-connected neural network, the num_latent_traits should be an interger.")
+        end
         printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
-        nnbayes_partial=false
-    elseif num_latent_traits == false   #partial-connected.
+    elseif nnbayes_partial == true #partial-connected.
         printstyled(" - Neural network:         partially connected neural network \n",bold=false,color=:green)
-        nnbayes_partial=true
+        printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
     else
         error("Please check you number of latent traits")
     end
@@ -32,23 +34,22 @@ function nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,acti
     else
         error("nonlinear_function can only be Neural Network or a user-defined nonlinear function")
     end
-    return nnbayes_partial
 end
 
 
 #Below function is to re-phase modelm for NNBayes
-function nnbayes_model_equation(model_equations,num_latent_traits)
+function nnbayes_model_equation(nnbayes_partial,model_equations,num_latent_traits)
 
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
 
-    if typeof(num_latent_traits) == Int64   #fully-connected
+    if nnbayes_partial == false   #fully-connected
       # old: y=intercept+geno
       # new: y1=intercept+geno;y2=intercept+geno
       for i = 1:num_latent_traits
         model_equations = model_equations*lhs*string(i)*"="*rhs*";"
       end
-    elseif num_latent_traits == false      #partially-connected
+    elseif nnbayes_partial == true   #partially-connected
       # old: y=intercept+geno1+geno2
       # new: y1= intercept+geno1;y2=intercept+geno2
       rhs_split=strip.(split(rhs,"+"))
@@ -67,24 +68,6 @@ function nnbayes_model_equation(model_equations,num_latent_traits)
     end
     model_equations = model_equations[1:(end-1)]
 end
-
-
-# below function is to check whether the loaded genotype matches the model equation
-function nnbayes_check_nhiddennode(num_latent_traits,mme)
-    if typeof(num_latent_traits) == Int64 #fully-connected. e.g, num_latent_traits=5
-        if length(mme.M)>1
-            error("fully-connected NN only allow one genotype; num_latent_traits is not allowed in partial-connected NN ")
-        end
-    elseif num_latent_traits == false   #partial-connected.
-        if length(mme.M)==1
-            error("partial-connected NN requirs >1 genotype group")
-        else
-            num_latent_traits = length(mme.M)
-            printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
-        end #Note, if only geno1 & geno2 are loaded by get_genotypes, but there is "geno3" in equation, then geno3 will be treated like age.
-    end
-end
-
 
 
 # below function is to define the activation function for neural network
