@@ -96,6 +96,8 @@ end
 # below function is to modify mme from multi-trait model to multiple single trait models
 # coded by Hao
 function nnbayes_mega_trait(mme)
+    printstyled("Mega-trait: multiple independent single-trait bayesian models are used. \n",bold=false,color=:green)
+
     #mega_trait
     if mme.nModels == 1
         error("more than 1 trait is required for MegaLMM analysis.")

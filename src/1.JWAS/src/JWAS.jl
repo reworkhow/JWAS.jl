@@ -161,7 +161,7 @@ function runMCMC(mme::MME,df;
                 categorical_trait               = false,
                 censored_trait                  = false,
                 causal_structure                = false,
-                mega_trait                      = false,
+                mega_trait                      = mme.latent_traits==true ? true : false,
                 missing_phenotypes              = true,
                 constraint                      = false,
                 #Genomic Prediction
