@@ -44,7 +44,7 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
             error("the num_hidden_nodes should be an interger.")
         end
     else
-        error("incorrect nonlinear_function.")
+        error("invalid nonlinear_function.")
     end
 
     # (iii) print NNBayes info
@@ -64,7 +64,7 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
         printstyled(" - Nonlinear function:     user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n",bold=false,color=:green)
         printstyled(" - Sampler:                Matropolis-Hastings.\n",bold=false,color=:green)
     else
-        error("incorrect nonlinear_function")
+        error("invalid nonlinear_function")
     end
 
     return nnbayes_fully_connnect,num_hidden_nodes,is_user_defined_nonliner
@@ -122,7 +122,7 @@ function nnbayes_activation(activation_function)
          mylinear(x) = x
          return mylinear
       else
-          error("incorrect actication function")
+          error("invalid actication function")
       end
 end
 
