@@ -190,6 +190,7 @@ function runMCMC(mme::MME,df;
             df[!,i]= yobs
         end
     end
+    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -290,11 +291,14 @@ function runMCMC(mme::MME,df;
 
     # NNBayes mega trait: from multi-trait to multiple single-trait
     if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
+        printstyled(" - Bayesian Alphabet:                multiple independent single-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
         nnbayes_mega_trait(mme)
+    else
+        printstyled(" - Bayesian Alphabet:                multi-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
     end
 
     # NNBayes: modify parameters for partial connected NN
-    if mme.nnbayes_partial==true
+    if is_nnbayes_partial
         nnbayes_partial_para_modify2(mme)
     end
     ############################################################################
@@ -407,6 +411,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
+    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
@@ -457,7 +462,7 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance != false
-                    if mme.nModels == 1 || mme.nnbayes_partial == true
+                    if mme.nModels == 1 || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
                     else
                         @printf("%-30s\n","genetic variances (genomic):")
@@ -466,7 +471,7 @@ function getMCMCinfo(mme)
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if mme.nModels == 1 || mme.nnbayes_partial == true
+                    if mme.nModels == 1 || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
                     else
                         @printf("%-30s\n","marker effect variances:")

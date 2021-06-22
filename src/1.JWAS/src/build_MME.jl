@@ -35,14 +35,17 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     nnbayes_partial = false, num_latent_traits = false, nonlinear_function = false, activation_function = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
   if nonlinear_function != false  #NNBayes
+    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
+
     #NNBayes: check parameters
-    nnbayes_check_print_parameter(nnbayes_partial, num_latent_traits,nonlinear_function,activation_function)
+    nnbayes_fully_connnect,num_hidden_nodes,is_user_defined_nonliner = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
 
     #NNBayes: re-write model equation
-    model_equations = nnbayes_model_equation(nnbayes_partial,model_equations,num_latent_traits)
+    model_equations = nnbayes_model_equation(nnbayes_fully_connnect,model_equations,num_hidden_nodes)
   end
+  is_nnbayes_partial = nonlinear_function != false && nnbayes_fully_connnect==false
 
   if R != false && !isposdef(map(AbstractFloat,R))
     error("The covariance matrix is not positive definite.")
@@ -87,8 +90,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
         genotypei.name = string(term_symbol)
         trait_names=[term.iTrait]
         if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
-          genotypei.ntraits = nnbayes_partial==true ? 1 : nModels
-          genotypei.trait_names = nnbayes_partial==true ? trait_names : string.(lhsVec)
+          genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
+          genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
           if nModels != 1
             genotypei.df = genotypei.df + nModels
           end
@@ -102,9 +105,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
     end
   end
-  if nnbayes_partial==true && num_latent_traits != length(genotypes)
-      error("num_latent_traits is not equal to the number of loaded genotypes.")
-  end
 
   #crear mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
@@ -115,10 +115,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
 
   #NNBayes:
   if nonlinear_function != false
-    mme.latent_traits       = true
-    mme.nnbayes_partial     = nnbayes_partial
-    mme.nonlinear_function  = nonlinear_function
-    mme.activation_function = activation_function!=false ? nnbayes_activation(activation_function) : false
+    mme.latent_traits            = true
+    mme.nnbayes_fully_connnect   = nnbayes_fully_connnect
+    mme.is_user_defined_nonliner = is_user_defined_nonliner
+    mme.nonlinear_function       = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
   end
 
   return mme

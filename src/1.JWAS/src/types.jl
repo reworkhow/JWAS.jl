@@ -243,11 +243,11 @@ mutable struct MME
     causal_structure
 
     latent_traits
-    nonlinear_function #user-provide function, "Neural Network"
+    nonlinear_function #user-provide function, "tanh"
     weights_NN
     σ2_yobs
-    activation_function
-    nnbayes_partial
+    nnbayes_fully_connnect
+    is_user_defined_nonliner
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)

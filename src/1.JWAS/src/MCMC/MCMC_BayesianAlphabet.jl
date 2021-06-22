@@ -17,10 +17,10 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     is_mega_trait            = mme.MCMCinfo.mega_trait
-    is_nnbayes_partial       = mme.nnbayes_partial
+    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
+    is_user_defined_nonliner = mme.is_user_defined_nonliner
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
-    activation_function      = mme.activation_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -336,7 +336,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits
         ########################################################################
         if latent_traits == true #to update ycorr!
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_function)
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
