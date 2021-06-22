@@ -1,54 +1,89 @@
 #Below function is to check parameters for NNBayes and print information
-function nnbayes_check_print_parameter(num_latent_traits,nonlinear_function,activation_function)
-    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
-
-    #part1: fully/partial-connected NN
-    if typeof(num_latent_traits) == Int64         #fully-connected. e.g, num_latent_traits=5
-        printstyled(" - Neural network:         fully connected neural network \n",bold=false,color=:green)
-        printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
-        nnbayes_partial=false
-    elseif num_latent_traits == false   #partial-connected.
-        printstyled(" - Neural network:         partially connected neural network \n",bold=false,color=:green)
-        nnbayes_partial=true
-    else
-        error("Please check you number of latent traits")
+function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinear_function)
+    ## Step1. determine the neural network architecture
+    # (i) count the number of genome
+    model_terms = Symbol.(strip.(split(split(model_equations,"=")[2],"+")))
+    ngeno = 0
+    for i in model_terms
+        if isdefined(Main,i) && typeof(getfield(Main,i)) == Genotypes
+            ngeno+=1
+        end
+    end
+    if ngeno==0
+        error("please load genotypes.")
     end
 
-    #part2: activation function/user-defined non-linear function
-    if nonlinear_function == "Neural Network" #NN
-        if activation_function in ["tanh","sigmoid","relu","leakyrelu","linear"]
-            printstyled(" - Activation function:    $activation_function.\n",bold=false,color=:green)
-            printstyled(" - Sampler:                Hamiltonian Monte Carlo. \n",bold=false,color=:green)
+    # (ii) determine partial/fully connected
+    if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
+        nargument_nonlinear = first(methods(nonlinear_function)).nargs-1
+        is_user_defined_nonliner = true
+        if ngeno == 1    # fully-connected
+            nnbayes_fully_connnect = true
+            num_hidden_nodes = nargument_nonlinear
+        elseif ngeno == nargument_nonlinear # partial-connected
+            nnbayes_fully_connnect = false
+            num_hidden_nodes = ngeno
         else
-            error("Please select the activation function from tanh/sigmoid/relu/leakyrelu/linear")
+            error("#arguments in nonlinear_function ≠ #loaded genotype.")
         end
-    elseif isa(nonlinear_function, Function) #user-defined nonlinear function. e.g, CropGrowthModel()
-        if activation_function == false
-            printstyled(" - Nonlinear function:     user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n",bold=false,color=:green)
-            printstyled(" - Sampler:                Matropolis-Hastings.\n",bold=false,color=:green)
+    elseif nonlinear_function in ["tanh","sigmoid","relu","leakyrelu","linear"]
+        is_user_defined_nonliner = false
+        if num_hidden_nodes != false && typeof(num_hidden_nodes) == Int64
+            num_hidden_nodes = num_hidden_nodes
+            if ngeno == 1 # fully-connected
+                nnbayes_fully_connnect = true
+            elseif ngeno  == num_hidden_nodes #partial-connected
+                nnbayes_fully_connnect = false
+            else
+                error("#loaded genotype ≠ num_hidden_nodes")
+            end
+        elseif num_hidden_nodes == false  #partial
+            nnbayes_fully_connnect = false
+            num_hidden_nodes    = ngeno
         else
-            error("activation function is not allowed for user-defined nonlinear function")
+            error("the num_hidden_nodes should be an interger.")
         end
     else
-        error("nonlinear_function can only be Neural Network or a user-defined nonlinear function")
+        error("invalid nonlinear_function.")
     end
-    return nnbayes_partial
+
+    # (iii) print NNBayes info
+    if nnbayes_fully_connnect == true
+        printstyled(" - Neural network:         fully connected neural network. \n",bold=false,color=:green)
+    elseif nnbayes_fully_connnect == false
+        printstyled(" - Neural network:         partially connected neural network. \n",bold=false,color=:green)
+    else
+        error("error")
+    end
+    printstyled(" - Number of hidden nodes: $num_hidden_nodes. \n",bold=false,color=:green)
+
+    if is_user_defined_nonliner==false  #NN with activation function
+        printstyled(" - Nonlinear function:     $nonlinear_function.\n",bold=false,color=:green)
+        printstyled(" - Sampler:                Hamiltonian Monte Carlo. \n",bold=false,color=:green)
+    elseif is_user_defined_nonliner==true #user-defined nonlinear function. e.g, CropGrowthModel()
+        printstyled(" - Nonlinear function:     user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n",bold=false,color=:green)
+        printstyled(" - Sampler:                Matropolis-Hastings.\n",bold=false,color=:green)
+    else
+        error("invalid nonlinear_function")
+    end
+
+    return nnbayes_fully_connnect,num_hidden_nodes,is_user_defined_nonliner
 end
 
 
 #Below function is to re-phase modelm for NNBayes
-function nnbayes_model_equation(model_equations,num_latent_traits)
+function nnbayes_model_equation(nnbayes_fully_connnect,model_equations,num_hidden_nodes)
 
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
 
-    if typeof(num_latent_traits) == Int64   #fully-connected
+    if nnbayes_fully_connnect == true   #fully-connected
       # old: y=intercept+geno
       # new: y1=intercept+geno;y2=intercept+geno
-      for i = 1:num_latent_traits
+      for i = 1:num_hidden_nodes
         model_equations = model_equations*lhs*string(i)*"="*rhs*";"
       end
-    elseif num_latent_traits == false      #partially-connected
+  elseif nnbayes_fully_connnect == false   #partially-connected
       # old: y=intercept+geno1+geno2
       # new: y1= intercept+geno1;y2=intercept+geno2
       rhs_split=strip.(split(rhs,"+"))
@@ -67,24 +102,6 @@ function nnbayes_model_equation(model_equations,num_latent_traits)
     end
     model_equations = model_equations[1:(end-1)]
 end
-
-
-# below function is to check whether the loaded genotype matches the model equation
-function nnbayes_check_nhiddennode(num_latent_traits,mme)
-    if typeof(num_latent_traits) == Int64 #fully-connected. e.g, num_latent_traits=5
-        if length(mme.M)>1
-            error("fully-connected NN only allow one genotype; num_latent_traits is not allowed in partial-connected NN ")
-        end
-    elseif num_latent_traits == false   #partial-connected.
-        if length(mme.M)==1
-            error("partial-connected NN requirs >1 genotype group")
-        else
-            num_latent_traits = length(mme.M)
-            printstyled(" - Number of hidden nodes: $num_latent_traits \n",bold=false,color=:green)
-        end #Note, if only geno1 & geno2 are loaded by get_genotypes, but there is "geno3" in equation, then geno3 will be treated like age.
-    end
-end
-
 
 
 # below function is to define the activation function for neural network
@@ -113,6 +130,7 @@ end
 # below function is to modify mme from multi-trait model to multiple single trait models
 # coded by Hao
 function nnbayes_mega_trait(mme)
+
     #mega_trait
     if mme.nModels == 1
         error("more than 1 trait is required for MegaLMM analysis.")

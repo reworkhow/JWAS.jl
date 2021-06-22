@@ -17,9 +17,10 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     is_mega_trait            = mme.MCMCinfo.mega_trait
+    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
+    is_user_defined_nonliner = mme.is_user_defined_nonliner
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
-    activation_function      = mme.activation_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -103,7 +104,7 @@ function MCMC_BayesianAlphabet(mme,df)
             end
         end
     end
-    if mme.nnbayes_partial == true
+    if is_nnbayes_partial
         nnbayes_partial_para_modify3(mme)
     end
 
@@ -215,49 +216,49 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
-                    if is_multi_trait && mme.nnbayes_partial==false
+                    if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end
-                    elseif mme.nnbayes_partial==true
+                    elseif is_nnbayes_partial
                         BayesABC!(Mi,wArray[i],mme.R[i,i],locus_effect_variances)
                     else
                         BayesABC!(Mi,ycorr,mme.R,locus_effect_variances)
                     end
                 elseif Mi.method =="RR-BLUP"
-                    if is_multi_trait && mme.nnbayes_partial==false
+                    if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             megaBayesC0!(Mi,wArray,mme.R)
                         else
                             MTBayesC0!(Mi,wArray,mme.R)
                         end
-                    elseif mme.nnbayes_partial==true
+                    elseif is_nnbayes_partial
                         BayesC0!(Mi,wArray[i],mme.R[i,i])
                     else
                         BayesC0!(Mi,ycorr,mme.R)
                     end
                 elseif Mi.method == "BayesL"
-                    if is_multi_trait && mme.nnbayes_partial==false
+                    if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait #problem with sampleGammaArray
                             megaBayesL!(Mi,wArray,mme.R)
                         else
                             MTBayesL!(Mi,wArray,mme.R)
                         end
-                    elseif mme.nnbayes_partial==true
+                    elseif is_nnbayes_partial
                         BayesC0!(Mi,wArray[i],mme.R[i,i])
                     else
                         BayesL!(Mi,ycorr,mme.R)
                     end
                 elseif Mi.method == "GBLUP"
-                    if is_multi_trait && mme.nnbayes_partial==false
+                    if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             megaGBLUP!(Mi,wArray,mme.R,invweights)
                         else
                             MTGBLUP!(Mi,wArray,ycorr,mme.R,invweights)
                         end
-                    elseif mme.nnbayes_partial==true
+                    elseif is_nnbayes_partial
                         GBLUP!(Mi,wArray[i],mme.R[i,i],invweights)
                     else
                         GBLUP!(Mi,ycorr,mme.R,invweights)
@@ -267,7 +268,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 # Marker Inclusion Probability
                 ########################################################################
                 if Mi.estimatePi == true
-                    if is_multi_trait && mme.nnbayes_partial==false
+                    if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
                         else
@@ -335,7 +336,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits
         ########################################################################
         if latent_traits == true #to update ycorr!
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function,activation_function)
+            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

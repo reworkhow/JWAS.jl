@@ -148,7 +148,7 @@ function output_result(mme,output_folder,
           end
       end
 
-      if mme.latent_traits == true && mme.nonlinear_function == "Neural Network"
+      if mme.latent_traits == true && mme.is_user_defined_nonliner == false  #Neural Network with activation function
           myvar         = "neural_networks_bias_and_weights"
           samplesfile   = output_file*"_"*myvar*".txt"
           samples       = readdlm(samplesfile,',',header=false)
@@ -228,10 +228,11 @@ function getEBV(mme,traiti)
             EBV += EBV_term
         end
     end
+    is_partial_connect = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
     if mme.M != 0
         for i in 1:length(mme.M)
             Mi=mme.M[i]
-            if mme.nnbayes_partial==false  #non-NNBayes_partial
+            if !is_partial_connect  #non-NNBayes_partial
                 EBV += Mi.output_genotypes*Mi.α[traiti]
             else  #NNBayes_partial
                 if i==traiti
@@ -297,7 +298,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       if mme.latent_traits == true
           push!(outvar,"EBV_NonLinear")
-          if mme.nonlinear_function == "Neural Network"
+          if mme.is_user_defined_nonliner == false #Neural Network with activation function
               push!(outvar,"neural_networks_bias_and_weights")
           end
       end
@@ -385,6 +386,7 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.pedTrmVec != 0
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
     end
+    is_partial_connect = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
           for traiti in 1:Mi.ntraits
@@ -413,7 +415,7 @@ function output_MCMC_samples(mme,vRes,G0,
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              myEBV = getEBV(mme,traiti) #actually BV
-             trait_name = mme.nnbayes_partial ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
+             trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
              writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
@@ -428,10 +430,10 @@ function output_MCMC_samples(mme,vRes,G0,
     end
     if mme.latent_traits == true
         EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
-        if mme.nonlinear_function != "Neural Network"
+        if mme.is_user_defined_nonliner == true  #user-defined nonlinear function
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
-        else
-            BV_NN = [ones(size(EBVmat,1)) mme.activation_function.(EBVmat)]*mme.weights_NN
+        else  #activation function
+            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
