@@ -115,7 +115,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
 
   #NNBayes:
   if nonlinear_function != false
-    mme.latent_traits            = true
     mme.is_fully_connected   = is_fully_connected
     mme.is_activation_fcn = is_activation_fcn
     mme.nonlinear_function       = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)

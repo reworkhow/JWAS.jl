@@ -161,7 +161,7 @@ function runMCMC(mme::MME,df;
                 categorical_trait               = false,
                 censored_trait                  = false,
                 causal_structure                = false,
-                mega_trait                      = mme.latent_traits==true ? true : false,
+                mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
                 constraint                      = false,
                 #Genomic Prediction
@@ -183,14 +183,14 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
-    #Nonlinear
-    if mme.latent_traits == true
+    #NNBayes
+    if mme.nonlinear_function != false
         yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
         for i in mme.lhsVec
             df[!,i]= yobs
         end
     end
-    is_nnbayes_partial       = mme.latent_traits==true && mme.is_fully_connected==false
+    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -411,7 +411,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial       = mme.latent_traits==true && mme.is_fully_connected==false
+    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return

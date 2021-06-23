@@ -15,16 +15,16 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
 
     # (ii) determine partial/fully connected
     if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
-        nargument_nonlinear = first(methods(nonlinear_function)).nargs-1
+        nargs_nonlinear = first(methods(nonlinear_function)).nargs-1
         is_activation_fcn = false
         if ngeno == 1    # fully-connected
             is_fully_connected = true
-            num_hidden_nodes = nargument_nonlinear
-        elseif ngeno == nargument_nonlinear # partial-connected
+            num_hidden_nodes = nargs_nonlinear
+        elseif ngeno == nargs_nonlinear # partial-connected
             is_fully_connected = false
             num_hidden_nodes = ngeno
         else
-            error("#arguments in nonlinear_function ≠ #loaded genotype.")
+            error(" number of arguments in nonlinear_function ≠ number of loaded genotypes.")
         end
     elseif nonlinear_function in ["tanh","sigmoid","relu","leakyrelu","linear"]
         is_activation_fcn = true
