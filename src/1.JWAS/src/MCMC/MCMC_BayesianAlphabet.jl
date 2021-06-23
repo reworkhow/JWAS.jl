@@ -17,9 +17,8 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     is_mega_trait            = mme.MCMCinfo.mega_trait
-    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
-    is_user_defined_nonliner = mme.is_user_defined_nonliner
-    latent_traits            = mme.latent_traits
+    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
@@ -125,7 +124,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     #mme.ySparse: latent traits
     #yobs       : observed trait
-    if latent_traits == true
+    if nonlinear_function != false
         yobs = mme.ySparse[1:length(mme.obsID)]
     end
     ############################################################################
@@ -161,7 +160,7 @@ function MCMC_BayesianAlphabet(mme,df)
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
     # # Initialize mme for hmc before Gibbs
-    if latent_traits == true
+    if nonlinear_function != false
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
 
@@ -333,9 +332,9 @@ function MCMC_BayesianAlphabet(mme,df)
             sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
         end
         ########################################################################
-        # 5. Latent Traits
+        # 5. Latent Traits (NNBayes)
         ########################################################################
-        if latent_traits == true #to update ycorr!
+        if nonlinear_function != false #to update ycorr!
             sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################

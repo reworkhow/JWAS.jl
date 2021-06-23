@@ -18,7 +18,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old     = reshape(ylats_old,nobs,ntraits) #Tianjing's mme.Z
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
 
-    if mme.is_user_defined_nonliner == false #Neural Network with activation function
+    if mme.is_activation_fcn == true #Neural Network with activation function
         ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits),nonlinear_function)
     else  #user-defined function, MH
         candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
@@ -37,7 +37,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     end
 
     #sample weights
-    if mme.is_user_defined_nonliner == false #Neural Network with activation function
+    if mme.is_activation_fcn == true #Neural Network with activation function
         X       = [ones(nobs) nonlinear_function.(ylats_new)]
         lhs     = X'X + I*0.00001
         Ch      = cholesky(lhs)
@@ -52,7 +52,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
     #sample σ2_yobs
-    if mme.is_user_defined_nonliner == true  # user-defined nonlinear function
+    if mme.is_activation_fcn == false  # user-defined nonlinear function
         residuals = yobs-nonlinear_function.(Tuple([view(ylats_new,:,i) for i in 1:ntraits])...)
     else   # Neural Network with activation function
         residuals = yobs-[ones(nobs) nonlinear_function.(ylats_new)]*weights
