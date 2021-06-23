@@ -16,29 +16,29 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
     # (ii) determine partial/fully connected
     if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
         nargument_nonlinear = first(methods(nonlinear_function)).nargs-1
-        is_user_defined_nonliner = true
+        is_activation_fcn = false
         if ngeno == 1    # fully-connected
-            nnbayes_fully_connnect = true
+            is_fully_connected = true
             num_hidden_nodes = nargument_nonlinear
         elseif ngeno == nargument_nonlinear # partial-connected
-            nnbayes_fully_connnect = false
+            is_fully_connected = false
             num_hidden_nodes = ngeno
         else
             error("#arguments in nonlinear_function ≠ #loaded genotype.")
         end
     elseif nonlinear_function in ["tanh","sigmoid","relu","leakyrelu","linear"]
-        is_user_defined_nonliner = false
+        is_activation_fcn = true
         if num_hidden_nodes != false && typeof(num_hidden_nodes) == Int64
             num_hidden_nodes = num_hidden_nodes
             if ngeno == 1 # fully-connected
-                nnbayes_fully_connnect = true
+                is_fully_connected = true
             elseif ngeno  == num_hidden_nodes #partial-connected
-                nnbayes_fully_connnect = false
+                is_fully_connected = false
             else
                 error("#loaded genotype ≠ num_hidden_nodes")
             end
         elseif num_hidden_nodes == false  #partial
-            nnbayes_fully_connnect = false
+            is_fully_connected = false
             num_hidden_nodes    = ngeno
         else
             error("the num_hidden_nodes should be an interger.")
@@ -48,42 +48,42 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
     end
 
     # (iii) print NNBayes info
-    if nnbayes_fully_connnect == true
+    if is_fully_connected == true
         printstyled(" - Neural network:         fully connected neural network. \n",bold=false,color=:green)
-    elseif nnbayes_fully_connnect == false
+    elseif is_fully_connected == false
         printstyled(" - Neural network:         partially connected neural network. \n",bold=false,color=:green)
     else
         error("error")
     end
     printstyled(" - Number of hidden nodes: $num_hidden_nodes. \n",bold=false,color=:green)
 
-    if is_user_defined_nonliner==false  #NN with activation function
+    if is_activation_fcn==true  #NN with activation function
         printstyled(" - Nonlinear function:     $nonlinear_function.\n",bold=false,color=:green)
         printstyled(" - Sampler:                Hamiltonian Monte Carlo. \n",bold=false,color=:green)
-    elseif is_user_defined_nonliner==true #user-defined nonlinear function. e.g, CropGrowthModel()
+    elseif is_activation_fcn==false #user-defined nonlinear function. e.g, CropGrowthModel()
         printstyled(" - Nonlinear function:     user-defined nonlinear_function for the relationship between hidden nodes and observed trait is used.\n",bold=false,color=:green)
         printstyled(" - Sampler:                Matropolis-Hastings.\n",bold=false,color=:green)
     else
         error("invalid nonlinear_function")
     end
 
-    return nnbayes_fully_connnect,num_hidden_nodes,is_user_defined_nonliner
+    return num_hidden_nodes,is_fully_connected,is_activation_fcn
 end
 
 
 #Below function is to re-phase modelm for NNBayes
-function nnbayes_model_equation(nnbayes_fully_connnect,model_equations,num_hidden_nodes)
+function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
 
     lhs, rhs = strip.(split(model_equations,"="))
     model_equations = ""
 
-    if nnbayes_fully_connnect == true   #fully-connected
+    if is_fully_connected == true   #fully-connected
       # old: y=intercept+geno
       # new: y1=intercept+geno;y2=intercept+geno
       for i = 1:num_hidden_nodes
         model_equations = model_equations*lhs*string(i)*"="*rhs*";"
       end
-  elseif nnbayes_fully_connnect == false   #partially-connected
+  elseif is_fully_connected == false   #partially-connected
       # old: y=intercept+geno1+geno2
       # new: y1= intercept+geno1;y2=intercept+geno2
       rhs_split=strip.(split(rhs,"+"))

@@ -17,8 +17,8 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     is_mega_trait            = mme.MCMCinfo.mega_trait
-    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
-    is_user_defined_nonliner = mme.is_user_defined_nonliner
+    is_nnbayes_partial       = mme.latent_traits==true && mme.is_fully_connected==false
+    is_activation_fcn        = mme.is_activation_fcn
     latent_traits            = mme.latent_traits
     nonlinear_function       = mme.nonlinear_function
     ############################################################################

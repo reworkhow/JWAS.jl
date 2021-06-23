@@ -190,7 +190,7 @@ function runMCMC(mme::MME,df;
             df[!,i]= yobs
         end
     end
-    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
+    is_nnbayes_partial       = mme.latent_traits==true && mme.is_fully_connected==false
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -411,7 +411,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial       = mme.latent_traits==true && mme.nnbayes_fully_connnect==false
+    is_nnbayes_partial       = mme.latent_traits==true && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return

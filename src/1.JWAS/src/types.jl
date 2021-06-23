@@ -246,8 +246,8 @@ mutable struct MME
     nonlinear_function #user-provide function, "tanh"
     weights_NN
     σ2_yobs
-    nnbayes_fully_connnect
-    is_user_defined_nonliner
+    is_fully_connected
+    is_activation_fcn
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)

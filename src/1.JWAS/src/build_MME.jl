@@ -40,12 +40,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
 
     #NNBayes: check parameters
-    nnbayes_fully_connnect,num_hidden_nodes,is_user_defined_nonliner = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
+    num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
 
     #NNBayes: re-write model equation
-    model_equations = nnbayes_model_equation(nnbayes_fully_connnect,model_equations,num_hidden_nodes)
+    model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
   end
-  is_nnbayes_partial = nonlinear_function != false && nnbayes_fully_connnect==false
+  is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false
 
   if R != false && !isposdef(map(AbstractFloat,R))
     error("The covariance matrix is not positive definite.")
@@ -116,8 +116,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   #NNBayes:
   if nonlinear_function != false
     mme.latent_traits            = true
-    mme.nnbayes_fully_connnect   = nnbayes_fully_connnect
-    mme.is_user_defined_nonliner = is_user_defined_nonliner
+    mme.is_fully_connected   = is_fully_connected
+    mme.is_activation_fcn = is_activation_fcn
     mme.nonlinear_function       = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
   end
 
