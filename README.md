@@ -52,6 +52,8 @@ JWAS.jl
 
  * [Censored Trait Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Censored-Trait-Analysis)
 
+ * [Multi-class Bayesian Analysis](https://github.com/reworkhow/JWAS.jl/wiki/Multiclass-Bayesian-analysis)
+
  * [Neural Networks](https://github.com/reworkhow/JWAS.jl/wiki/Neural-Networks)
 
  * [Cross Validation](https://github.com/reworkhow/JWAS.jl/wiki/Cross-Validation)	
