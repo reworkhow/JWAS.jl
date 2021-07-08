@@ -293,7 +293,7 @@ function runMCMC(mme::MME,df;
     if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
         printstyled(" - Bayesian Alphabet:                multiple independent single-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
         nnbayes_mega_trait(mme)
-    else
+    elseif mme.nonlinear_function != false  #only print for NNBayes
         printstyled(" - Bayesian Alphabet:                multi-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
     end
 

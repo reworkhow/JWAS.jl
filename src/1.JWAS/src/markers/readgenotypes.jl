@@ -29,6 +29,7 @@ function add_genotypes(mme::MME,M::Union{AbstractString,Array{Float64,2},Array{F
                             header = header,rowID = rowID,separator = separator,
                             center = center,G_is_marker_variance = G_is_marker_variance,df = df)
     genotypei.ntraits = mme.nModels
+    genotypei.trait_names = string.(mme.lhsVec)
     if mme.nModels != 1
       genotypei.df = genotypei.df + mme.nModels
     end

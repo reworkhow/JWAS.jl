@@ -390,7 +390,7 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.M != 0 && outfile != false
       for Mi in mme.M
           for traiti in 1:Mi.ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti],',')
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
           end
           if Mi.G != false
               if mme.nModels == 1
