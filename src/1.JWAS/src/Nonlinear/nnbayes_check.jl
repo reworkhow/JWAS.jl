@@ -1,7 +1,7 @@
 #Below function is to check parameters for NNBayes and print information
 function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinear_function)
     ## Step1. determine the neural network architecture
-    # (i) count the number of genome
+    # (i) count the number of genotypes
     model_terms = Symbol.(strip.(split(split(model_equations,"=")[2],"+")))
     ngeno = 0
     for i in model_terms
@@ -13,11 +13,11 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
         error("please load genotypes.")
     end
 
-    # (ii) determine partial/fully connected
+    # (ii) determine whether partial/fully connected neural network
     if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
         nargs_nonlinear = first(methods(nonlinear_function)).nargs-1
         is_activation_fcn = false
-        if ngeno == 1    # fully-connected
+        if ngeno == 1    # fully-connected (equivalent to y=geno1+geno1+geno1 (memory efficient))
             is_fully_connected = true
             num_hidden_nodes = nargs_nonlinear
         elseif ngeno == nargs_nonlinear # partial-connected
@@ -35,13 +35,13 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
             elseif ngeno  == num_hidden_nodes #partial-connected
                 is_fully_connected = false
             else
-                error("#loaded genotype ≠ num_hidden_nodes")
+                error("number of loaded genotypes ≠ number of hidden nodes")
             end
         elseif num_hidden_nodes == false  #partial
             is_fully_connected = false
-            num_hidden_nodes    = ngeno
+            num_hidden_nodes   = ngeno
         else
-            error("the num_hidden_nodes should be an interger.")
+            error("The num_hidden_nodes should be an interger.")
         end
     else
         error("invalid nonlinear_function.")
@@ -83,7 +83,7 @@ function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connec
       for i = 1:num_hidden_nodes
         model_equations = model_equations*lhs*string(i)*"="*rhs*";"
       end
-  elseif is_fully_connected == false   #partially-connected
+    elseif is_fully_connected == false   #partially-connected
       # old: y=intercept+geno1+geno2
       # new: y1= intercept+geno1;y2=intercept+geno2
       rhs_split=strip.(split(rhs,"+"))
@@ -100,7 +100,7 @@ function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connec
         model_equations = model_equations*lhs*string(i)*"="*non_gene_term*"+"*geno_term[i]*";"
       end
     end
-    model_equations = model_equations[1:(end-1)]
+    model_equations = model_equations[1:(end-1)] #remove the semicolon at the end
 end
 
 

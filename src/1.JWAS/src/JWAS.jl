@@ -183,14 +183,14 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
-    #NNBayes
-    if mme.nonlinear_function != false
-        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+    #Neural Network
+    is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
+    if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
         for i in mme.lhsVec
             df[!,i]= yobs
         end
     end
-    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -268,9 +268,6 @@ function runMCMC(mme::MME,df;
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-
-
-
     # Double Precision
     if double_precision == true
         if mme.M != 0

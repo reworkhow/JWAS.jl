@@ -247,7 +247,7 @@ mutable struct MME
     weights_NN
     σ2_yobs
     is_fully_connected
-    is_activation_fcn
+    is_activation_fcn  #Neural Network with activation function (not user-defined function)
 
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)

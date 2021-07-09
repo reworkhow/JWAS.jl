@@ -36,77 +36,81 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
-  if nonlinear_function != false  #NNBayes
-    printstyled("Bayesian Neural Network is used with follwing information: \n",bold=false,color=:green)
-
-    #NNBayes: check parameters
-    num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
-
-    #NNBayes: re-write model equation
-    model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
-  end
-  is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false
-
-  if R != false && !isposdef(map(AbstractFloat,R))
-    error("The covariance matrix is not positive definite.")
-  end
-
-  if !(typeof(model_equations)<:AbstractString) || model_equations==""
+    if R != false && !isposdef(map(AbstractFloat,R))
+      error("The covariance matrix is not positive definite.")
+    end
+    if !(typeof(model_equations)<:AbstractString) || model_equations==""
       error("Model equations are wrong.\n
       To find an example, type ?build_model and press enter.\n")
-  end
+    end
 
-  #e.g., ""y2 = A+B+A*B""
-  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
-  nModels    = size(modelVec,1)
-  if R != false && size(R,1) != nModels
-    error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
-  end
+    ############################################################################
+    # Bayesian Neural Network
+    ############################################################################
+    if nonlinear_function != false  #NNBayes
+      printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
+      #NNBayes: check parameters
+      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
+      #NNBayes: re-write model equations by treating hidden nodes as multiple traits
+      model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
+    end
+    is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false #1.partial connected NN 2. fully connected NN + non-NN
 
-  lhsVec     = Symbol[]    #:y, phenotypes
-  modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
-  dict       = Dict{AbstractString,ModelTerm}()
-  for (m,model) = enumerate(modelVec)
-    lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-    lhs    = strip(lhsRhs[1])                  #"y2"
-    lhsVec = [lhsVec;Symbol(lhs)]              #:y2
-    rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
-    mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
-    modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
-  end
-  for trm in modelTerms          #make a dict for model terms
-    dict[trm.trmStr] = trm
-  end
+    ############################################################################
+    # All model terms (will be added to MME)
+    ############################################################################
+    #e.g., ""y2 = A+B+A*B""
+    modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
+    nModels    = size(modelVec,1)
+    if R != false && size(R,1) != nModels
+      error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
+    end
+    lhsVec     = Symbol[]    #:y, phenotypes
+    modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
+    dict       = Dict{AbstractString,ModelTerm}()
+    for (m,model) = enumerate(modelVec)
+      lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
+      lhs    = strip(lhsRhs[1])                  #"y2"
+      lhsVec = [lhsVec;Symbol(lhs)]              #:y2
+      rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
+      mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
+      modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
+    end
+    for trm in modelTerms          #make a dict for model terms
+      dict[trm.trmStr] = trm
+    end
 
-  #add genotypes to mme
-  genotypes = []
-  whichterm = 1
-  for term in modelTerms
-    term_symbol = Symbol(split(term.trmStr,":")[end])
-    if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
-      if typeof(getfield(Main,term_symbol)) == Genotypes
-        term.random_type = "genotypes"
-        genotypei = getfield(Main,term_symbol)
-        genotypei.name = string(term_symbol)
-        trait_names=[term.iTrait]
-        if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
-          genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
-          genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
-          if nModels != 1
-            genotypei.df = genotypei.df + nModels
-          end
-          if genotypei.G != false || genotypei.genetic_variance != false
-            if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
-              error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
+    ############################################################################
+    # Genotypes (will be added to MME)
+    ############################################################################
+    genotypes = []
+    whichterm = 1
+    for term in modelTerms
+      term_symbol = Symbol(split(term.trmStr,":")[end])
+      if isdefined(Main,term_symbol) #@isdefined can be used to test whether a local variable or object field is defined
+        if typeof(getfield(Main,term_symbol)) == Genotypes
+          term.random_type = "genotypes"
+          genotypei = getfield(Main,term_symbol)
+          genotypei.name = string(term_symbol)
+          trait_names=[term.iTrait]
+          if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
+            genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
+            genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
+            if nModels != 1
+              genotypei.df = genotypei.df + nModels
             end
+            if !is_nnbayes_partial && (genotypei.G != false || genotypei.genetic_variance != false)
+              if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
+                error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
+              end
+            end
+            push!(genotypes,genotypei)
           end
-          push!(genotypes,genotypei)
         end
       end
     end
-  end
 
-  #crear mme with genotypes
+  #create mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
@@ -116,8 +120,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   #NNBayes:
   if nonlinear_function != false
     mme.is_fully_connected   = is_fully_connected
-    mme.is_activation_fcn = is_activation_fcn
-    mme.nonlinear_function       = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
+    mme.is_activation_fcn    = is_activation_fcn
+    mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
   end
 
   return mme
