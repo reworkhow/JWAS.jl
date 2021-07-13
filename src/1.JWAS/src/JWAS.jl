@@ -263,7 +263,7 @@ function runMCMC(mme::MME,df;
     mme.causal_structure = causal_structure
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
-        missing_phenotypes, constraint = false, true
+        mme.MCMCinfo.missing_phenotypes, mme.MCMCinfo.constraint = false, true
         if !istril(causal_structure)
             error("The causal structue needs to be a lower triangular matrix.")
         end
@@ -287,11 +287,11 @@ function runMCMC(mme::MME,df;
     end
 
     # NNBayes mega trait: from multi-trait to multiple single-trait
-    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
-        printstyled(" - Bayesian Alphabet:                multiple independent single-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+    if mme.MCMCinfo.mega_trait == true
+        printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
         nnbayes_mega_trait(mme)
     elseif mme.nonlinear_function != false  #only print for NNBayes
-        printstyled(" - Bayesian Alphabet:                multi-trait bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+        printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
     end
 
     # NNBayes: modify parameters for partial connected NN
