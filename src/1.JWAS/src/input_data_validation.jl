@@ -151,6 +151,9 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,mme.M[1].obsID)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
+            if mme.MCMCinfo.censored_trait != false
+                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index]
+            end
             printstyled("In this complete genomic data (non-single-step) analyis, ",
             length(index)-sum(index)," phenotyped individuals are not genotyped. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
@@ -161,6 +164,9 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,pedID)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
+            if mme.MCMCinfo.censored_trait != false
+                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index]
+            end
             printstyled("In this incomplete genomic data (single-step) or PBLUP analysis, ",
             length(index)-sum(index)," phenotyped individuals are not included in the pedigree. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
