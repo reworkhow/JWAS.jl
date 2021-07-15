@@ -27,7 +27,7 @@ function categorical_trait_sample_liabilities(mme,ycorr,category_obs,thresholds)
     ########################################################################
     # liabilities
     ########################################################################
-    cmean = mme.ySparse - ycorr #liabilities - residuals
+    cmean = vec(mme.ySparse) - ycorr #liabilities - residuals
     for i in 1:length(category_obs) #1,2,2,3,1...
         whichcategory = category_obs[i]
         mme.ySparse[i] = rand(truncated(Normal(cmean[i], 1), thresholds[whichcategory], thresholds[whichcategory+1]))
@@ -42,6 +42,6 @@ function categorical_trait_sample_liabilities(mme,ycorr,category_obs,thresholds)
         upperboundry  = minimum(mme.ySparse[category_obs .== i])
         thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
     end
-    ycorr = mme.ySparse - cmean
+    ycorr = vec(mme.ySparse) - cmean
     return ycorr
 end
