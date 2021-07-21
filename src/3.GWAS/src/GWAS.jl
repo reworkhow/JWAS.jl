@@ -31,7 +31,8 @@ run genomic window-based GWAS
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
 * **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided,
-  i.e., **map_file**=`false`, a fake map file will be generated with 100 markers in each 1 Mb window.
+  i.e., **map_file**=`false`, a fake map file will be generated with **window_size** markers in each 1 Mb window, and
+  each 1 Mb window will be tested.
 * If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
 * Statistics are computed for nonoverlapping windows of size *window_size* by default.
   If **sliding_window** = true, those for overlapping sliding windows are calculated.
@@ -64,11 +65,12 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     end
     if map_file == false && typeof(window_size) <: Integer
         println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
-        nmarkers=length(readdlm(marker_effect_file,',',header=true)[2])
+        nmarkers=length(readdlm(marker_effects_file[1],',',header=true)[2])
         mapfile = DataFrame(markerID=1:nmarkers,
                             chromosome=fill(1,nmarkers),
                             position=1:10_000:nmarkers*10_000)
         CSV.write("mapfile.temp",mapfile)
+        map_file, window_size = "mapfile.temp", "1 Mb"
     end
 
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
