@@ -66,9 +66,10 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     if map_file == false && typeof(window_size) <: Integer
         println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
         nmarkers=length(readdlm(marker_effects_file[1],',',header=true)[2])
-        mapfile = DataFrame(markerID=1:nmarkers,
+        positions =
+        mapfile = DataFrame(markerID  =1:nmarkers,
                             chromosome=fill(1,nmarkers),
-                            position=1:10_000:nmarkers*10_000)
+                            position  =Int.(floor.(1:(1_000_000/window_size):nmarkers*(1_000_000/window_size))))
         CSV.write("mapfile.temp",mapfile)
         map_file, window_size = "mapfile.temp", "1 Mb"
     end
