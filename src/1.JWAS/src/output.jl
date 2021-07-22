@@ -26,12 +26,20 @@ function prediction_setup(model)
         end
     else
         prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
-        if mme.MCMCinfo.output_heritability != false
+        if model.MCMCinfo.output_heritability != false
             printstyled("User-defined prediction equation is provided. ","The heritability is the ",
             "proportion of phenotypic variance explained by the value defined by the prediction equation.\n",
             bold=false,color=:green)
         end
+        for i in prediction_equation
+            term_symbol = Symbol(split(i,":")[end])
+            if !(haskey(model.modelTermDict,i) || (isdefined(Main,term_symbol) && typeof(getfield(Main,term_symbol)) == Genotypes))
+                error("Terms $i in the prediction equation is not found.")
+            end
+        end
     end
+    printstyled("Predicted values for individuals of interest will be obtained as the summation of ",
+    prediction_equation, " (Note that genomic data is always included for now).",bold=false,color=:green)
     if length(prediction_equation) == 0 && model.M == false
         println("Default or user-defined prediction equation are not available.")
         model.MCMCinfo.outputEBV = false
@@ -221,10 +229,13 @@ function getEBV(mme,traiti)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
             sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
-            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; convert it to a scalar
+            if VERSION < v"1.6" && length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
                 sol_term = sol_term[1]
             end
             EBV_term = mme.output_X[term]*sol_term
+            if VERSION < v"1.6" && length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+                EBV_term = vec(EBV_term)
+            end
             EBV += EBV_term
         end
     end
