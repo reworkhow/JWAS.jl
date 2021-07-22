@@ -263,7 +263,7 @@ function make_dataframes(df,mme)
     else
         df_whole = df
     end
-    df_output = df_whole[[i in mme.output_ID for i in df_whole[!,1]],:]
+    #df_output = df_whole[[i in mme.output_ID for i in df_whole[!,1]],:]
     #check individual of interest (output IDs) with prediction equations
     for term in mme.MCMCinfo.prediction_equation
         if !haskey(mme.modelTermDict,term)
@@ -271,7 +271,7 @@ function make_dataframes(df,mme)
         end
         term_value = mme.modelTermDict[term]
         for i = 1:term_value.nFactors
-          if term_value.factors[i] != :intercept && any(ismissing,df_output[!,term_value.factors[i]])
+          if term_value.factors[i] != :intercept && any(ismissing,df_whole[!,term_value.factors[i]])
             printstyled("Missing values are found in column ",term_value.factors[i]," for some observations.",
             "Effects of this variable on such observations are considered as zeros. ",
             "It will be used in prediction. Users may impute missing values before the analysis. \n",
