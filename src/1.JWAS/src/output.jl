@@ -44,6 +44,7 @@ function prediction_setup(model)
         println("Default or user-defined prediction equation are not available.")
         model.MCMCinfo.outputEBV = false
     end
+    filter!(e->(e in keys(model.modelTermDict)),prediction_equation) #remove "genotypes" for now
     model.MCMCinfo.prediction_equation = prediction_equation
 end
 
