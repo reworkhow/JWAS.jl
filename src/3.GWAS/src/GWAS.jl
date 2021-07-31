@@ -5,15 +5,48 @@ include("GWAS_deprecated.jl")
 
 Compute the model frequency for each marker (the probability the marker is included in the model) using samples of marker effects stored in **marker_effects_file**.
 """
-function GWAS(marker_effects_file;header=true)
+function GWAS(marker_effects_file::AbstractString...;header=true)
+    is_nnbayes = length(marker_effects_file)==1 ? false : true
+    if is_nnbayes && header==false
+        error("Header is required for all files.")
+    end
+
     println("Compute the model frequency for each marker (the probability the marker is included in the model).")
     file = marker_effects_file
-    if header==true
-        samples,markerID =readdlm(file,',',header=true)
-    else
-        samples=readdlm(file,',')
-        markerID = 1:size(samples,2)
+
+    #read all files
+    markerID=[]
+    samples=[]
+    for i in 1:length(marker_effects_file)
+        if header==true
+            sample_i,markerID_i =readdlm(file[i],',',header=true)
+        else
+            sample_i = readdlm(file[i],',')
+            markerID_i = 1:size(sample_i,2)
+        end
+        append!(samples,[sample_i])
+        append!(markerID,[markerID_i])
     end
+
+    if is_nnbayes #NNBayes
+        num_hidden_nodes = length(marker_effects_file)
+        println("NN-Bayes:")
+        println(" - MCMC samples for marker effects on $num_hidden_nodes hidden nodes were loaded.")
+        if all(id->id==markerID[1], markerID)  #id in all files are the same -> fully-connected
+            println(" - fully-connected neural networks.")
+            markerID = markerID[1]                    # only keep id from one file
+            samples  = map(x -> x.!=0, samples)  # change non-zero effects to 1
+            samples  = sum(samples)              # indicate elements that are non-zero on at least one of the hidden nodes
+        else   #different id in different files -> partial-connected
+            println(" - partial-connected neural networks.")
+            markerID = hcat(markerID...)  #merge id together
+            samples  = hcat(samples...)   #merge samples together
+        end
+    else #conventional linear models
+        samples = samples[1]
+        markerID = markerID[1]
+    end
+
     modelfrequency = vec(mean(samples .!= 0.0,dims=1))
     out = DataFrame(marker_ID = vec(markerID), modelfrequency = modelfrequency)
     return out
@@ -49,6 +82,9 @@ m5,2,101135
 
 """
 function GWAS(mme,map_file,marker_effects_file::AbstractString...;
+              #NNBayes
+              weights_NN_file = false,  #MCMC samples for NN weights, e.g., "MCMC_samples_neural_networks_bias_and_weights.txt"
+              ebv_file = false,         #MCMC samples for ebv of each individual, e.g., "MCMC_samples_EBV_NonLinear.txt"
               #window
               window_size = "1 Mb",sliding_window = false,
               #GWAS
