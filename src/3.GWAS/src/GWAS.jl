@@ -85,6 +85,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               #NNBayes
               weights_NN_file = false,  #MCMC samples for NN weights, e.g., "MCMC_samples_neural_networks_bias_and_weights.txt"
               ebv_file = false,         #MCMC samples for ebv of each individual, e.g., "MCMC_samples_EBV_NonLinear.txt"
+              nonlinear_function = false,
               #window
               window_size = "1 Mb",sliding_window = false,
               #GWAS
@@ -93,16 +94,46 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               genetic_correlation = false,
               #misc
               header = true, output_winVarProps = false)
+    #NN-Bayes
+    is_nnbayes = weights_NN_file!=false && ebv_file!=false && nonlinear_function!=false ? true : false
+    if is_nnbayes
+        #covert nonlinear function
+        nonlinear_function = nnbayes_activation(nonlinear_function)
+
+        #read data
+        marker_effects=[]
+        markerID=[]
+        num_hidden_nodes = length(marker_effects_file)
+        for i in 1:num_hidden_nodes
+            marker_effects_i,markerID_i = readdlm(marker_effects_file[i],',',header=true)
+            append!(marker_effects,[marker_effects_i])
+            append!(markerID,[markerID_i])
+        end
+        weights_NN = readdlm(weights_NN_file,',')
+        ebv = readdlm(ebv_file,header=true,',')[1]
+
+        #print info
+        println("NN-Bayes:")
+        println(" - MCMC samples for marker effects on $num_hidden_nodes hidden nodes were loaded.")
+        if all(id->id==markerID[1], markerID)  #id in all files are the same -> fully-connected
+            println(" - fully-connected neural networks.")
+        else   #different id in different files -> partial-connected
+            error("WPPA for partial-connected neural networks is not supported!")
+        end
+    end
+
+    #get genotype
+    X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+    nmarkers=size(X,2)
 
     if typeof(window_size) == String
         if split(window_size)[2] != "Mb"
             error("The format for window_size is \"1 Mb\".")
         end
     end
+
     if map_file == false && typeof(window_size) <: Integer
         println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
-        nmarkers=length(readdlm(marker_effects_file[1],',',header=true)[2])
-        positions =
         mapfile = DataFrame(markerID  =1:nmarkers,
                             chromosome=fill(1,nmarkers),
                             position  =Int.(floor.(1:(1_000_000/window_size):nmarkers*(1_000_000/window_size))))
@@ -165,22 +196,35 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     out=[]
     if GWAS == true
         println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
-        for i in 1:length(marker_effects_file)
+        niter = is_nnbayes ? 1 : length(marker_effects_file)
+        for i in 1:niter
             #using marker effect files
-            output            = readdlm(marker_effects_file[i],',',header=true)[1]
-            nsamples,nMarkers = size(output)
+            output            = is_nnbayes ?  marker_effects : readdlm(marker_effects_file[i],',',header=true)[1]
+            nsamples          = is_nnbayes ?  size(output[1],1) : size(output,1)
             nWindows          = length(window_size_nSNPs)
             winVarProps       = zeros(nsamples,nWindows)
             winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
-            X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+
             @showprogress "running GWAS..." for i=1:nsamples
-                α = output[i,:]
-                genVar = var(X*α)
+                if is_nnbayes
+                    α = hcat(map(x -> x[i,:], output)...)
+                    w = weights_NN[i,:]
+                    ebv_i = ebv[i,:]
+                    genVar = var(ebv_i)
+                else
+                    α = output[i,:]
+                    genVar = var(X*α)
+                end
+
                 for winj = 1:length(window_column_start)
                   wStart = window_column_start[winj]
                   wEnd   = window_column_end[winj]
-                  BV_winj= X[:,wStart:wEnd]*α[wStart:wEnd]
+                  if is_nnbayes
+                      BV_winj = nonlinear_function.(X[:,wStart:wEnd]*α[wStart:wEnd,:])*w[2:end]
+                  else #conventional
+                      BV_winj = X[:,wStart:wEnd]*α[wStart:wEnd]
+                  end
                   var_winj = var(BV_winj)
                   winVar[i,winj]      = var_winj
                   winVarProps[i,winj] = var_winj/genVar
@@ -216,7 +260,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             #using marker effect files
             output1           = readdlm(marker_effects_file[1],',',header=true)[1]
             output2           = readdlm(marker_effects_file[2],',',header=true)[1]
-            nsamples,nMarkers = size(output1)
+            nsamples,nmarkers = size(output1)
             nWindows          = length(window_size_nSNPs)
             gcov              = zeros(nsamples,nWindows)
             gcor              = zeros(nsamples,nWindows)
@@ -274,3 +318,26 @@ end
 
 
 export GWAS
+
+
+# below function is to define the activation function for neural network
+function nnbayes_activation(activation_function)
+      if activation_function == "tanh"
+         mytanh(x) = tanh(x)
+         return mytanh
+      elseif activation_function == "sigmoid"
+         mysigmoid(x) = 1/(1+exp(-x))
+         return mysigmoid
+      elseif activation_function == "relu"
+         myrelu(x) = max(0, x)
+         return myrelu
+      elseif activation_function == "leakyrelu"
+         myleakyrelu(x) = max(0.01x, x)
+         return myleakyrelu
+      elseif activation_function == "linear"
+         mylinear(x) = x
+         return mylinear
+      else
+          error("invalid actication function")
+      end
+end
