@@ -379,8 +379,16 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # After MCMC
     ############################################################################
+    println("1")
+    println("1")
+    println("1")
     if output_samples_frequency != 0
+      println("2")
+      println("2")
+      println("2")
       for (key,value) in outfile
+        println("aaa")
+        println(key)
         close(value)
       end
       if causal_structure != false
@@ -393,17 +401,26 @@ function MCMC_BayesianAlphabet(mme,df)
          close(outfile["liabilities"])
       end
     end
+    println("3")
+    println("3")
+    println("3")
     if methods == "GBLUP"
         for Mi in mme.M
             mv(output_folder*"/MCMC_samples_marker_effects_variances"*"_"*Mi.name*".txt",
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
+    println("4")
+    println("4")
+    println("4")
 
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
                          mme.solMean2,mme.meanVare2,
                          mme.pedTrmVec!=0 ? mme.G0Mean2 : false)
+    println("5")
+    println("5")
+    println("5")
     return output
 end
