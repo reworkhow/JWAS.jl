@@ -98,6 +98,7 @@ function output_result(mme,output_folder,
   output["location parameters"] = location_parameters
   output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
+
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
@@ -151,7 +152,6 @@ function output_result(mme,output_folder,
 
       if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
           for i in ["genetic_variance","heritability"]
-              println(i)
               samplesfile = output_file*"_"*i*".txt"
               samples,names = readdlm(samplesfile,',',header=true)
               samplemean    = vec(mean(samples,dims=1))
