@@ -93,25 +93,36 @@ end
 function output_result(mme,output_folder,
                        solMean,meanVare,G0Mean,
                        solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
+  println("aaaaa")
   output = Dict()
+  println("bbbbb")
   location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
+  println("ccccc")
   output["location parameters"] = location_parameters
+  println("ddddd")
   output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
-
+  println("eeeee")
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
+  println("fffff")
 
   if mme.M != 0
       for Mi in mme.M
           traiti      = 1
           whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
+          println("ggggg")
           whichmarker = Mi.markerID
+          println("hhhhh")
           whicheffect = Mi.meanAlpha[traiti]
+          println("iiiii")
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
+          println("jjjjj")
           whichdelta    = Mi.meanDelta[traiti]
+          println("kkkkk")
           for traiti in 2:Mi.ntraits
+              println("qqqqq")
               whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
               whichmarker    = vcat(whichmarker,Mi.markerID)
               whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
@@ -119,9 +130,11 @@ function output_result(mme,output_folder,
               whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
           end
           output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+          println("lllll")
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+              println("mmmmm")
           end
           if Mi.estimateScale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
@@ -132,10 +145,13 @@ function output_result(mme,output_folder,
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      println("nnnnn")
       if mme.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
       end
       for EBVkey in EBVkeys
+          println(EBVkey)
+          println("nnnnn")
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
           EBV            = vec(mean(EBVsamples,dims=1))
@@ -149,14 +165,17 @@ function output_result(mme,output_folder,
               GC.gc()               #clean garbage from last iteration to save memory
           end
       end
+      println("ooooo")
 
       if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
           for i in ["genetic_variance","heritability"]
+              println(i)
               samplesfile = output_file*"_"*i*".txt"
               samples,names = readdlm(samplesfile,',',header=true)
               samplemean    = vec(mean(samples,dims=1))
               samplevar     = vec(std(samples,dims=1))
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
+              println("ppppp")
           end
       end
 
