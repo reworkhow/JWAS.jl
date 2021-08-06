@@ -315,9 +315,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     describe(mme)
     mme.output=MCMC_BayesianAlphabet(mme,df)
-    println("6")
-    println("6")
-    println("6")
     ############################################################################
     # Save output to text files
     ############################################################################
@@ -325,9 +322,6 @@ function runMCMC(mme::MME,df;
       println(key)
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
-    println("7")
-    println("7")
-    println("7")
 
     if mme.M != 0
         for Mi in mme.M
