@@ -137,11 +137,12 @@ function output_result(mme,output_folder,
       end
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
-          EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
-          EBV            = vec(mean(EBVsamples,dims=1))
-          PEV            = vec(var(EBVsamples,dims=1))
+          EBVsamples     = CSV.File(EBVsamplesfile) |> DataFrame
+          EBV            = mean.(eachcol(EBVsamples))
+          PEV            = var.(eachcol(EBVsamples))
+          IDs            = DataFrames.names(EBVsamples)
           if vec(IDs) == mme.output_ID
-              output[EBVkey] = DataFrame([mme.output_ID EBV PEV],[:ID,:EBV,:PEV])
+              output[EBVkey] = DataFrame([IDs EBV PEV],[:ID,:EBV,:PEV])
           else
               error("The EBV file is wrong.")
           end
