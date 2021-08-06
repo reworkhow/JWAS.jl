@@ -145,6 +145,9 @@ function output_result(mme,output_folder,
           else
               error("The EBV file is wrong.")
           end
+          if mme.M[1].nObs>100_000  #load large EBV needs 5x memory
+              GC.gc()               #clean garbage from last iteration to save memory
+          end
       end
 
       if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
