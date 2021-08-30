@@ -230,17 +230,16 @@ function generate_indirect_marker_effect_sample(pheno_vec,output_folder,causal_s
         causal_matrix = reshape(λ_sample ,number_traits,number_traits)
         indirect_effect_current_sample = compute_indirect_effect(causal_matrix,direct_effect_current_sample )
 
-        for i in 1:number_traits
-            indirect_effect_this_trait = indirect_effect_current_sample[i,1:end]
-            open(io_diction[trait_vec[i]], "a") do io
+        for k in 1:number_traits
+            indirect_effect_this_trait = indirect_effect_current_sample[k,1:end]
+            open(io_diction[trait_vec[k]], "a") do io
                        writedlm(io, indirect_effect_this_trait' ,", ")
                    end;
 
         end
     end
-
-
 end
+
 
 # compute the indirect marker effect based on the formula in the SEM paper
 function compute_indirect_effect(Λ,marker_effects )
@@ -250,4 +249,120 @@ function compute_indirect_effect(Λ,marker_effects )
         result += Λ^i * marker_effects
     end
     return (result)
+end
+
+
+
+function generate_overall_marker_effect_sample(pheno_vec,output_folder,causal_structure)
+
+    number_traits = size(causal_structure,1) # the row number of causal structure matrix is number of traits
+    trait_vec     = string.(pheno_vec)       # transform the symbol to string
+
+    direct_effect_sample = Dict()
+    indirect_effect_sample = Dict()
+    io_diction  = Dict()
+    # read the direct and indirect effect sample file and create overall sample file for each trait
+    for i in 1:number_traits
+        direct_file_name                   = output_folder*"/MCMC_samples_marker_effects_genotypes_"*trait_vec[i]*".txt"
+        direct_effect_sample[trait_vec[i]] = CSV.read(direct_file_name,DataFrame,header = true)
+
+        indirect_file_name                   = output_folder*"/MCMC_samples_indirect_marker_effects_genotypes_"*trait_vec[i]*".txt"
+        indirect_effect_sample[trait_vec[i]] = CSV.read(indirect_file_name,DataFrame,header = true)
+
+        overall_file_name                 = output_folder*"/MCMC_samples_overall_marker_effects_genotypes_"*trait_vec[i]*".txt"
+
+        io_diction[trait_vec[i]] = overall_file_name
+    end
+
+    number_sample = size(direct_effect_sample[trait_vec[1]],1)
+    number_marker = size(direct_effect_sample[trait_vec[1]],2)
+
+    marker_header = permutedims(names(direct_effect_sample[trait_vec[1]]))
+
+    # write marker header for each overall effect file
+    for i in 1:number_traits
+        open(io_diction[trait_vec[i]], "a") do io
+                   writedlm(io, marker_header ,", ")
+               end;
+
+    end
+
+    # compute the overall effect in each sample and write to the target file
+    for i in 1:number_sample
+        overall_effect_current_sample = zeros(number_traits,number_marker)
+
+        for j in 1:number_traits
+            current_direct_effect   = direct_effect_sample[trait_vec[j]][i,1:end]
+            current_indirect_effect = indirect_effect_sample[trait_vec[j]][i,1:end]
+
+            current_direct_effect   = Vector(current_direct_effect)
+            current_indirect_effect = Vector(current_indirect_effect)
+
+            overall_effect_current_sample[j,1:end] = current_direct_effect' + current_indirect_effect'
+
+        end
+
+
+        for k in 1:number_traits
+            overall_effect_this_trait = overall_effect_current_sample[k,1:end]
+            open(io_diction[trait_vec[k]], "a") do io
+                       writedlm(io, overall_effect_this_trait' ,", ")
+                   end;
+
+        end
+    end
+
+
+end
+
+function generate_marker_effect(pheno_vec, output_folder,causal_structure, effect_type)
+
+    number_traits          = size(causal_structure,1) # the row number of causal structure matrix is number of traits
+
+    trait_vec              = string.(pheno_vec)       # transform the symbol to string
+
+    # read the marker effects file as the sample
+    sample_file            = CSV.read(output_folder*"/marker_effects_genotypes.txt",DataFrame,delim = ',',header=true,missingstrings=["NA"])
+
+    #pick first two columns of sample file, since other effects file share the same column
+    Trait_name_vec = sample_file[:,:Trait]
+    Marker_ID_vec  = sample_file[:,:Marker_ID]
+
+
+    # generate the three vectors needed in the effect file
+    Estimate_vec        = []
+    SD_vec              = []
+    Model_Frequency_vec = []
+
+    # generate these three vectors
+    for i in 1:number_traits
+
+        if effect_type == "direct"
+            current_effect_file_name = output_folder*"/MCMC_samples_marker_effects_genotypes_"*trait_vec[i]*".txt"
+        else
+            current_effect_file_name = output_folder*"/MCMC_samples_"* effect_type *"_marker_effects_genotypes_"*trait_vec[i]*".txt"
+        end
+
+        current_effect_file      = CSV.read(current_effect_file_name ,DataFrame,header = true)
+
+        # obtain the estimate effect vector
+        current_estimate_effect_vec = [mean(c) for c in eachcol(current_effect_file)]
+        Estimate_vec                = vcat(Estimate_vec,current_estimate_effect_vec)
+
+        current_std_vec             = [std(c) for c in eachcol(current_effect_file)]
+        SD_vec                      = vcat(SD_vec, current_std_vec )
+
+        # obtain the model frequency vector
+        current_model_frequency  = GWAS(current_effect_file_name )[:,:modelfrequency]
+        Model_Frequency_vec      = vcat(Model_Frequency_vec,current_model_frequency)
+
+    end
+
+    # generate the result dataframe
+    result_df = DataFrame(Trait = Trait_name_vec,Marker_ID = Marker_ID_vec,
+                            Estimate = Estimate_vec, SD = SD_vec, Model_Frequency = Model_Frequency_vec )
+
+    CSV.write(output_folder*"/"*effect_type*"_marker_effects_genotypes.txt",result_df)
+
+
 end

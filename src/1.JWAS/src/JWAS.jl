@@ -183,6 +183,8 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
+
+
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
@@ -337,7 +339,15 @@ function runMCMC(mme::MME,df;
 
     # make MCMC samples for indirect marker effect
     if causal_structure != false
+
+        #generate the MCMC sample file for indirect and direct effect file.
         generate_indirect_marker_effect_sample(mme.lhsVec,output_folder,causal_structure,"structure_coefficient_MCMC_samples.txt")
+        generate_overall_marker_effect_sample(mme.lhsVec,output_folder,causal_structure)
+
+        # generate marker effet file for direct, indirect, and overall effect
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"direct")
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"indirect")
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"overall")
     end
 
     return mme.output
