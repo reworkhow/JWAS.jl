@@ -230,11 +230,11 @@ function getEBV(mme,traiti)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
             sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
-            if VERSION < v"1.6" && length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
                 sol_term = sol_term[1]
             end
             EBV_term = mme.output_X[term]*sol_term
-            if VERSION < v"1.6" && length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
                 EBV_term = vec(EBV_term)
             end
             EBV += EBV_term
