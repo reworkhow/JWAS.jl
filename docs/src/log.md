@@ -10,6 +10,8 @@
    In this case, we still need a variable to save the (empirical) phenotypes (i.e., output),
    so mme.yobs is made to save it. Add yobs as a member in the struct mme.
 
-3. mme.ySparse is used to same values for latent traits. In intermediate omics data, 
+3. mme.ySparse is used to same values for latent traits. In intermediate omics data,
    because some/many elements in mme.ySparse are observed, only missing values in mme.ySparse
    are sampled.
+
+# add neural network
