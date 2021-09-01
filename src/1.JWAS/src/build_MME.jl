@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -49,6 +49,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     # Bayesian Neural Network
     ############################################################################
     if nonlinear_function != false  #NNBayes
+      if latent_traits != false && length(latent_traits) != num_hidden_nodes
+        error("The number of traits included in latent_traits is not $num_hidden_nodes (num_hidden_nodes)")
+      end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
       num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
@@ -124,6 +127,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_fully_connected   = is_fully_connected
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
+    mme.latent_traits        = latent_traits
   end
 
   return mme
@@ -296,6 +300,18 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
+    ############################################################################
+    # Latent Traits
+    ############################################################################
+    #mme.ySparse: latent traits
+    #yobs       : single observed trait
+    if mme.nonlinear_function != false
+        mme.yobs = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+        if mme.latent_traits != false
+          mme.lhsVec = Symbol.(mme.latent_traits)
+        end
+    end
+
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]

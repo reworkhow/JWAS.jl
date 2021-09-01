@@ -120,14 +120,6 @@ function MCMC_BayesianAlphabet(mme,df)
         end
     end
     ############################################################################
-    # Latent Traits
-    ############################################################################
-    #mme.ySparse: latent traits
-    #yobs       : observed trait
-    if nonlinear_function != false
-        yobs = mme.ySparse[1:length(mme.obsID)]
-    end
-    ############################################################################
     #More on Multi-Trait
     ############################################################################
     if is_multi_trait
@@ -335,7 +327,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits (NNBayes)
         ########################################################################
         if nonlinear_function != false #to update ycorr!
-            sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
+            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

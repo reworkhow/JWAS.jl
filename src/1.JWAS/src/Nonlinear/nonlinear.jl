@@ -47,8 +47,11 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
         mme.weights_NN = weights
     end
-
-    mme.ySparse = vec(ylats_new)
+    if mme.latent_traits == false
+        mme.ySparse = vec(ylats_new) #maybe no missing values here
+    else #might be redundant
+        mme.ySparse[.!(vec(mme.missingPattern))] = vec(ylats_new)[.!(vec(mme.missingPattern))]
+    end
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
     #sample σ2_yobs
