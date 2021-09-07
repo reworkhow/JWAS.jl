@@ -305,16 +305,13 @@ function runMCMC(mme::MME,df;
     #and individuals of interest
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
-    @time df=make_incidence_matrices(mme,df_whole,train_index)
+    df=make_incidence_matrices(mme,df_whole,train_index)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
-    println("3333333333333")
     if mme.M != false
-        @time align_genotypes(mme,output_heritability,single_step_analysis)
+        align_genotypes(mme,output_heritability,single_step_analysis)
     end
-    println("4444444444444")
     # initiate Mixed Model Equations and check starting values
-    @time init_mixed_model_equations(mme,df,starting_value)
-    println("5555555555555")
+    init_mixed_model_equations(mme,df,starting_value)
     ############################################################################
     # MCMC
     ############################################################################

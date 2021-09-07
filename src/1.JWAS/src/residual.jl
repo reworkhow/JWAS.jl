@@ -18,11 +18,13 @@ function mkRi(mme::MME,df::DataFrame,Rinv)
     mme.missingPattern = tstMsng
     ntrait = size(tstMsng,2)
     nObs   = size(tstMsng,1)
+    println("aaa")
     ii = Array{Int64}(undef,nObs*ntrait^2)
     jj = Array{Int64}(undef,nObs*ntrait^2)
     vv = Array{AbstractFloat}(undef,nObs*ntrait^2)
+    println("bbb")
     pos = 1
-    for i=1:nObs
+    @time for i=1:nObs
         sel = tstMsng[i,:]
         Ri  = getRi(resVar,sel)*Rinv[i]
         for ti=1:ntrait
