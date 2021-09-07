@@ -50,7 +50,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     if mme.latent_traits == false
         mme.ySparse = vec(ylats_new) #maybe no missing values here
     else #might be redundant
-        mme.ySparse[.!(vec(mme.missingPattern))] = vec(ylats_new)[.!(vec(mme.missingPattern))]
+        mme.ySparse[.!(vec(mme.missingPattern4omics))] = vec(ylats_new)[.!(vec(mme.missingPattern4omics))]
     end
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 

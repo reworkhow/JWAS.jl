@@ -247,8 +247,9 @@ mutable struct MME
     σ2_yobs
     is_fully_connected
     is_activation_fcn  #Neural Network with activation function (not user-defined function)
-    latent_traits #["z1","z2"], for intermediate omics data, 
+    latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
+    missingPattern4omics
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -274,6 +275,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false)
     end
 end
