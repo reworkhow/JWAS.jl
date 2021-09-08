@@ -250,6 +250,7 @@ mutable struct MME
     latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
     missingPattern4omics
+    parallel
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -275,6 +276,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false,false)
     end
 end

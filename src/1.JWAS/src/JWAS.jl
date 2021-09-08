@@ -181,10 +181,11 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false)
+                estimateScale                   = false,
+                parallel                        = false)
 
 
-
+    mme.parallel=parallel
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
