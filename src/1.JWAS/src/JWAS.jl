@@ -292,6 +292,10 @@ function runMCMC(mme::MME,df;
     # NNBayes mega trait: from multi-trait to multiple single-trait
     if mme.MCMCinfo.mega_trait == true
         printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+        if mme.parallel
+            nthread=Threads.nthreads()
+            printstyled(" - Parallel computing:               $nthread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
+        end
         nnbayes_mega_trait(mme)
     elseif mme.nonlinear_function != false  #only print for NNBayes
         printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
