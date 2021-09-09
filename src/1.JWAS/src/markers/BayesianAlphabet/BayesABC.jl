@@ -1,5 +1,5 @@
-function megaBayesABC!(genotypes,wArray,vare,locus_effect_variances;parallel=false)
-    if parallel==true
+function megaBayesABC!(genotypes,wArray,vare,locus_effect_variances;multithread=false)
+    if multithread==true
             Threads.@threads for i in 1:length(wArray) #ntraits
             BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
                        wArray[i],genotypes.α[i],genotypes.β[i],genotypes.δ[i],vare[i,i],

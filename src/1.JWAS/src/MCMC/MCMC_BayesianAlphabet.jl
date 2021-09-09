@@ -20,7 +20,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
-    parallel                 = mme.parallel
+    multithread              = mme.multithread
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -210,7 +210,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
-                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances;parallel=parallel)
+                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances;multithread=multithread)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end

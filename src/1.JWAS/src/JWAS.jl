@@ -182,10 +182,10 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
-                parallel                        = false)
+                multithread                     = false)
 
 
-    mme.parallel=parallel
+    mme.multithread=multithread
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
@@ -292,7 +292,7 @@ function runMCMC(mme::MME,df;
     # NNBayes mega trait: from multi-trait to multiple single-trait
     if mme.MCMCinfo.mega_trait == true
         printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
-        if mme.parallel
+        if mme.multithread
             nthread=Threads.nthreads()
             printstyled(" - Parallel computing:               $nthread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
         end
