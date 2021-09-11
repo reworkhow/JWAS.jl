@@ -210,7 +210,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
-                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances;multithread=multithread)
+                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances,multithread=multithread)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end

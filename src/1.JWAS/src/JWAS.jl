@@ -212,6 +212,12 @@ function runMCMC(mme::MME,df;
     if seed != false
         Random.seed!(seed)
     end
+    #when using multi-thread, make sure the results are reproducible for users
+    if mme.multithread
+        Threads.@threads for i = 1:mme.nModels
+              Random.seed!(i)
+        end
+    end
     ############################################################################
     # Create an folder to save outputs
     ############################################################################

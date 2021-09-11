@@ -15,16 +15,16 @@ end
 function mkRi(mme::MME,df::DataFrame,Rinv)
     resVar   = ResVar(mme.R,Dict())
     if mme.missingPattern == false
-        mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+        mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
     end
-    ntrait = size(tstMsng,2)
-    nObs   = size(tstMsng,1)
+    ntrait = size(mme.missingPattern,2)
+    nObs   = size(mme.missingPattern,1)
     ii = Array{Int64}(undef,nObs*ntrait^2)
     jj = Array{Int64}(undef,nObs*ntrait^2)
     vv = Array{AbstractFloat}(undef,nObs*ntrait^2)
     pos = 1
     for i=1:nObs
-        sel = tstMsng[i,:]
+        sel = mme.missingPattern[i,:]
         Ri  = getRi(resVar,sel)*Rinv[i]
         for ti=1:ntrait
             tii = (ti-1)*nObs + i
