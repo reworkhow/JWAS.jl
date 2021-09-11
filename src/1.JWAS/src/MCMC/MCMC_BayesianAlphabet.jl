@@ -222,7 +222,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
-                            megaBayesC0!(Mi,wArray,mme.R)
+                            megaBayesC0!(Mi,wArray,mme.R,multithread=multithread)
                         else
                             MTBayesC0!(Mi,wArray,mme.R)
                         end
@@ -234,7 +234,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method == "BayesL"
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait #problem with sampleGammaArray
-                            megaBayesL!(Mi,wArray,mme.R)
+                            megaBayesL!(Mi,wArray,mme.R,multithread=multithread)
                         else
                             MTBayesL!(Mi,wArray,mme.R)
                         end
