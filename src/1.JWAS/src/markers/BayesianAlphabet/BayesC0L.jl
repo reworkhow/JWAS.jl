@@ -1,14 +1,7 @@
-function megaBayesL!(genotypes,wArray,vare;multithread=false)
-    if multithread==true
-        Threads.@threads for i in 1:length(wArray) #ntraits
-            BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                wArray[i],genotypes.α[i],genotypes.gammaArray,vare[i,i],genotypes.G[i,i])
-        end
-    else
-        for i in 1:length(wArray) #ntraits
-            BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                wArray[i],genotypes.α[i],genotypes.gammaArray,vare[i,i],genotypes.G[i,i])
-        end
+function megaBayesL!(genotypes,wArray,vare)
+    Threads.@threads for i in 1:length(wArray) #ntraits
+        BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+            wArray[i],genotypes.α[i],genotypes.gammaArray,vare[i,i],genotypes.G[i,i])
     end
 end
 
@@ -17,17 +10,10 @@ function BayesL!(genotypes,ycorr,vare)
             ycorr,genotypes.α[1],genotypes.gammaArray,vare,genotypes.G)
 end
 
-function megaBayesC0!(genotypes,wArray,vare;multithread=false)
-    if multithread==true
-        Threads.@threads for i in 1:length(wArray) #ntraits
-            BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                    wArray[i],genotypes.α[i],[1.0],vare[i,i],genotypes.G[i,i])
-        end
-    else
-        for i in 1:length(wArray) #ntraits
-            BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                    wArray[i],genotypes.α[i],[1.0],vare[i,i],genotypes.G[i,i])
-        end
+function megaBayesC0!(genotypes,wArray,vare)
+    Threads.@threads for i in 1:length(wArray) #ntraits
+        BayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                wArray[i],genotypes.α[i],[1.0],vare[i,i],genotypes.G[i,i])
     end
 end
 

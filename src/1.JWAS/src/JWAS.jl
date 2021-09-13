@@ -181,11 +181,9 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false,
-                multithread                     = false)
+                estimateScale                   = false)
 
 
-    mme.multithread=multithread
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
@@ -213,9 +211,10 @@ function runMCMC(mme::MME,df;
         Random.seed!(seed)
     end
     #when using multi-thread, make sure the results are reproducible for users
-    if mme.multithread
-        Threads.@threads for i = 1:mme.nModels
-              Random.seed!(i)
+    nThread = Threads.nthreads()
+    if nThread>1
+        Threads.@threads for i = 1:nThread
+              Random.seed!(seed+i)
         end
     end
     ############################################################################
@@ -298,10 +297,7 @@ function runMCMC(mme::MME,df;
     # NNBayes mega trait: from multi-trait to multiple single-trait
     if mme.MCMCinfo.mega_trait == true
         printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
-        if mme.multithread
-            nthread=Threads.nthreads()
-            printstyled(" - Parallel computing:               $nthread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
-        end
+        printstyled(" - Multi-threaded parallelism:       $nThread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
         nnbayes_mega_trait(mme)
     elseif mme.nonlinear_function != false  #only print for NNBayes
         printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)

@@ -20,7 +20,6 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
-    multithread              = mme.multithread
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -210,7 +209,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
-                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances,multithread=multithread)
+                            megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         else
                             MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         end
@@ -222,7 +221,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
-                            megaBayesC0!(Mi,wArray,mme.R,multithread=multithread)
+                            megaBayesC0!(Mi,wArray,mme.R)
                         else
                             MTBayesC0!(Mi,wArray,mme.R)
                         end
@@ -234,7 +233,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 elseif Mi.method == "BayesL"
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait #problem with sampleGammaArray
-                            megaBayesL!(Mi,wArray,mme.R,multithread=multithread)
+                            megaBayesL!(Mi,wArray,mme.R)
                         else
                             MTBayesL!(Mi,wArray,mme.R)
                         end

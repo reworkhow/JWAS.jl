@@ -14,7 +14,7 @@ end
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame,Rinv)
     resVar   = ResVar(mme.R,Dict())
-    tstMsng  = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+    tstMsng  = .!ismissing.(Matrix(df[!,mme.lhsVec]))
     if mme.missingPattern == false
         mme.missingPattern = tstMsng
     end
