@@ -157,7 +157,9 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                       end
                       println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
                       println("The mean of the prior for the marker effects covariance matrix is:")
-                      Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                      if mme.MCMCinfo.printout_model_info==true
+                          Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                      end
                     else
                       if !isposdef(Mi.G) #positive scalar (>0)
                         error("Marker effects variance is negative!")

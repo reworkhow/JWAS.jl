@@ -268,7 +268,7 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(convert(Matrix,df_whole[!,mme.lhsVec]))
+    missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
     train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
