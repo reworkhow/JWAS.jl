@@ -17,7 +17,7 @@ end
 mkdir("mytest_deprecated/")
 cd("mytest_deprecated/")
 for single_step in [false,true]
-      for test_method in ["BayesA","BayesB","BayesC","RR-BLUP","BayesL","GBLUP"]
+      for test_method in ["BayesA","BayesB","BayesC","RR-BLUP","BayesL"]
             newdir = "ST_"*(single_step ? "SS" : "")*test_method*"/"
             mkdir(newdir)
             cd(newdir)

@@ -1,8 +1,7 @@
 name = "JWAS"
 uuid = "c9a035f4-d403-5e6b-8649-6be755bc4798"
-version = "0.13.0"
+version = "0.14.4"
 authors = ["Hao Cheng <qtlcheng@ucdavis.edu>"]
-version = "0.11.5"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -25,4 +24,5 @@ DataFrames = "0.19, 0.20, 0.21, 0.22"
 Distributions = "0.21, 0.22, 0.23, 0.24"
 ProgressMeter = "1.0, 1.1, 1.2"
 StatsBase = "0.30, 0.31, 0.32, 0.33"
+ForwardDiff = "0.10"
 julia = "1"

@@ -26,16 +26,25 @@ function prediction_setup(model)
         end
     else
         prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
-        if mme.MCMCinfo.output_heritability != false
+        if model.MCMCinfo.output_heritability != false
             printstyled("User-defined prediction equation is provided. ","The heritability is the ",
             "proportion of phenotypic variance explained by the value defined by the prediction equation.\n",
             bold=false,color=:green)
         end
+        for i in prediction_equation
+            term_symbol = Symbol(split(i,":")[end])
+            if !(haskey(model.modelTermDict,i) || (isdefined(Main,term_symbol) && typeof(getfield(Main,term_symbol)) == Genotypes))
+                error("Terms $i in the prediction equation is not found.")
+            end
+        end
     end
+    printstyled("Predicted values for individuals of interest will be obtained as the summation of ",
+    prediction_equation, " (Note that genomic data is always included for now).",bold=false,color=:green)
     if length(prediction_equation) == 0 && model.M == false
         println("Default or user-defined prediction equation are not available.")
         model.MCMCinfo.outputEBV = false
     end
+    filter!(e->(e in keys(model.modelTermDict)),prediction_equation) #remove "genotypes" for now
     model.MCMCinfo.prediction_equation = prediction_equation
 end
 
@@ -106,7 +115,7 @@ function output_result(mme,output_folder,
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
           whichdelta    = Mi.meanDelta[traiti]
-          for traiti in 2:mme.nModels
+          for traiti in 2:Mi.ntraits
               whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
               whichmarker    = vcat(whichmarker,Mi.markerID)
               whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
@@ -151,13 +160,8 @@ function output_result(mme,output_folder,
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
-      if mme.MCMCinfo.RRM == false
-          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
-      else
-          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:size(mme.MCMCinfo.RRM,2)]
-      end
-
-      if mme.latent_traits == true
+      EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      if mme.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
       end
       for EBVkey in EBVkeys
@@ -182,7 +186,7 @@ function output_result(mme,output_folder,
           end
       end
 
-      if mme.latent_traits == true && mme.nonlinear_function == "Neural Network"
+      if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
           myvar         = "neural_networks_bias_and_weights"
           samplesfile   = output_file*"_"*myvar*".txt"
           samples       = readdlm(samplesfile,',',header=false)
@@ -239,6 +243,12 @@ end
 (internal function) Get breeding values for individuals defined by outputEBV(),
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
+e.g.,
+non-NNBayes_partial (multi-classs Bayes) : y1=M1*α1[1]+M2*α2[1]+M3*α3[1]
+                                           y2=M1*α1[2]+M2*α2[2]+M3*α3[2];
+NNBayes_partial:     y1=M1*α1[1]
+                     y2=M2*α2[1]
+                     y3=M3*α3[1];
 """
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
@@ -249,16 +259,27 @@ function getEBV(mme,traiti)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
             sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
-            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; convert it to a scalar
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
                 sol_term = sol_term[1]
             end
             EBV_term = mme.output_X[term]*sol_term
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+                EBV_term = vec(EBV_term)
+            end
             EBV += EBV_term
         end
     end
+    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0
-        for Mi in mme.M
-            EBV += Mi.output_genotypes*Mi.α[traiti]
+        for i in 1:length(mme.M)
+            Mi=mme.M[i]
+            if !is_partial_connect  #non-NNBayes_partial
+                EBV += Mi.output_genotypes*Mi.α[traiti]
+            else  #NNBayes_partial
+                if i==traiti
+                    EBV = Mi.output_genotypes*mme.M[i].α[1]
+                end
+            end
         end
     end
     return EBV
@@ -287,8 +308,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.M !=0 #write samples for marker effects to a text file
       for Mi in mme.M
-          for traiti in 1:ntraits
-              push!(outvar,"marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti]))
+          for traiti in Mi.trait_names
+              push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
           push!(outvar,"pi"*"_"*Mi.name)
@@ -316,9 +337,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           push!(outvar,"genetic_variance")
           push!(outvar,"heritability")
       end
-      if mme.latent_traits == true
+      if mme.nonlinear_function != false  #NNBayes
           push!(outvar,"EBV_NonLinear")
-          if mme.nonlinear_function == "Neural Network"
+          if mme.is_activation_fcn == true #Neural Network with activation function
               push!(outvar,"neural_networks_bias_and_weights")
           end
       end
@@ -359,8 +380,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],transubstrarr(Mi.markerID),',')
+          for traiti in Mi.trait_names
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
       end
   end
@@ -378,7 +399,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
-      if mme.latent_traits == true
+      if mme.nonlinear_function != false #NNBayes
           writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
       end
   end
@@ -406,10 +427,11 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.pedTrmVec != 0
     writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
     end
+    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
+          for traiti in 1:Mi.ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -434,9 +456,11 @@ function output_MCMC_samples(mme,vRes,G0,
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              myEBV = getEBV(mme,traiti) #actually BV
-             writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
+             trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
+             writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
+
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              mygvar = cov(EBVmat)
              genetic_variance = (ntraits == 1  ? mygvar : vec(mygvar)')
@@ -445,12 +469,12 @@ function output_MCMC_samples(mme,vRes,G0,
              writedlm(outfile["heritability"],heritability,',')
          end
     end
-    if mme.latent_traits == true
+    if mme.nonlinear_function != false #NNBayes
         EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
-        if mme.nonlinear_function != "Neural Network"
+        if mme.is_activation_fcn == false  #user-defined nonlinear function
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
-        else
-            BV_NN = [ones(size(EBVmat,1)) mme.activation_function.(EBVmat)]*mme.weights_NN
+        else  #activation function
+            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')

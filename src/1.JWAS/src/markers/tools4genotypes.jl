@@ -76,7 +76,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
                 else
                     Mi.output_genotypes =  Mi.genotypes #why this is a copy
                 end
-                if isposdef(Mi.genotypes) #relationship matrix is provided
+                if Mi.isGRM #relationship matrix is provided
                     Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
                     Mi.output_genotypes = Mi.output_genotypes*Z'
                 end
@@ -92,7 +92,7 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
             for Mi in mme.M
                 Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
                 genotypes = Z*Mi.genotypes
-                if isposdef(Mi.genotypes) #relationship matrix is provided
+                if Mi.isGRM #relationship matrix is provided
                     genotypes = genotypes*Z'
                 end
                 Mi.genotypes = genotypes
@@ -160,7 +160,9 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                       end
                       println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
                       println("The mean of the prior for the marker effects covariance matrix is:")
-                      Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                      if mme.MCMCinfo.printout_model_info==true
+                          Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                      end
                     else
                       if !isposdef(Mi.G) #positive scalar (>0)
                         error("Marker effects variance is negative!")
