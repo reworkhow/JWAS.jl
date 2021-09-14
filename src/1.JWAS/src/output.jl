@@ -126,7 +126,6 @@ function output_result(mme,output_folder,
       for Mi in mme.M
           traiti      = 1
           whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
-          println(mme.lhsVec)
           whichmarker = Mi.markerID
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
