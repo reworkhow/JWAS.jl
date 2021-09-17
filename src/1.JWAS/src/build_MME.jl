@@ -36,6 +36,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
     end
