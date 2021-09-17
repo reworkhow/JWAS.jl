@@ -35,7 +35,7 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -49,6 +49,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     # Bayesian Neural Network
     ############################################################################
     if nonlinear_function != false  #NNBayes
+      if latent_traits != false && length(latent_traits) != num_hidden_nodes
+        error("The number of traits included in latent_traits is not $num_hidden_nodes (num_hidden_nodes)")
+      end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
       num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
@@ -124,6 +127,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_fully_connected   = is_fully_connected
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
+    mme.latent_traits        = latent_traits
   end
 
   return mme
@@ -296,6 +300,39 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
+    ############################################################################
+    # Latent Traits
+    ############################################################################
+    #mme.ySparse: latent traits
+    #yobs       : single observed trait
+    if mme.nonlinear_function != false
+        mme.yobs = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+        if mme.latent_traits != false
+          ######################################################################
+          #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
+          #with prefix 1, 2... , e.g., height1, height2...
+          #if data for latent traits are included in the dataset, column names
+          #will be used as shown below.e.g.,
+          #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
+          #"gene1" and "gene2" are columns in the dataset.
+          ######################################################################
+          #change lhsVec to omics gene name
+          mme.lhsVec = Symbol.(mme.latent_traits)
+          #rename genotype names
+          mme.M[1].trait_names=mme.latent_traits
+          #save omics data missing pattern
+          mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+          #replace missing data with values in yobs
+          for i in mme.lhsVec      #for each omics feature
+            for j in 1:size(df,1)  #for each observation
+              if ismissing(df[j,i])
+                df[j,i]=mme.yobs[j]
+              end
+            end
+          end
+        end
+    end
+
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
       y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
@@ -318,7 +355,11 @@ function getMME(mme::MME, df::DataFrame)
     #such that no imputation of missing phenotypes is required.
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
-      Ri         = mkRi(mme,df,mme.invweights)
+      if mme.MCMCinfo.mega_trait == true  #multiple single trait
+        Ri = Diagonal(repeat(mme.invweights,mme.nModels))
+      else  #multi-trait
+        Ri = mkRi(mme,df,mme.invweights)
+      end
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
     end
