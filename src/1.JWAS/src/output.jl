@@ -160,10 +160,15 @@ function output_result(mme,output_folder,
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
-      EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
-      if mme.nonlinear_function != false  #NNBayes
-          push!(EBVkeys, "EBV_NonLinear")
-      end
+      if mme.MCMCinfo.RRM == false
+          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+          if mme.nonlinear_function != false  #NNBayes
+              push!(EBVkeys, "EBV_NonLinear")
+          end
+      elseif mme.MCMCinfo.RRM != false
+          EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:size(mme.MCMCinfo.RRM,2)]
+      end 
+
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)

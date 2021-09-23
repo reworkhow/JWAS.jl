@@ -42,32 +42,22 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
     #location parameters
     sol,α       = starting_value[1:size(mme.mmeLhs,1)],starting_value[(size(mme.mmeLhs,1)+1):end]
     solMean, solMean2  = zero(sol),zero(sol)
-    #residual variance
+
+
     meanVare = meanVare2 = 0.0
     if mme.M != 0
         for Mi in mme.M
+            #residual variance
             meanVara  = zero(Mi.G) #variable to save variance for marker effect
             meanVara2 = zero(Mi.G) #variable to save variance for marker effect
             meanScaleVara  =  zero(Mi.G) #variable to save Scale parameter for prior of marker effect variance
             meanScaleVara2 =  zero(Mi.G) #variable to save Scale parameter for prior of marker effect variance
-        end
-    end
-    #polygenic effects (A), e.g, Animal+ Maternal
-    if mme.pedTrmVec != 0
-        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
-    end
-    #marker effects
-    #println(size(Mi.genotypes))
-    if mme.M != 0
-        for Mi in mme.M
+
+            #marker effects
             mGibbs                        = GibbsMats(Mi.genotypes, ones(size(Mi.genotypes,1)))
             Mi.nObs,Mi.nMarkers, M              = mGibbs.nrows,mGibbs.ncols,mGibbs.X
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
-        end
-    end
 
-    if mme.M != 0
-        for Mi in mme.M
             Mi.β  = [copy(Mi.α[1]) for coeffi = 1:ncoeff] #partial marker effeccts used in BayesB
             Mi.δ   = [ones(typeof(Mi.α[1][1]),Mi.nMarkers) for coeffi = 1:ncoeff] #inclusion indicator for marker effects
             Mi.meanDelta  = [zero(Mi.β[coeffi]) for coeffi = 1:ncoeff]
@@ -75,6 +65,10 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
             Mi.meanAlpha  = [zero(Mi.α[coeffi]) for coeffi = 1:ncoeff]
             Mi.meanAlpha2 = [zero(Mi.α[coeffi]) for coeffi = 1:ncoeff] #marker effects
         end
+    end
+    #polygenic effects (A), e.g, Animal+ Maternal
+    if mme.pedTrmVec != 0
+        G0Mean,G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
 
     #phenotypes corrected for all effects #assumming starting values zeros

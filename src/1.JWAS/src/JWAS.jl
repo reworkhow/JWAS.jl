@@ -173,6 +173,7 @@ function runMCMC(mme::MME,df;
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
                 constraint                      = false,
+                RRM                             = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
@@ -497,7 +498,7 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance != false
-                    if mme.nModels == 1 || is_nnbayes_partial
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
                     elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
                         @printf("%-30s\n","genetic variances (genomic):")
@@ -510,7 +511,7 @@ function getMCMCinfo(mme)
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if mme.nModels == 1 || is_nnbayes_partial
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
                     elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
                         @printf("%-30s\n","marker effect variances:")

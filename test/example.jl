@@ -7,7 +7,7 @@ data_path = "/Users/apple/Downloads/"
 geno_file = data_path * "genoRRM";
 
 # generate dataframe having Day columns
-RR_pheno = data_path * "phenoRRM"
+RR_pheno = data_path * "phenoRRM.csv"
 try
     mkdir(data_path * "RR")
 catch
@@ -16,7 +16,7 @@ end
 
 pheno = CSV.read(RR_pheno, DataFrame)
 
-ncoef = 3
+ncoef = 2
 tp = length(unique(pheno[!, :time]))
 
 ### Generate Lengendre Polynomial Covariates
@@ -71,12 +71,11 @@ output["marker effects genotypes"]
 
 u1 = output["EBV_1"] # estimated first random regression coefficients for individuals
 u2 = output["EBV_2"] # estimated second random regression coefficients for individuals
-u3 = output["EBV_3"] # estimated third random regression coefficients for individuals
 EBVs = DataFrame(
     ID = u1[!, :ID],
     u1 = u1[!, :EBV],
     u2 = u2[!, :EBV],
-    u3 = u3[!, :EBV],
+    #u3 = u3[!, :EBV],
 )
 
 # Calculate the BV for individuals
@@ -108,8 +107,6 @@ for timei = 1:tp
     EBVi = filter(row -> row.time in [timei], copy(correctEBVs))
     select!(EBVi, Not(:time))
     final_dfi = innerjoin(phenoi, EBVi, on = :ID)
-    println(size(final_dfi))
-
     res = cor(final_dfi[!, :EBV], final_dfi[!, :yobs])
     push!(accuracy, res)
 end
