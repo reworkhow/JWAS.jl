@@ -24,8 +24,10 @@ function errors_args(mme)
             if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
                 if Mi.π != false
                     printstyled(Mi.method," runs with π = false.\n",bold=false,color=:red)
+                    Mi.π = false
                 elseif Mi.estimatePi == true
                     printstyled(Mi.method," runs with estimatePi = false.\n",bold=false,color=:red)
+                    Mi.estimatePi = false
                 end
             end
             if Mi.method == "BayesA"
