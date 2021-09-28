@@ -32,19 +32,20 @@ end
 
 function megaGBLUP!(Mi::Genotypes,wArray,vare,Rinv)
     for i in 1:length(wArray) #ntraits
-        temp = Mi.G
-        Mi.G = Mi.G[i,i]
-        GBLUP!(Mi,wArray[i],vare[i,i],Rinv)
-        Mi.G = temp
+        GBLUP!(Mi.genotypes,Mi.α[i],Mi.D,wArray[i],vare[i,i],Mi.G[i,i],Rinv,Mi.nObs)
     end
 end
 
-function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv)
-    ycorr[:]    = ycorr + Mi.genotypes*Mi.α[1]  #ycor[:] is needed (ycor causes problems)
-    lhs         = Rinv .+ vare./(Mi.G*Mi.D)
-    mean1       = Mi.genotypes'*(Rinv.*ycorr)./lhs
-    Mi.α[1]     = mean1 + randn(Mi.nObs).*sqrt.(vare./lhs)
-    ycorr[:]    = ycorr - Mi.genotypes*Mi.α[1]
+function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv) #single-trait
+    GBLUP!(Mi.genotypes,Mi.α[1],Mi.D,ycorr,vare,Mi.G[1,1],Rinv,Mi.nObs)
+end
+
+function GBLUP!(genotypes,α,D,ycorr,vare,vara,Rinv,nObs)
+    ycorr[:]    = ycorr + genotypes*α #ycor[:] is needed (ycor causes problems)
+    lhs         = Rinv .+ vare./(vara*D)
+    mean1       = genotypes'*(Rinv.*ycorr)./lhs
+    α[:]        = mean1 + randn(nObs).*sqrt.(vare./lhs)
+    ycorr[:]    = ycorr - genotypes*α
 end
 
 
