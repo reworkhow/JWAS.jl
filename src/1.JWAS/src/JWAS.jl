@@ -187,9 +187,24 @@ function runMCMC(mme::MME,df;
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
+        mme.yobs_name=Symbol(mme.lhsVec[1])
+        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
         for i in mme.lhsVec
             df[!,i]= yobs
+        end
+        ######################################################################
+        #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
+        #with prefix 1, 2... , e.g., height1, height2...
+        #if data for latent traits are included in the dataset, column names
+        #will be used as shown below.e.g.,
+        #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
+        #"gene1" and "gene2" are columns in the dataset.
+        ######################################################################
+        if mme.latent_traits != false
+            #change lhsVec to omics gene name
+            mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
+            #rename genotype names
+            mme.M[1].trait_names=mme.latent_traits
         end
     end
     #for deprecated JWAS fucntions

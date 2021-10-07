@@ -306,20 +306,9 @@ function getMME(mme::MME, df::DataFrame)
     #mme.ySparse: latent traits
     #yobs       : single observed trait
     if mme.nonlinear_function != false
-        mme.yobs = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+        # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+        mme.yobs = df[!,mme.yobs_name]
         if mme.latent_traits != false
-          ######################################################################
-          #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
-          #with prefix 1, 2... , e.g., height1, height2...
-          #if data for latent traits are included in the dataset, column names
-          #will be used as shown below.e.g.,
-          #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
-          #"gene1" and "gene2" are columns in the dataset.
-          ######################################################################
-          #change lhsVec to omics gene name
-          mme.lhsVec = Symbol.(mme.latent_traits)
-          #rename genotype names
-          mme.M[1].trait_names=mme.latent_traits
           #save omics data missing pattern
           mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
           #replace missing data with values in yobs

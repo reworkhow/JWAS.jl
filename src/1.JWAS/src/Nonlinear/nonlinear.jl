@@ -7,6 +7,8 @@
 # (2) neural network: a1*tan(x1)+a2*tan(x2)
 
 #nonlinear_function: #user-provide function, "tanh"
+
+#ycorr: residual for omics data
 function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
@@ -17,9 +19,19 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits) #Tianjing's mme.Z
     μ_ylats       = reshape(μ_ylats,nobs,ntraits)
+    ycorr2        = reshape(ycorr,nobs,ntraits)
+
+    #testing pattern
+    # for NN-Bayes Omics: the yobs for testing ind is missing, e.g., [0.1,0.2,missing]
+    # need to remove testing ind from yobs, ylats_old, μ_ylats
+    trainingInd = .!ismissing.(yobs)
+    yobs2       = yobs[trainingInd]  #(90,)
+    ylats_old2  = ylats_old[trainingInd,:]  #(90,5)
+    ycorr2      = ycorr2[trainingInd,:] #(90,5)
+    missingPattern = mme.missingPattern[trainingInd,:] #(90,5)
 
     if mme.is_activation_fcn == true #Neural Network with activation function
-        ylats_new = hmc_one_iteration(10,0.1,ylats_old,yobs,mme.weights_NN,mme.R,σ2_yobs,reshape(ycorr,nobs,ntraits),nonlinear_function)
+        ylats_new = hmc_one_iteration(10,0.1,ylats_old2,yobs2,mme.weights_NN,mme.R,σ2_yobs,ycorr2,nonlinear_function) #(90,5)
     else  #user-defined function, MH
         candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
         if nonlinear_function == "Neural Network (MH)"
@@ -36,29 +48,32 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
     end
 
+    if mme.latent_traits !== false  #gene1, gene2, ..
+        ylats_new[missingPattern] .= ylats_old2[missingPattern]
+    end
+
     #sample weights
     if mme.is_activation_fcn == true #Neural Network with activation function
-        X       = [ones(nobs) nonlinear_function.(ylats_new)]
+        X       = [ones(length(yobs2)) nonlinear_function.(ylats_new)]
         lhs     = X'X + I*0.00001
         Ch      = cholesky(lhs)
         L       = Ch.L
         iL      = inv(L)
-        rhs     = X'yobs
+        rhs     = X'yobs2
         weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
         mme.weights_NN = weights
     end
-    if mme.latent_traits == false
-        mme.ySparse = vec(ylats_new) #maybe no missing values here
-    else #might be redundant
-        mme.ySparse[.!(vec(mme.missingPattern))] = vec(ylats_new)[.!(vec(mme.missingPattern))]
-    end
+
+    #update ylats
+    ylats_old[trainingInd,:]=ylats_new
+    mme.ySparse = vec(ylats_old)
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
     #sample σ2_yobs
     if mme.is_activation_fcn == false  # user-defined nonlinear function
-        residuals = yobs-nonlinear_function.(Tuple([view(ylats_new,:,i) for i in 1:ntraits])...)
+        residuals = yobs2-nonlinear_function.(Tuple([view(ylats_new,:,i) for i in 1:ntraits])...)
     else   # Neural Network with activation function
-        residuals = yobs-[ones(nobs) nonlinear_function.(ylats_new)]*weights
+        residuals = yobs2-[ones(length(yobs2)) nonlinear_function.(ylats_new)]*weights
     end
-    mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(nobs)) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+    mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(length(yobs2))) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
