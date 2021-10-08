@@ -181,7 +181,8 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false)
+                estimateScale                   = false,
+                nnweight_lambda                 = false)
 
 
     #Neural Network
@@ -205,6 +206,8 @@ function runMCMC(mme::MME,df;
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
             #rename genotype names
             mme.M[1].trait_names=mme.latent_traits
+            #lambda is for the MME to sample nnweight
+            mme.nnweight_lambda=nnweight_lambda
         end
     end
     #for deprecated JWAS fucntions
