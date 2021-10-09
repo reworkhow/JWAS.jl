@@ -182,7 +182,8 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
-                nnweight_lambda                 = false)
+                nnweight_lambda                 = false,
+                full_omics                      = false)
 
 
     #Neural Network
@@ -208,6 +209,8 @@ function runMCMC(mme::MME,df;
             mme.M[1].trait_names=mme.latent_traits
             #lambda is for the MME to sample nnweight
             mme.nnweight_lambda=nnweight_lambda
+            #whether the omics data is full
+            mme.full_omics=full_omics
         end
     end
     #for deprecated JWAS fucntions

@@ -310,7 +310,7 @@ function getMME(mme::MME, df::DataFrame)
         mme.yobs = df[!,mme.yobs_name]
         if mme.latent_traits != false
           #save omics data missing pattern
-          mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+          mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
           #replace missing data with values in yobs
           for i in mme.lhsVec      #for each omics feature
             for j in 1:size(df,1)  #for each observation

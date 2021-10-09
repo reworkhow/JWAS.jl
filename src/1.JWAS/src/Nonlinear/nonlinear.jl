@@ -30,32 +30,36 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ycorr2      = ycorr2[trainingInd,:] #(90,5)
     missingPattern = mme.missingPattern[trainingInd,:] #(90,5)
 
-    if mme.is_activation_fcn == true #Neural Network with activation function
-        ylats_new = hmc_one_iteration(10,0.1,ylats_old2,yobs2,mme.weights_NN,mme.R,σ2_yobs,ycorr2,nonlinear_function) #(90,5)
-    else  #user-defined function, MH
-        candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
-        if nonlinear_function == "Neural Network (MH)"
-            μ_yobs_candidate = [ones(nobs) nonlinear_function.(candidates)]*weights
-            μ_yobs_current   = X*weights
-        else #user-defined non-linear function
-            μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
-            μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old,:,i) for i in 1:ntraits])...)
+    if mme.full_omics==false #skip if we have full omics data
+        if mme.is_activation_fcn == true #Neural Network with activation function
+            ylats_new = hmc_one_iteration(10,0.1,ylats_old2,yobs2,mme.weights_NN,mme.R,σ2_yobs,ycorr2,nonlinear_function) #(90,5)
+        else  #user-defined function, MH
+            candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
+            if nonlinear_function == "Neural Network (MH)"
+                μ_yobs_candidate = [ones(nobs) nonlinear_function.(candidates)]*weights
+                μ_yobs_current   = X*weights
+            else #user-defined non-linear function
+                μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
+                μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old,:,i) for i in 1:ntraits])...)
+            end
+            llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
+            llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
+            mhRatio          = exp.(llh_candidate - llh_current)
+            updateus         = rand(nobs) .< mhRatio
+            ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
         end
-        llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
-        llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
-        mhRatio          = exp.(llh_candidate - llh_current)
-        updateus         = rand(nobs) .< mhRatio
-        ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
-    end
 
-    if mme.latent_traits !== false  #gene1, gene2, ..
-        ylats_new[missingPattern] .= ylats_old2[missingPattern]
+        if mme.latent_traits !== false  #gene1, gene2, ..
+            ylats_new[missingPattern] .= ylats_old2[missingPattern]
+        end
+    else #mme.full_omics==true
+        ylats_new = ylats_old2
     end
 
     #sample weights
     if mme.is_activation_fcn == true #Neural Network with activation function
         if mme.MCMCinfo.estimate_variance == true #flat prior
-            X       = [ones(length(yobs2)) nonlinear_function.(ylats_new)]
+            X       = Matrix([ones(length(yobs2)) nonlinear_function.(ylats_new)])
             lhs     = X'X + I*0.00001
             Ch      = cholesky(lhs)
             L       = Ch.L
