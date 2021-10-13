@@ -22,7 +22,7 @@ function mkRi(mme::MME,df::DataFrame,Rinv)
     nObs   = size(tstMsng,1)
     ii = Array{Int64}(undef,nObs*ntrait^2)
     jj = Array{Int64}(undef,nObs*ntrait^2)
-    vv = Array{AbstractFloat}(undef,nObs*ntrait^2)
+    vv = Array{eltype(Rinv)}(undef,nObs*ntrait^2)
     pos = 1
     for i=1:nObs
         sel = tstMsng[i,:]
