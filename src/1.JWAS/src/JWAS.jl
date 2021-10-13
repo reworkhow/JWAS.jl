@@ -209,6 +209,9 @@ function runMCMC(mme::MME,df;
             mme.M[1].trait_names=mme.latent_traits
             #lambda is for the MME to sample nnweight
             mme.nnweight_lambda=nnweight_lambda
+            println("---------------------")
+            @show mme.nnweight_lambda
+            println("---------------------")
             #whether the omics data is full
             mme.full_omics=full_omics
         end

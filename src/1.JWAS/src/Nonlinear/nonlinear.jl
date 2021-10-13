@@ -58,7 +58,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
 
     #sample weights
     if mme.is_activation_fcn == true #Neural Network with activation function
-        if mme.MCMCinfo.estimate_variance == true #flat prior
+        if mme.nnweight_lambda == false #flat prior
             X       = Matrix([ones(length(yobs2)) nonlinear_function.(ylats_new)])
             lhs     = X'X + I*0.00001
             Ch      = cholesky(lhs)
@@ -67,7 +67,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
             rhs     = X'yobs2
             weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
             mme.weights_NN = weights
-        else  #normal prior with fixed variance
+        else  #normal prior with fixed variance, e.g., mme.nnweight_lambda == 3002
             X       = nonlinear_function.(ylats_new)  #the weight for last col is 1
             lhs     = [length(yobs2)            sum(X,dims=1)
                        sum(X,dims=1)'  X'X + I*mme.nnweight_lambda]
