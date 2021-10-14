@@ -170,6 +170,7 @@ function runMCMC(mme::MME,df;
                 printout_frequency              = chain_length+1,
                 big_memory                      = false,
                 double_precision                = false,
+                fast_blocks                     = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_folder                     = "results",
                 output_samples_for_all_parameters = false,
@@ -283,7 +284,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   seed,double_precision,output_folder,RRM)
+                   seed,double_precision,output_folder,RRM,fast_blocks)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
     #       3)output individual IDs; 4)Priors  5)Prediction equation

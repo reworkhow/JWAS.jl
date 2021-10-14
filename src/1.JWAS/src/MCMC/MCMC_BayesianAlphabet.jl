@@ -18,6 +18,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
+    fast_blocks              = mme.MCMCinfo.fast_blocks
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -45,8 +46,13 @@ function MCMC_BayesianAlphabet(mme,df)
     if mme.M != 0
         for Mi in mme.M
             #Mi.α  (starting values were set in get_genotypes)
-            mGibbs    = GibbsMats(Mi.genotypes,invweights)
-            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
+            mGibbs    = GibbsMats(Mi.genotypes,invweights,fast_blocks=mme.MCMCinfo.fast_blocks)
+            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
+            if fast_blocks != false
+                Mi.MArray  = mGibbs.XArray
+                Mi.MRinvArray = mGibbs.XRinvArray
+                Mi.MpRinvM = mGibbs.XpRinvX
+            end
 
             if Mi.method=="BayesB" #α=β.*δ
                 Mi.G.val        = fill(Mi.G.val,Mi.nMarkers) #a scalar in BayesC but a vector in BayeB
@@ -209,7 +215,11 @@ function MCMC_BayesianAlphabet(mme,df)
                     elseif is_nnbayes_partial
                         BayesABC!(Mi,wArray[i],mme.R.val[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
                     else
-                        BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                        if fast_blocks == false
+                            BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                        else
+                            BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                        end
                     end
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait && !is_nnbayes_partial
