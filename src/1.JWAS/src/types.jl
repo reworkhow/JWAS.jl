@@ -104,6 +104,9 @@ mutable struct Genotypes
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
   mpRinvm           #a collection of matrices used in Bayesian Alphabet
+  MArray            #a collection of matrices used in Bayesian Alphabet (rhs approach)
+  MRinvArray        #a collection of matrices used in Bayesian Alphabet (rhs approach)
+  MpRinvM           #a collection of matrices used in Bayesian Alphabet (rhs approach)
   D                 #eigen values used in GBLUP
   gammaArray        #array used in Bayesian LASSO
 
@@ -130,7 +133,7 @@ mutable struct Genotypes
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
-                                         false,false,false,false,false,
+                                         false,false,false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
                                          false,a9)
@@ -165,6 +168,7 @@ mutable struct MCMCinfo
     seed
     double_precision
     output_folder
+    fast_blocks
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

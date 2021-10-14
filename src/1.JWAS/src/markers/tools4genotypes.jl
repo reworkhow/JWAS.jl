@@ -35,6 +35,16 @@ function getXpRinvX(X)
     return XpRinvX
 end
 
+function get_column_blocks_ref(X,fast_blocks=false)
+    xArray = Array{typeof(X)}(undef,length(fast_blocks))
+    for i in 1:length(fast_blocks)
+        pos_start = fast_blocks[i]
+        pos_end   = (i != length(fast_blocks)) ? (fast_blocks[i+1]-1) : size(X,2)
+        xArray[i] = view(X,:,pos_start:pos_end)
+    end
+    return xArray
+end
+
 mutable struct GibbsMats
     X::Union{Array{Float64,2},Array{Float32,2}}
     nrows::Int64
@@ -42,7 +52,11 @@ mutable struct GibbsMats
     xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
-    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)
+    XArray
+    XRinvArray
+    XpRinvX
+    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv;fast_blocks=false)
+        #single-locus, adjusting y, approach
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
         xpRinvx     = getXpRinvX(X,Rinv)
@@ -51,7 +65,17 @@ mutable struct GibbsMats
         else
             xRinvArray = [x.*Rinv for x in xArray]
         end
-        new(X,nrows,ncols,xArray,xRinvArray,xpRinvx)
+        #block, adjusting rhs and/or y, approach
+        if fast_blocks != false
+            XArray = get_column_blocks_ref(X,fast_blocks)
+            XRinvArray = [X'Diagonal(Rinv) for X in XArray]
+            XpRinvX = [X'Diagonal(Rinv)*X for X in XArray] #to improve using XRinvArray
+        else
+            XArray = XRinvArray = XpRinvX = false
+        end
+        new(X,nrows,ncols,
+            xArray,xRinvArray,xpRinvx,
+            XArray,XRinvArray,XpRinvX)
     end
 end
 
