@@ -69,7 +69,7 @@ mutable struct GibbsMats
         if fast_blocks != false
             XArray = get_column_blocks_ref(X,fast_blocks)
             XRinvArray = [X'Diagonal(Rinv) for X in XArray]
-            XpRinvX = [X'Diagonal(Rinv)*X for X in XArray] #to improve using XRinvArray
+            XpRinvX = [XRinvArray[i]*XArray[i] for i in 1:length(XArray)]
         else
             XArray = XRinvArray = XpRinvX = false
         end
