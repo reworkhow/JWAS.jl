@@ -80,7 +80,7 @@ function BayesABC_block!(XArray,XRinvArray,xpRinvx,
         XpRinvycorr = XRinvArray[i]*yCorr
         αold        = copy(α)
         block_size  = size(XpRinvX[i],1)
-        nreps       = 1 #nblocks #block_size
+        nreps       = block_size #user-defined nreps=block_size, outer_niter =niter/block_size
         for reps = 1:nreps
             for j=1:block_size #additional code to save all sampled αs is needed
                 locus_j    = start_pos+j
