@@ -22,7 +22,7 @@ function MCMC_BayesianAlphabet(mme,df)
     nonlinear_function       = mme.nonlinear_function
     fast_blocks              = mme.MCMCinfo.fast_blocks
     if fast_blocks != false
-        chain_length = Int(chain_length/(fast_blocks[2]-fast_blocks[1]))#not flexible
+        chain_length = Int(floor(chain_length/(fast_blocks[2]-fast_blocks[1])))#not flexible
     end
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
