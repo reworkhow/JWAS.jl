@@ -202,16 +202,16 @@ function runMCMC(mme::MME,df;
         #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
         #"gene1" and "gene2" are columns in the dataset.
         ######################################################################
+        #lambda is for the MME to sample nnweight
+        mme.nnweight_lambda=nnweight_lambda
+        println("---------------------")
+        @show mme.nnweight_lambda
+        println("---------------------")
         if mme.latent_traits != false
             #change lhsVec to omics gene name
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
             #rename genotype names
             mme.M[1].trait_names=mme.latent_traits
-            #lambda is for the MME to sample nnweight
-            mme.nnweight_lambda=nnweight_lambda
-            println("---------------------")
-            @show mme.nnweight_lambda
-            println("---------------------")
             #whether the omics data is full
             mme.full_omics=full_omics
         end
