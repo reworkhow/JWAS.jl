@@ -251,7 +251,6 @@ mutable struct MME
     yobs          #for single observed trait, and mme.ySparse is for latent traits
     yobs_name
     nnweight_lambda
-    full_omics
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -277,6 +276,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false,false)
     end
 end

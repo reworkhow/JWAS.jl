@@ -54,7 +54,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
-      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
+      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
       #NNBayes: re-write model equations by treating hidden nodes as multiple traits
       model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
     end

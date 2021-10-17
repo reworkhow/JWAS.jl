@@ -182,8 +182,7 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
-                nnweight_lambda                 = false,
-                full_omics                      = false)
+                nnweight_lambda                 = false)
 
 
     #Neural Network
@@ -204,16 +203,16 @@ function runMCMC(mme::MME,df;
         ######################################################################
         #lambda is for the MME to sample nnweight
         mme.nnweight_lambda=nnweight_lambda
-        println("---------------------")
-        @show mme.nnweight_lambda
-        println("---------------------")
+        if mme.nnweight_lambda!=false
+            printstyled(" - Prior of neural network weights: normal prior with lambda $nnweight_lambda.\n",bold=false,color=:green)
+        else
+            printstyled(" - Prior of neural network weights: flat prior.\n",bold=false,color=:green)
+        end
         if mme.latent_traits != false
             #change lhsVec to omics gene name
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
             #rename genotype names
             mme.M[1].trait_names=mme.latent_traits
-            #whether the omics data is full
-            mme.full_omics=full_omics
         end
     end
     #for deprecated JWAS fucntions
