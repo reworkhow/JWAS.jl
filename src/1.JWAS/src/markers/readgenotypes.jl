@@ -198,7 +198,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             genotypes = genotypes + I*0.00001
             add_small_value_count += 1
             if add_small_value_count > 10
-                error("Please provide a positive-definite realtionship matrix.")
+                error("Please provide a positive-definite relationship matrix.")
             end
         end
     end
