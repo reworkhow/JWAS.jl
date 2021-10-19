@@ -176,6 +176,14 @@ function MCMC_BayesianAlphabet(mme,df)
         println("Non-Marker Location Parameters")
         @time if is_multi_trait
             mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
+            # writedlm("new_Ri_iter$iter",Ri)
+            @show size(Ri)
+            @show sum(Ri.!=0)
+            @show Ri[1:5,1:5]
+            @show typeof(Ri)
+
+            @show size(mme.X)
+            @show typeof(mme.X)
         end
         @time addVinv(mme)
         # 1.2 Update Right-hand-side of MME
