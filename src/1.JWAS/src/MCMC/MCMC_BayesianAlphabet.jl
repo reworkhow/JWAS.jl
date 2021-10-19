@@ -182,7 +182,7 @@ function MCMC_BayesianAlphabet(mme,df)
             if is_mega_trait
                 mme.mmeLhs =  sparse(I*sum(mme.X[:,1])*Ri[1,1], mme.nModels, mme.nModels);
             else
-                mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
+                mme.mmeLhs =  Xt*Ri* mme.X #normal equation, Ri is changed
                 dropzeros!(mme.mmeLhs)
             end
         end
@@ -195,7 +195,7 @@ function MCMC_BayesianAlphabet(mme,df)
         end
         @time ycorr[:] = ycorr + mme.X*mme.sol
         @time if is_multi_trait
-            mme.mmeRhs =  is_mega_trait ? Xt*Ri[1]*ycorr : Xt*Ri*ycorr
+            mme.mmeRhs =  is_mega_trait ? Xt*Ri[1,1]*ycorr : Xt*Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
