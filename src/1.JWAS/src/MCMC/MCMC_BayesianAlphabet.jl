@@ -157,49 +157,52 @@ function MCMC_BayesianAlphabet(mme,df)
     end
 
     @showprogress "running MCMC ..." for iter=1:chain_length
-        ########################################################################
-        # 0. Categorical traits (liabilities)
-        ########################################################################
-        if categorical_trait == true
-            ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
-            writedlm(outfile["threshold"],threshold',',')
-        end
-        if censored_trait != false
-            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
-            writedlm(outfile["liabilities"],mme.ySparse',',')
-        end
-        ########################################################################
+        # ########################################################################
+        # # 0. Categorical traits (liabilities)
+        # ########################################################################
+        # if categorical_trait == true
+        #     ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
+        #     writedlm(outfile["threshold"],threshold',',')
+        # end
+        # if censored_trait != false
+        #     ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+        #     writedlm(outfile["liabilities"],mme.ySparse',',')
+        # end
+        # #######################################################################
         # 1. Non-Marker Location Parameters
-        ########################################################################
+        # #######################################################################
         # 1.1 Update Left-hand-side of MME
-        if is_multi_trait
+        println("-----iter: ",iter)
+        println("Non-Marker Location Parameters")
+        @time if is_multi_trait
             mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
         end
-        addVinv(mme)
+        @time addVinv(mme)
         # 1.2 Update Right-hand-side of MME
-        if is_multi_trait
+        @time if is_multi_trait
             if mme.MCMCinfo.missing_phenotypes==true
               ycorr[:]=sampleMissingResiduals(mme,ycorr)
             end
         end
-        ycorr[:] = ycorr + mme.X*mme.sol
-        if is_multi_trait
+        @time ycorr[:] = ycorr + mme.X*mme.sol
+        @time if is_multi_trait
             mme.mmeRhs =  mme.X'Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
         # 1.3 Gibbs sampler
-        if is_multi_trait
+        @time if is_multi_trait
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        ycorr[:] = ycorr - mme.X*mme.sol
+        @time ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
-        if mme.M !=0
+        println("Marker Effects")
+        @time if mme.M !=0
             for i in 1:length(mme.M)
                 Mi=mme.M[i]
                 ########################################################################
@@ -255,118 +258,121 @@ function MCMC_BayesianAlphabet(mme,df)
                         GBLUP!(Mi,ycorr,mme.R,invweights)
                     end
                 end
-                ########################################################################
-                # Marker Inclusion Probability
-                ########################################################################
-                if Mi.estimatePi == true
-                    if is_multi_trait && !is_nnbayes_partial
-                        if is_mega_trait
-                            Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
-                        else
-                            samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
-                        end
-                    else
-                        Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
-                    end
-                end
-                ########################################################################
-                # Variance of Marker Effects
-                ########################################################################
-                if Mi.estimateVariance == true #methd specific estimate_variance
-                    sample_marker_effect_variance(Mi,constraint)
-                    if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
-                        Mi.G = Float32.(Mi.G)
-                    end
-                end
-                ########################################################################
-                # Scale Parameter in Priors for Marker Effect Variances
-                ########################################################################
-                if Mi.estimateScale == true
-                    if !is_multi_trait
-                        a = size(Mi.G,1)*Mi.df/2   + 1
-                        b = sum(Mi.df ./ (2*Mi.G)) + 1
-                        Mi.scale = rand(Gamma(a,1/b))
-                    end
-                end
+                # ########################################################################
+                # # Marker Inclusion Probability
+                # ########################################################################
+                # if Mi.estimatePi == true
+                #     if is_multi_trait && !is_nnbayes_partial
+                #         if is_mega_trait
+                #             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
+                #         else
+                #             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
+                #         end
+                #     else
+                #         Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
+                #     end
+                # end
+                # ########################################################################
+                # # Variance of Marker Effects
+                # ########################################################################
+                # if Mi.estimateVariance == true #methd specific estimate_variance
+                #     sample_marker_effect_variance(Mi,constraint)
+                #     if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
+                #         Mi.G = Float32.(Mi.G)
+                #     end
+                # end
+                # ########################################################################
+                # # Scale Parameter in Priors for Marker Effect Variances
+                # ########################################################################
+                # if Mi.estimateScale == true
+                #     if !is_multi_trait
+                #         a = size(Mi.G,1)*Mi.df/2   + 1
+                #         b = sum(Mi.df ./ (2*Mi.G)) + 1
+                #         Mi.scale = rand(Gamma(a,1/b))
+                #     end
+                # end
             end
         end
-        ########################################################################
-        # 3. Non-marker Variance Components
-        ########################################################################
-        if estimate_variance == true
-            ########################################################################
-            # 3.1 Variance of Non-marker Random Effects
-            # e.g, i.i.d; polygenic effects (pedigree)
-            ########################################################################
-            sampleVCs(mme,mme.sol)
-            ########################################################################
-            # 3.2 Residual Variance
-            ########################################################################
-            if is_multi_trait
-                mme.R = sample_variance(wArray, length(mme.obsID),
-                                        mme.df.residual, mme.scaleR,
-                                        invweights,constraint)
-                Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
-            else
-                if categorical_trait == false
-                    mme.ROld = mme.R
-                    mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
-                end
-            end
-            if mme.MCMCinfo.double_precision == false
-                mme.R = Float32.(mme.R)
-            end
-        end
-        ########################################################################
-        # 4. Causal Relationships among Phenotypes (Structure Equation Model)
-        ########################################################################
-        if is_multi_trait && causal_structure != false
-            sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
-        end
+        # ########################################################################
+        # # 3. Non-marker Variance Components
+        # ########################################################################
+        # if estimate_variance == true
+        #     ########################################################################
+        #     # 3.1 Variance of Non-marker Random Effects
+        #     # e.g, i.i.d; polygenic effects (pedigree)
+        #     ########################################################################
+        #     sampleVCs(mme,mme.sol)
+        #     ########################################################################
+        #     # 3.2 Residual Variance
+        #     ########################################################################
+        #     if is_multi_trait
+        #         mme.R = sample_variance(wArray, length(mme.obsID),
+        #                                 mme.df.residual, mme.scaleR,
+        #                                 invweights,constraint)
+        #         Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
+        #     else
+        #         if categorical_trait == false
+        #             mme.ROld = mme.R
+        #             mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
+        #         end
+        #     end
+        #     if mme.MCMCinfo.double_precision == false
+        #         mme.R = Float32.(mme.R)
+        #     end
+        # end
+        # ########################################################################
+        # # 4. Causal Relationships among Phenotypes (Structure Equation Model)
+        # ########################################################################
+        # if is_multi_trait && causal_structure != false
+        #     sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+        # end
         ########################################################################
         # 5. Latent Traits (NNBayes)
         ########################################################################
         if nonlinear_function != false #to update ycorr!
-            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
+            println("Latent Traits (NNBayes):")
+            @time sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
-        ########################################################################
-        # 5. Update priors using posteriors (empirical) LATER
-        ########################################################################
-        if update_priors_frequency !=0 && iter%update_priors_frequency==0
-            if mme.M!=0 && methods != "BayesB"
-                if is_multi_trait
-                    mme.M.scale = meanVara*(mme.df.marker-ntraits-1)
-                else
-                    mme.M.scale   = meanVara*(mme.df.marker-2)/mme.df.marker
-                end
-            end
-            if mme.pedTrmVec != 0
-                mme.scalePed  = mme.G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
-            end
-            mme.scaleR  =  mme.meanVare*(mme.df.residual-2)/mme.df.residual
-            println("\n Update priors from posteriors.")
-        end
+        # ########################################################################
+        # # 5. Update priors using posteriors (empirical) LATER
+        # ########################################################################
+        # if update_priors_frequency !=0 && iter%update_priors_frequency==0
+        #     if mme.M!=0 && methods != "BayesB"
+        #         if is_multi_trait
+        #             mme.M.scale = meanVara*(mme.df.marker-ntraits-1)
+        #         else
+        #             mme.M.scale   = meanVara*(mme.df.marker-2)/mme.df.marker
+        #         end
+        #     end
+        #     if mme.pedTrmVec != 0
+        #         mme.scalePed  = mme.G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
+        #     end
+        #     mme.scaleR  =  mme.meanVare*(mme.df.residual-2)/mme.df.residual
+        #     println("\n Update priors from posteriors.")
+        # end
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+        println("Save MCMC samples:")
+        @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             #MCMC samples from posterior distributions
             nsamples       = (iter-burnin)/output_samples_frequency
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            if causal_structure != false
-                writedlm(causal_structure_outfile,sample4λ_vec',',')
-            end
+            # if causal_structure != false
+            #     writedlm(causal_structure_outfile,sample4λ_vec',',')
+            # end
         end
-        ########################################################################
-        # 3.2 Printout
-        ########################################################################
-        if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
-            println("\nPosterior means at iteration: ",iter)
-            println("Residual variance: ",round.(mme.meanVare,digits=6))
-        end
+        # ########################################################################
+        # # 3.2 Printout
+        # ########################################################################
+        # if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
+        #     println("\nPosterior means at iteration: ",iter)
+        #     println("Residual variance: ",round.(mme.meanVare,digits=6))
+        # end
     end
+    println("---------------------------------MCMC ends")
 
     ############################################################################
     # After MCMC
@@ -391,8 +397,8 @@ function MCMC_BayesianAlphabet(mme,df)
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-
-    output=output_result(mme,output_folder,
+    println("output_result")
+    @time output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
                          mme.solMean2,mme.meanVare2,
