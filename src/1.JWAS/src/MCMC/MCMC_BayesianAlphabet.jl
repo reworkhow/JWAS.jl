@@ -156,6 +156,10 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
 
+    if is_multi_trait
+        Xt=copy(mme.X')
+    end
+
     @showprogress "running MCMC ..." for iter=1:chain_length
         # ########################################################################
         # # 0. Categorical traits (liabilities)
@@ -175,15 +179,12 @@ function MCMC_BayesianAlphabet(mme,df)
         println("-----iter: ",iter)
         println("Non-Marker Location Parameters")
         @time if is_multi_trait
-            mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
-            # writedlm("new_Ri_iter$iter",Ri)
-            @show size(Ri)
-            @show isdiag(Ri)
-            @show Ri[1:5,1:5]
-            @show typeof(Ri)
-
-            @show size(mme.X)
-            @show typeof(mme.X)
+            if is_mega_trait
+                mme.mmeLhs =  sparse(I*sum(mme.X[:,1])*Ri[1,1], mme.nModels, mme.nModels);
+            else
+                mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
+                dropzeros!(mme.mmeLhs)
+            end
         end
         @time addVinv(mme)
         # 1.2 Update Right-hand-side of MME
@@ -194,7 +195,7 @@ function MCMC_BayesianAlphabet(mme,df)
         end
         @time ycorr[:] = ycorr + mme.X*mme.sol
         @time if is_multi_trait
-            mme.mmeRhs =  mme.X'Ri*ycorr
+            mme.mmeRhs =  is_mega_trait ? Xt*Ri[1]*ycorr : Xt*Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
@@ -364,17 +365,17 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        println("Save MCMC samples:")
-        @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            #MCMC samples from posterior distributions
-            nsamples       = (iter-burnin)/output_samples_frequency
-            output_posterior_mean_variance(mme,nsamples)
-            #mean and variance of posterior distribution
-            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            # if causal_structure != false
-            #     writedlm(causal_structure_outfile,sample4λ_vec',',')
-            # end
-        end
+        # println("Save MCMC samples:")
+        # @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+        #     #MCMC samples from posterior distributions
+        #     nsamples       = (iter-burnin)/output_samples_frequency
+        #     output_posterior_mean_variance(mme,nsamples)
+        #     #mean and variance of posterior distribution
+        #     output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+        #     # if causal_structure != false
+        #     #     writedlm(causal_structure_outfile,sample4λ_vec',',')
+        #     # end
+        # end
         # ########################################################################
         # # 3.2 Printout
         # ########################################################################
