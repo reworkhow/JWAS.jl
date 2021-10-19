@@ -201,14 +201,14 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 2. Marker Effects
         ########################################################################
-        println("Marker Effects")
-        @time if mme.M !=0
+        if mme.M !=0
             for i in 1:length(mme.M)
                 Mi=mme.M[i]
                 ########################################################################
                 # Marker Effects
                 ########################################################################
-                if Mi.method in ["BayesC","BayesB","BayesA"]
+                println("Marker Effects")
+                @time if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
@@ -258,29 +258,31 @@ function MCMC_BayesianAlphabet(mme,df)
                         GBLUP!(Mi,ycorr,mme.R,invweights)
                     end
                 end
-                # ########################################################################
-                # # Marker Inclusion Probability
-                # ########################################################################
-                # if Mi.estimatePi == true
-                #     if is_multi_trait && !is_nnbayes_partial
-                #         if is_mega_trait
-                #             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
-                #         else
-                #             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
-                #         end
-                #     else
-                #         Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
-                #     end
-                # end
-                # ########################################################################
-                # # Variance of Marker Effects
-                # ########################################################################
-                # if Mi.estimateVariance == true #methd specific estimate_variance
-                #     sample_marker_effect_variance(Mi,constraint)
-                #     if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
-                #         Mi.G = Float32.(Mi.G)
-                #     end
-                # end
+                ########################################################################
+                # Marker Inclusion Probability
+                ########################################################################
+                println("Marker Inclusion Probability:")
+                @time if Mi.estimatePi == true
+                    if is_multi_trait && !is_nnbayes_partial
+                        if is_mega_trait
+                            Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
+                        else
+                            samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
+                        end
+                    else
+                        Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
+                    end
+                end
+                ########################################################################
+                # Variance of Marker Effects
+                ########################################################################
+                println("Variance of Marker Effects:")
+                @time if Mi.estimateVariance == true #methd specific estimate_variance
+                    sample_marker_effect_variance(Mi,constraint)
+                    if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
+                        Mi.G = Float32.(Mi.G)
+                    end
+                end
                 # ########################################################################
                 # # Scale Parameter in Priors for Marker Effect Variances
                 # ########################################################################
@@ -293,33 +295,34 @@ function MCMC_BayesianAlphabet(mme,df)
                 # end
             end
         end
-        # ########################################################################
-        # # 3. Non-marker Variance Components
-        # ########################################################################
-        # if estimate_variance == true
-        #     ########################################################################
-        #     # 3.1 Variance of Non-marker Random Effects
-        #     # e.g, i.i.d; polygenic effects (pedigree)
-        #     ########################################################################
-        #     sampleVCs(mme,mme.sol)
-        #     ########################################################################
-        #     # 3.2 Residual Variance
-        #     ########################################################################
-        #     if is_multi_trait
-        #         mme.R = sample_variance(wArray, length(mme.obsID),
-        #                                 mme.df.residual, mme.scaleR,
-        #                                 invweights,constraint)
-        #         Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
-        #     else
-        #         if categorical_trait == false
-        #             mme.ROld = mme.R
-        #             mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
-        #         end
-        #     end
-        #     if mme.MCMCinfo.double_precision == false
-        #         mme.R = Float32.(mme.R)
-        #     end
-        # end
+        ########################################################################
+        # 3. Non-marker Variance Components
+        ########################################################################
+        println("Non-marker Variance Components:")
+        @time if estimate_variance == true
+            ########################################################################
+            # 3.1 Variance of Non-marker Random Effects
+            # e.g, i.i.d; polygenic effects (pedigree)
+            ########################################################################
+            sampleVCs(mme,mme.sol)
+            ########################################################################
+            # 3.2 Residual Variance
+            ########################################################################
+            if is_multi_trait
+                mme.R = sample_variance(wArray, length(mme.obsID),
+                                        mme.df.residual, mme.scaleR,
+                                        invweights,constraint)
+                Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
+            else
+                if categorical_trait == false
+                    mme.ROld = mme.R
+                    mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
+                end
+            end
+            if mme.MCMCinfo.double_precision == false
+                mme.R = Float32.(mme.R)
+            end
+        end
         # ########################################################################
         # # 4. Causal Relationships among Phenotypes (Structure Equation Model)
         # ########################################################################
