@@ -178,7 +178,7 @@ function MCMC_BayesianAlphabet(mme,df)
             mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
             # writedlm("new_Ri_iter$iter",Ri)
             @show size(Ri)
-            @show sum(Ri.!=0)
+            @show isdiag(Ri)
             @show Ri[1:5,1:5]
             @show typeof(Ri)
 
