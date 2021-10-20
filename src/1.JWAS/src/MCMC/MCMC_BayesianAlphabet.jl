@@ -178,13 +178,13 @@ function MCMC_BayesianAlphabet(mme,df)
         # 1.1 Update Left-hand-side of MME
         println("-----iter: ",iter)
         println("Non-Marker Location Parameters")
-        @time if is_multi_trait
-            if is_mega_trait
-                mme.mmeLhs =  sparse(I*sum(mme.X[:,1])*Ri[1,1], mme.nModels, mme.nModels);
-            else
-                mme.mmeLhs =  Xt*Ri* mme.X #normal equation, Ri is changed
-                dropzeros!(mme.mmeLhs)
-            end
+        if is_multi_trait
+            # if is_mega_trait
+            #     mme.mmeLhs =  sparse(I*sum(mme.X[:,1])*Ri[1,1], mme.nModels, mme.nModels);
+            # else
+                @time mme.mmeLhs =  Xt*Ri*mme.X #normal equation, Ri is changed
+                @time dropzeros!(mme.mmeLhs)
+            # end
         end
         @time addVinv(mme)
         # 1.2 Update Right-hand-side of MME
@@ -195,7 +195,7 @@ function MCMC_BayesianAlphabet(mme,df)
         end
         @time ycorr[:] = ycorr + mme.X*mme.sol
         @time if is_multi_trait
-            mme.mmeRhs =  is_mega_trait ? Xt*Ri[1,1]*ycorr : Xt*Ri*ycorr
+            mme.mmeRhs =  Xt*Ri*ycorr #is_mega_trait ? Xt*Ri[1,1]*ycorr : mme.X'*Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
