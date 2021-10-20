@@ -133,6 +133,7 @@ function MCMC_BayesianAlphabet(mme,df)
         #Starting value for Ri is made based on missing value pattern
         #(imputed phenotypes will not used to compute first mmeRhs)
         Ri         = mkRi(mme,df,invweights)
+        dropzeros!(Ri)
     end
     ############################################################################
     # Starting values for SEM
@@ -156,57 +157,47 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
 
-    if is_multi_trait
-        Xt=copy(mme.X')
-    end
-
     @showprogress "running MCMC ..." for iter=1:chain_length
-        # ########################################################################
-        # # 0. Categorical traits (liabilities)
-        # ########################################################################
-        # if categorical_trait == true
-        #     ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
-        #     writedlm(outfile["threshold"],threshold',',')
-        # end
-        # if censored_trait != false
-        #     ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
-        #     writedlm(outfile["liabilities"],mme.ySparse',',')
-        # end
-        # #######################################################################
-        # 1. Non-Marker Location Parameters
-        # #######################################################################
-        # 1.1 Update Left-hand-side of MME
-        println("-----iter: ",iter)
-        println("Non-Marker Location Parameters")
-        if is_multi_trait
-            # if is_mega_trait
-            #     mme.mmeLhs =  sparse(I*sum(mme.X[:,1])*Ri[1,1], mme.nModels, mme.nModels);
-            # else
-                @time mme.mmeLhs =  Xt*Ri*mme.X #normal equation, Ri is changed
-                @time dropzeros!(mme.mmeLhs)
-            # end
+        ########################################################################
+        # 0. Categorical traits (liabilities)
+        ########################################################################
+        if categorical_trait == true
+            ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
+            writedlm(outfile["threshold"],threshold',',')
         end
-        @time addVinv(mme)
+        if censored_trait != false
+            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+            writedlm(outfile["liabilities"],mme.ySparse',',')
+        end
+        #######################################################################
+        # 1. Non-Marker Location Parameters
+        #######################################################################
+        # 1.1 Update Left-hand-side of MME
+        if is_multi_trait
+            mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
+            dropzeros!(mme.mmeLhs)
+        end
+        addVinv(mme)
         # 1.2 Update Right-hand-side of MME
-        @time if is_multi_trait
+        if is_multi_trait
             if mme.MCMCinfo.missing_phenotypes==true
               ycorr[:]=sampleMissingResiduals(mme,ycorr)
             end
         end
-        @time ycorr[:] = ycorr + mme.X*mme.sol
-        @time if is_multi_trait
-            mme.mmeRhs =  Xt*Ri*ycorr #is_mega_trait ? Xt*Ri[1,1]*ycorr : mme.X'*Ri*ycorr
+        ycorr[:] = ycorr + mme.X*mme.sol
+        if is_multi_trait
+            mme.mmeRhs =  mme.X'Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
         # 1.3 Gibbs sampler
-        @time if is_multi_trait
+        if is_multi_trait
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        @time ycorr[:] = ycorr - mme.X*mme.sol
+        ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
@@ -216,8 +207,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 # Marker Effects
                 ########################################################################
-                println("Marker Effects")
-                @time if Mi.method in ["BayesC","BayesB","BayesA"]
+                if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
@@ -270,8 +260,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 # Marker Inclusion Probability
                 ########################################################################
-                println("Marker Inclusion Probability:")
-                @time if Mi.estimatePi == true
+                if Mi.estimatePi == true
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
@@ -285,8 +274,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 # Variance of Marker Effects
                 ########################################################################
-                println("Variance of Marker Effects:")
-                @time if Mi.estimateVariance == true #methd specific estimate_variance
+                if Mi.estimateVariance == true #methd specific estimate_variance
                     sample_marker_effect_variance(Mi,constraint)
                     if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
                         Mi.G = Float32.(Mi.G)
@@ -307,8 +295,7 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 3. Non-marker Variance Components
         ########################################################################
-        println("Non-marker Variance Components:")
-        @time if estimate_variance == true
+        if estimate_variance == true
             ########################################################################
             # 3.1 Variance of Non-marker Random Effects
             # e.g, i.i.d; polygenic effects (pedigree)
@@ -342,8 +329,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits (NNBayes)
         ########################################################################
         if nonlinear_function != false #to update ycorr!
-            println("Latent Traits (NNBayes):")
-            @time sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
+            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
@@ -365,8 +351,7 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        println("Save MCMC samples:")
-        @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
              #MCMC samples from posterior distributions
              nsamples       = (iter-burnin)/output_samples_frequency
              output_posterior_mean_variance(mme,nsamples)
@@ -384,7 +369,6 @@ function MCMC_BayesianAlphabet(mme,df)
             println("Residual variance: ",round.(mme.meanVare,digits=6))
         end
     end
-    println("---------------------------------MCMC ends")
 
     ############################################################################
     # After MCMC
@@ -409,8 +393,7 @@ function MCMC_BayesianAlphabet(mme,df)
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-    println("output_result")
-    @time output=output_result(mme,output_folder,
+    output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
                          mme.solMean2,mme.meanVare2,
