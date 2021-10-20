@@ -77,20 +77,21 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old_train  = ylats_old[trainingInd,:]
 
     if mme.is_activation_fcn == true #Neural Network with activation function
-        if mme.nnweight_lambda == false #fixed effect: 0; known random:e.g.,2.5;unknown random: false
-            mme.nnweight_lambda = mme.σ2_yobs/mme.σ2_weightsNN
+        if mme.nnweight_lambda == false #fixed effect: 0.000001; known random:e.g.,2.5;unknown random: false
+            nnweight_lambda = mme.σ2_yobs/mme.σ2_weightsNN
+        else
+            nnweight_lambda = mme.nnweight_lambda
         end
-        if mme.nnweight_lambda == false #flat prior
-            X       = Matrix([ones(length(yobs_train)) nonlinear_function.(ylats_old_train)])
-            lhs     = X'X + I*0.00001 + I*mme.nnweight_lambda
-            lhs[1,1]= lhs[1,1] - mme.nnweight_lambda
-            Ch      = cholesky(lhs)
-            L       = Ch.L
-            iL      = inv(L)
-            rhs     = X'yobs_train
-            weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
-            mme.weights_NN = weights
-        end
+
+        X       = Matrix([ones(length(yobs_train)) nonlinear_function.(ylats_old_train)])
+        lhs     = X'X + I*0.00001 + I*nnweight_lambda
+        lhs[1,1]= lhs[1,1] - nnweight_lambda
+        Ch      = cholesky(lhs)
+        L       = Ch.L
+        iL      = inv(L)
+        rhs     = X'yobs_train
+        weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
+        mme.weights_NN = weights
     end
 
     #update ylats

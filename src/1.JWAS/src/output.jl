@@ -450,7 +450,7 @@ function output_MCMC_samples(mme,vRes,G0,
              end
              genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
              heritability = (ntraits == 1 ? mygvar/(mygvar+vRes) :
-                            (typeof(mygvar)<:Vector ? (mygvar./(mygvar+vRes))' : (diag(mygvar)./(diag(mygvar)+diag(vRes)))')
+                            (typeof(mygvar)<:Vector ? (mygvar./(mygvar+vRes))' : (diag(mygvar)./(diag(mygvar)+diag(vRes)))'))
              writedlm(outfile["genetic_variance"],genetic_variance,',')
              writedlm(outfile["heritability"],heritability,',')
          end

@@ -277,6 +277,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false,false,1.0/sqrt(nModels))
     end
 end
