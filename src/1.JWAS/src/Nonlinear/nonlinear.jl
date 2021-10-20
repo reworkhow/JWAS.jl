@@ -86,13 +86,14 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
             rhs     = X'yobs_train
             weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
             mme.weights_NN = weights
-        else  #normal prior with fixed variance, e.g., mme.nnweight_lambda == 3002
+        elseif mme.nnweight_lambda != false && mme.no_need_to_sample_weight==false #normal prior with fixed variance, e.g., mme.nnweight_lambda == 3002
             X       = nonlinear_function.(ylats_old_train)  #the weight for last col is 1
             lhs     = [length(yobs_train)            sum(X,dims=1)
                        sum(X,dims=1)'  X'X + I*mme.nnweight_lambda]
             rhs     = [sum(yobs_train); X'yobs_train]
             weights = inv(lhs)*rhs
             mme.weights_NN = weights
+            mme.no_need_to_sample_weight=true
         end
     end
 
@@ -104,7 +105,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     if mme.is_activation_fcn == false  # user-defined nonlinear function
         residuals = yobs_train-nonlinear_function.(Tuple([view(ylats_old_train,:,i) for i in 1:ntraits])...)
     else   # Neural Network with activation function
-        residuals = yobs_train-[ones(length(yobs_train)) nonlinear_function.(ylats_old_train)]*weights
+        residuals = yobs_train-[ones(length(yobs_train)) nonlinear_function.(ylats_old_train)]*mme.weights_NN
     end
     mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(length(yobs_train))) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
 end
