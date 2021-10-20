@@ -345,44 +345,44 @@ function MCMC_BayesianAlphabet(mme,df)
             println("Latent Traits (NNBayes):")
             @time sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
-        # ########################################################################
-        # # 5. Update priors using posteriors (empirical) LATER
-        # ########################################################################
-        # if update_priors_frequency !=0 && iter%update_priors_frequency==0
-        #     if mme.M!=0 && methods != "BayesB"
-        #         if is_multi_trait
-        #             mme.M.scale = meanVara*(mme.df.marker-ntraits-1)
-        #         else
-        #             mme.M.scale   = meanVara*(mme.df.marker-2)/mme.df.marker
-        #         end
-        #     end
-        #     if mme.pedTrmVec != 0
-        #         mme.scalePed  = mme.G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
-        #     end
-        #     mme.scaleR  =  mme.meanVare*(mme.df.residual-2)/mme.df.residual
-        #     println("\n Update priors from posteriors.")
-        # end
+        ########################################################################
+        # 5. Update priors using posteriors (empirical) LATER
+        ########################################################################
+        if update_priors_frequency !=0 && iter%update_priors_frequency==0
+            if mme.M!=0 && methods != "BayesB"
+                if is_multi_trait
+                    mme.M.scale = meanVara*(mme.df.marker-ntraits-1)
+                else
+                    mme.M.scale   = meanVara*(mme.df.marker-2)/mme.df.marker
+                end
+            end
+            if mme.pedTrmVec != 0
+                mme.scalePed  = mme.G0Mean*(mme.df.polygenic - size(mme.pedTrmVec,1) - 1)
+            end
+            mme.scaleR  =  mme.meanVare*(mme.df.residual-2)/mme.df.residual
+            println("\n Update priors from posteriors.")
+        end
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        # println("Save MCMC samples:")
-        # @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-        #     #MCMC samples from posterior distributions
-        #     nsamples       = (iter-burnin)/output_samples_frequency
-        #     output_posterior_mean_variance(mme,nsamples)
-        #     #mean and variance of posterior distribution
-        #     output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-        #     # if causal_structure != false
-        #     #     writedlm(causal_structure_outfile,sample4λ_vec',',')
-        #     # end
-        # end
-        # ########################################################################
-        # # 3.2 Printout
-        # ########################################################################
-        # if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
-        #     println("\nPosterior means at iteration: ",iter)
-        #     println("Residual variance: ",round.(mme.meanVare,digits=6))
-        # end
+        println("Save MCMC samples:")
+        @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+             #MCMC samples from posterior distributions
+             nsamples       = (iter-burnin)/output_samples_frequency
+             output_posterior_mean_variance(mme,nsamples)
+             #mean and variance of posterior distribution
+             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+              if causal_structure != false
+                  writedlm(causal_structure_outfile,sample4λ_vec',',')
+              end
+        end
+        ########################################################################
+        # 3.2 Printout
+        ########################################################################
+        if iter%mme.MCMCinfo.printout_frequency==0 && iter>burnin
+            println("\nPosterior means at iteration: ",iter)
+            println("Residual variance: ",round.(mme.meanVare,digits=6))
+        end
     end
     println("---------------------------------MCMC ends")
 
