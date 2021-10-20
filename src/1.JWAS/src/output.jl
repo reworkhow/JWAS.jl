@@ -414,7 +414,7 @@ function output_MCMC_samples(mme,vRes,G0,
           for traiti in 1:Mi.ntraits
               writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
           end
-          if Mi.G != false
+          if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
               else
