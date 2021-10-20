@@ -169,9 +169,9 @@ function MCMC_BayesianAlphabet(mme,df)
             ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
         end
-        #######################################################################
+        ########################################################################
         # 1. Non-Marker Location Parameters
-        #######################################################################
+        ########################################################################
         # 1.1 Update Left-hand-side of MME
         if is_multi_trait
             mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
@@ -280,16 +280,16 @@ function MCMC_BayesianAlphabet(mme,df)
                         Mi.G = Float32.(Mi.G)
                     end
                 end
-                # ########################################################################
-                # # Scale Parameter in Priors for Marker Effect Variances
-                # ########################################################################
-                # if Mi.estimateScale == true
-                #     if !is_multi_trait
-                #         a = size(Mi.G,1)*Mi.df/2   + 1
-                #         b = sum(Mi.df ./ (2*Mi.G)) + 1
-                #         Mi.scale = rand(Gamma(a,1/b))
-                #     end
-                # end
+                ########################################################################
+                # Scale Parameter in Priors for Marker Effect Variances
+                ########################################################################
+                if Mi.estimateScale == true
+                    if !is_multi_trait
+                        a = size(Mi.G,1)*Mi.df/2   + 1
+                        b = sum(Mi.df ./ (2*Mi.G)) + 1
+                        Mi.scale = rand(Gamma(a,1/b))
+                    end
+                end
             end
         end
         ########################################################################
@@ -319,12 +319,12 @@ function MCMC_BayesianAlphabet(mme,df)
                 mme.R = Float32.(mme.R)
             end
         end
-        # ########################################################################
-        # # 4. Causal Relationships among Phenotypes (Structure Equation Model)
-        # ########################################################################
-        # if is_multi_trait && causal_structure != false
-        #     sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
-        # end
+        ########################################################################
+        # 4. Causal Relationships among Phenotypes (Structure Equation Model)
+        ########################################################################
+        if is_multi_trait && causal_structure != false
+            sample4λ,sample4λ_vec = get_Λ(Y,mme.R,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
+        end
         ########################################################################
         # 5. Latent Traits (NNBayes)
         ########################################################################
@@ -352,14 +352,14 @@ function MCMC_BayesianAlphabet(mme,df)
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-             #MCMC samples from posterior distributions
-             nsamples       = (iter-burnin)/output_samples_frequency
-             output_posterior_mean_variance(mme,nsamples)
-             #mean and variance of posterior distribution
-             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-              if causal_structure != false
-                  writedlm(causal_structure_outfile,sample4λ_vec',',')
-              end
+            #MCMC samples from posterior distributions
+            nsamples       = (iter-burnin)/output_samples_frequency
+            output_posterior_mean_variance(mme,nsamples)
+            #mean and variance of posterior distribution
+            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+             if causal_structure != false
+                 writedlm(causal_structure_outfile,sample4λ_vec',',')
+             end
         end
         ########################################################################
         # 3.2 Printout
