@@ -69,7 +69,7 @@ end
         * This matrix needs to be column-wise sorted by marker positions.
         * rowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n
         * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
-* If `quality_control`=true,
+* If `quality_control`=true, defaulting to `true`,
     * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
     * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
@@ -87,7 +87,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
-                       quality_control=false, MAF = 0.01)
+                       quality_control=true, MAF = 0.01, missing_value = 9.0)
     #Read the genotype file
     if typeof(file) <: AbstractString
         printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
@@ -158,7 +158,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     #Naive Quality Control 1, replace missing values with column means
     if quality_control == true
         for genoi in eachcol(genotypes)
-            missing_obs        = findall(x->x==9.0,genoi)
+            missing_obs        = findall(x->x==float(missing_value),genoi)
             nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
             genoi[missing_obs] .= mean(genoi[nonmissing_obs])
             if findfirst(x->(x>2.0||x<0.0),genoi) != nothing #issue71, genotype score
