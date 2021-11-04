@@ -97,6 +97,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
 
            error("----------PosDefException")
         end
+        Ch      = cholesky(lhs)
         L       = Ch.L
         iL      = inv(L)
         rhs     = X'yobs_train
