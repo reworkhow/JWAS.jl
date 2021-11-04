@@ -86,7 +86,17 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         X       = Matrix([ones(length(yobs_train)) nonlinear_function.(ylats_old_train)])
         lhs     = X'X + I*0.00001 + I*nnweight_lambda
         lhs[1,1]= lhs[1,1] - nnweight_lambda
-        Ch      = cholesky(lhs)
+
+        try
+           Ch      = cholesky(lhs)
+        catch
+           println("--------PosDefException: matrix is not positive definite; Cholesky factorization failed.")
+           writedlm("X.txt",X)
+           writedlm("nnweight_lambda.txt",nnweight_lambda)
+           writedlm("lhs.txt",lhs)
+
+           error("----------PosDefException")
+        end
         L       = Ch.L
         iL      = inv(L)
         rhs     = X'yobs_train
