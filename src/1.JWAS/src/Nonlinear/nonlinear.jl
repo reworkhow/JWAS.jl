@@ -13,7 +13,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
-    σ2_yobs   = mme.σ2_yobs         # residual variance of yobs (scalar)
+    σ2_yobs      = mme.user_σ2_yobs==false ? mme.σ2_yobs : mme.user_σ2_yobs    # residual variance of yobs (scalar)
+    σ2_weightsNN = mme.user_σ2_weightsNN==false ? mme.σ2_weightsNN : mme.user_σ2_weightsNN
 
     #reshape the vector to nind X ntraits
     nobs, ntraits = length(mme.obsID), mme.nModels
@@ -77,26 +78,12 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old_train  = ylats_old[trainingInd,:]
 
     if mme.is_activation_fcn == true #Neural Network with activation function
-        if mme.nnweight_lambda == false #fixed effect: 0.000001; known random:e.g.,2.5;unknown random: false
-            nnweight_lambda = mme.σ2_yobs/mme.σ2_weightsNN
-        else
-            nnweight_lambda = mme.nnweight_lambda
-        end
+        nnweight_lambda = σ2_yobs/σ2_weightsNN
 
         X       = Matrix([ones(length(yobs_train)) nonlinear_function.(ylats_old_train)])
         lhs     = X'X + I*0.00001 + I*nnweight_lambda
         lhs[1,1]= lhs[1,1] - nnweight_lambda
 
-        try
-           Ch      = cholesky(lhs)
-        catch
-           println("--------PosDefException: matrix is not positive definite; Cholesky factorization failed.")
-           writedlm("X.txt",X)
-           writedlm("nnweight_lambda.txt",nnweight_lambda)
-           writedlm("lhs.txt",lhs)
-
-           error("----------PosDefException")
-        end
         Ch      = cholesky(lhs)
         L       = Ch.L
         iL      = inv(L)
@@ -115,6 +102,6 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     else   # Neural Network with activation function
         residuals = yobs_train-[ones(length(yobs_train)) nonlinear_function.(ylats_old_train)]*mme.weights_NN
     end
-    mme.σ2_yobs= dot(residuals,residuals)/rand(Chisq(length(yobs_train))) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-    mme.σ2_weightsNN = dot(mme.weights_NN,mme.weights_NN)/rand(Chisq(length(mme.weights_NN)))
+    mme.σ2_yobs= mme.user_σ2_yobs==false ? dot(residuals,residuals)/rand(Chisq(length(yobs_train))) : mme.user_σ2_yobs#(dot(x,x) + df*scale)/rand(Chisq(n+df))
+    mme.σ2_weightsNN = mme.user_σ2_weightsNN==false ? dot(mme.weights_NN,mme.weights_NN)/rand(Chisq(length(mme.weights_NN))) : mme.user_σ2_weightsNN
 end

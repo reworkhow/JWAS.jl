@@ -182,7 +182,8 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false,
-                nnweight_lambda                 = false)
+                user_σ2_yobs                    = false,
+                user_σ2_weightsNN               = false)
 
 
     #Neural Network
@@ -202,11 +203,13 @@ function runMCMC(mme::MME,df;
         #"gene1" and "gene2" are columns in the dataset.
         ######################################################################
         #lambda is for the MME to sample nnweight
-        mme.nnweight_lambda=nnweight_lambda
-        if mme.nnweight_lambda!=false
-            printstyled(" - Prior of neural network weights: normal prior with lambda $nnweight_lambda.\n",bold=false,color=:green)
-        else
-            printstyled(" - Prior of neural network weights: flat prior.\n",bold=false,color=:green)
+        mme.user_σ2_yobs=user_σ2_yobs
+        mme.user_σ2_weightsNN=user_σ2_weightsNN
+        if mme.user_σ2_yobs != false
+            printstyled(" - Variance of observed phenotype: σ2_yobs is fixed as $user_σ2_yobs.\n",bold=false,color=:green)
+        end
+        if mme.user_σ2_weightsNN != false
+            printstyled(" - Variance of neural network weights between omics and phenotype: σ2_weightsNN is fixed as $user_σ2_weightsNN.\n",bold=false,color=:green)
         end
         if mme.latent_traits != false
             #change lhsVec to omics gene name
