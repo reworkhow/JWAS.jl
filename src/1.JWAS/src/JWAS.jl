@@ -183,8 +183,6 @@ function runMCMC(mme::MME,df;
                 Pi                              = 0.0,
                 estimatePi                      = false,
                 estimateScale                   = false)
-
-
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
@@ -258,6 +256,19 @@ function runMCMC(mme::MME,df;
         end
         set_marker_hyperparameters_variances_and_pi(mme)
     end
+    ############################################################################
+    #fast blocks #now only work for one geno
+    ############################################################################
+    if fast_blocks != false
+        if fast_blocks == true
+            block_size = Int(floor(sqrt(mme.M[1].nObs)))
+        elseif typeof(fast_blocks) <: Number
+            block_size = Int(floor(fast_blocks))
+        end
+        mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
+        mme.MCMCinfo.chain_length = Int(floor(chain_length/(fast_blocks[2]-fast_blocks[1])))
+    end
+    println("BLOCK SIZE: $block_size")
     ############################################################################
     # Adhoc functions
     ############################################################################
