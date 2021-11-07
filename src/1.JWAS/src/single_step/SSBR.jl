@@ -8,13 +8,8 @@
 function SSBRrun(mme,df_whole,train_index,big_memory=false)
     geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
-    println("calculating A inverse")
-    flush(stdout)
-    @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
-    println("imputing missing genotypes")
-    flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
-    println("completed imputing genotypes")
+    Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
+    impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
     if mme.MCMCinfo.fitting_J_vector == true
