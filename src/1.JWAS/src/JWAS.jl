@@ -269,6 +269,7 @@ function runMCMC(mme::MME,df;
         mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1])))
     end
     println("BLOCK SIZE: $block_size")
+    flush(stdout)
     ############################################################################
     # Adhoc functions
     ############################################################################
@@ -326,6 +327,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
     df=make_incidence_matrices(mme,df_whole,train_index)
+    flush(stdout)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)
