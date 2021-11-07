@@ -165,7 +165,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                 @warn "genotype scores out of the range 0 to 2 are found."
             end
         end
-        printstyled("Missing values are replaced by column means.\n",bold=true)
+        printstyled("Missing values ($missing_value) are replaced by column means.\n",bold=true)
     end
 
     markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
@@ -198,7 +198,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             genotypes = genotypes + I*0.00001
             add_small_value_count += 1
             if add_small_value_count > 10
-                error("Please provide a positive-definite realtionship matrix.")
+                error("Please provide a positive-definite relationship matrix.")
             end
         end
     end
