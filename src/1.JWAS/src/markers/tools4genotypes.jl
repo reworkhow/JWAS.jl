@@ -26,18 +26,18 @@ function center!(X::AbstractArray{T,2}) where T <: Any
 end
 
 function getXpRinvX(X, Rinv)
-    XpRinvX = [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
+    XpRinvX = @showprogress "building prerequisite matrices ..." [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 
 function getXpRinvX(X)
-    XpRinvX = [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
+    XpRinvX = @showprogress "building prerequisite matrices ..." [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 
 function get_column_blocks_ref(X,fast_blocks=false)
     xArray = Array{typeof(X)}(undef,length(fast_blocks))
-    for i in 1:length(fast_blocks)
+    @showprogress "building prerequisite matrices ..." for i in 1:length(fast_blocks)
         pos_start = fast_blocks[i]
         pos_end   = (i != length(fast_blocks)) ? (fast_blocks[i+1]-1) : size(X,2)
         xArray[i] = view(X,:,pos_start:pos_end)
@@ -68,8 +68,8 @@ mutable struct GibbsMats
         #block, adjusting rhs and/or y, approach
         if fast_blocks != false
             XArray = get_column_blocks_ref(X,fast_blocks)
-            XRinvArray = [X'Diagonal(Rinv) for X in XArray]
-            XpRinvX = [XRinvArray[i]*XArray[i] for i in 1:length(XArray)]
+            XRinvArray = @showprogress "building prerequisite matrices ..." [X'Diagonal(Rinv) for X in XArray]
+            XpRinvX = @showprogress "building prerequisite matrices ..." [XRinvArray[i]*XArray[i] for i in 1:length(XArray)]
         else
             XArray = XRinvArray = XpRinvX = false
         end
