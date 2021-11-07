@@ -319,7 +319,7 @@ function runMCMC(mme::MME,df;
             block_size = Int(floor(fast_blocks))
         end
         mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
-        mme.MCMCinfo.chain_length = Int(floor(chain_length/(fast_blocks[2]-fast_blocks[1])))
+        mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1])))
     end
     println("BLOCK SIZE: $block_size")
     ############################################################################
