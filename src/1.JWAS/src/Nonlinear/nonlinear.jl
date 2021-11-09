@@ -73,23 +73,36 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     # be removed when we sample weights between hidden and output layer
     ############################################################################
     # the yobs for testing ind is missing, e.g., [0.1,0.2,missing]
-    trainingInd = .!ismissing.(yobs)
+    trainingInd      = .!ismissing.(yobs)
     yobs_train       = yobs[trainingInd]
     ylats_old_train  = ylats_old[trainingInd,:]
+    nTrain           = sum(trainingInd)
+    nOmics           = size(ylats_old_train,2)
+
+    #RR-BLUP: omics~yobs
+    g_z       = nonlinear_function.(ylats_old_train)
+    yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
 
     if mme.is_activation_fcn == true #Neural Network with activation function
-        nnweight_lambda = σ2_yobs/σ2_weightsNN
+        #sample mean of phenotype
+        # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
+        yobs_corr = yobs_corr .+ mme.weights_NN[1]
+        μ1 = sum(yobs_corr)/nTrain + randn()*sqrt(mme.σ2_yobs/nTrain)
+        mme.weights_NN[1] = μ1
+        yobs_corr = yobs_corr .- mme.weights_NN[1]
 
-        X       = Matrix([ones(length(yobs_train)) nonlinear_function.(ylats_old_train)])
-        lhs     = X'X + I*0.00001 + I*nnweight_lambda
-        lhs[1,1]= lhs[1,1] - nnweight_lambda
-
-        Ch      = cholesky(lhs)
-        L       = Ch.L
-        iL      = inv(L)
-        rhs     = X'yobs_train
-        weights = Ch\rhs + iL'randn(size(X,2))*sqrt(σ2_yobs)
-        mme.weights_NN = weights
+        #sample omics effects
+        # w1~N( lhs^-1 * rhs, lhs^-1 σ2_e  )
+        for j in 1:nOmics
+            x=g_z[:,j]
+            rhs=dot(x,yobs_corr)+dot(x,x)*mme.weights_NN[j+1] #the first element is μ1
+            lhs=dot(x,x)+mme.σ2_yobs/mme.σ2_weightsNN
+            invLhs=1/lhs
+            meanj=invLhs*rhs
+            oldAlpha = mme.weights_NN[j+1]
+            mme.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*mme.σ2_yobs)
+            yobs_corr=yobs_corr+(oldAlpha-mme.weights_NN[j+1])*x
+        end
     end
 
     #update ylats
@@ -100,8 +113,10 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     if mme.is_activation_fcn == false  # user-defined nonlinear function
         residuals = yobs_train-nonlinear_function.(Tuple([view(ylats_old_train,:,i) for i in 1:ntraits])...)
     else   # Neural Network with activation function
-        residuals = yobs_train-[ones(length(yobs_train)) nonlinear_function.(ylats_old_train)]*mme.weights_NN
+        residuals = yobs_corr
     end
-    mme.σ2_yobs= mme.user_σ2_yobs==false ? dot(residuals,residuals)/rand(Chisq(length(yobs_train))) : mme.user_σ2_yobs#(dot(x,x) + df*scale)/rand(Chisq(n+df))
-    mme.σ2_weightsNN = mme.user_σ2_weightsNN==false ? dot(mme.weights_NN,mme.weights_NN)/rand(Chisq(length(mme.weights_NN))) : mme.user_σ2_weightsNN
+    mme.σ2_yobs= mme.user_σ2_yobs==false ? sample_variance(residuals, nTrain, 4, 1) : mme.user_σ2_yobs#(dot(x,x) + df*scale)/rand(Chisq(n+df))
+
+    #sample σ2_weightsNN
+    mme.σ2_weightsNN = mme.user_σ2_weightsNN==false ? sample_variance(mme.weights_NN[2:end], nOmics, 4, 1) : mme.user_σ2_weightsNN #variance of w1
 end
