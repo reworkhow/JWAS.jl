@@ -305,10 +305,10 @@ function getMME(mme::MME, df::DataFrame)
     ############################################################################
     #mme.ySparse: latent traits
     #yobs       : single observed trait
-    if mme.nonlinear_function != false
+    if mme.nonlinear_function != false  #NN-Bayes
         # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
         mme.yobs = df[!,mme.yobs_name]
-        if mme.latent_traits != false
+        if mme.latent_traits != false  #NN-Bayes-Omics
           #save omics data missing pattern
           mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
           #replace missing data with values in yobs
@@ -319,6 +319,11 @@ function getMME(mme::MME, df::DataFrame)
               end
             end
           end
+        else  #NN-Bayes with hidden nodes (G3 paper)
+          #all omics should be missing, the missingPattern should be all 0
+          #but we already set y1,...,y5 as yobs, so we have to build missingPattern
+          # byhand.
+          mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
         end
     end
 
