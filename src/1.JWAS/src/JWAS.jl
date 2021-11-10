@@ -354,7 +354,8 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Save output to text files
     ############################################################################
-    for (key,value) in mme.output
+    println("------time7")
+    @time for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
 
