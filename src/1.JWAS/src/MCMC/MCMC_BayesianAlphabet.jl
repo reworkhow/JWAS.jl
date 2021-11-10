@@ -395,6 +395,7 @@ function MCMC_BayesianAlphabet(mme,df)
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
+    error("stop here")
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,
