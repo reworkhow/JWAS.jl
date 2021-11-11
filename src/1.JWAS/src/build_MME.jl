@@ -241,7 +241,7 @@ function getX(trm::ModelTerm,mme::MME)
          else #>1
            for factorstr in factors #two ways: animal*age; age*animal
              if factorstr in trm.names || factorstr == "missing"  #add "animal" ID not "age"
-               data = [data;factorstr]                            #factorstr in trm.names is slow when trm.names is large
+               data = [data;factorstr]                            #"factorstr in trm.names" is slow when trm.names is large
              end
            end
          end
