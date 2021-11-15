@@ -318,9 +318,9 @@ function runMCMC(mme::MME,df;
         end
         mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
         mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1])))
+        println("BLOCK SIZE: $block_size")
+        flush(stdout)
     end
-    println("BLOCK SIZE: $block_size")
-    flush(stdout)
     ############################################################################
     # Adhoc functions
     ############################################################################
