@@ -217,7 +217,11 @@ function MCMC_BayesianAlphabet(mme,df)
                         if is_mega_trait
                             megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         else
-                            MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                            if fast_blocks == false
+                                MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                            else
+                                MTBayesABC_block!(Mi,wArray,mme.R,locus_effect_variances)
+                            end
                         end
                     elseif is_nnbayes_partial
                         BayesABC!(Mi,wArray[i],mme.R[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
