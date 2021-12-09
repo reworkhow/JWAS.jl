@@ -181,9 +181,7 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false,
-                user_σ2_yobs                    = false,
-                user_σ2_weightsNN               = false)
+                estimateScale                   = false)
 
 
     #Neural Network
