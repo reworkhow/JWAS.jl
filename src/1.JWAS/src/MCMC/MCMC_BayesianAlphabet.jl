@@ -373,8 +373,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # After MCMC
     ############################################################################
-    println("------time1")
-    @time if output_samples_frequency != 0
+    if output_samples_frequency != 0
       for (key,value) in outfile
         close(value)
       end
@@ -388,14 +387,13 @@ function MCMC_BayesianAlphabet(mme,df)
          close(outfile["liabilities"])
       end
     end
-    println("------time2")
-    @time if methods == "GBLUP"
+    if methods == "GBLUP"
         for Mi in mme.M
             mv(output_folder*"/MCMC_samples_marker_effects_variances"*"_"*Mi.name*".txt",
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-    error("stop here")
+
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,

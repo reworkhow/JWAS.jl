@@ -13,8 +13,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
-    σ2_yobs      = mme.user_σ2_yobs==false ? mme.σ2_yobs : mme.user_σ2_yobs    # residual variance of yobs (scalar)
-    σ2_weightsNN = mme.user_σ2_weightsNN==false ? mme.σ2_weightsNN : mme.user_σ2_weightsNN
+    σ2_yobs      = mme.σ2_yobs      # residual variance of yobs (scalar)
+    σ2_weightsNN = mme.σ2_weightsNN # variance of nn weights between middle and output layers
 
     #reshape the vector to nind X ntraits
     nobs, ntraits = length(mme.obsID), mme.nModels
@@ -24,30 +24,14 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ycorr2        = reshape(ycorr,nobs,ntraits)
 
     #sample latent trait
-    ############################################################################
-    #remove individuals with full omics
-    # in hmc, individuals are assumed to be independent, so individuals with full
-    # omics data can be ignored. If a individual has at least one missing omics,
-    # we will sample all omics, then only update the missing omics.
-    ############################################################################
-    # step1. find individuals with full omics data
-    n_real_omis = sum(mme.missingPattern,dims=2) #number of true omics for each ind
-    n_omics     = length(mme.lhsVec)             #number of omics
-    full_omics = n_real_omis .== n_omics         #indicator for ind with full omics
-    no_full_omics = vec(.!full_omics)            #indicator for ind with no/partial omics
-
-    # step2. remove individuals with full omics data, only keep ind with no/partial omics
-    ylats_old_tmp = ylats_old[no_full_omics,:]
-    yobs_tmp     =yobs[no_full_omics]
-    ycorr2_tmp    = ycorr2[no_full_omics,:]
-
+    incomplete_omics = mme.incomplete_omics #indicator for ind with incomplete omics
     if mme.is_activation_fcn == true #Neural Network with activation function
-        if sum(no_full_omics) != 0   #have at least 1 ind with no/partial omics
-            #step 3. sample latent trait for individuals with no/partial omics data
-            ylats_new = hmc_one_iteration(10,0.1,ylats_old_tmp,yobs_tmp,mme.weights_NN,mme.R,σ2_yobs,ycorr2_tmp,nonlinear_function)
-            #step 4. put the sampled latent trait back to latent trait for all individuals (i.e., update ylats_old)
-            ylats_old[no_full_omics,:] = ylats_new
-            #step 5. for individuals with partial omics data, put back the partial real omics.
+        if sum(incomplete_omics) != 0   #at least 1 ind with incomplete omics
+            #step 1. sample latent trait (only for individuals with incomplete omics data
+            ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.weights_NN,mme.R,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
+            #step 2. update ylats with sampled latent traits
+            ylats_old[incomplete_omics,:] = ylats_new
+            #step 3. for individuals with partial omics data, put back the partial real omics.
             ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
         end
     else  #user-defined function, MH
@@ -87,7 +71,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         #sample mean of phenotype
         # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
         yobs_corr = yobs_corr .+ mme.weights_NN[1]
-        μ1 = sum(yobs_corr)/nTrain + randn()*sqrt(mme.σ2_yobs/nTrain)
+        μ1 = sum(yobs_corr)/nTrain + randn()*sqrt(σ2_yobs/nTrain)
         mme.weights_NN[1] = μ1
         yobs_corr = yobs_corr .- mme.weights_NN[1]
 
@@ -96,11 +80,11 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         for j in 1:nOmics
             x=g_z[:,j]
             rhs=dot(x,yobs_corr)+dot(x,x)*mme.weights_NN[j+1] #the first element is μ1
-            lhs=dot(x,x)+mme.σ2_yobs/mme.σ2_weightsNN
+            lhs=dot(x,x)+σ2_yobs/mme.σ2_weightsNN
             invLhs=1/lhs
             meanj=invLhs*rhs
             oldAlpha = mme.weights_NN[j+1]
-            mme.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*mme.σ2_yobs)
+            mme.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*σ2_yobs)
             yobs_corr=yobs_corr+(oldAlpha-mme.weights_NN[j+1])*x
         end
     end
@@ -115,8 +99,9 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     else   # Neural Network with activation function
         residuals = yobs_corr
     end
-    mme.σ2_yobs= mme.user_σ2_yobs==false ? sample_variance(residuals, nTrain, 4, 1) : mme.user_σ2_yobs#(dot(x,x) + df*scale)/rand(Chisq(n+df))
 
-    #sample σ2_weightsNN
-    mme.σ2_weightsNN = mme.user_σ2_weightsNN==false ? sample_variance(mme.weights_NN[2:end], nOmics, 4, 1) : mme.user_σ2_weightsNN #variance of w1
+    if mme.fixed_σ2_NN==false
+        mme.σ2_yobs      = sample_variance(residuals, nTrain, 4, 1) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+        mme.σ2_weightsNN = sample_variance(mme.weights_NN[2:end], nOmics, 4, 1)
+    end
 end

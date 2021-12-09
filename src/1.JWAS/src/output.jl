@@ -94,18 +94,15 @@ function output_result(mme,output_folder,
                        solMean,meanVare,G0Mean,
                        solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
-  println("------time2.1")
-  @time location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
+  location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
-  println("------time2.2")
-  @time output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
+  output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
 
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
-  println("------time3")
-  @time if mme.M != 0
+  if mme.M != 0
       for Mi in mme.M
           traiti      = 1
           whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
@@ -137,10 +134,8 @@ function output_result(mme,output_folder,
       if mme.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
           EBVkeys=[EBVkeys[end]]
-          @show EBVkeys
       end
-      println("------time4")
-      @time for EBVkey in EBVkeys
+      for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
           EBV            = vec(mean(EBVsamples,dims=1))
@@ -151,8 +146,7 @@ function output_result(mme,output_folder,
               error("The EBV file is wrong.")
           end
       end
-      println("------time5")
-      @time if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
+      if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
           for i in ["genetic_variance","heritability"]
               samplesfile = output_file*"_"*i*".txt"
               samples,names = readdlm(samplesfile,',',header=true)
@@ -161,8 +155,7 @@ function output_result(mme,output_folder,
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
           end
       end
-      println("------time6")
-      @time if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
+      if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
           myvar         = "neural_networks_bias_and_weights"
           samplesfile   = output_file*"_"*myvar*".txt"
           samples       = readdlm(samplesfile,',',header=false)

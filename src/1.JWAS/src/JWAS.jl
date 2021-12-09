@@ -189,8 +189,8 @@ function runMCMC(mme::MME,df;
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        mme.yobs_name=Symbol(mme.lhsVec[1])
-        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
+        mme.yobs_name=Symbol(mme.lhsVec[1]) #a number label is added to original trait name in nnbayes_model_equation(), e.g., lhsVec=[:y1,:y2,:y3]
+        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]
         for i in mme.lhsVec
             df[!,i]= yobs
         end
@@ -202,15 +202,6 @@ function runMCMC(mme::MME,df;
         #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
         #"gene1" and "gene2" are columns in the dataset.
         ######################################################################
-        #lambda is for the MME to sample nnweight
-        mme.user_σ2_yobs=user_σ2_yobs
-        mme.user_σ2_weightsNN=user_σ2_weightsNN
-        if mme.user_σ2_yobs != false
-            printstyled(" - Variance of observed phenotype: σ2_yobs is fixed as $user_σ2_yobs.\n",bold=false,color=:green)
-        end
-        if mme.user_σ2_weightsNN != false
-            printstyled(" - Variance of neural network weights between omics and phenotype: σ2_weightsNN is fixed as $user_σ2_weightsNN.\n",bold=false,color=:green)
-        end
         if mme.latent_traits != false
             #change lhsVec to omics gene name
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
@@ -354,8 +345,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Save output to text files
     ############################################################################
-    println("------time7")
-    @time for (key,value) in mme.output
+    for (key,value) in mme.output
       CSV.write(output_folder*"/"*replace(key," "=>"_")*".txt",value)
     end
 

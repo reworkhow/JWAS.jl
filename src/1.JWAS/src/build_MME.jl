@@ -35,7 +35,8 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false,
+                     user_σ2_yobs = false, user_σ2_weightsNN = false) #nonlinear_function(x1,x2) = x1+x2
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -128,6 +129,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+    if user_σ2_yobs != false && user_σ2_weightsNN != false
+      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
+      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
+      mme.fixed_σ2_NN     = true
+      printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
+    end
   end
 
   return mme
@@ -319,6 +326,12 @@ function getMME(mme::MME, df::DataFrame)
               end
             end
           end
+          # add indicators for individuals with full omics data, so their omics won't be sampled
+          n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
+          n_omics          = length(mme.lhsVec)             #number of omics
+          full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
+          mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+
         else  #NN-Bayes with hidden nodes (G3 paper)
           #all omics should be missing, the missingPattern should be all 0
           #but we already set y1,...,y5 as yobs, so we have to build missingPattern

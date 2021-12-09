@@ -251,8 +251,9 @@ mutable struct MME
     yobs          #for single observed trait, and mme.ySparse is for latent traits
     yobs_name
     σ2_weightsNN
-    user_σ2_yobs
-    user_σ2_weightsNN
+    fixed_σ2_NN
+    incomplete_omics
+
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
