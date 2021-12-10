@@ -11,8 +11,8 @@
 """
     prediction_setup(mme::MME,df::DataFrame)
 
-* (internal function) Create incidence matrices for individuals of interest based on a usere-defined
-prediction equation, defaulting to genetic values including effects defined with genomic and pedigre
+* (internal function) Create incidence matrices for individuals of interest based on a user-defined
+prediction equation, defaulting to genetic values including effects defined with genomic and pedigree
 information. For now, genomic data is always included.
 * J and ϵ are always included in single-step analysis (added in SSBR.jl)
 """
@@ -321,6 +321,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.MCMCinfo.censored_trait != false
       push!(outvar,"liabilities")
+  end
+
+  # MegaBayes
+  if mme.K != false
+      push!(outvar,"latent_factors")
   end
 
   for i in outvar

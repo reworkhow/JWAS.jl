@@ -56,7 +56,7 @@ end
                   center=true,quality_control=false,
                   method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimateScale=false,
                   G_is_marker_variance = false,df = 4.0)
-* Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
+* Get marker information from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
     * If a text file is provided, the file format should be:
       ```
       Animal,marker1,marker2,marker3,marker4,marker5
@@ -71,14 +71,14 @@ end
         * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 * If `quality_control`=true, defaulting to `true`,
     * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
-    * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
+    * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is used, and fixed loci are removed.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
   If **G** is not provided, a value is calculated from responses (phenotypes).
 * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
 * In Bayesian variable selection methods, `Pi` for single-trait analyses is a number; `Pi` for multi-trait analyses is
   a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
-  (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
+  (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
 
 """
@@ -90,7 +90,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        quality_control=true, MAF = 0.01, missing_value = 9.0)
     #Read the genotype file
     if typeof(file) <: AbstractString
-        printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
+        printstyled("The delimited in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
         #get marker IDs
         myfile = open(file)
@@ -110,6 +110,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         data      = CSV.read(file,DataFrame,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
         obsID     = map(string,data[!,1])
         genotypes = map(Float32,Matrix(data[!,2:end]))
+
     elseif typeof(file) == DataFrames.DataFrame #Datafarme
         println("The first column in the dataframe should be individual IDs.")
         println("The data type of markers should be Number.")
@@ -217,12 +218,12 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.estimateVariance = estimateVariance
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
-    println("Genotype informatin:")
+    println("Genotype information:")
     println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
 
     #starting values for marker effects
     if starting_value != false
-        printstyled("Starting values are provided for marker efffects. The order of starting values should be\n",
+        printstyled("Starting values are provided for marker effects. The order of starting values should be\n",
         "markers for each traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
         nsol = (method != "GBLUP" ? nMarkers : nObs)
         if length(starting_value)%nsol != 0 #work for both single and multiple traits

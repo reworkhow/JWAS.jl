@@ -89,6 +89,7 @@ function check_outputID(mme)
     #Set ouput IDs in heritability (h²) estimation
     #***************************************************************************
     if mme.MCMCinfo.output_heritability == true && mme.M != 0
+        # should here be mme.MCMCinfo.outputEBV = true ?
         mme.MCMCinfo.outputEBV == true
         if mme.MCMCinfo.single_step_analysis == false
             mme.output_ID = copy(mme.M[1].obsID)
@@ -255,7 +256,7 @@ function make_dataframes(df,mme)
     #***************************************************************************
     #Whole Data (training + individuals of interest)
     #***************************************************************************
-    #expand phenotype dataframe to include individuals of interest (to make incidencee matrices)
+    #expand phenotype dataframe to include individuals of interest (to make incidence matrices)
     if !issubset(mme.output_ID,df[!,1]) && mme.output_ID != false
         #IDs for some individuals of interest are not included in the phenotypic data.
         #These are added as additional rows with missing values in df_whole.
@@ -267,7 +268,7 @@ function make_dataframes(df,mme)
     end
     #***************************************************************************
     #Training data
-    #(non-missing observations, only these ar used in mixed model equations)
+    #(non-missing observations, only these are used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
     missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
@@ -334,7 +335,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #individuals of interest (output EBV)
     #***************************************************************************
-    #check whehter all levels in output_X exist in training data
+    #check whether all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
     for term in mme.MCMCinfo.prediction_equation
         Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
@@ -344,8 +345,8 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #Training data
     #***************************************************************************
+    train_sel = [i in train_index for i=1:size(df_whole,1)]
     for term in mme.modelTerms
-        train_sel = [i in train_index for i=1:size(df_whole,1)]
         term.X = term.X[repeat(train_sel,mme.nModels),:]
     end
     df = df_whole[train_index,:]

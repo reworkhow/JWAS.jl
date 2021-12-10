@@ -20,6 +20,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
+    is_latent_factor         = mme.K != false
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -57,7 +58,7 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
             if Mi.method=="BayesB" #α=β.*δ
-                Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayeB
+                Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayesB
             end
             if Mi.method=="BayesL"         #in the MTBayesLasso paper
                 if mme.nModels == 1
@@ -167,6 +168,11 @@ function MCMC_BayesianAlphabet(mme,df)
         if censored_trait != false
             ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
+        end
+
+        if mme.K != false
+            ycorr = latent_factor_sample_F(mme, df)
+            writedlm(outfile["latent_factors"],mme.ySparse',',')
         end
         ########################################################################
         # 1. Non-Marker Location Parameters

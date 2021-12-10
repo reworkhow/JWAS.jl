@@ -35,7 +35,8 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
+                     K = false, Λ = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -61,6 +62,22 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false #1.partial connected NN 2. fully connected NN + non-NN
 
     ############################################################################
+    # Mega Family
+    ############################################################################
+    # convert t observed traits -> K latent factors (without considering trait-specific marker effects)
+    if K != false && Λ != false
+      if size(Λ,1) != K
+        error("The number of latent factors is not consistent with the dimension of Λ")
+      end
+        printstyled("The number of latent factors is $K \n",bold=false,color=:green)
+        model_equations = factor_model_equation(model_equations,K)
+    elseif K != false && Λ == false
+      printstyled("The number of latent factors is $K \n",bold=false,color=:green)
+      model_equations = factor_model_equation(model_equations,K)
+    end
+
+
+    ############################################################################
     # All model terms (will be added to MME)
     ############################################################################
     #e.g., ""y2 = A+B+A*B""
@@ -69,6 +86,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     if R != false && size(R,1) != nModels
       error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
     end
+    # If K != false, the provided R is the residual covariance matrix for latent factors
+    # (D_f in paper)
     lhsVec     = Symbol[]    #:y, phenotypes
     modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
     dict       = Dict{AbstractString,ModelTerm}()
@@ -114,9 +133,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
     end
 
-  #create mme with genotypes
-  filter!(x->x.random_type != "genotypes",modelTerms)
-  filter!(x->x[2].random_type != "genotypes",dict)
+  #create mme without genotypes
+  filter!(x->x.random_type != "genotypes",modelTerms) # modelTerms that are not Genotypes
+  filter!(x->x[2].random_type != "genotypes",dict) # remove Genotypes from dict
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes
@@ -130,6 +149,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.latent_traits        = latent_traits
   end
 
+  #MegaFamily
+  if K != false
+    mme.K  = K
+    mme.Λ = Λ
+  end
+
   return mme
 end
 
@@ -139,7 +164,7 @@ end
 * set **variables** as covariates; **model** is the output of function `build_model()`.
 
 ```julia
-#After running build_model, variabels age and year can be set to be covariates as
+#After running build_model, variables age and year can be set to be covariates as
 set_covariate(model,"age","year")
 #or
 set_covariate(model,"age year")
@@ -262,7 +287,7 @@ function getX(trm::ModelTerm,mme::MME)
     nModels = size(mme.lhsVec,1)
     #create X
     trm.X = sparse(xi,xj,xv,nObs*nModels,trm.nLevels)
-    dropzeros!(trm.X)
+    dropzeros!(trm.X) # remove stored zeros from sparse matrix (0 -> .)
     trm.startPos = mme.mmePos
     mme.mmePos  += trm.nLevels
 end
@@ -273,7 +298,7 @@ Construct mixed model equations with
 incidence matrix: X      ;
 response        : ySparse;
 left-hand side  : mmeLhs ;
-right-hand side : mmeLhs ;
+right-hand side : mmeRhs ;
 """
 function getMME(mme::MME, df::DataFrame)
     if mme.mmeLhs != false
@@ -331,6 +356,25 @@ function getMME(mme::MME, df::DataFrame)
             end
           end
         end
+    end
+
+    #MegaFamily
+    ############################################################################
+    # Latent factors
+    ############################################################################
+    #mme.ySparse: latent factors (:fk in df)
+    #yobs       : array of t arrays of length nObs
+    # (only training data, must have same order as df so far)
+    if mme.K != false && mme.Λ != false
+      Ymatrix_megaFamily = mme.MCMCinfo.Ymatrix_megaFamily
+      if size(mme.Λ,2) != length(Ymatrix_megaFamily)
+        error("Non consistence between provided Λ and Ymatrix_megaFamily")
+      end
+        for i in Symbol.(Ymatrix_megaFamily)
+            # replace missing with 0 in Y matrix (may add mme.missingPattern later)
+            DataFrames.recode(df[!,i], missing => 0.0)
+        end
+        mme.yobs = [df[!,i] for i in Symbol.(Ymatrix_megaFamily)]
     end
 
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
