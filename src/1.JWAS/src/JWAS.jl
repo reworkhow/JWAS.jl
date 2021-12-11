@@ -187,9 +187,9 @@ function runMCMC(mme::MME,df;
     #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        mme.yobs_name=Symbol(mme.lhsVec[1]) #a number label is added to original trait name in nnbayes_model_equation(), e.g., lhsVec=[:y1,:y2,:y3]
-        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]
-        for i in mme.lhsVec
+        mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
+        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]  # e.g., change :y1 -> :y
+        for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
             df[!,i]= yobs
         end
         ######################################################################

@@ -133,7 +133,7 @@ function output_result(mme,output_folder,
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
       if mme.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
-          EBVkeys=[EBVkeys[end]]
+          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
       end
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
