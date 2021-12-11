@@ -1,5 +1,5 @@
 #Below function is to check parameters for NNBayes and print information
-function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinear_function)
+function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinear_function,latent_traits)
     ## Step1. determine the neural network architecture
     # (i) count the number of genotypes
     model_terms = Symbol.(strip.(split(split(model_equations,"=")[2],"+")))
@@ -65,6 +65,11 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
         printstyled(" - Sampler:                Matropolis-Hastings.\n",bold=false,color=:green)
     else
         error("invalid nonlinear_function")
+    end
+
+    if latent_traits!=false
+        nomics=length(latent_traits)
+        printstyled(" - Omics data:             $nomics intermediate omics features are included.\n",bold=false,color=:green)
     end
 
     return num_hidden_nodes,is_fully_connected,is_activation_fcn

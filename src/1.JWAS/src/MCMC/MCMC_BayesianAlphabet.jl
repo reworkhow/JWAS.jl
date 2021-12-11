@@ -133,6 +133,7 @@ function MCMC_BayesianAlphabet(mme,df)
         #Starting value for Ri is made based on missing value pattern
         #(imputed phenotypes will not used to compute first mmeRhs)
         Ri         = mkRi(mme,df,invweights)
+        dropzeros!(Ri)
     end
     ############################################################################
     # Starting values for SEM
@@ -173,7 +174,8 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 1.1 Update Left-hand-side of MME
         if is_multi_trait
-            mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
+            mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
+            dropzeros!(mme.mmeLhs)
         end
         addVinv(mme)
         # 1.2 Update Right-hand-side of MME
@@ -355,9 +357,9 @@ function MCMC_BayesianAlphabet(mme,df)
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            if causal_structure != false
-                writedlm(causal_structure_outfile,sample4λ_vec',',')
-            end
+             if causal_structure != false
+                 writedlm(causal_structure_outfile,sample4λ_vec',',')
+             end
         end
         ########################################################################
         # 3.2 Printout
