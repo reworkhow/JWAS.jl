@@ -155,8 +155,6 @@ mutable struct MCMCinfo
     missing_phenotypes
     constraint
     mega_trait
-    Ymatrix_megaFamily
-    Ymatrix_vare
     estimate_variance
     update_priors_frequency
     outputEBV
@@ -168,6 +166,46 @@ mutable struct MCMCinfo
     double_precision
     output_folder
 end
+
+mutable struct Lambda
+    factor_names::Array{AbstractString,1}    #name for the factors (fk) eg. ["f1","f2"]
+    trait_names ::Array{AbstractString,1}    #names for the observed traits, eg.["y1","y2"]
+    K::Int64                               # number of latent factors
+
+    λ                          # array of row vectors of Λ elements at current MCMC samples
+    β                          # array of row vectors of Λ elements from normal distribution
+    γ                          # array of row vectors of indicator variables for Λ
+    π                          # an array of length K for π values of Λ rows
+    δ                          # τ_k = prod(δs)
+
+    obsY              # array of t arrays of length nObs (observed phenotypes)
+    varRjs            # array of length t for trait-specific residual variance sigma2_Rj
+    ycorr_obsTrait    # Y - FΛ
+    scaleR            # scale parameter for R of observed traits
+
+    meanLambda        # array of posterior means for λ
+    meanLambda2
+    meanGamma         # array of posterior means for γ
+    mean_pi           # array of posterior means for π
+    mean_pi2
+    meanDelta         # array of posterior means for δ
+    meanDelta2
+
+    delta_a::Int64    # prior value for δ
+    delta_b::Int64    # prior value for δ
+
+    is_estimate       # whether Λ need to be estimated 
+
+
+    Lambda(lhsVec,yobs_names,K,Λ)=new(string.(lhsVec),yobs_names,K,
+                            Λ!=false ? [Λ[i,:] for i in 1:size(Λ,1)] : false,
+                            false,false,false,false,
+                            false, false,false,false,
+                            false,false,false,false,false,false,false,
+                            3,1,
+                            false)
+end
+
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...
 #
@@ -252,8 +290,7 @@ mutable struct MME
     latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
 
-    K
-    Λ
+    Lamb          # Lambda for MegaBayesC
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -279,6 +316,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false)
     end
 end

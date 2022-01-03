@@ -128,6 +128,29 @@ function output_result(mme,output_folder,
           end
       end
   end
+
+  if mme.Lamb != false
+      Lambda = mme.Lamb
+      if Lambda.is_estimate
+          factori      = 1
+          whichfactor  = fill(string(mme.lhsVec[factori]),length(Lambda.trait_names))
+          whichtrait   = Lambda.trait_names
+          whicheffect = Lambda.meanLambda[factori]
+          whicheffectsd = sqrt.(abs.(Lambda.meanLambda2[factori] .- Lambda.meanLambda[factori] .^2))
+          whichgamma    = Lambda.meanGamma[factori]
+          for factori in 2:Lambda.K
+              whichfactor    = vcat(whichfactor,fill(string(mme.lhsVec[factori]),length(Lambda.trait_names)))
+              whichtrait     = vcat(whichtrait,Lambda.trait_names )
+              whicheffect    = vcat(whicheffect,Lambda.meanLambda[factori])
+              whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Lambda.meanLambda2[factori] .- Lambda.meanLambda[factori] .^2)))
+              whichgamma     = vcat(whichgamma,Lambda.meanGamma[factori])
+          end
+          output["Lambda"]=DataFrame([whichfactor whichtrait whicheffect whicheffectsd whichgamma],[:Factor,:Trait,:Estimate,:SD,:Model_Frequency])
+          output["pi_Lambda"] = dict2dataframe(Lambda.mean_pi,Lambda.mean_pi2)
+          output["delta_Lambda"] = dict2dataframe(Lambda.meanDelta,Lambda.meanDelta2)
+      end
+  end
+
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
@@ -324,10 +347,14 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   # MegaBayes
-  if mme.K != false
+  if mme.Lamb != false
       push!(outvar,"latent_factors")
-  end
+      for factori in 1:mme.Lamb.K
+          push!(outvar,"Lambda_factor_"*string(mme.lhsVec[factori]))
+      end
+      push!(outvar,"varRjs")
 
+  end
   for i in outvar
       file_i    = file_name*"_"*replace(i,":"=>".")*".txt" #replace ":" by "." to avoid reserved characters in Windows
       if isfile(file_i)
@@ -455,6 +482,14 @@ function output_MCMC_samples(mme,vRes,G0,
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
     end
+
+    if mme.Lamb.K != false
+        writedlm(outfile["latent_factors"],mme.ySparse',',')
+        for factori in 1:mme.Lamb.K
+            writedlm(outfile["Lambda_factor_"*mme.Lamb.factor_names[factori]],mme.Lamb.λ[factori]',',')
+        end
+        writedlm(outfile["varRjs"],mme.Lamb.varRjs',',')
+    end
 end
 """
     output_location_parameters_samples(mme::MME,sol,outfile)
@@ -524,4 +559,20 @@ function output_posterior_mean_variance(mme,nsamples)
             end
         end
     end
+    if mme.Lamb != false
+        Lambda = mme.Lamb
+        for factor in 1:Lambda.K
+            Lambda.meanLambda[factor] += (Lambda.λ[factor] - Lambda.meanLambda[factor])/nsamples
+            Lambda.meanLambda2[factor]+= (Lambda.λ[factor].^2 - Lambda.meanLambda2[factor])/nsamples
+            Lambda.meanGamma[factor] += (Lambda.γ[factor] - Lambda.meanGamma[factor])/nsamples
+
+        end
+        if Lambda.is_estimate == true
+            Lambda.mean_pi += (Lambda.π-Lambda.mean_pi)/nsamples
+            Lambda.mean_pi2 += (Lambda.π .^2-Lambda.mean_pi2)/nsamples
+            Lambda.meanDelta += (Lambda.δ-Lambda.meanDelta)/nsamples
+            Lambda.meanDelta2 += (Lambda.δ .^2-Lambda.meanDelta2)/nsamples
+        end
+    end
+
 end

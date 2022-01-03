@@ -36,7 +36,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
-                     K = false, Λ = false)
+                     K = false, Λ = false, obsTraitNames = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -66,12 +66,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     ############################################################################
     # convert t observed traits -> K latent factors (without considering trait-specific marker effects)
     if K != false && Λ != false
-      if size(Λ,1) != K
-        error("The number of latent factors is not consistent with the dimension of Λ")
+      if size(Λ,1) != K || size(Λ,2) != length(obsTraitNames)
+        error("The number of latent factors/observed traits are not consistent with the dimension of Λ")
       end
-        printstyled("The number of latent factors is $K \n",bold=false,color=:green)
-        model_equations = factor_model_equation(model_equations,K)
-    elseif K != false && Λ == false
+      printstyled("The number of latent factors is $K \n",bold=false,color=:green)
+      model_equations = factor_model_equation(model_equations,K)
+    else
       printstyled("The number of latent factors is $K \n",bold=false,color=:green)
       model_equations = factor_model_equation(model_equations,K)
     end
@@ -141,18 +141,22 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
+  ############################################################################
+  # Lambda (will be added to MME if K != false), initialization
+  ############################################################################
+  #MegaFamily
+  if K != false
+    mme.Lamb = Lambda(mme.lhsVec,obsTraitNames,K,Λ)
+  end
+
+
+
   #NNBayes:
   if nonlinear_function != false
     mme.is_fully_connected   = is_fully_connected
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
-  end
-
-  #MegaFamily
-  if K != false
-    mme.K  = K
-    mme.Λ = Λ
   end
 
   return mme
@@ -365,16 +369,12 @@ function getMME(mme::MME, df::DataFrame)
     #mme.ySparse: latent factors (:fk in df)
     #yobs       : array of t arrays of length nObs
     # (only training data, must have same order as df so far)
-    if mme.K != false && mme.Λ != false
-      Ymatrix_megaFamily = mme.MCMCinfo.Ymatrix_megaFamily
-      if size(mme.Λ,2) != length(Ymatrix_megaFamily)
-        error("Non consistence between provided Λ and Ymatrix_megaFamily")
-      end
-        for i in Symbol.(Ymatrix_megaFamily)
+    if mme.Lamb.K != false
+        for traiti in Symbol.(mme.Lamb.trait_names)
             # replace missing with 0 in Y matrix (may add mme.missingPattern later)
-            DataFrames.recode(df[!,i], missing => 0.0)
+            DataFrames.recode(df[!,traiti], missing => 0.0)
         end
-        mme.yobs = [df[!,i] for i in Symbol.(Ymatrix_megaFamily)]
+        mme.yobs = [df[!,traiti] for traiti in Symbol.(mme.Lamb.trait_names)]
     end
 
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)

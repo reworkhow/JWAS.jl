@@ -167,9 +167,6 @@ function runMCMC(mme::MME,df;
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
                 constraint                      = false,
-                # MegaFamily
-                Ymatrix_megaFamily              = false,
-                Ymatrix_vare                    = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
@@ -200,9 +197,12 @@ function runMCMC(mme::MME,df;
     end
 
     #Mega Family
-    if Ymatrix_megaFamily!= false  # add columns of f_k to df
-        Ymatrix_vare = [var(filter(isfinite,skipmissing(df[!,i]))) for i in Symbol.(Ymatrix_megaFamily)]
-        for i in mme.lhsVec
+    if mme.Lamb.K != false  # add columns of f_k to df
+        Lambda = mme.Lamb
+        Lambda.obsY = [df[!,i] for i in Symbol.(Lambda.trait_names)]
+        Lambda.varRjs = [0.5*var(filter(isfinite,skipmissing(i))) for i in Lambda.obsY] # assume sigma^2_RE accounts for 50% phenotypic variance (prior)
+        Lambda.scaleR = Lambda.varRjs .* (mme.df.residual-2)/mme.df.residual
+        for i in Symbol.(Lambda.factor_names)
             df[!,i] .= rand(size(df,1))
         end
     end
@@ -251,7 +251,6 @@ function runMCMC(mme::MME,df;
                    chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,
-                   Ymatrix_megaFamily,Ymatrix_vare,
                    estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
                    categorical_trait,censored_trait,
@@ -267,7 +266,6 @@ function runMCMC(mme::MME,df;
     check_outputID(mme)    #check individual of interest for prediction
     df_whole,train_index = make_dataframes(df,mme)
     set_default_priors_for_variance_components(mme,df_whole)  #check priors (set default priors)
-
     if mme.M!=0
         if single_step_analysis == true
             SSBRrun(mme,df_whole,train_index,big_memory)
@@ -313,7 +311,7 @@ function runMCMC(mme::MME,df;
     end
 
     # MegaFamily: use nnbayes_mega_trait() to covert to K single trait analysis
-    if mme.K != false
+    if mme.Lamb.K != false
         mme.MCMCinfo.mega_trait = true
     end
 
