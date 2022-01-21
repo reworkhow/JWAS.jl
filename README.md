@@ -47,7 +47,7 @@ JWAS.jl
 * Categorical Trait Analysis
 * Censored Trait Analysis
 * Multi-class Bayesian Analysis
-* Neural Networks
+* Neural Networks (NN-LMM)
 * Cross Validation
 * Genome Wide Association Study
 * Integrating Phenotypic Causal Networks in GWAS
