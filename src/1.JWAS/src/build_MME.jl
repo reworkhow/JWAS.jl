@@ -306,39 +306,6 @@ function getMME(mme::MME, df::DataFrame)
        X = [X mme.modelTerms[i].X]
     end
 
-    #Make response vector (y)
-    ############################################################################
-    # Latent Traits
-    ############################################################################
-    #mme.ySparse: latent traits
-    #yobs       : single observed trait
-    if mme.nonlinear_function != false  #NN-Bayes
-        # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
-        mme.yobs = df[!,mme.yobs_name]
-        if mme.latent_traits != false  #NN-Bayes-Omics
-          #save omics data missing pattern
-          mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
-          #replace missing data with values in yobs
-          for i in mme.lhsVec      #for each omics feature
-            for j in 1:size(df,1)  #for each observation
-              if ismissing(df[j,i])
-                df[j,i]=mme.yobs[j]
-              end
-            end
-          end
-          # add indicators for individuals with full omics data, so their omics won't be sampled
-          n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
-          n_omics          = length(mme.lhsVec)             #number of omics
-          full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
-          mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
-
-        else  #NN-Bayes with hidden nodes (G3 paper)
-          #all omics should be missing, the missingPattern should be all 0
-          #but we already set y1,...,y5 as yobs, so we have to build missingPattern
-          # byhand.
-          mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
-        end
-    end
 
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)

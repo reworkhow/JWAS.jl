@@ -176,3 +176,34 @@ function nnbayes_partial_para_modify3(mme)
       Mi.mean_pi2 = Mi.mean_pi2[1]
     end
 end
+
+
+
+#below function is to initialize missing omics with yobs
+function nnlmm_initialize_missing(mme,df)
+    #define mme.yobs here because ungenotyped inds has been removed from df
+    mme.yobs = df[!,mme.yobs_name]  # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+    if mme.latent_traits != false  #NN-LMM-Omics
+      #save omics data missing pattern
+      mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
+      #replace missing data with values in yobs
+      for i in mme.lhsVec      #for each omics feature
+        for j in 1:size(df,1)  #for each observation
+          if ismissing(df[j,i])
+            df[j,i]=mme.yobs[j]
+          end
+        end
+      end
+      # add indicators for individuals with full omics data, so their omics won't be sampled
+      n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
+      n_omics          = length(mme.lhsVec)             #number of omics
+      full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
+      mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+
+    else  #NN-Bayes with hidden nodes (G3 paper)
+      #all omics should be missing, the missingPattern should be all 0
+      #but we already set y1,...,y5 as yobs, so we have to build missingPattern
+      # byhand.
+      mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
+    end
+end

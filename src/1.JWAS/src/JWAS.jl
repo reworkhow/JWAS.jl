@@ -260,6 +260,10 @@ function runMCMC(mme::MME,df;
     ############################################################################
     errors_args(mme)       #check errors in function arguments
     df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
+    if mme.nonlinear_function != false #NN-LMM
+        #initiliza missing omics data  (after check_pedigree_genotypes_phenotypes() because non-genotyped inds are removed)
+        nnlmm_initialize_missing(mme,df)
+    end
     prediction_setup(mme)  #set prediction equation, defaulting to genetic values
     check_outputID(mme)    #check individual of interest for prediction
     df_whole,train_index = make_dataframes(df,mme)
