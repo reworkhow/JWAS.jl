@@ -15,7 +15,7 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
 
     # (ii) determine whether partial/fully connected neural network
     if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
-        nargs_nonlinear = first(methods(nonlinear_function)).nargs-1
+        nargs_nonlinear = first(methods(nonlinear_function)).nargs-1 #e.g., PGM(x1,x2) has 2 arguments
         is_activation_fcn = false
         if ngeno == 1    # fully-connected (equivalent to y=geno1+geno1+geno1 (memory efficient))
             is_fully_connected = true
