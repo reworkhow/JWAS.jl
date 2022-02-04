@@ -205,6 +205,12 @@ function runMCMC(mme::MME,df;
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
             #rename genotype names
             mme.M[1].trait_names=mme.latent_traits
+            #change model terms for partial-connected NN
+            if is_nnbayes_partial
+                for i in 1:mme.nModels
+                    mme.M[i].trait_names=[mme.latent_traits[i]]
+                end
+            end
         end
     end
     #for deprecated JWAS fucntions
