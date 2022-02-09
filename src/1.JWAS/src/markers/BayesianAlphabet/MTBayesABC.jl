@@ -7,7 +7,7 @@ function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances)
 end
 
 function MTBayesABC!(xArray,xRinvArray,xpRinvx,
-                     wArray,betaArray,
+                     wArray,betaArray, #betaArray is a vector of length t, each element is length p.
                      deltaArray,
                      alphaArray,
                      vare,varEffects,
@@ -18,6 +18,7 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
     Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
     Ginv     = inv.(varEffects)
 
+    #vector of length t, since we only focus one SNP at a time
     β        = zeros(typeof(betaArray[1][1]),ntraits)
     newα     = zeros(typeof(alphaArray[1][1]),ntraits)
     oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
@@ -28,27 +29,28 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
         x, xRinv = xArray[marker], xRinvArray[marker]
 
         for trait = 1:ntraits
-            β[trait]  = betaArray[trait][marker]
+            β[trait]  = betaArray[trait][marker] #β is j-th snp effects for all traits: a vector of length t
          oldα[trait]  = newα[trait] = alphaArray[trait][marker]
             δ[trait]  = deltaArray[trait][marker]
-            w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]
+            w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait]  #(t-by-1) ;wArray is ycorr for all, thus need to +markerj
         end
 
         for k=1:ntraits
             Ginv11 = Ginv[marker][k,k]
-            nok    = deleteat!(collect(1:ntraits),k)
+            nok    = deleteat!(collect(1:ntraits),k) #speed up; no need to check each element
             Ginv12 = Ginv[marker][k,nok]
-            C11    = Ginv11+Rinv[k,k]*xpRinvx[marker]
-            C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
+            C11    = Ginv11+Rinv[k,k]*xpRinvx[marker] #when δ_j1=1
+            C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok] #when δ_j1==1 (here is actually C12^T)
 
-            invLhs0  = 1/Ginv11
+            #f(β_j1 | δ_j1,θ,y)
+            invLhs0  = 1/Ginv11    #when δ_j1=0
             rhs0     = - Ginv12'β[nok]
-            gHat0    = (rhs0*invLhs0)[1,1]
-            invLhs1  = 1/C11
-            rhs1     = w'*Rinv[:,k]-C12'β[nok]
-            gHat1    = (rhs1*invLhs1)[1,1]
+            gHat0    = (rhs0*invLhs0)[1,1] #β_j1
+            invLhs1  = 1/C11       #when δ_j1=1
+            rhs1     = w'*Rinv[:,k]-C12'β[nok] #scaler
+            gHat1    = (rhs1*invLhs1)[1,1] #β_j1
 
-            d0 = copy(δ)
+            d0 = copy(δ) #vector of length t
             d1 = copy(δ)
             d0[k] = 0.0
             d1[k] = 1.0
@@ -95,8 +97,9 @@ function MTBayesABC_block!(XArray,XRinvArray,xpRinvx,
     ntraits  = length(alphaArray)
 
     Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
-    Ginv     = inv.(varEffects)
+    Ginv     = inv.(varEffects) # vector of length p, each element is a t-by-t covariance matrix
 
+    #vector of length t, since we only focus one SNP at a time
     β        = zeros(typeof(betaArray[1][1]),ntraits)
     newα     = zeros(typeof(alphaArray[1][1]),ntraits)
     oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
