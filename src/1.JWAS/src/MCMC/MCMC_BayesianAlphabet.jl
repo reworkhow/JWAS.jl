@@ -165,7 +165,7 @@ function MCMC_BayesianAlphabet(mme,df)
             writedlm(outfile["threshold"],threshold',',')
         end
         if censored_trait != false
-            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+            ycorr = is_multi_trait ? MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound) : censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
         end
         ########################################################################
