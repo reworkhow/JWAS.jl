@@ -1,5 +1,5 @@
 ################################################################################
-#Threshold trait:
+#(single) Threshold trait:
 #1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
 #Genetics
 #2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
@@ -22,6 +22,8 @@ function categorical_trait_setup!(mme)
     end
     return category_obs,thresholds
 end
+
+
 
 function categorical_trait_sample_liabilities(mme,ycorr,category_obs,thresholds)
     ########################################################################

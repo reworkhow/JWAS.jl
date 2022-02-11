@@ -166,7 +166,7 @@ function MCMC_BayesianAlphabet(mme,df)
             writedlm(outfile["threshold"],threshold',',')
         end
         if censored_trait != false
-            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+            ycorr = is_multi_trait ? MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound) : censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
         end
         ########################################################################
@@ -310,7 +310,7 @@ function MCMC_BayesianAlphabet(mme,df)
                                         invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
             else
-                if categorical_trait == false
+                if categorical_trait == false # fixed mme.R for categorical_trait
                     mme.ROld = mme.R
                     mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
                 end
