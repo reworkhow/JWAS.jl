@@ -20,39 +20,36 @@ end
 
 function MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
     ########################################################################
-    # MT: multiple censored traits + multiple/none continuose traits
-    # continouse traits: UB=LB=y
+    # MT: multiple censored traits and continuous traits
+    # continuous traits: upper_bound=lower_bound=y
     ########################################################################
-    cmean = mme.ySparse - ycorr #liabilities - residuals
-    nInd=length(mme.obsID)
-    nTrait=mme.nModels
+    cmean       = mme.ySparse - ycorr     #liabilities - residuals
+    nInd        = length(mme.obsID)
+    nTrait      = mme.nModels
     cmean       = reshape(cmean,       nInd,nTrait)
     lower_bound = reshape(lower_bound, nInd,nTrait)
     upper_bound = reshape(upper_bound, nInd,nTrait)
     ySparse     = reshape(mme.ySparse, nInd,nTrait)
-    R=mme.R
+    R           = mme.R #residual variance
 
     #### sample liabilities
     for i in 1:nInd
-        #sample liabilities for each traits if needed
-        for t in 1:nTrait
-            if lower_bound[i,t] == upper_bound[i,t] # t-th trait is continuous
-                ySparse[i,t] = lower_bound[i,t]
-            else # t-th trait is censored; use "1" denote censored trait, "2" denote all other traits
-                 # residual for all other traits traits = d
-                index1=[t]  #index for the censored trait
-                index2=deleteat!(collect(1:2),t) #index for all other traits
-                d=ySparse[i,index2]-cmean[i,index2]
-                # sample residual for censored trait "1"
-                μ_1 = R[index1,index2]*inv(R[index2,index2])*d
-                σ2_1= R[index1,index1]-R[index1,index2]*inv(R[index2,index2])*R[index2,index1]
-                ϵ1_lower_bound=lower_bound[i,t]-cmean[i,t]
-                ϵ1_upper_bound=upper_bound[i,t]-cmean[i,t]
-                μ_1=μ_1[1]   #extract value from a vector of length 1
-                σ2_1=σ2_1[1] #extract value from a vector of length 1
-                ϵ1 = rand(truncated(Normal(μ_1,sqrt(σ2_1)), ϵ1_lower_bound, ϵ1_upper_bound))
-                #update ySparse
-                ySparse[i,t] = cmean[i,t] + ϵ1
+        for iter=1:5 #Gibbs sampler to sample liabilities for one individual
+            for t in 1:nTrait
+                if lower_bound[i,t] == upper_bound[i,t] # t-th trait is continuous
+                    ySparse[i,t] = lower_bound[i,t]
+                else # t-th trait is censored: "1" denotes a censored trait, "2" denotes all other traits.
+                    index1 = t                                 #index for the censored trait
+                    index2 = deleteat!(collect(1:nTrait),t)    #index for all other traits
+                    d      = ySparse[i,index2]-cmean[i,index2] #current residuals for all other traits (d)
+                    # sample residual for censored trait "1"
+                    μ_1    = R[index1,index2]'inv(R[index2,index2])*d
+                    σ2_1   = R[index1,index1]-R[index1,index2]'inv(R[index2,index2])*R[index2,index1] #will be pre-calculated for speedup
+                    ϵ1_lower_bound = lower_bound[i,t] - cmean[i,t]
+                    ϵ1_upper_bound = upper_bound[i,t] - cmean[i,t]
+                    ϵ1             = rand(truncated(Normal(μ_1,sqrt(σ2_1)), ϵ1_lower_bound, ϵ1_upper_bound))
+                    ySparse[i,t]   = cmean[i,t] + ϵ1                     #update ySparse
+                end
             end
         end
     end
