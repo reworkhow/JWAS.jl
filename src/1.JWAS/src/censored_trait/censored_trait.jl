@@ -51,7 +51,7 @@ function MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
                     ϵ1_upper_bound=upper_bound[i,t]-cmean[i,t]
                     μ_1=μ_1[1]   #a vector of length 1
                     σ2_1=σ2_1[1] #a vector of length 1
-                    ϵ1 = rand(truncated(Normal(μ_1,σ2_1), ϵ1_lower_bound, ϵ1_upper_bound))
+                    ϵ1 = rand(truncated(Normal(μ_1,sqrt(σ2_1)), ϵ1_lower_bound, ϵ1_upper_bound))
                     #update ySparse
                     ySparse[i,t] = cmean[i,t] + ϵ1
                 end

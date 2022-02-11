@@ -58,9 +58,9 @@ function errors_args(mme)
     if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
     end
-    if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
-        error("Categorical traits are only allowed in single trait analysis")
-    end
+    # if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
+    #     error("Categorical traits are only allowed in single trait analysis")
+    # end
 end
 
 function check_outputID(mme)

@@ -24,7 +24,7 @@ function MCMC_BayesianAlphabet(mme,df)
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
     if categorical_trait == true
-        category_obs,threshold = categorical_trait_setup!(mme)
+        category_obs,threshold = is_multi_trait ? MT_categorical_trait_setup!(mme) : categorical_trait_setup!(mme)
     end
     if censored_trait != false
         lower_bound,upper_bound = censored_trait_setup!(mme)
@@ -39,7 +39,7 @@ function MCMC_BayesianAlphabet(mme,df)
     #mme.sol (its starting values were set in runMCMC)
     mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
-    if categorical_trait == true
+    if categorical_trait == true && !is_multi_trait #only fix σ2_e=1 for single trait
         mme.R  = mme.meanVare = mme.meanVare2 = 1.0
     else
         mme.meanVare  = zero(mme.R)
@@ -161,7 +161,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 0. Categorical traits (liabilities)
         ########################################################################
         if categorical_trait == true
-            ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
+            ycorr = is_multi_trait ? MT_categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold) : categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
             writedlm(outfile["threshold"],threshold',',')
         end
         if censored_trait != false
@@ -308,7 +308,7 @@ function MCMC_BayesianAlphabet(mme,df)
                                         invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
             else
-                if categorical_trait == false
+                if categorical_trait == false # fixed mme.R for categorical_trait
                     mme.ROld = mme.R
                     mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
                 end
