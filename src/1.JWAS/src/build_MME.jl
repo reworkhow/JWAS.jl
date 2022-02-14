@@ -71,9 +71,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
       printstyled("The number of latent factors is $K \n",bold=false,color=:green)
       model_equations = factor_model_equation(model_equations,K)
-    else
-      printstyled("The number of latent factors is $K \n",bold=false,color=:green)
-      model_equations = factor_model_equation(model_equations,K)
     end
 
 
@@ -88,6 +85,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
     # If K != false, the provided R is the residual covariance matrix for latent factors
     # (D_f in paper)
+
     lhsVec     = Symbol[]    #:y, phenotypes
     modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
     dict       = Dict{AbstractString,ModelTerm}()
@@ -369,12 +367,14 @@ function getMME(mme::MME, df::DataFrame)
     #mme.ySparse: latent factors (:fk in df)
     #yobs       : array of t arrays of length nObs
     # (only training data, must have same order as df so far)
-    if mme.Lamb.K != false
+    if mme.Lamb != false
+      if mme.Lamb.K != false
         for traiti in Symbol.(mme.Lamb.trait_names)
             # replace missing with 0 in Y matrix (may add mme.missingPattern later)
             DataFrames.recode(df[!,traiti], missing => 0.0)
         end
         mme.yobs = [df[!,traiti] for traiti in Symbol.(mme.Lamb.trait_names)]
+      end
     end
 
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)

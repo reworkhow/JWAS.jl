@@ -87,7 +87,10 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
-                       quality_control=true, MAF = 0.01, missing_value = 9.0)
+                       quality_control=true, MAF = 0.01, missing_value = 9.0,
+                       # APY algorithm
+                       isAPY = false, name4core = false
+                       )
     #Read the genotype file
     if typeof(file) <: AbstractString
         printstyled("The delimited in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
@@ -188,28 +191,77 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     #a kernel / relationship matrix or genotypes are provided in GBLUP
     if method == "GBLUP"
         if !isGRM #calculate the relationship matrix from the genotype covariate matrix
-            genotypes  = genotypes ./ sqrt.(2*p.*(1 .- p))
-            genotypes  = (genotypes*genotypes'+ I*0.00001)/nMarkers
-            println("A genomic relationship matrix is computed from genotypes.")
-            isGRM  = true
-        end
-        add_small_value_count = 0
-        while isposdef(genotypes) == false
-            println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
-            genotypes = genotypes + I*0.00001
-            add_small_value_count += 1
-            if add_small_value_count > 10
-                error("Please provide a positive-definite relationship matrix.")
-            end
-        end
+            if !isAPY && name4core == false
+                genotypes  = genotypes ./ sqrt.(2*p.*(1 .- p))
+                genotypes  = (genotypes*genotypes'+ I*0.00001)/nMarkers
+                println("A genomic relationship matrix is computed from genotypes.")
+                isGRM  = true
+
+                add_small_value_count = 0
+                while isposdef(genotypes) == false
+                    println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
+                    genotypes = genotypes + I*0.00001
+                    add_small_value_count += 1
+                    if add_small_value_count > 10
+                        error("Please provide a positive-definite relationship matrix.")
+                    end
+                end
+            elseif name4core != false # name for core animals is provided
+				if typeof(name4core) <: Array{String,1}
+					println("name of core animals is provided. APY is implemented.")
+					isAPY = true
+					# construct APY object (3 blocks)
+					# construct Gcc
+					index4core = findall(x -> x in name4core, obsID) # get row index for core animals
+					index4noncore = filter!(x->x ∉ index4core,collect(1:nObs));
+
+					core_order = obsID[index4core]
+					noncore_order = obsID[index4noncore]
+
+					core_genotypes = genotypes[index4core, :] ./ sqrt.(2*p.*(1 .- p))
+					noncore_genotypes = genotypes[index4noncore, :] ./ sqrt.(2*p.*(1 .- p))
+
+					Gcc = (core_genotypes*core_genotypes'+ I*0.00001)/nMarkers
+					if isposdef(Gcc) == false
+						error("Gcc is not a positive-definite matrix.")
+					end
+					# construct Gcn
+					Gcn = (core_genotypes*noncore_genotypes')/nMarkers
+
+					# construct Gnn
+					num_noncore = length(index4noncore)
+					Gnn = Array{Float64}(undef,num_noncore)
+					for i in 1:num_noncore
+						zi = noncore_genotypes[i,:] ./ sqrt.(2*p.*(1 .- p))
+						Gnn[i] = (zi * zi'/nMarkers)[1,1]
+					end
+
+					APYinfo = APY(Gcc,Gcn,Gnn,core_order,noncore_order)
+					isGRM = true
+				else
+					error("name of core animals need to be provided as string.")
+				end
+			elseif isAPY && name4core == false
+				error("At this stage, name of core animals need to be provided.")
+			end
+		end
     end
 
-    genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes,isGRM)
+    genotypes  = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes,isGRM)
+
+    # update attributes of genotypes based on APY status
+    if isAPY
+		genotypes.isAPY = true
+		genotypes.name4core = name4core
+		genotypes.APYinfo = APYinfo
+    end
+
     if G_is_marker_variance == true
         genotypes.G = G
     else
         genotypes.genetic_variance = G
     end
+
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
@@ -219,7 +271,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype information:")
-    println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
+    #println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
+	# more general condition for APY where genotypes.genotypes = false
+	println("#markers: ",(isGRM ? 0 : genotypes.nMarkers),"; #individuals: ",genotypes.nObs)
 
     #starting values for marker effects
     if starting_value != false

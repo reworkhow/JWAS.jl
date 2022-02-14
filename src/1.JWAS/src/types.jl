@@ -126,6 +126,11 @@ mutable struct Genotypes
 
   isGRM  #whether genotypes or relationship matirx is provided
 
+  # APY
+  isAPY       # true/false
+  name4core   # vector of names for core animals
+  APYinfo     # a object of type APY
+
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
@@ -133,7 +138,8 @@ mutable struct Genotypes
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,a9)
+                                         false,a9,
+                                         false,false,false)
 end
 
 mutable struct DF
@@ -194,7 +200,7 @@ mutable struct Lambda
     delta_a::Int64    # prior value for δ
     delta_b::Int64    # prior value for δ
 
-    is_estimate       # whether Λ need to be estimated 
+    is_estimate       # whether Λ need to be estimated
 
 
     Lambda(lhsVec,yobs_names,K,Λ)=new(string.(lhsVec),yobs_names,K,
@@ -205,6 +211,18 @@ mutable struct Lambda
                             3,1,
                             false)
 end
+
+# 3 blocks are stored for APY implementation
+# Gcc, Gcn, Gnn (only diagonal elements of Gnn)
+mutable struct APY
+    Gcc::Union{Array{Float64,2},Array{Float32,2}}
+    Gcn::Union{Array{Float64,2},Array{Float32,2}}
+    Gnn::Union{Array{Float64,1},Array{Float32,1}}
+    core_order::Array{AbstractString,1}
+	noncore_order::Array{AbstractString,1}
+end
+
+
 
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

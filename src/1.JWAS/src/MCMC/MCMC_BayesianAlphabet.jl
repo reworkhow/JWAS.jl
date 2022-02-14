@@ -181,9 +181,10 @@ function MCMC_BayesianAlphabet(mme,df)
             ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
         end
-        if mme.Lamb.K != false
-            ycorr = latent_factor_sample_F(mme, df, ycorr)
-
+        if mme.Lamb != false
+            if mme.Lamb.K != false
+                ycorr = latent_factor_sample_F(mme, df, ycorr)
+            end
         end
         ########################################################################
         # 1. Non-Marker Location Parameters

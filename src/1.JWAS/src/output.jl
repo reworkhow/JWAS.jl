@@ -482,13 +482,14 @@ function output_MCMC_samples(mme,vRes,G0,
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
     end
-
-    if mme.Lamb.K != false
-        writedlm(outfile["latent_factors"],mme.ySparse',',')
-        for factori in 1:mme.Lamb.K
-            writedlm(outfile["Lambda_factor_"*mme.Lamb.factor_names[factori]],mme.Lamb.λ[factori]',',')
+    if mme.Lamb != false
+        if mme.Lamb.K != false
+            writedlm(outfile["latent_factors"],mme.ySparse',',')
+            for factori in 1:mme.Lamb.K
+                writedlm(outfile["Lambda_factor_"*mme.Lamb.factor_names[factori]],mme.Lamb.λ[factori]',',')
+            end
+            writedlm(outfile["varRjs"],mme.Lamb.varRjs',',')
         end
-        writedlm(outfile["varRjs"],mme.Lamb.varRjs',',')
     end
 end
 """

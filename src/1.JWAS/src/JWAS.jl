@@ -197,13 +197,15 @@ function runMCMC(mme::MME,df;
     end
 
     #Mega Family
-    if mme.Lamb.K != false  # add columns of f_k to df
-        Lambda = mme.Lamb
-        Lambda.obsY = [df[!,i] for i in Symbol.(Lambda.trait_names)]
-        Lambda.varRjs = [0.5*var(filter(isfinite,skipmissing(i))) for i in Lambda.obsY] # assume sigma^2_RE accounts for 50% phenotypic variance (prior)
-        Lambda.scaleR = Lambda.varRjs .* (mme.df.residual-2)/mme.df.residual
-        for i in Symbol.(Lambda.factor_names)
-            df[!,i] .= rand(size(df,1))
+    if mme.Lamb != false
+        if mme.Lamb.K != false  # add columns of f_k to df
+            Lambda = mme.Lamb
+            Lambda.obsY = [df[!,i] for i in Symbol.(Lambda.trait_names)]
+            Lambda.varRjs = [0.5*var(filter(isfinite,skipmissing(i))) for i in Lambda.obsY] # assume sigma^2_RE accounts for 50% phenotypic variance (prior)
+            Lambda.scaleR = Lambda.varRjs .* (mme.df.residual-2)/mme.df.residual
+            for i in Symbol.(Lambda.factor_names)
+                df[!,i] .= rand(size(df,1))
+            end
         end
     end
 
@@ -311,8 +313,10 @@ function runMCMC(mme::MME,df;
     end
 
     # MegaFamily: use nnbayes_mega_trait() to covert to K single trait analysis
-    if mme.Lamb.K != false
-        mme.MCMCinfo.mega_trait = true
+    if mme.Lamb != false
+        if mme.Lamb.K != false
+            mme.MCMCinfo.mega_trait = true
+        end
     end
 
     # NNBayes mega trait: from multi-trait to multiple single-trait
