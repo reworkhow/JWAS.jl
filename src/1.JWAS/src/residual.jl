@@ -14,8 +14,10 @@ end
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame,Rinv)
     resVar   = ResVar(mme.R,Dict())
-    tstMsng  = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
-    mme.missingPattern = tstMsng
+    tstMsng  = .!ismissing.(Matrix(df[!,mme.lhsVec]))
+    if mme.missingPattern == false
+        mme.missingPattern = tstMsng
+    end
     ntrait = size(tstMsng,2)
     nObs   = size(tstMsng,1)
     ii = Array{Int64}(undef,nObs*ntrait^2)

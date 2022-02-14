@@ -31,7 +31,8 @@ run genomic window-based GWAS
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
 * **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided,
-  i.e., **map_file**=`false`, a fake map file will be generated with 100 markers in each 1 Mb window.
+  i.e., **map_file**=`false`, a fake map file will be generated with **window_size** markers in each 1 Mb window, and
+  each 1 Mb window will be tested.
 * If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
 * Statistics are computed for nonoverlapping windows of size *window_size* by default.
   If **sliding_window** = true, those for overlapping sliding windows are calculated.
@@ -54,6 +55,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               GWAS = true, threshold = 0.001,
               #genetic correlation
               genetic_correlation = false,
+              #local EBV
+              local_EBV = false,
               #misc
               header = true, output_winVarProps = false)
 
@@ -64,11 +67,12 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     end
     if map_file == false && typeof(window_size) <: Integer
         println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
-        nmarkers=length(readdlm(marker_effect_file,',',header=true)[2])
-        mapfile = DataFrame(markerID=1:nmarkers,
+        nmarkers=length(readdlm(marker_effects_file[1],',',header=true)[2])
+        mapfile = DataFrame(markerID  =1:nmarkers,
                             chromosome=fill(1,nmarkers),
-                            position=1:10_000:nmarkers*10_000)
+                            position  =Int.(floor.(1:(1_000_000/window_size):nmarkers*(1_000_000/window_size))))
         CSV.write("mapfile.temp",mapfile)
+        map_file, window_size = "mapfile.temp", "1 Mb"
     end
 
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
@@ -135,6 +139,10 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+            if local_EBV==true
+                nind     = size(X,1)
+                localEBV = zeros(nind,nWindows)
+            end
             @showprogress "running GWAS..." for i=1:nsamples
                 α = output[i,:]
                 genVar = var(X*α)
@@ -145,7 +153,15 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
                   var_winj = var(BV_winj)
                   winVar[i,winj]      = var_winj
                   winVarProps[i,winj] = var_winj/genVar
+                  if local_EBV == true
+                      localEBV[:,winj] += (BV_winj - localEBV[:,winj])/i
+                  end
                 end
+            end
+            if local_EBV == true
+                df= DataFrame(localEBV)
+                rename!(df,Symbol.("w".*string.(1:nWindows)))
+                CSV.write("localEBV"*string(i)*".txt",hcat(DataFrame(ID=mme.output_ID),df))
             end
             winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
             WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
@@ -224,13 +240,15 @@ function GWAS(marker_effects_file::AbstractString,map_file::AbstractString,mme;
              window_size="1 Mb",
              threshold=0.001,
              sliding_window = false,
-             output_winVarProps=false)
+             output_winVarProps=false,
+             local_EBV = false)
      GWAS(mme,map_file,marker_effects_file,
                   header=header,
                   window_size=window_size,
                   threshold=threshold,
                   sliding_window = sliding_window,
-                  output_winVarProps=output_winVarProps)
+                  output_winVarProps=output_winVarProps,
+                  local_EBV = local_EBV)
 end
 
 

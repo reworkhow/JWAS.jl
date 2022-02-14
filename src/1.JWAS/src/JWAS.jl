@@ -6,6 +6,7 @@ using SparseArrays
 using LinearAlgebra
 using ProgressMeter
 using .PedModule
+using ForwardDiff
 
 import StatsBase: describe #a new describe is exported
 
@@ -48,6 +49,7 @@ include("structure_equation_model/SEM.jl")
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
 include("Nonlinear/bnn_hmc.jl")
+include("Nonlinear/nnbayes_check.jl")
 
 #input
 include("input_data_validation.jl")
@@ -139,10 +141,10 @@ export dataset
         * Censored traits are allowed if the upper bounds are provided in `censored_trait` as an array, and lower bounds are provided as phenotypes.
         * If `constraint`=true, defaulting to `false`, constrain residual covariances between traits to be zeros.
         * If `causal_structure` is provided, e.g., causal_structure = [0.0 0.0 0.0;1.0 0.0 0.0;1.0 0.0 0.0] for
-          trait 2 -> trait 1 and trait 3 -> trait 1, phenotypic causal networks will be incorporated using structure equation models.
+          trait 1 -> trait 2 and trait 1 -> trait 3 (column index affacts row index, and a lower triangular matrix is required), phenotypic causal networks will be incorporated using structure equation models.
 * Genomic Prediction
-    * Predicted values for individuals of interest can be obtained based on an user-defined prediction equation `prediction_equation`, e.g., "y1:animal + y1:geno + y1:age".
-    For now, genomic data is always included. Genetic values including effects defined with genotype and pedigre information are returned if `prediction_equation`= false, defaulting to `false`.
+    * Predicted values for individuals of interest can be obtained based on a user-defined prediction equation `prediction_equation`, e.g., "y1:animal + y1:age".
+    For now, genomic data is always included. Genetic values including effects defined with genotype and pedigree information are returned if `prediction_equation`= false, defaulting to `false`.
     * Individual estimted genetic values and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
     variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
@@ -168,10 +170,10 @@ function runMCMC(mme::MME,df;
                 categorical_trait               = false,
                 censored_trait                  = false,
                 causal_structure                = false,
-                mega_trait                      = false,
-                RRM                             = false,
+                mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
                 constraint                      = false,
+                RRM                             = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
@@ -191,9 +193,11 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
-    #Nonlinear
-    if mme.latent_traits == true
-        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]
+
+    #Neural Network
+    is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
+    if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
+        yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
         for i in mme.lhsVec
             df[!,i]= yobs
         end
@@ -215,6 +219,13 @@ function runMCMC(mme::MME,df;
     ############################################################################
     if seed != false
         Random.seed!(seed)
+    end
+    #when using multi-thread, make sure the results are reproducible for users
+    nThread = Threads.nthreads()
+    if nThread>1
+        Threads.@threads for i = 1:nThread
+              Random.seed!(seed+i)
+        end
     end
     ############################################################################
     # Create an folder to save outputs
@@ -270,14 +281,11 @@ function runMCMC(mme::MME,df;
     mme.causal_structure = causal_structure
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
-        missing_phenotypes, constraint = false, true
+        mme.MCMCinfo.missing_phenotypes, mme.MCMCinfo.constraint = false, true
         if !istril(causal_structure)
             error("The causal structue needs to be a lower triangular matrix.")
         end
     end
-
-
-
     # Double Precision
     if double_precision == true
         if mme.M != 0
@@ -295,21 +303,19 @@ function runMCMC(mme::MME,df;
         end
         mme.Gi = map(Float64,mme.Gi)
     end
-    #mega_trait
-    if mme.MCMCinfo.mega_trait == true || mme.MCMCinfo.constraint == true
-        if mme.nModels == 1
-            error("more than 1 trait is required for MegaLMM analysis.")
-        end
-        mme.MCMCinfo.constraint = true
-        ##sample from scale-inv-⁠χ2, not InverseWishart
-        mme.df.residual  = mme.df.residual - mme.nModels
-        mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
-        if mme.M != 0
-            for Mi in mme.M
-                Mi.df        = Mi.df - mme.nModels
-                Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
-            end
-        end
+
+    # NNBayes mega trait: from multi-trait to multiple single-trait
+    if mme.MCMCinfo.mega_trait == true
+        printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+        printstyled(" - Multi-threaded parallelism:       $nThread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
+        nnbayes_mega_trait(mme)
+    elseif mme.nonlinear_function != false  #only print for NNBayes
+        printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+    end
+
+    # NNBayes: modify parameters for partial connected NN
+    if is_nnbayes_partial
+        nnbayes_partial_para_modify2(mme)
     end
     ############################################################################
     #Make incidence matrices and genotype covariates for training observations
@@ -328,18 +334,15 @@ function runMCMC(mme::MME,df;
     ############################################################################
     describe(mme)
     if mme.nModels ==1 && RRM != false
-        mme.output=MCMC_BayesianAlphabet_RRM(chain_length,mme,df,
+        mme.output=MCMC_BayesianAlphabet_RRM(mme,df,
                                   Φ                        = RRM,
                                   Pi                       = Pi,
                                   burnin                   = burnin,
-                                  methods                  = methods,
-                                  estimatePi               = estimatePi,
-                                  estimateScale            = estimateScale,
-                                  starting_value           = mme.MCMCinfo.starting_value,
+                                  starting_value           = mme.sol,
                                   outFreq                  = printout_frequency,
                                   output_samples_frequency = output_samples_frequency,
-                                  output_file              = output_samples_file,
-                                  update_priors_frequency  = update_priors_frequency)
+                                  nIter                    = chain_length,
+                                  output_folder            = mme.MCMCinfo.output_folder)
     else
         mme.output=MCMC_BayesianAlphabet(mme,df)
     end
@@ -362,7 +365,22 @@ function runMCMC(mme::MME,df;
     versioninfo()
     printstyled("\n\nThe analysis has finished. Results are saved in the returned ",bold=true)
     printstyled("variable and text files. MCMC samples are saved in text files.\n\n\n",bold=true)
+
+    # make MCMC samples for indirect marker effect
+    if causal_structure != false
+
+        #generate the MCMC sample file for indirect and direct effect file.
+        generate_indirect_marker_effect_sample(mme.lhsVec,output_folder,causal_structure,"structure_coefficient_MCMC_samples.txt")
+        generate_overall_marker_effect_sample(mme.lhsVec,output_folder,causal_structure)
+
+        # generate marker effet file for direct, indirect, and overall effect
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"direct")
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"indirect")
+        generate_marker_effect(mme.lhsVec, output_folder,causal_structure,"overall")
+    end
+
     return mme.output
+
 end
 ################################################################################
 # Print out Model or MCMC information
@@ -429,6 +447,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
+    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
@@ -479,18 +498,26 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance != false
-                    if mme.nModels == 1
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
-                    else
+                    elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
+                        @printf("%-30s\n","genetic variances (genomic):")
+                        Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
+                        println()
+                    elseif mme.nModels>1
                         @printf("%-30s\n","genetic variances (genomic):")
                         Base.print_matrix(stdout,round.(Mi.genetic_variance,digits=3))
                         println()
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if mme.nModels == 1
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false || is_nnbayes_partial
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
-                    else
+                    elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
+                        @printf("%-30s\n","marker effect variances:")
+                        Base.print_matrix(stdout,round.(Mi.G,digits=3))
+                        println()
+                    elseif mme.nModels>1
                         @printf("%-30s\n","marker effect variances:")
                         Base.print_matrix(stdout,round.(Mi.G,digits=3))
                         println()

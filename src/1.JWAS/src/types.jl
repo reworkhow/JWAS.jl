@@ -77,7 +77,8 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
 end
 
 mutable struct Genotypes
-  name                            #name for this category
+  name                            #name for this category, eg. "geno1"
+  trait_names                     #names for the corresponding traits, eg.["y1","y2"]
 
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
@@ -122,14 +123,17 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,
+
+  isGRM  #whether genotypes or relationship matirx is provided
+
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false)
+                                         false,a9)
 end
 
 mutable struct DF
@@ -239,11 +243,13 @@ mutable struct MME
 
     causal_structure
 
-    latent_traits
-    nonlinear_function #user-provide function, "Neural Network"
+    nonlinear_function #user-provide function, "tanh"
     weights_NN
     σ2_yobs
-
+    is_fully_connected
+    is_activation_fcn  #Neural Network with activation function (not user-defined function)
+    latent_traits #["z1","z2"], for intermediate omics data,
+    yobs          #for single observed trait, and mme.ySparse is for latent traits
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -269,6 +275,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0)
+                   false,false,1.0,false,false,false,false)
     end
 end

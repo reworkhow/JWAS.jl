@@ -151,6 +151,9 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,mme.M[1].obsID)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
+            if mme.MCMCinfo.censored_trait != false
+                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index]
+            end
             printstyled("In this complete genomic data (non-single-step) analyis, ",
             length(index)-sum(index)," phenotyped individuals are not genotyped. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
@@ -161,6 +164,9 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,pedID)
             index = [phenoID[i] in pedID for i=1:length(phenoID)]
             df    = df[index,:]
+            if mme.MCMCinfo.censored_trait != false
+                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index]
+            end
             printstyled("In this incomplete genomic data (single-step) or PBLUP analysis, ",
             length(index)-sum(index)," phenotyped individuals are not included in the pedigree. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
@@ -210,7 +216,7 @@ function set_default_priors_for_variance_components(mme,df)
           if mme.nModels==1 && mme.MCMCinfo.RRM == false
               Mi.genetic_variance = varg[1,1]
           elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
-            mme.M.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
+              Mi.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
           elseif mme.nModels>1
               Mi.genetic_variance = varg
           end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
@@ -267,28 +273,12 @@ function make_dataframes(df,mme)
     else
         df_whole = df
     end
-    df_output = df_whole[[i in mme.output_ID for i in df_whole[!,1]],:]
-    #check individual of interest (output IDs) with prediction equations
-    for term in mme.MCMCinfo.prediction_equation
-        if !haskey(mme.modelTermDict,term)
-            error("Prediction equation is wrong.")
-        end
-        term_value = mme.modelTermDict[term]
-        for i = 1:term_value.nFactors
-          if term_value.factors[i] != :intercept && any(ismissing,df_output[!,term_value.factors[i]])
-            printstyled("Missing values are found in column ",term_value.factors[i]," for some observations.",
-            "Effects of this variable on such observations are considered as zeros. ",
-            "It will be used in prediction. Users may impute missing values before the analysis. \n",
-            bold=false,color=:red)
-          end
-        end
-    end
     #***************************************************************************
     #Training data
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(convert(Matrix,df_whole[!,mme.lhsVec]))
+    missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
     allmissing = fill(true,mme.nModels)
     train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
@@ -296,6 +286,9 @@ function make_dataframes(df,mme)
             push!(train_index,i)
         end
     end
+    #***************************************************************************
+    # Check missing levels in factors
+    #***************************************************************************
     #check training data with model equations
     for term in mme.modelTerms
         for i = 1:term.nFactors
@@ -307,12 +300,24 @@ function make_dataframes(df,mme)
           end
         end
     end
-    printstyled("Phenotypes for ",length(train_index)," individuals are used in the analysis.",
-    "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
-    writedlm("IDs_for_individuals_with_phenotypes.txt",df_whole[train_index,1])
+    #check individual of interest (output IDs) with prediction equations
+    for term in mme.MCMCinfo.prediction_equation
+        term_value = mme.modelTermDict[term]
+        for i = 1:term_value.nFactors
+          if term_value.factors[i] != :intercept && any(ismissing,df_whole[!,term_value.factors[i]])
+            printstyled("Missing values are found in column ",term_value.factors[i]," for some observations.",
+            "Effects of this variable on such observations are considered as zeros. ",
+            "It will be used in prediction. Users may impute missing values before the analysis. \n",
+            bold=false,color=:red)
+          end
+        end
+    end
     #***************************************************************************
     # Return
     #***************************************************************************
+    printstyled("Phenotypes for ",length(train_index)," observations are used in the analysis.",
+    "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
+    writedlm("IDs_for_individuals_with_phenotypes.txt",unique(df_whole[train_index,1]))
     mme.obsID = map(string,df_whole[train_index,1])
     return df_whole,train_index
 end
