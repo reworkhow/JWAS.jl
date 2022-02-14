@@ -126,7 +126,7 @@ function mkmat_incidence_factor(yID,uID)
 end
 
 ################################################################################
-#Set Marker Effcets Hyperparameters: Variances and Pi
+#Set Marker Effects Hyperparameters: Variances and Pi
 ################################################################################
 function set_marker_hyperparameters_variances_and_pi(mme::MME)
     if mme.M != 0

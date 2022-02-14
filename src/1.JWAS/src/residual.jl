@@ -45,6 +45,8 @@ function mkRi(mme::MME,df::DataFrame,Rinv)
 end
 
 
+
+
 #For other methods especially those with marker effects
 #Missing residuals (phenotypes) are imputed to enable estimation of residual
 #variances and adjusting phenotyp approach to sample marker effects.

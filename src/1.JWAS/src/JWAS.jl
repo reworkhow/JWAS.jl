@@ -51,6 +51,9 @@ include("Nonlinear/nonlinear.jl")
 include("Nonlinear/bnn_hmc.jl")
 include("Nonlinear/nnbayes_check.jl")
 
+# MegaFamily
+include("MegaFamily/functions.jl")
+
 #input
 include("input_data_validation.jl")
 
@@ -142,7 +145,7 @@ export dataset
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
-  * If `big_memory`=true, defaulting to `false`, a machine with  lots of memory is assumed which may speed up the analysis.
+  * If `big_memory`=true, defaulting to `false`, a machine with lots of memory is assumed which may speed up the analysis.
 """
 function runMCMC(mme::MME,df;
                 #Data
@@ -192,6 +195,21 @@ function runMCMC(mme::MME,df;
             df[!,i]= yobs
         end
     end
+
+    #Mega Family
+    if mme.Lamb != false
+        if mme.Lamb.K != false  # add columns of f_k to df
+            Lambda = mme.Lamb
+            Lambda.obsY = [df[!,i] for i in Symbol.(Lambda.trait_names)]
+            Lambda.varRjs = [0.5*var(filter(isfinite,skipmissing(i))) for i in Lambda.obsY] # assume sigma^2_RE accounts for 50% phenotypic variance (prior)
+            Lambda.scaleR = Lambda.varRjs .* (mme.df.residual-2)/mme.df.residual
+            for i in Symbol.(Lambda.factor_names)
+                df[!,i] .= rand(size(df,1))
+            end
+        end
+    end
+
+
     #for deprecated JWAS fucntions
     if mme.M != 0
         for Mi in mme.M
@@ -229,12 +247,13 @@ function runMCMC(mme::MME,df;
     mkdir(output_folder)
     printstyled("The folder $output_folder is created to save results.\n",bold=false,color=:green)
     ############################################################################
-    # Save MCMC argumenets in MCMCinfo
+    # Save MCMC arguments in MCMCinfo
     ############################################################################
     mme.MCMCinfo = MCMCinfo(heterogeneous_residuals,
                    chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
-                   fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
+                   fitting_J_vector,missing_phenotypes,constraint,mega_trait,
+                   estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
                    categorical_trait,censored_trait,
                    seed,double_precision,output_folder)
@@ -249,7 +268,6 @@ function runMCMC(mme::MME,df;
     check_outputID(mme)    #check individual of interest for prediction
     df_whole,train_index = make_dataframes(df,mme)
     set_default_priors_for_variance_components(mme,df_whole)  #check priors (set default priors)
-
     if mme.M!=0
         if single_step_analysis == true
             SSBRrun(mme,df_whole,train_index,big_memory)
@@ -292,6 +310,13 @@ function runMCMC(mme::MME,df;
             random_term.Gi    = map(Float64,random_term.Gi)
         end
         mme.Gi = map(Float64,mme.Gi)
+    end
+
+    # MegaFamily: use nnbayes_mega_trait() to covert to K single trait analysis
+    if mme.Lamb != false
+        if mme.Lamb.K != false
+            mme.MCMCinfo.mega_trait = true
+        end
     end
 
     # NNBayes mega trait: from multi-trait to multiple single-trait

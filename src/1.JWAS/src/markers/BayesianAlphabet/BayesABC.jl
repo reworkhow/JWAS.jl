@@ -13,6 +13,7 @@ function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
               locus_effect_variances,genotypes.π)
 end
 
+
 function BayesABC!(xArray,xRinvArray,xpRinvx,
                    yCorr,
                    α,β,δ,

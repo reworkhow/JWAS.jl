@@ -126,6 +126,11 @@ mutable struct Genotypes
 
   isGRM  #whether genotypes or relationship matirx is provided
 
+  # APY
+  isAPY       # true/false
+  name4core   # vector of names for core animals
+  APYinfo     # a object of type APY
+
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
@@ -133,7 +138,8 @@ mutable struct Genotypes
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,a9)
+                                         false,a9,
+                                         false,false,false)
 end
 
 mutable struct DF
@@ -166,6 +172,58 @@ mutable struct MCMCinfo
     double_precision
     output_folder
 end
+
+mutable struct Lambda
+    factor_names::Array{AbstractString,1}    #name for the factors (fk) eg. ["f1","f2"]
+    trait_names ::Array{AbstractString,1}    #names for the observed traits, eg.["y1","y2"]
+    K::Int64                               # number of latent factors
+
+    λ                          # array of row vectors of Λ elements at current MCMC samples
+    β                          # array of row vectors of Λ elements from normal distribution
+    γ                          # array of row vectors of indicator variables for Λ
+    π                          # an array of length K for π values of Λ rows
+    δ                          # τ_k = prod(δs)
+
+    obsY              # array of t arrays of length nObs (observed phenotypes)
+    varRjs            # array of length t for trait-specific residual variance sigma2_Rj
+    ycorr_obsTrait    # Y - FΛ
+    scaleR            # scale parameter for R of observed traits
+
+    meanLambda        # array of posterior means for λ
+    meanLambda2
+    meanGamma         # array of posterior means for γ
+    mean_pi           # array of posterior means for π
+    mean_pi2
+    meanDelta         # array of posterior means for δ
+    meanDelta2
+
+    delta_a::Int64    # prior value for δ
+    delta_b::Int64    # prior value for δ
+
+    is_estimate       # whether Λ need to be estimated
+
+
+    Lambda(lhsVec,yobs_names,K,Λ)=new(string.(lhsVec),yobs_names,K,
+                            Λ!=false ? [Λ[i,:] for i in 1:size(Λ,1)] : false,
+                            false,false,false,false,
+                            false, false,false,false,
+                            false,false,false,false,false,false,false,
+                            3,1,
+                            false)
+end
+
+# 3 blocks are stored for APY implementation
+# Gcc, Gcn, Gnn (only diagonal elements of Gnn)
+mutable struct APY
+    Gcc::Union{Array{Float64,2},Array{Float32,2}}
+    Gcn::Union{Array{Float64,2},Array{Float32,2}}
+    Gnn::Union{Array{Float64,1},Array{Float32,1}}
+    core_order::Array{AbstractString,1}
+	noncore_order::Array{AbstractString,1}
+end
+
+
+
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...
 #
@@ -250,6 +308,8 @@ mutable struct MME
     latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
 
+    Lamb          # Lambda for MegaBayesC
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
             scaleR   = R*(ν-2)/ν
@@ -274,6 +334,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false)
+                   false,false,1.0,false,false,false,false,false)
     end
 end

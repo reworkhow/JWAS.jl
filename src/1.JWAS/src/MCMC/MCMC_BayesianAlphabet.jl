@@ -20,6 +20,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
+    is_latent_factor         = mme.Lamb != false
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -29,6 +30,11 @@ function MCMC_BayesianAlphabet(mme,df)
     if censored_trait != false
         lower_bound,upper_bound = censored_trait_setup!(mme)
     end
+
+    if is_latent_factor
+        latent_factors_setup!(mme)
+    end
+
     ############################################################################
     # Working Variables
     # 1) samples at current iteration (starting values default to zeros)
@@ -45,10 +51,12 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.meanVare  = zero(mme.R)
         mme.meanVare2 = zero(mme.R)
     end
+
     #polygenic effects (pedigree), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
+
     #marker effects
     if mme.M != 0
         for Mi in mme.M
@@ -57,7 +65,7 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
 
             if Mi.method=="BayesB" #α=β.*δ
-                Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayeB
+                Mi.G        = fill(Mi.G,Mi.nMarkers) #a scalar in BayesC but a vector in BayesB
             end
             if Mi.method=="BayesL"         #in the MTBayesLasso paper
                 if mme.nModels == 1
@@ -103,6 +111,7 @@ function MCMC_BayesianAlphabet(mme,df)
             end
         end
     end
+
     if is_nnbayes_partial
         nnbayes_partial_para_modify3(mme)
     end
@@ -119,6 +128,7 @@ function MCMC_BayesianAlphabet(mme,df)
             end
         end
     end
+
     ############################################################################
     #More on Multi-Trait
     ############################################################################
@@ -134,12 +144,14 @@ function MCMC_BayesianAlphabet(mme,df)
         #(imputed phenotypes will not used to compute first mmeRhs)
         Ri         = mkRi(mme,df,invweights)
     end
+
     ############################################################################
     # Starting values for SEM
     ############################################################################
     if causal_structure != false
         Y,Λy,causal_structure_outfile = SEM_setup(wArray,causal_structure,mme)
     end
+
     ############################################################################
     #  SET UP OUTPUT MCMC samples
     ############################################################################
@@ -148,6 +160,7 @@ function MCMC_BayesianAlphabet(mme,df)
                                           output_samples_frequency,
                                           output_folder*"/MCMC_samples")
     end
+
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
@@ -167,6 +180,11 @@ function MCMC_BayesianAlphabet(mme,df)
         if censored_trait != false
             ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
+        end
+        if mme.Lamb != false
+            if mme.Lamb.K != false
+                ycorr = latent_factor_sample_F(mme, df, ycorr)
+            end
         end
         ########################################################################
         # 1. Non-Marker Location Parameters
@@ -330,7 +348,24 @@ function MCMC_BayesianAlphabet(mme,df)
             sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
-        # 5. Update priors using posteriors (empirical) LATER
+        # 6. Latent Factors (Lambda) (MegaBayesC)
+        ########################################################################
+        if mme.Lamb != false
+            if mme.Lamb.is_estimate
+                BayesC_Lambda_sampler_parallel!(ycorr,length(mme.obsID),mme.Lamb)
+                mme.Lamb.π = [samplePi(sum(mme.Lamb.γ[i]), length(mme.Lamb.trait_names)) for i in 1:mme.Lamb.K]
+                delta_sampler!(mme.Lamb)
+            end
+            # rescale F
+            mme.Lamb.varRjs = [sample_variance(mme.Lamb.ycorr_obsTrait, length(mme.obsID),
+                                mme.df.residual, mme.Lamb.scaleR,
+                                invweights,constraint)[j,j] for j in 1:length(mme.Lamb.trait_names)]
+            rescaleF!(ycorr, mme.Lamb, mme)
+        end
+
+
+        ########################################################################
+        # 7. Update priors using posteriors (empirical) LATER
         ########################################################################
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0 && methods != "BayesB"
