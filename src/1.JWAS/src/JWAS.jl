@@ -159,7 +159,7 @@ function runMCMC(mme::MME,df;
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
                 categorical_trait               = false,
-                censored_trait                  = false,
+                # censored_trait                  = false,
                 causal_structure                = false,
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
@@ -183,8 +183,9 @@ function runMCMC(mme::MME,df;
                 estimatePi                      = false,
                 estimateScale                   = false)
 
-
-    #Neural Network
+    ############################################################################
+    # Neural Network
+    ############################################################################
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
         yobs = df[!,Symbol(string(Symbol(mme.lhsVec[1]))[1:(end-1)])]#a number label is added to original trait name in nnbayes_model_equation()
@@ -228,6 +229,12 @@ function runMCMC(mme::MME,df;
     end
     mkdir(output_folder)
     printstyled("The folder $output_folder is created to save results.\n",bold=false,color=:green)
+
+    ############################################################################
+    # get upper bound for censored trait
+    ############################################################################
+    censored_trait =  mme.censored_trait_upper_bound_names == false ? false : Matrix(df[!,mme.censored_trait_upper_bound_names])
+
     ############################################################################
     # Save MCMC argumenets in MCMCinfo
     ############################################################################

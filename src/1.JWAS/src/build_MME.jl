@@ -35,7 +35,8 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
+                     censored_trait = false, categorical_trait = false, continuous_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -43,6 +44,16 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     if !(typeof(model_equations)<:AbstractString) || model_equations==""
       error("Model equations are wrong.\n
       To find an example, type ?build_model and press enter.\n")
+    end
+
+    ############################################################################
+    # Censored traits
+    ############################################################################
+    #Indicate lower bound, e.g., if censored_trait=["y1"]:
+    # old: "y1   = intercept + genotypes; y11 = intercept + genotypes"
+    # new: "y1_l = intercept + genotypes; y11 = intercept + genotypes"
+    if censored_trait != false
+      model_equations = censored_trait_model_equation(model_equations,censored_trait)
     end
 
     ############################################################################
@@ -128,6 +139,14 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+  end
+
+  #censored traits:
+  if censored_trait != false
+    mme.censored_trait_upper_bound_names=censored_trait.*"_u" #e.g., ["y1_u"]
+    if continuous_trait != false #censored_trait + continuous_trait
+      append!(mme.censored_trait_upper_bound_names,continuous_trait) #e.g., ["y1_u","y2"]
+    end
   end
 
   return mme

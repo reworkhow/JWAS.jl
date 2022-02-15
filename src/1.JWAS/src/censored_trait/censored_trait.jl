@@ -58,7 +58,7 @@ function MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
     return ycorr  #vector of ycorr, ordered by trait
 end
 
-
+#single censored trait
 function censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
     ########################################################################
     # liabilities
@@ -73,4 +73,15 @@ function censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
     end
     ycorr = mme.ySparse - cmean
     return ycorr
+end
+
+
+#e.g., censored trait is ["y1"].
+# old: "y1   = intercept + genotypes; y11 = intercept + genotypes"
+# new: "y1_l = intercept + genotypes; y11 = intercept + genotypes"
+function censored_trait_model_equation(model_equations,censored_trait)
+    for t in censored_trait
+        model_equations = replace(model_equations, t*r"\s*=" => t*"_l=") # "\s*" means zero or more space;
+    end #here the censored_trait must be in the left of "=" to keep "y11" unchanged.
+    return model_equations
 end

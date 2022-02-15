@@ -250,6 +250,8 @@ mutable struct MME
     latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
 
+    censored_trait_upper_bound_names #e.g.,["y1_u"]
+
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
             scaleR   = R*(ν-2)/ν
@@ -274,6 +276,7 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false)
+                   false,false,1.0,false,false,false,false,
+                   false)
     end
 end
