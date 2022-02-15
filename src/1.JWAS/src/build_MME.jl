@@ -36,6 +36,7 @@ models          = build_model(model_equations,R);
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
+                     user_σ2_yobs = false, user_σ2_weightsNN = false,
                      censored_trait = false, categorical_trait = false, continuous_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
@@ -65,7 +66,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
-      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
+      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
       #NNBayes: re-write model equations by treating hidden nodes as multiple traits
       model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
     end
@@ -139,6 +140,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+    if user_σ2_yobs != false && user_σ2_weightsNN != false
+      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
+      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
+      mme.fixed_σ2_NN     = true
+      printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
+    end
   end
 
   #censored traits:
@@ -324,23 +331,12 @@ function getMME(mme::MME, df::DataFrame)
     ############################################################################
     #mme.ySparse: latent traits
     #yobs       : single observed trait
-    if mme.nonlinear_function != false
-        mme.yobs = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
-        if mme.latent_traits != false
-          ######################################################################
-          #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
-          #with prefix 1, 2... , e.g., height1, height2...
-          #if data for latent traits are included in the dataset, column names
-          #will be used as shown below.e.g.,
-          #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
-          #"gene1" and "gene2" are columns in the dataset.
-          ######################################################################
-          #change lhsVec to omics gene name
-          mme.lhsVec = Symbol.(mme.latent_traits)
-          #rename genotype names
-          mme.M[1].trait_names=mme.latent_traits
+    if mme.nonlinear_function != false  #NN-Bayes
+        # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+        mme.yobs = df[!,mme.yobs_name]
+        if mme.latent_traits != false  #NN-Bayes-Omics
           #save omics data missing pattern
-          mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
+          mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
           #replace missing data with values in yobs
           for i in mme.lhsVec      #for each omics feature
             for j in 1:size(df,1)  #for each observation
@@ -349,6 +345,17 @@ function getMME(mme::MME, df::DataFrame)
               end
             end
           end
+          # add indicators for individuals with full omics data, so their omics won't be sampled
+          n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
+          n_omics          = length(mme.lhsVec)             #number of omics
+          full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
+          mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+
+        else  #NN-Bayes with hidden nodes (G3 paper)
+          #all omics should be missing, the missingPattern should be all 0
+          #but we already set y1,...,y5 as yobs, so we have to build missingPattern
+          # byhand.
+          mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
         end
     end
 

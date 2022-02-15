@@ -253,6 +253,15 @@ end
 #missing values are used for some individuals of interest for which data is not available.
 function make_dataframes(df,mme)
     #***************************************************************************
+    #NN-Bayes Omics: individuals with all omics data but no yobs should be kept
+    #                since the omics data can help better estimate marker effect
+    #***************************************************************************
+    if mme.nonlinear_function != false && mme.latent_traits != false
+        lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
+    else
+        lhsVec = mme.lhsVec
+    end
+    #***************************************************************************
     #Whole Data (training + individuals of interest)
     #***************************************************************************
     #expand phenotype dataframe to include individuals of interest (to make incidencee matrices)
@@ -270,8 +279,8 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
-    allmissing = fill(true,mme.nModels)
+    missingdf  = ismissing.(Matrix(df_whole[!,lhsVec]))
+    allmissing = fill(true,length(lhsVec))
     train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
         if missingdf[i,:] != allmissing

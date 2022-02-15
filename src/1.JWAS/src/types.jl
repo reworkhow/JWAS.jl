@@ -249,6 +249,11 @@ mutable struct MME
     is_activation_fcn  #Neural Network with activation function (not user-defined function)
     latent_traits #["z1","z2"], for intermediate omics data,
     yobs          #for single observed trait, and mme.ySparse is for latent traits
+    yobs_name
+    σ2_weightsNN
+    fixed_σ2_NN
+    incomplete_omics
+
 
     censored_trait_upper_bound_names #e.g.,["y1_u"]
 
@@ -276,7 +281,7 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,
+                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,
                    false)
     end
 end
