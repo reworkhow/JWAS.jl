@@ -12,7 +12,7 @@ function solve(mme::MME,
                maxiter = 5000,
                heterogeneous_residuals = false,
                double_precision=false)
-    df = check_phenotypes(mme,df,heterogeneous_residuals)
+    df = check_pedigree_genotypes_phenotypes(mme,df,heterogeneous_residuals)
     set_default_priors_for_variance_components(mme,df)
     if size(mme.mmeRhs)==()
         getMME(mme,df)
@@ -43,9 +43,11 @@ function solve(mme::MME,
         return [getNames(mme) Gibbs(A,x,b,mme.R,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="default"
-        println("left-hand side and right-hand side of mixed model equations are returned.")
-        println("To solve the equations, please choose a solver. (run ?solver for help)")
-        return [getNames(mme),A,b]
+        println("To solve the equations, please choose a solver. (run ?solve for help)")
+        println("Following values are returned:")
+        println("(1) names ;(2) incidence matrix;")
+        println("(3) left-hand side and (4) right-hand side of mixed model equations.")
+        return [getNames(mme),mme.X,A,b]
     else
         error("Please try solver=`default`,`Jacobi`,`Gauss-Seidel`, or `Gibbs sampler`\n")
     end
@@ -126,9 +128,11 @@ function Gibbs(A,x,b,niter::Int64;printout_frequency=100)
             println("at iteration: ",iter)
         end
         for i=1:n
-            invlhs = 1.0/A[i,i]
-            μ      = invlhs*(b[i] - A[:,i]'x) + x[i]
-            x[i]   = randn()*sqrt(invlhs) + μ
+            if A[i,i] != 0.0 #issue70, zero diagonals in MME
+                invlhs = 1.0/A[i,i]
+                μ      = invlhs*(b[i] - A[:,i]'x) + x[i]
+                x[i]   = randn()*sqrt(invlhs) + μ
+            end
         end
         xmean += (x - xmean)/iter
     end
@@ -138,17 +142,21 @@ end
 #one iteration of Gibbs sampler for lambda version of MME (single-trait)
 function Gibbs(A,x,b,vare::AbstractFloat)
     for i = 1:size(x,1)
-        invlhs  = 1.0/A[i,i]
-        μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
-        x[i]    = randn()*sqrt(invlhs*vare) + μ
+        if A[i,i] != 0.0 #issue70, zero diagonals in MME
+            invlhs  = 1.0/A[i,i]
+            μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
+            x[i]    = randn()*sqrt(invlhs*vare) + μ
+        end
     end
 end
 
 #one iteration of Gibbs sampler for general version of MME (multi-trait)
 function Gibbs(A,x,b)
     for i = 1:size(x,1)
-        invlhs  = 1.0/A[i,i]
-        μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
-        x[i]    = randn()*sqrt(invlhs) + μ
+        if A[i,i] != 0.0 #issue70, zero diagonals in MME
+            invlhs  = 1.0/A[i,i]
+            μ       = invlhs*(b[i] - A[:,i]'x) + x[i]
+            x[i]    = randn()*sqrt(invlhs) + μ
+        end
     end
 end

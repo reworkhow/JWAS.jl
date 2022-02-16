@@ -38,7 +38,7 @@ we would be grateful if you could cite our work following [Citing](@ref).
 
 ## The trouble, the error and the new feature
 
-If you have trouble using JWAS, want new features or find errors in JWAS, please [open an issue](https://github.com/reworkhow/JWAS.jl/issues) or contact <qtlcheng@ucdavis.edu>.
+If you have trouble using JWAS, want new features or find errors in JWAS, please post it in our [discussion group](https://groups.io/g/qtlrocks), [open an issue](https://github.com/reworkhow/JWAS.jl/issues), or contact <qtlcheng@ucdavis.edu>.
 
 ## Tutorials
 

@@ -1,5 +1,11 @@
-function SSBRrun(mme,df,big_memory=false)
-    obsID    = mme.obsID                    #phenotyped ID
+"""
+(internal) Incomplete Genomic Data (Single-Step)
+
+* reorder in A (pedigree) as ids for genotyped then non-genotyped inds
+* impute genotypes for non-genotyped individuals
+* add ϵ (imputation errors) and J as variables in data for non-genotyped inds
+"""
+function SSBRrun(mme,df_whole,train_index,big_memory=false)
     geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -7,7 +13,7 @@ function SSBRrun(mme,df,big_memory=false)
     @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
     println("imputing missing genotypes")
     flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory) #impute genotypes for non-genotyped inds
+    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
@@ -15,16 +21,29 @@ function SSBRrun(mme,df,big_memory=false)
         add_term(mme,"J") #centering parameter
     end
     #add data for ϵ and J (add columns in input phenotypic data)
-    isnongeno = [ID in mme.ped.setNG for ID in obsID] #true/false
-    data_ϵ    = deepcopy(obsID)
+    isnongeno = [ID in mme.ped.setNG for ID in df_whole[!,1]] #true/false
+    data_ϵ    = deepcopy(df_whole[!,1])
     data_ϵ[.!isnongeno].="missing"
-    df[!,Symbol("ϵ")]=data_ϵ
+    df_whole[!,Symbol("ϵ")]=data_ϵ
 
     if mme.MCMCinfo.fitting_J_vector == true
-        df[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df,Ai_nn,Ai_ng)
+        df_whole[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
         set_covariate(mme,"J")
     end
     set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
+    mme.output_X["ϵ"]=mkmat_incidence_factor(mme.output_ID,ped.IDs)[:,1:size(Ai_nn,1)]
+
+    #add trait name to output_X
+    for traiti in mme.lhsVec
+        if mme.MCMCinfo.fitting_J_vector == true
+            mme.output_X[string(traiti)*":J"] = mme.output_X["J"]
+        end
+        mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
+    end
+    delete!(mme.output_X, "J")
+    delete!(mme.output_X, "ϵ")
+
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
     end
@@ -53,7 +72,7 @@ end
 ############################################################################
 # Genotypes
 ############################################################################
-function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
+function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory=false)
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
@@ -79,11 +98,11 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
                block22];
     #genotypes are imputed for all individuals in pedigree and aligned to
     #phenotyped individuals by genotype chunks to avoid memory issues.
-    Z              = mkmat_incidence_factor(mme.obsID,ped.IDs)  #aligned to phenotypes
+    Z              = mkmat_incidence_factor(df[!,1],ped.IDs)  #aligned to phenotypes
     Zo             = mkmat_incidence_factor(mme.output_ID,ped.IDs) #aligned to outputIDs
     if big_memory == false
         nmarkers       = size(Mg,2)
-        Mpheno         = zeros(length(mme.obsID),nmarkers)
+        Mpheno         = zeros(length(df[!,1]),nmarkers)
         Mout           = zeros(length(mme.output_ID),nmarkers)
         markerperchunk = 1000
         if nmarkers%markerperchunk == 0
@@ -97,7 +116,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
             else
                 myrange = (1+(i-1)*markerperchunk):nmarkers
             end
-            Mped_chunk        = lhs\(rhs*Mg[:,myrange])
+            Mped_chunk        = lhs\(rhs*Mg[:,myrange]) #view
             Mpheno[:,myrange] = Z*Mped_chunk
             Mout[:,myrange]   = Zo*Mped_chunk
         end
@@ -108,20 +127,19 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,big_memory=false)
 
     geno.output_genotypes = Mout
     geno.genotypes        = Mpheno
-    geno.obsID            = mme.obsID
-    geno.nObs             = length(mme.obsID)
+    geno.obsID            = df[!,1]
+    geno.nObs             = length(geno.obsID)
     GC.gc()
 end
 ############################################################################
 # Fixed effects (J)
 ############################################################################
-function make_JVecs(mme,df,Ai_nn,Ai_ng)
-    mme.obsID =  map(string,df[!,1])
+function make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
     Jg = -ones(size(Ai_ng,2))
     Jn = Ai_nn\(-Ai_ng*Jg)
     J  = [Jn;
           Jg]
-    Z  = mkmat_incidence_factor(mme.obsID,mme.ped.IDs)
+    Z  = mkmat_incidence_factor(df_whole[!,1],mme.ped.IDs)
     if mme.output_ID != 0
         Zo  = mkmat_incidence_factor(mme.output_ID,mme.ped.IDs)
         ZoJ = Zo*J

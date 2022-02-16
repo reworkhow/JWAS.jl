@@ -49,32 +49,3 @@ function MTBayesL!(xArray,xRinvArray,xpRinvx,
         end
     end
 end
-
-function sampleGammaArray!(gammaArray,alphaArray,mmeMG)
-    Gi = inv(mmeMG)
-    nMarkers = size(gammaArray,1)
-    ntraits  = length(alphaArray)
-
-    Q  = zeros(nMarkers)
-    ntraits > 1 ? calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi) : calcSTQ!(Q,nMarkers,alphaArray[1],Gi)
-    gammaDist = Gamma(0.5,4) # 4 is the scale parameter, which corresponds to a rate parameter of 1/4
-    candidateArray = 1 ./ rand(gammaDist,nMarkers)
-    uniformArray = rand(nMarkers)
-    acceptProbArray = exp.(Q ./4 .*(2 ./ gammaArray - candidateArray))
-    replace = uniformArray .< acceptProbArray
-    gammaArray[replace] = 2 ./ candidateArray[replace]
-end
-
-function calcMTQ!(Q,nMarkers,ntraits,alphaArray,Gi)
-    for locus = 1:nMarkers
-      for traiti = 1:ntraits
-          for traitj = 1:ntraits
-              Q[locus] += alphaArray[traiti][locus]*alphaArray[traitj][locus]*Gi[traiti,traitj]
-          end
-      end
-    end
-end
-
-function calcSTQ!(Q,nMarkers,alphaArray,Gi)
-    Q .= alphaArray.^2 ./Gi
-end

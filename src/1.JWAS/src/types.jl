@@ -30,7 +30,7 @@ mutable struct ModelTerm
                                    #factor*covariate:| nLevels | "A1*age","A2*age"|
 
     startPos::Int64                         #start postion for this term in incidence matrix
-    X::Union{SparseMatrixCSC{Float64,Int64},SparseMatrixCSC{Float32,Int64}} #incidence matrix
+    X                                       #incidence matrix
 
     random_type::String
 
@@ -42,7 +42,7 @@ mutable struct ModelTerm
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,spzeros(0,0),"fixed")
+        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,false,"fixed")
     end
 end
 
@@ -77,7 +77,8 @@ mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{Abstr
 end
 
 mutable struct Genotypes
-  name                            #name for this category
+  name                            #name for this category, eg. "geno1"
+  trait_names                     #names for the corresponding traits, eg.["y1","y2"]
 
   obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
   markerID
@@ -122,14 +123,17 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
-  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8)=new(false,
+
+  isGRM  #whether genotypes or relationship matirx is provided
+
+  Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false)
+                                         false,a9)
 end
 
 mutable struct DF
@@ -140,6 +144,7 @@ mutable struct DF
 end
 
 mutable struct MCMCinfo
+    heterogeneous_residuals
     chain_length
     burnin
     output_samples_frequency
@@ -154,7 +159,9 @@ mutable struct MCMCinfo
     update_priors_frequency
     outputEBV
     output_heritability
+    prediction_equation
     categorical_trait
+    censored_trait
     seed
     double_precision
     output_folder
@@ -235,10 +242,18 @@ mutable struct MME
 
     causal_structure
 
-    latent_traits
-    nonlinear_function
+    nonlinear_function #user-provide function, "tanh"
     weights_NN
     σ2_yobs
+    is_fully_connected
+    is_activation_fcn  #Neural Network with activation function (not user-defined function)
+    latent_traits #["z1","z2"], for intermediate omics data,
+    yobs          #for single observed trait, and mme.ySparse is for latent traits
+    yobs_name
+    σ2_weightsNN
+    fixed_σ2_NN
+    incomplete_omics
+
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -264,6 +279,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,false,1.0)
+                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false)
     end
 end

@@ -19,17 +19,6 @@ function GWAS(marker_effects_file;header=true)
     return out
 end
 
-#Chen, C., Steibel, J. P., & Tempelman, R. J. (2017). Genome-Wide Association
-#Analyses Based on Broadly Different Specifications for Prior Distributions,
-#Genomic Windows, and Estimation Methods. Genetics, 206(4), 1791–1806.
-#Also, as per Moser et al. (2015), two different within-chromosome starting positions
-#(starting at location 0 or 0.25 Mb for window sizes 0.5, starting at 0 or 0.5 Mb
-#location for window sizes 1 Mb, starting at 0 or 1 Mb location for window sizes 2 Mb,
-#and starting at 0 or 1.5 Mb location for window sizes 3 Mb) for each chromosome were
-#chosen to partly counteract the chance effect of different LD patterns being associated
-#with nonoverlapping windows. Finally, adaptive window sizes based on clustering SNP
-#by LD r2 were also determined using the BALD R package (Dehman and Neuvial 2015),
-#using the procedure described by Dehman et al. (2015).
 """
     GWAS(model,map_file,marker_effects_file...;
          window_size = "1 Mb",sliding_window = false,
@@ -41,8 +30,9 @@ run genomic window-based GWAS
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
 * **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
-* **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided, a fake map file
-  will be generated with 100 markers in each 1 Mb window.
+* **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided,
+  i.e., **map_file**=`false`, a fake map file will be generated with **window_size** markers in each 1 Mb window, and
+  each 1 Mb window will be tested.
 * If two **marker_effects_file** are provided, and **genetic_correlation** = true, genomic correlation for each window is calculated.
 * Statistics are computed for nonoverlapping windows of size *window_size* by default.
   If **sliding_window** = true, those for overlapping sliding windows are calculated.
@@ -58,26 +48,31 @@ m5,2,101135
 ```
 
 """
-function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString...;
+function GWAS(mme,map_file,marker_effects_file::AbstractString...;
               #window
               window_size = "1 Mb",sliding_window = false,
               #GWAS
               GWAS = true, threshold = 0.001,
               #genetic correlation
               genetic_correlation = false,
+              #local EBV
+              local_EBV = false,
               #misc
               header = true, output_winVarProps = false)
 
-    if split(window_size)[2] != "Mb"
-        error("The format for window_size is \"1 Mb\".")
+    if typeof(window_size) == String
+        if split(window_size)[2] != "Mb"
+            error("The format for window_size is \"1 Mb\".")
+        end
     end
-    if map_file == false
-        println("The map file is not provided. A fake map file is generated with 100 markers in each 1 Mb window.")
-        nmarkers=length(readdlm(marker_effect_file,',',header=true)[2])
-        mapfile = DataFrame(markerID=1:nmarkers,
+    if map_file == false && typeof(window_size) <: Integer
+        println("The map file is not provided. A fake map file is generated with $window_size markers in each 1 Mb window.")
+        nmarkers=length(readdlm(marker_effects_file[1],',',header=true)[2])
+        mapfile = DataFrame(markerID  =1:nmarkers,
                             chromosome=fill(1,nmarkers),
-                            position=1:10_000:nmarkers*10_000)
+                            position  =Int.(floor.(1:(1_000_000/window_size):nmarkers*(1_000_000/window_size))))
         CSV.write("mapfile.temp",mapfile)
+        map_file, window_size = "mapfile.temp", "1 Mb"
     end
 
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
@@ -144,6 +139,10 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
             winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+            if local_EBV==true
+                nind     = size(X,1)
+                localEBV = zeros(nind,nWindows)
+            end
             @showprogress "running GWAS..." for i=1:nsamples
                 α = output[i,:]
                 genVar = var(X*α)
@@ -154,7 +153,15 @@ function GWAS(mme,map_file::AbstractString,marker_effects_file::AbstractString..
                   var_winj = var(BV_winj)
                   winVar[i,winj]      = var_winj
                   winVarProps[i,winj] = var_winj/genVar
+                  if local_EBV == true
+                      localEBV[:,winj] += (BV_winj - localEBV[:,winj])/i
+                  end
                 end
+            end
+            if local_EBV == true
+                df= DataFrame(localEBV)
+                rename!(df,Symbol.("w".*string.(1:nWindows)))
+                CSV.write("localEBV"*string(i)*".txt",hcat(DataFrame(ID=mme.output_ID),df))
             end
             winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
             WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
@@ -233,13 +240,15 @@ function GWAS(marker_effects_file::AbstractString,map_file::AbstractString,mme;
              window_size="1 Mb",
              threshold=0.001,
              sliding_window = false,
-             output_winVarProps=false)
+             output_winVarProps=false,
+             local_EBV = false)
      GWAS(mme,map_file,marker_effects_file,
                   header=header,
                   window_size=window_size,
                   threshold=threshold,
                   sliding_window = sliding_window,
-                  output_winVarProps=output_winVarProps)
+                  output_winVarProps=output_winVarProps,
+                  local_EBV = local_EBV)
 end
 
 

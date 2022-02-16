@@ -35,85 +35,105 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_latent_traits = false, nonlinear_function = false) #nonlinear_function(x1,x2) = x1+x2
-  if num_latent_traits != false
-    lhs, rhs = strip.(split(model_equations,"="))
-    model_equations = ""
-    for i = 1:num_latent_traits
-      model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false,
+                     user_σ2_yobs = false, user_σ2_weightsNN = false) #nonlinear_function(x1,x2) = x1+x2
+
+    if R != false && !isposdef(map(AbstractFloat,R))
+      error("The covariance matrix is not positive definite.")
     end
-    model_equations = model_equations[1:(end-1)]
-  end
-
-  if R != false && !isposdef(map(AbstractFloat,R))
-    error("The covariance matrix is not positive definite.")
-  end
-
-  if !(typeof(model_equations)<:AbstractString) || model_equations==""
+    if !(typeof(model_equations)<:AbstractString) || model_equations==""
       error("Model equations are wrong.\n
       To find an example, type ?build_model and press enter.\n")
-  end
+    end
 
-  #e.g., ""y2 = A+B+A*B""
-  modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
-  nModels    = size(modelVec,1)
-  if R != false && size(R,1) != nModels
-    error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
-  end
+    ############################################################################
+    # Bayesian Neural Network
+    ############################################################################
+    if nonlinear_function != false  #NNBayes
+      if latent_traits != false && length(latent_traits) != num_hidden_nodes
+        error("The number of traits included in latent_traits is not $num_hidden_nodes (num_hidden_nodes)")
+      end
+      printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
+      #NNBayes: check parameters
+      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
+      #NNBayes: re-write model equations by treating hidden nodes as multiple traits
+      model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
+    end
+    is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false #1.partial connected NN 2. fully connected NN + non-NN
 
-  lhsVec     = Symbol[]    #:y, phenotypes
-  modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
-  dict       = Dict{AbstractString,ModelTerm}()
-  for (m,model) = enumerate(modelVec)
-    lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
-    lhs    = strip(lhsRhs[1])                  #"y2"
-    lhsVec = [lhsVec;Symbol(lhs)]              #:y2
-    rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
-    mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
-    modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
-  end
-  for trm in modelTerms          #make a dict for model terms
-    dict[trm.trmStr] = trm
-  end
+    ############################################################################
+    # All model terms (will be added to MME)
+    ############################################################################
+    #e.g., ""y2 = A+B+A*B""
+    modelVec   = [strip(i) for i in split(model_equations,[';','\n'],keepempty=false)]
+    nModels    = size(modelVec,1)
+    if R != false && size(R,1) != nModels
+      error("The residual covariance matrix is not a ",nModels," by ",nModels," matrix.")
+    end
+    lhsVec     = Symbol[]    #:y, phenotypes
+    modelTerms = ModelTerm[] #initialization of an array of ModelTerm outside for loop
+    dict       = Dict{AbstractString,ModelTerm}()
+    for (m,model) = enumerate(modelVec)
+      lhsRhs = split(model,"=")                  #"y2","A+B+A*B"
+      lhs    = strip(lhsRhs[1])                  #"y2"
+      lhsVec = [lhsVec;Symbol(lhs)]              #:y2
+      rhsVec = split(strip(lhsRhs[2]),"+")       #"A","B","A*B"
+      mTrms  = [ModelTerm(strip(trmStr),m,lhs) for trmStr in rhsVec]
+      modelTerms  = [modelTerms;mTrms]           #a vector of ModelTerm
+    end
+    for trm in modelTerms          #make a dict for model terms
+      dict[trm.trmStr] = trm
+    end
 
-  #add genotypes to mme
-  genotypes = []
-  whichterm = 1
-  for term in modelTerms
-    term_symbol = Symbol(split(term.trmStr,":")[end])
-    traiti      = term.iModel
-    if isdefined(Main,term_symbol) #@isdefined can be usde to tests whether a local variable or object field is defined
-      if typeof(getfield(Main,term_symbol)) == Genotypes
-        term.random_type = "genotypes"
-        if traiti == 1 #same genos are required in all traits
+    ############################################################################
+    # Genotypes (will be added to MME)
+    ############################################################################
+    genotypes = []
+    whichterm = 1
+    for term in modelTerms
+      term_symbol = Symbol(split(term.trmStr,":")[end])
+      if isdefined(Main,term_symbol) #@isdefined can be used to test whether a local variable or object field is defined
+        if typeof(getfield(Main,term_symbol)) == Genotypes
+          term.random_type = "genotypes"
           genotypei = getfield(Main,term_symbol)
           genotypei.name = string(term_symbol)
-          genotypei.ntraits = nModels
-          if nModels != 1
-            genotypei.df = genotypei.df + nModels
-          end
-          if genotypei.G != false || genotypei.genetic_variance != false
-            if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
-              error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
+          trait_names=[term.iTrait]
+          if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
+            genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
+            genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
+            if nModels != 1
+              genotypei.df = genotypei.df + nModels
             end
+            if !is_nnbayes_partial && (genotypei.G != false || genotypei.genetic_variance != false)
+              if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
+                error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
+              end
+            end
+            push!(genotypes,genotypei)
           end
-          push!(genotypes,genotypei)
         end
       end
     end
-  end
-  #crear mme with genotypes
+
+  #create mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
+  filter!(x->x[2].random_type != "genotypes",dict)
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes
   end
 
-  #laten traits
-  if num_latent_traits != false
-    mme.latent_traits = true
-    if nonlinear_function != false
-      mme.nonlinear_function = nonlinear_function
+  #NNBayes:
+  if nonlinear_function != false
+    mme.is_fully_connected   = is_fully_connected
+    mme.is_activation_fcn    = is_activation_fcn
+    mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
+    mme.latent_traits        = latent_traits
+    if user_σ2_yobs != false && user_σ2_weightsNN != false
+      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
+      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
+      mme.fixed_σ2_NN     = true
+      printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
     end
   end
 
@@ -147,18 +167,15 @@ end
 
 function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   nObs    = size(df,1)
-  for i = 1:trm.nFactors
-    if trm.factors[i] != :intercept && any(ismissing,df[!,trm.factors[i]])
-      printstyled("Missing values are found in independent variables: ",trm.factors[i],".\n",bold=false,color=:red)
-    end
-  end
-
   if trm.factors[1] == :intercept #for intercept
     str = fill("intercept",nObs)
     val = fill(1.0,nObs)
   else                            #for ModelTerm e.g. "1:A*B" (or "1:A")
     myDf = df[!,trm.factors]                        #:A,:B
     if trm.factors[1] in mme.covVec                 #if A is a covariate
+      if !(typeof(df[!,trm.factors[1]][1]) <: Number)
+        error("$(trm.factors[1]) is fitted as a covariate (continuous variables). The data type should be numbers.")
+      end
       str = fill(string(trm.factors[1]),nObs)       #["A","A",...]
       val = df[!,trm.factors[1]]                    #df[:A]
     else                                              #if A is a factor (animal or maternal effects)
@@ -170,6 +187,9 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     for i=2:trm.nFactors
       if trm.factors[i] in mme.covVec
         #["A * B","A * B",...] or ["A1 * B","A2 * B",...]
+        if !(typeof(df[!,trm.factors[i]][1]) <: Number)
+          error("$(trm.factors[i]) is fitted as a covariate (continuous variables). The data type should be numbers.")
+        end
         str = str .* fill(" * "*string(trm.factors[i]),nObs)
         val = val .* df[!,trm.factors[i]]
       else
@@ -180,6 +200,8 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
     end
   end
   trm.data = str
+  val=convert(Array,val)
+  DataFrames.recode!(val, missing => 0.0)
   trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
 
@@ -261,14 +283,22 @@ left-hand side  : mmeLhs ;
 right-hand side : mmeLhs ;
 """
 function getMME(mme::MME, df::DataFrame)
-    if mme.mmePos != 1
+    if mme.mmeLhs != false
       error("Please build your model again using the function build_model().")
     end
-
+    #Heterogeneous residuals
+    if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
+        invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
+    else
+        invweights = ones(size(df,1))
+    end
+    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     #Make incidence matrices X for each term
     for trm in mme.modelTerms
-      getData(trm,df,mme)
-      getX(trm,mme)
+      if trm.X == false
+        getData(trm,df,mme)
+        getX(trm,mme)
+      end
     end
     #concatenate all terms
     X   = mme.modelTerms[1].X
@@ -277,9 +307,42 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Make response vector (y)
-    y   = recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    ############################################################################
+    # Latent Traits
+    ############################################################################
+    #mme.ySparse: latent traits
+    #yobs       : single observed trait
+    if mme.nonlinear_function != false  #NN-Bayes
+        # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+        mme.yobs = df[!,mme.yobs_name]
+        if mme.latent_traits != false  #NN-Bayes-Omics
+          #save omics data missing pattern
+          mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
+          #replace missing data with values in yobs
+          for i in mme.lhsVec      #for each omics feature
+            for j in 1:size(df,1)  #for each observation
+              if ismissing(df[j,i])
+                df[j,i]=mme.yobs[j]
+              end
+            end
+          end
+          # add indicators for individuals with full omics data, so their omics won't be sampled
+          n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
+          n_omics          = length(mme.lhsVec)             #number of omics
+          full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
+          mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+
+        else  #NN-Bayes with hidden nodes (G3 paper)
+          #all omics should be missing, the missingPattern should be all 0
+          #but we already set y1,...,y5 as yobs, so we have to build missingPattern
+          # byhand.
+          mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
+        end
+    end
+
+    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)
-      y   = [y; recode(df[!,mme.lhsVec[i]],missing=>0.0)]
+      y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
@@ -299,7 +362,11 @@ function getMME(mme::MME, df::DataFrame)
     #such that no imputation of missing phenotypes is required.
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
-      Ri         = mkRi(mme,df,mme.invweights)
+      if mme.MCMCinfo.mega_trait == true  #multiple single trait
+        Ri = Diagonal(repeat(mme.invweights,mme.nModels))
+      else  #multi-trait
+        Ri = mkRi(mme,df,mme.invweights)
+      end
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
     end
@@ -329,21 +396,6 @@ function getMME(mme::MME, df::DataFrame)
         error("No phenotypic data for ",getNames(mme)[i])
       end
     end
-end
-
-################################################################################
-#Get left-hand side and right-hand side of the mixed model equation (no markers)
-################################################################################
-"""
-    showMME(mme::MME,df::DataFrame)
-
-* Show left-hand side and right-hand side of mixed model equations (no markers).
-"""
-function showMME(mme::MME,df::DataFrame)
-   if size(mme.mmeRhs)==()
-     getMME(mme,df)
-   end
-   return [getNames(mme) mme.mmeLhs],[getNames(mme) mme.mmeRhs]
 end
 
 #Get names for variables in Mixed Model Equations in order

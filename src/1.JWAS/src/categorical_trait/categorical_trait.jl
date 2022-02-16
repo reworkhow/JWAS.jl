@@ -1,3 +1,10 @@
+################################################################################
+#(single) Threshold trait:
+#1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
+#Genetics
+#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
+#Heredity, 110(3), 213–219.
+################################################################################
 function categorical_trait_setup!(mme)
     #starting values for thresholds  -∞ < t1=0 < t2 < ... < t_{#category-1} < +∞
     # where t1=0 (must be fixed to center the distribution) and t_{#category-1}<1.
@@ -16,11 +23,13 @@ function categorical_trait_setup!(mme)
     return category_obs,thresholds
 end
 
+
+
 function categorical_trait_sample_liabilities(mme,ycorr,category_obs,thresholds)
     ########################################################################
     # liabilities
     ########################################################################
-    cmean = mme.ySparse - ycorr #liabilities - residuals
+    cmean = vec(mme.ySparse) - ycorr #liabilities - residuals
     for i in 1:length(category_obs) #1,2,2,3,1...
         whichcategory = category_obs[i]
         mme.ySparse[i] = rand(truncated(Normal(cmean[i], 1), thresholds[whichcategory], thresholds[whichcategory+1]))
@@ -35,6 +44,6 @@ function categorical_trait_sample_liabilities(mme,ycorr,category_obs,thresholds)
         upperboundry  = minimum(mme.ySparse[category_obs .== i])
         thresholds[i] = rand(Uniform(lowerboundry,upperboundry))
     end
-    ycorr = mme.ySparse - cmean
+    ycorr = vec(mme.ySparse) - cmean
     return ycorr
 end
