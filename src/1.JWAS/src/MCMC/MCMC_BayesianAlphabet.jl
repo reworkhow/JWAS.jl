@@ -169,6 +169,14 @@ function MCMC_BayesianAlphabet(mme,df)
             ycorr = is_multi_trait ? MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound) : censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
         end
+        #update wArray for multi-trait
+        if is_multi_trait
+            for traiti = 1:mme.nModels
+                startPosi             = (traiti-1)*length(mme.obsID)  + 1
+                ptr                   = pointer(ycorr,startPosi)
+                wArray[traiti]        = unsafe_wrap(Array,ptr,length(mme.obsID))
+            end
+        end
         ########################################################################
         # 1. Non-Marker Location Parameters
         ########################################################################
