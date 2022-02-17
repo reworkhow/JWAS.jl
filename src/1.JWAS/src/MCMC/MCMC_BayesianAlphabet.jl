@@ -23,11 +23,15 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
-    if categorical_trait == true
-        category_obs,threshold = is_multi_trait ? MT_categorical_trait_setup!(mme) : categorical_trait_setup!(mme)
-    end
-    if censored_trait != false
-        lower_bound,upper_bound = censored_trait_setup!(mme)
+    if categorical_trait != false || censored_trait != false
+        upper_bound = zeros(length(mme.obsID),mme.nModels) #nInd-by-nTrait
+        lower_bound = zeros(length(mme.obsID),mme.nModels) #nInd-by-nTrait
+        if categorical_trait != false # initialize threshold, liability (mme.ySparse)
+            category_obs,thresholds,lower_bound,upper_bound = categorical_trait_setup!(mme,lower_bound,upper_bound)
+        end
+        if censored_trait != false # initialize liability (mme.ySparse), lower and upper bound
+            lower_bound,upper_bound = censored_trait_setup!(mme,lower_bound,upper_bound)
+        end
     end
     ############################################################################
     # Working Variables
@@ -39,12 +43,9 @@ function MCMC_BayesianAlphabet(mme,df)
     #mme.sol (its starting values were set in runMCMC)
     mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
-    if categorical_trait == true && !is_multi_trait #only fix σ2_e=1 for single trait
-        mme.R  = mme.meanVare = mme.meanVare2 = 1.0
-    else
-        mme.meanVare  = zero(mme.R)
-        mme.meanVare2 = zero(mme.R)
-    end
+    mme.meanVare  = zero(mme.R)
+    mme.meanVare2 = zero(mme.R)
+
     #polygenic effects (pedigree), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
@@ -156,18 +157,21 @@ function MCMC_BayesianAlphabet(mme,df)
     if nonlinear_function != false
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
-
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical traits (liabilities)
         ########################################################################
-        if categorical_trait == true
-            ycorr = is_multi_trait ? MT_categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold) : categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
-            writedlm(outfile["threshold"],threshold',',')
-        end
-        if censored_trait != false
-            ycorr = is_multi_trait ? MT_censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound) : censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+        if categorical_trait != false || censored_trait != false
+            #sample liabilities for both categorical & censored traits (mme.ySparse)
+            sample_liabilities!(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
+            if categorical_trait != false
+                #sample threshold for categorical traits
+                thresholds=categorical_trait_sample_threshold(mme, thresholds, category_obs)
+                writedlm(outfile["threshold"],vcat(thresholds...),',')
+                # update lower bound and upper bound
+                lower_bound,upper_bound = update_bounds_from_threshold(lower_bound,upper_bound,category_obs,thresholds,mme.categorical_trait_index)
+            end
         end
         ########################################################################
         # 1. Non-Marker Location Parameters
@@ -306,11 +310,11 @@ function MCMC_BayesianAlphabet(mme,df)
             ########################################################################
             if is_multi_trait
                 mme.R = sample_variance(wArray, length(mme.obsID),
-                                        mme.df.residual, mme.scaleR,
-                                        invweights,constraint)
+                                       mme.df.residual, mme.scaleR,
+                                       invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
             else
-                if categorical_trait == false # fixed mme.R for categorical_trait
+                if categorical_trait == false # fixed mme.R=1 for single categorical trait
                     mme.ROld = mme.R
                     mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
                 end

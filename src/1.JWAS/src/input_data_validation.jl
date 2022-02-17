@@ -218,7 +218,7 @@ function set_default_priors_for_variance_components(mme,df)
   #residual effects
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.R = mme.ROld = vare[1,1]
+    mme.R = mme.ROld = mme.MCMCinfo.categorical_trait!=false ? 1.0 : vare[1,1]
     mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)

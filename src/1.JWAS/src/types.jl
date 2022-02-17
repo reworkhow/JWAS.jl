@@ -256,6 +256,10 @@ mutable struct MME
 
 
     censored_trait_upper_bound_names #e.g.,["y1_u"]
+    censored_trait_index  #e.g.,[6,7] means the 6th and 7th traits are censored
+    categorical_trait_names  #e.g.,["y3"]
+    categorical_trait_index  #e.g.,[2,4] means the 2nd and 4th traits are ordinal
+    lhsTag   #e.g,. ["continuous","continuous","censored","ordinal"]
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
         if nModels == 1
@@ -282,6 +286,6 @@ mutable struct MME
                    false,false,false,
                    false,
                    false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,
-                   false)
+                   false,false,false,false,false)
     end
 end

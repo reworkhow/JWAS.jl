@@ -37,7 +37,7 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
-                     censored_trait = false, categorical_trait = false, continuous_trait = false)
+                     censored_trait = false, categorical_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -149,13 +149,17 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   end
 
   #censored traits:
+  mme.lhsTag=repeat(["continuous"],nModels)
   if censored_trait != false
+    mme.censored_trait_index = findall(x -> string(x) ∈ censored_trait.*"_l", mme.lhsVec) #[5,7] means the 5th and 7th traits are censored
     mme.censored_trait_upper_bound_names=censored_trait.*"_u" #e.g., ["y1_u"]
-    if continuous_trait != false #censored_trait + continuous_trait
-      append!(mme.censored_trait_upper_bound_names,continuous_trait) #e.g., ["y1_u","y2"]
-    end
+    mme.lhsTag[mme.censored_trait_index].="censored"
   end
-
+  if categorical_trait != false
+     mme.categorical_trait_index = findall(x -> string(x) ∈ categorical_trait, mme.lhsVec) #[2,4] means the 2nd and 4th traits are ordinal
+     mme.categorical_trait_names = categorical_trait
+     mme.lhsTag[mme.categorical_trait_index].="categorical"
+  end
   return mme
 end
 

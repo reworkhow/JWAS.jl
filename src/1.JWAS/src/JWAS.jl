@@ -158,8 +158,6 @@ function runMCMC(mme::MME,df;
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
-                categorical_trait               = false,
-                # censored_trait                  = false,
                 causal_structure                = false,
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
@@ -249,6 +247,7 @@ function runMCMC(mme::MME,df;
     # get upper bound for censored trait
     ############################################################################
     censored_trait =  mme.censored_trait_upper_bound_names == false ? false : Matrix(df[!,mme.censored_trait_upper_bound_names])
+    categorical_trait = mme.categorical_trait_names
 
     ############################################################################
     # Save MCMC argumenets in MCMCinfo
@@ -447,7 +446,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_nnbayes_partial = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
@@ -481,7 +480,7 @@ function getMCMCinfo(mme)
         println()
     end
     if mme.nModels == 1
-        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.R))
+        @printf("%-30s %20.3f\n","residual variances:", mme.R)
     else
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(stdout,round.(mme.R,digits=3))
