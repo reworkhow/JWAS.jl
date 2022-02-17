@@ -173,14 +173,6 @@ function MCMC_BayesianAlphabet(mme,df)
                 lower_bound,upper_bound = update_bounds_from_threshold(lower_bound,upper_bound,category_obs,thresholds,mme.categorical_trait_index)
             end
         end
-        #update wArray for multi-trait
-        if is_multi_trait
-            for traiti = 1:mme.nModels
-                startPosi             = (traiti-1)*length(mme.obsID)  + 1
-                ptr                   = pointer(ycorr,startPosi)
-                wArray[traiti]        = unsafe_wrap(Array,ptr,length(mme.obsID))
-            end
-        end
         ########################################################################
         # 1. Non-Marker Location Parameters
         ########################################################################
