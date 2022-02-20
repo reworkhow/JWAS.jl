@@ -350,17 +350,9 @@ function getMME(mme::MME, df::DataFrame)
         end
     end
 
-    lhsVec=copy(mme.lhsVec)
-    # replace censored trait with its lower bound in lhsVec
-    for t in 1:mme.nModels
-      if mme.traits_type[t] == "censored"
-          lhsVec[t]= Symbol(lhsVec[t],"_l")
-      end
-    end
-
-    y   = DataFrames.recode(df[!,lhsVec[1]], missing => 0.0)
-    for i=2:size(lhsVec,1)
-      y   = [y; DataFrames.recode(df[!,lhsVec[i]],missing=>0.0)]
+    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    for i=2:size(mme.lhsVec,1)
+      y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))

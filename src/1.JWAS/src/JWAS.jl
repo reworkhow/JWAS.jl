@@ -205,7 +205,9 @@ function runMCMC(mme::MME,df;
             mme.M[1].trait_names=mme.latent_traits
         end
     end
+    ############################################################################
     #for deprecated JWAS fucntions
+    ############################################################################
     if mme.M != 0
         for Mi in mme.M
             if Mi.name == false
@@ -220,6 +222,15 @@ function runMCMC(mme::MME,df;
     if categorical_trait != false || censored_trait != false
         error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example." )
     end
+    ############################################################################
+    # censored traits
+    ############################################################################
+    #add the column :traitname using trait's lower bound
+    censored_trait_index = findall(x -> x=="censored", mme.traits_type)
+    for i in censored_trait_index
+        df[!,mme.lhsVec[i]]= df[!,Symbol(mme.lhsVec[i],"_l")]
+    end
+
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################

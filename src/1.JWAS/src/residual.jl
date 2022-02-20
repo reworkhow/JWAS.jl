@@ -13,15 +13,8 @@ end
 #make tricky Ri (big) allowing NA in phenotypes and fixed effects
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame,Rinv)
-    lhsVec=copy(mme.lhsVec)
-    # replace censored trait with its lower bound in lhsVec
-    for t in 1:mme.nModels
-      if mme.traits_type[t] == "censored"
-          lhsVec[t]= Symbol(lhsVec[t],"_l")
-      end
-    end
     resVar   = ResVar(mme.R,Dict())
-    tstMsng  = .!ismissing.(Matrix(df[!,lhsVec]))
+    tstMsng  = .!ismissing.(Matrix(df[!,mme.lhsVec]))
     if mme.missingPattern == false
         mme.missingPattern = tstMsng
     end

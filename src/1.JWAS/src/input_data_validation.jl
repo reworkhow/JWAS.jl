@@ -58,9 +58,6 @@ function errors_args(mme)
     if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
     end
-    # if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
-    #     error("Categorical traits are only allowed in single trait analysis")
-    # end
 end
 
 function check_outputID(mme)
@@ -181,14 +178,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
 end
 
 function set_default_priors_for_variance_components(mme,df)
-  lhsVec=copy(mme.lhsVec)
-  # replace censored trait with its lower bound in lhsVec
-  for t in 1:mme.nModels
-    if mme.traits_type[t] == "censored"
-        lhsVec[t]= Symbol(lhsVec[t],"_l")
-    end
-  end
-  myvar     = [var(filter(isfinite,skipmissing(df[!,lhsVec[i]]))) for i=1:size(lhsVec,1)]
+  myvar     = [var(filter(isfinite,skipmissing(df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
   phenovar  = diagm(0=>myvar)
   h2        = 0.5
 
@@ -236,7 +226,7 @@ function set_default_priors_for_variance_components(mme,df)
       if isposdef(randomEffect.Gi) == false
         printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
         myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
-        myvarin   = string.(lhsVec)
+        myvarin   = string.(mme.lhsVec)
         Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
         if randomEffect.randomType == "A"
             G = diagm(Zdesign*diag(varg))
@@ -264,7 +254,7 @@ function make_dataframes(df,mme)
     if mme.nonlinear_function != false && mme.latent_traits != false
         lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
     else
-        lhsVec = copy(mme.lhsVec)
+        lhsVec = mme.lhsVec #reference, not copy
     end
     #***************************************************************************
     #Whole Data (training + individuals of interest)
@@ -284,13 +274,6 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    # change trait names for censored traits
-    for t in 1:mme.nModels
-        if mme.traits_type[t] == "censored"
-            lhsVec=replace(lhsVec, lhsVec[t] => [Symbol(lhsVec[t],"_l"),Symbol(lhsVec[t],"_u")])
-        end
-    end
-    lhsVec = vcat(lhsVec...)
     missingdf  = ismissing.(Matrix(df_whole[!,lhsVec]))
     allmissing = fill(true,length(lhsVec))
     train_index = Array{Int64,1}()
