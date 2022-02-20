@@ -82,21 +82,19 @@ end
 
 function categorical_trait_sample_threshold(mme, thresholds_all, category_obs)
     ########################################################################
-    # Thresholds
+    # Thresholds for categorical trait
     ########################################################################
-    # single categorical trait:
-    #   thresholds: t_min=-∞ < t1=0 < t2 < ... < t_{categories-1} < t_max=+∞
-    # multiple traits:
-    #   thresholds: t_min=μ-10σ < t1=0 < t2=1 < t3 < ... < t_{#category-1} < t_max=μ+10σ
+    # single-trait:
+    #   t_min=μ-10σ < t1=0 < t2 < ... < t_{categories-1} < t_max=μ+10σ
+    # multi-trait:
+    #   t_min=μ-10σ < t1=0 < t2=1 < t3 < ... < t_{#category-1} < t_max=μ+10σ
     nInd                    = length(mme.obsID)
     nTrait                  = mme.nModels
     categorical_trait_index = findall(x -> x=="categorical", mme.traits_type)
-    n_categorical_trait     = length(categorical_trait_index)
-    is_multi_trait          = nTrait>1
-    start_index             = is_multi_trait ? 4 : 3  #single trait: sample t_2,...,t_{#category-1}; multi-trait: sample t_3,...,t_{#category-1}
+    start_index             = nTrait>1 ? 4 : 3  #some thresholds were fixed
     ySparse                 = reshape(mme.ySparse, nInd, nTrait)
 
-    for t in 1:n_categorical_trait
+    for t in 1:length(categorical_trait_index)
         thresholds = thresholds_all[t]
         categorical_trait = categorical_trait_index[t]
         for i in start_index:(length(thresholds)-1) #e.g., t2 between categories 2 and 3
@@ -111,14 +109,17 @@ end
 
 
 function sample_liabilities!(mme,ycorr,lower_bound,upper_bound;nGibbs=5)
+    ############################################################################
+    # update mme.ySparse (i.e., liability) and ycorr for censored and categorical traits
+    ############################################################################
     cmean = mme.ySparse - ycorr
     nInd           = length(mme.obsID)
     nTrait         = mme.nModels
     is_multi_trait = nTrait>1
     R              = mme.R
-    cmean          = reshape(cmean              ,nInd,nTrait)
-    ySparse        = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also change since reshape is a reference, not copy
-    ycorr          = reshape(ycorr              ,nInd,nTrait)
+    cmean          = reshape(cmean,      nInd,nTrait)
+    ySparse        = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also be updated since reshape is a reference, not copy
+    ycorr          = reshape(ycorr,      nInd,nTrait) #ycorr will be updated since reshape is a reference, not copy
 
     for iter in 1:nGibbs
         for t in 1:nTrait
@@ -146,11 +147,10 @@ function sample_liabilities!(mme,ycorr,lower_bound,upper_bound;nGibbs=5)
 end
 
 
-#Below function is to update upper and lower bounds due to the update of thresholds
 function update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds_all,categorical_trait_index)
-    # category_obs: nInd-by-#categorical_trait
-    # thresholds_all: #categorical_trait-by-1, each element is a vector of threshold
-    # lower_bound, upper_bound: nInd-by-nTrait
+    ############################################################################
+    # update lower_bound, upper_bound from thresholds
+    ############################################################################
     for t in 1:length(thresholds_all) # number of categorical_trait
         trait_index   = categorical_trait_index[t]
         whichcategory = category_obs[:,t]

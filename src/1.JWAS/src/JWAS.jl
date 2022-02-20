@@ -230,7 +230,6 @@ function runMCMC(mme::MME,df;
     for i in censored_trait_index
         df[!,mme.lhsVec[i]]= df[!,Symbol(mme.lhsVec[i],"_l")]
     end
-
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
@@ -255,8 +254,6 @@ function runMCMC(mme::MME,df;
     end
     mkdir(output_folder)
     printstyled("The folder $output_folder is created to save results.\n",bold=false,color=:green)
-
-
     ############################################################################
     # Save MCMC argumenets in MCMCinfo
     ############################################################################

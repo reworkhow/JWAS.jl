@@ -153,18 +153,16 @@ function MCMC_BayesianAlphabet(mme,df)
     end
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
-        # 0. Categorical traits (liabilities)
+        # 0. Categorical and censored traits
         ########################################################################
         if has_categorical_trait || has_censored_trait
-            #sample liabilities for both categorical & censored traits (mme.ySparse)
-            sample_liabilities!(mme,ycorr,lower_bound,upper_bound)
+            sample_liabilities!(mme,ycorr,lower_bound,upper_bound) #update mme.ySparse, ycorr
             writedlm(outfile["liabilities"],mme.ySparse',',')
             if has_categorical_trait
                 #sample threshold for categorical traits
-                thresholds=categorical_trait_sample_threshold(mme, thresholds, category_obs)
+                thresholds=categorical_trait_sample_threshold(mme, thresholds, category_obs) #update thresholds
                 writedlm(outfile["threshold"],vcat(thresholds...),',')
-                # update lower bound and upper bound
-                update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds,categorical_trait_index)
+                update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds,categorical_trait_index) # update lower_bound, upper_bound
             end
         end
         ########################################################################
@@ -304,8 +302,8 @@ function MCMC_BayesianAlphabet(mme,df)
             ########################################################################
             if is_multi_trait
                 mme.R = sample_variance(wArray, length(mme.obsID),
-                                       mme.df.residual, mme.scaleR,
-                                       invweights,constraint)
+                                        mme.df.residual, mme.scaleR,
+                                        invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
             else #single trait
                 if !has_categorical_trait # fixed mme.R=1 for single categorical trait
