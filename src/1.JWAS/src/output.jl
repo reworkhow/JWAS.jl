@@ -317,9 +317,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
   end
   #categorical traits
-  if mme.MCMCinfo.categorical_trait != false || mme.MCMCinfo.censored_trait != false
+  has_categorical_trait    = "categorical" ∈ mme.traits_type
+  has_censored_trait       = "censored"    ∈ mme.traits_type
+  if has_categorical_trait || has_censored_trait
       push!(outvar,"liabilities")
-      if mme.MCMCinfo.categorical_trait != false
+      if has_categorical_trait
             push!(outvar,"threshold")
       end
   end

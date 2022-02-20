@@ -1,5 +1,5 @@
 ################################################################################
-# Ordinal trait
+# Categorial and censored traits
 #1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
 #Genetics
 #2)Wang, Chonglong, et al. Bayesian methods for jointly estimating genomic
@@ -7,58 +7,77 @@
 #3)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
 #Heredity, 110(3), 213–219.
 ################################################################################
-function categorical_trait_setup!(mme,lower_bound,upper_bound)
+function categorical_censored_traits_setup!(mme,df)
     nInd                    = length(mme.obsID)
     nTrait                  = mme.nModels
-    categorical_trait_index = mme.categorical_trait_index #[2,4] means the 2nd and 4th traits are ordinal
+    categorical_trait_index = findall(x -> x=="categorical", mme.traits_type)
+    censored_trait_index    = findall(x -> x=="censored",    mme.traits_type)
+    censored_categorical_trait_index = [censored_trait_index ; categorical_trait_index]
     n_categorical_trait     = length(categorical_trait_index)
+    n_censored_trait        = length(censored_trait_index)
     is_multi_trait          = nTrait>1
     R                       = mme.R
 
-    ySparse      = reshape(mme.ySparse,nInd,nTrait)
-
-    category_obs = map(Int,ySparse[:,categorical_trait_index])
-    ncategories  = [length(unique(col)) for col in eachcol(category_obs)] #[4,5] means 4 and 5 categories for two ordinal traits, respectively
-
     starting_value = mme.sol
-    cmean = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
-    cmean = reshape(cmean,nInd,nTrait)
-    ############################################################################
-    # thresholds
-    ############################################################################
-    thresholds_all = Array{Array{Float64},1}(undef,n_categorical_trait) #each element is thresholds for one trait
-    if is_multi_trait
-        if all(ncategories .> 2) #all traits have 3 categories
-            μ = vec(mean(cmean[:,categorical_trait_index],dims=1)) # #categoricalTrait-by-1
-            σ = diag(R)[categorical_trait_index]                   # #categoricalTrait-by-1
-            tmin = μ-10σ                                           # #categoricalTrait-by-1
-            tmax = μ+10σ                                           # #categoricalTrait-by-1
-            for t in 1:n_categorical_trait #t_min=μ-10σ < t1=0 < t2=1 < t3 < ... < t_{#category-1} < t_max=μ+10σ
-                thresholds_all[t] = [[tmin[t], 0]; collect(1:(tmax[t]-1)/(ncategories[t]-2):tmax[t])]
-                # thresholds_all[t] = [-Inf, 0, 1, Inf]
-            end
-        else
-            error("ncategories shoule > 2.")
-        end
-    else #single ordinal trait: -Inf,t1,t2,...,t_{#c-1},Inf, where t1=0 and t_{#c-1}<1
-        thresholds_all[1] = [-Inf;range(0, length=ncategories[1],stop=1)[1:(end-1)];Inf]
-    end
-    # update lower bound and upper bound from thresholds
-    lower_bound,upper_bound = update_bounds_from_threshold(lower_bound,upper_bound,category_obs,thresholds_all,mme.categorical_trait_index)
+    cmean          = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
+    cmean          = reshape(cmean,nInd,nTrait)
+
+    ySparse      = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also change since reshape is a reference, not copy
 
     ############################################################################
-    # liability
+    # setup upper and lower bounds
     ############################################################################
-    for t in 1:nTrait
-        if mme.lhsTag[t] == "categorical"
-            for i in 1:nInd
-                ySparse[i,t] = rand(truncated(Normal(cmean[i,t], is_multi_trait ? R[t,t] : 1), lower_bound[i,t],upper_bound[i,t]))
+    upper_bound = Array{Float64}(undef, nInd, nTrait)
+    lower_bound = Array{Float64}(undef, nInd, nTrait)
+    thresholds_all = Array{Array{Float64},1}(undef,n_categorical_trait) #each element is the threshold for a categorical trait
+    category_obs = map(Int,ySparse[:,categorical_trait_index])
+
+    #### categorical traits
+    if n_categorical_trait != 0
+        ncategories  = [length(unique(col)) for col in eachcol(category_obs)]
+        if any(ncategories .<= 2)
+            error("ncategories should > 2 for all categorical trait")
+        end
+        # initialize threshold for each categorical trait
+        for t in 1:n_categorical_trait
+            trait_index = categorical_trait_index[t]
+            μ           = mean(cmean[:,trait_index])
+            σ           = R[trait_index,trait_index]
+            tmin, tmax  = μ-10σ, μ+10σ
+            if !is_multi_trait #t_min=μ-10σ < t1=0 < t2 <...< t_{#category-1} < t_max=μ+10σ, where t_{#c-1}<1
+                thresholds_all[t] = [tmin;range(0, length=ncategories[t],stop=1)[1:(end-1)];tmax]
+            else               #t_min=μ-10σ < t1=0 < t2=1 < t3 <...< t_{#category-1} < t_max=μ+10σ
+                thresholds_all[t] = [tmin; 0; range(1,length=ncategories[t]-1,stop=tmax)]
+            end
+        end
+        # update lower_bound and upper_bound
+        update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds_all,categorical_trait_index)
+    end
+
+    #### cesored traits
+    if n_censored_trait != 0
+        lower_bound[:,censored_trait_index]  = Matrix(df[!,Symbol.(mme.lhsVec[censored_trait_index],"_l")])
+        upper_bound[:,censored_trait_index]  = Matrix(df[!,Symbol.(mme.lhsVec[censored_trait_index],"_u")])
+    end
+
+    ############################################################################
+    # set up liability (update mme.ySparse)
+    ############################################################################
+    for t in censored_categorical_trait_index
+        σ2 = (mme.traits_type[t] == "categorical" && !is_multi_trait) ? 1.0 : R[t,t]
+        for i in 1:nInd
+            if lower_bound[i,t] != upper_bound[i,t]
+                ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(σ2)), lower_bound[i,t], upper_bound[i,t]))
+            else
+                ySparse[i,t] = lower_bound[i,t]
             end
         end
     end
 
-    return category_obs,thresholds_all,lower_bound,upper_bound #category_obs: nInt-by-#categoricaTrait;
-end                                    #thresholds_all: vector of length #categoricalTrait, each element is its threshold
+    ySparse = reshape(ySparse,nInd*nTrait,1)
+
+    return category_obs,thresholds_all,lower_bound,upper_bound
+end
 
 
 function categorical_trait_sample_threshold(mme, thresholds_all, category_obs)
@@ -71,7 +90,7 @@ function categorical_trait_sample_threshold(mme, thresholds_all, category_obs)
     #   thresholds: t_min=μ-10σ < t1=0 < t2=1 < t3 < ... < t_{#category-1} < t_max=μ+10σ
     nInd                    = length(mme.obsID)
     nTrait                  = mme.nModels
-    categorical_trait_index = mme.categorical_trait_index
+    categorical_trait_index = findall(x -> x=="categorical", mme.traits_type)
     n_categorical_trait     = length(categorical_trait_index)
     is_multi_trait          = nTrait>1
     start_index             = is_multi_trait ? 4 : 3  #single trait: sample t_2,...,t_{#category-1}; multi-trait: sample t_3,...,t_{#category-1}
@@ -91,21 +110,19 @@ function categorical_trait_sample_threshold(mme, thresholds_all, category_obs)
 end
 
 
-function sample_liabilities!(mme,ycorr,lower_bound,upper_bound;nGibbs=50)
-    cmean = mme.ySparse - ycorr #liabilities - residuals
-    # lower_bound:  # nInd-by-nTrait
-    # upper_bound:  # nInd-by-nTrait
+function sample_liabilities!(mme,ycorr,lower_bound,upper_bound;nGibbs=5)
+    cmean = mme.ySparse - ycorr
     nInd           = length(mme.obsID)
     nTrait         = mme.nModels
     is_multi_trait = nTrait>1
     R              = mme.R
     cmean          = reshape(cmean              ,nInd,nTrait)
-    ySparse        = reshape(Matrix(mme.ySparse),nInd,nTrait)
+    ySparse        = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also change since reshape is a reference, not copy
     ycorr          = reshape(ycorr              ,nInd,nTrait)
 
     for iter in 1:nGibbs
         for t in 1:nTrait
-            if mme.lhsTag[t] ∈ ["categorical","censored"]
+            if mme.traits_type[t] ∈ ["categorical","censored"]
                 index1 = t  # "1" denotes the trait for sampling liability, "2" denotes all other traits.
                 index2 = deleteat!(collect(1:nTrait),index1)
                 d      = ySparse[:,index2]-cmean[:,index2] #current residuals for all other traits (d)
@@ -124,23 +141,20 @@ function sample_liabilities!(mme,ycorr,lower_bound,upper_bound;nGibbs=50)
             end
         end
     end
-    mme.ySparse = reshape(ySparse,nInd*nTrait,1)
+    ySparse = reshape(ySparse,nInd*nTrait,1)
     ycorr=vec(ycorr)
-    # ycorr       = mme.ySparse - vec(cmean)
 end
 
 
 #Below function is to update upper and lower bounds due to the update of thresholds
-function update_bounds_from_threshold(lower_bound,upper_bound,category_obs,thresholds,categorical_trait_index)
+function update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds_all,categorical_trait_index)
     # category_obs: nInd-by-#categorical_trait
-    # thresholds: #categorical_trait-by-1, each element is a threshold vector
+    # thresholds_all: #categorical_trait-by-1, each element is a vector of threshold
     # lower_bound, upper_bound: nInd-by-nTrait
-    for t in 1:length(categorical_trait_index) # number of categorical_trait
-        index_t       = categorical_trait_index[t]
+    for t in 1:length(thresholds_all) # number of categorical_trait
+        trait_index   = categorical_trait_index[t]
         whichcategory = category_obs[:,t]
-        lower_bound[:,index_t] = thresholds[t][whichcategory]
-        upper_bound[:,index_t] = thresholds[t][whichcategory.+1]
+        lower_bound[:,trait_index] = thresholds_all[t][whichcategory]
+        upper_bound[:,trait_index] = thresholds_all[t][whichcategory.+1]
     end
-
-    return lower_bound,upper_bound
 end

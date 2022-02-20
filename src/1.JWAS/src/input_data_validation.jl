@@ -153,9 +153,6 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,mme.M[1].obsID)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
-            if mme.MCMCinfo.censored_trait != false
-                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index,:]
-            end
             printstyled("In this complete genomic data (non-single-step) analyis, ",
             length(index)-sum(index)," phenotyped individuals are not genotyped. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
@@ -184,7 +181,14 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
 end
 
 function set_default_priors_for_variance_components(mme,df)
-  myvar     = [var(filter(isfinite,skipmissing(df[!,mme.lhsVec[i]]))) for i=1:size(mme.lhsVec,1)]
+  lhsVec=copy(mme.lhsVec)
+  # replace censored trait with its lower bound in lhsVec
+  for t in 1:mme.nModels
+    if mme.traits_type[t] == "censored"
+        lhsVec[t]= Symbol(lhsVec[t],"_l")
+    end
+  end
+  myvar     = [var(filter(isfinite,skipmissing(df[!,lhsVec[i]]))) for i=1:size(lhsVec,1)]
   phenovar  = diagm(0=>myvar)
   h2        = 0.5
 
@@ -218,7 +222,8 @@ function set_default_priors_for_variance_components(mme,df)
   #residual effects
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.R = mme.ROld = mme.MCMCinfo.categorical_trait!=false ? 1.0 : vare[1,1]
+    is_categorical_trait = mme.traits_type==["categorical"]
+    mme.R = mme.ROld = is_categorical_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
     mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
@@ -231,7 +236,7 @@ function set_default_priors_for_variance_components(mme,df)
       if isposdef(randomEffect.Gi) == false
         printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
         myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
-        myvarin   = string.(mme.lhsVec)
+        myvarin   = string.(lhsVec)
         Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
         if randomEffect.randomType == "A"
             G = diagm(Zdesign*diag(varg))
@@ -259,7 +264,7 @@ function make_dataframes(df,mme)
     if mme.nonlinear_function != false && mme.latent_traits != false
         lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
     else
-        lhsVec = mme.lhsVec
+        lhsVec = copy(mme.lhsVec)
     end
     #***************************************************************************
     #Whole Data (training + individuals of interest)
@@ -279,6 +284,13 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
+    # change trait names for censored traits
+    for t in 1:mme.nModels
+        if mme.traits_type[t] == "censored"
+            lhsVec=replace(lhsVec, lhsVec[t] => [Symbol(lhsVec[t],"_l"),Symbol(lhsVec[t],"_u")])
+        end
+    end
+    lhsVec = vcat(lhsVec...)
     missingdf  = ismissing.(Matrix(df_whole[!,lhsVec]))
     allmissing = fill(true,length(lhsVec))
     train_index = Array{Int64,1}()

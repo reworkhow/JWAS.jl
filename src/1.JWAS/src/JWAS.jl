@@ -37,11 +37,8 @@ include("markers/Pi.jl")
 include("single_step/SSBR.jl")
 include("single_step/SSGBLUP.jl")
 
-#Categorical Traits
+#Categorical and Censored Traits
 include("categorical_trait/categorical_trait.jl")
-
-#Censored Traits
-include("censored_trait/censored_trait.jl")
 
 #Structure Equation Models
 include("structure_equation_model/SEM.jl")
@@ -179,7 +176,9 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false)
+                estimateScale                   = false,
+                categorical_trait               = false,  #this has been moved to build_model()
+                censored_trait                  = false)  #this has been moved to build_model()
 
     ############################################################################
     # Neural Network
@@ -218,6 +217,9 @@ function runMCMC(mme::MME,df;
             end
         end
     end
+    if categorical_trait != false || censored_trait != false
+        error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example." )
+    end
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
@@ -243,11 +245,6 @@ function runMCMC(mme::MME,df;
     mkdir(output_folder)
     printstyled("The folder $output_folder is created to save results.\n",bold=false,color=:green)
 
-    ############################################################################
-    # get upper bound for censored trait
-    ############################################################################
-    censored_trait =  mme.censored_trait_upper_bound_names == false ? false : Matrix(df[!,mme.censored_trait_upper_bound_names])
-    categorical_trait = mme.categorical_trait_names
 
     ############################################################################
     # Save MCMC argumenets in MCMCinfo
@@ -257,7 +254,6 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   categorical_trait,censored_trait,
                    seed,double_precision,output_folder)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,

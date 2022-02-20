@@ -48,16 +48,6 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
 
     ############################################################################
-    # Censored traits
-    ############################################################################
-    #Indicate lower bound, e.g., if censored_trait=["y1"]:
-    # old: "y1   = intercept + genotypes; y11 = intercept + genotypes"
-    # new: "y1_l = intercept + genotypes; y11 = intercept + genotypes"
-    if censored_trait != false
-      model_equations = censored_trait_model_equation(model_equations,censored_trait)
-    end
-
-    ############################################################################
     # Bayesian Neural Network
     ############################################################################
     if nonlinear_function != false  #NNBayes
@@ -148,18 +138,15 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
   end
 
-  #censored traits:
-  mme.lhsTag=repeat(["continuous"],nModels)
-  if censored_trait != false
-    mme.censored_trait_index = findall(x -> string(x) ∈ censored_trait.*"_l", mme.lhsVec) #[5,7] means the 5th and 7th traits are censored
-    mme.censored_trait_upper_bound_names=censored_trait.*"_u" #e.g., ["y1_u"]
-    mme.lhsTag[mme.censored_trait_index].="censored"
+  #setup traits_type (by default is "continuous")
+  for t in 1:mme.nModels
+    if string(mme.lhsVec[t]) ∈ censored_trait
+      mme.traits_type[t]="censored"
+    elseif string(mme.lhsVec[t]) ∈ categorical_trait
+      mme.traits_type[t]="categorical"
+    end
   end
-  if categorical_trait != false
-     mme.categorical_trait_index = findall(x -> string(x) ∈ categorical_trait, mme.lhsVec) #[2,4] means the 2nd and 4th traits are ordinal
-     mme.categorical_trait_names = categorical_trait
-     mme.lhsTag[mme.categorical_trait_index].="categorical"
-  end
+
   return mme
 end
 
@@ -363,9 +350,17 @@ function getMME(mme::MME, df::DataFrame)
         end
     end
 
-    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
-    for i=2:size(mme.lhsVec,1)
-      y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
+    lhsVec=copy(mme.lhsVec)
+    # replace censored trait with its lower bound in lhsVec
+    for t in 1:mme.nModels
+      if mme.traits_type[t] == "censored"
+          lhsVec[t]= Symbol(lhsVec[t],"_l")
+      end
+    end
+
+    y   = DataFrames.recode(df[!,lhsVec[1]], missing => 0.0)
+    for i=2:size(lhsVec,1)
+      y   = [y; DataFrames.recode(df[!,lhsVec[i]],missing=>0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))

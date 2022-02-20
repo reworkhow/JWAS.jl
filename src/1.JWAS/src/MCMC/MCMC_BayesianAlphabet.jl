@@ -10,8 +10,9 @@ function MCMC_BayesianAlphabet(mme,df)
     estimate_variance        = mme.MCMCinfo.estimate_variance
     invweights               = mme.invweights
     update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
-    categorical_trait        = mme.MCMCinfo.categorical_trait
-    censored_trait           = mme.MCMCinfo.censored_trait
+    has_categorical_trait    = "categorical" ∈ mme.traits_type
+    has_censored_trait       = "censored"    ∈ mme.traits_type
+    categorical_trait_index  = findall(x -> x=="categorical", mme.traits_type)
     missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
     constraint               = mme.MCMCinfo.constraint
     causal_structure         = mme.causal_structure
@@ -23,15 +24,8 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
-    if categorical_trait != false || censored_trait != false
-        upper_bound = zeros(length(mme.obsID),mme.nModels) #nInd-by-nTrait
-        lower_bound = zeros(length(mme.obsID),mme.nModels) #nInd-by-nTrait
-        if categorical_trait != false # initialize threshold, liability (mme.ySparse)
-            category_obs,thresholds,lower_bound,upper_bound = categorical_trait_setup!(mme,lower_bound,upper_bound)
-        end
-        if censored_trait != false # initialize liability (mme.ySparse), lower and upper bound
-            lower_bound,upper_bound = censored_trait_setup!(mme,lower_bound,upper_bound)
-        end
+    if has_categorical_trait || has_censored_trait
+        category_obs,thresholds,lower_bound,upper_bound = categorical_censored_traits_setup!(mme,df)
     end
     ############################################################################
     # Working Variables
@@ -161,16 +155,16 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 0. Categorical traits (liabilities)
         ########################################################################
-        if categorical_trait != false || censored_trait != false
+        if has_categorical_trait || has_censored_trait
             #sample liabilities for both categorical & censored traits (mme.ySparse)
             sample_liabilities!(mme,ycorr,lower_bound,upper_bound)
             writedlm(outfile["liabilities"],mme.ySparse',',')
-            if categorical_trait != false
+            if has_categorical_trait
                 #sample threshold for categorical traits
                 thresholds=categorical_trait_sample_threshold(mme, thresholds, category_obs)
                 writedlm(outfile["threshold"],vcat(thresholds...),',')
                 # update lower bound and upper bound
-                lower_bound,upper_bound = update_bounds_from_threshold(lower_bound,upper_bound,category_obs,thresholds,mme.categorical_trait_index)
+                update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds,categorical_trait_index)
             end
         end
         ########################################################################
@@ -313,8 +307,8 @@ function MCMC_BayesianAlphabet(mme,df)
                                        mme.df.residual, mme.scaleR,
                                        invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
-            else
-                if categorical_trait == false # fixed mme.R=1 for single categorical trait
+            else #single trait
+                if !has_categorical_trait # fixed mme.R=1 for single categorical trait
                     mme.ROld = mme.R
                     mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
                 end
@@ -384,11 +378,11 @@ function MCMC_BayesianAlphabet(mme,df)
       if causal_structure != false
         close(causal_structure_outfile)
       end
-      if categorical_trait == true
-         close(outfile["threshold"])
-      end
-      if censored_trait != false
+      if has_categorical_trait || has_censored_trait
          close(outfile["liabilities"])
+         if has_categorical_trait
+             close(outfile["threshold"])
+         end
       end
     end
     if methods == "GBLUP"
