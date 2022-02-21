@@ -35,19 +35,20 @@ function categorical_censored_traits_setup!(mme,df)
     #### categorical traits
     if n_categorical_trait != 0
         ncategories  = [length(unique(col)) for col in eachcol(category_obs)]
-        if any(ncategories .<= 2)
-            error("ncategories should > 2 for all categorical trait")
-        end
         # initialize threshold for each categorical trait
         for t in 1:n_categorical_trait
             trait_index = categorical_trait_index[t]
             μ           = mean(cmean[:,trait_index])
             σ           = R[trait_index,trait_index]
             tmin, tmax  = μ-10σ, μ+10σ
-            if !is_multi_trait #t_min=μ-10σ < t1=0 < t2 <...< t_{#category-1} < t_max=μ+10σ, where t_{#c-1}<1
-                thresholds_all[t] = [tmin;range(0, length=ncategories[t],stop=1)[1:(end-1)];tmax]
-            else               #t_min=μ-10σ < t1=0 < t2=1 < t3 <...< t_{#category-1} < t_max=μ+10σ
-                thresholds_all[t] = [tmin; 0; range(1,length=ncategories[t]-1,stop=tmax)]
+            if ncategories[t] == 2 #binary trait
+                 thresholds_all[t] = [tmin, 0, tmax]
+            else
+                if !is_multi_trait #t_min=μ-10σ < t1=0 < t2 <...< t_{#category-1} < t_max=μ+10σ, where t_{#c-1}<1
+                    thresholds_all[t] = [tmin;range(0, length=ncategories[t],stop=1)[1:(end-1)];tmax]
+                else               #t_min=μ-10σ < t1=0 < t2=1 < t3 <...< t_{#category-1} < t_max=μ+10σ
+                    thresholds_all[t] = [tmin; 0; range(1,length=ncategories[t]-1,stop=tmax)]
+                end
             end
         end
         # update lower_bound and upper_bound
