@@ -274,6 +274,13 @@ function getX(trm::ModelTerm,mme::MME)
     mme.mmePos  += trm.nLevels
 end
 
+function makeWeights(fw::T, useWeights::Bool, df::DataFrame, column="weights")::Vector{T} where T <: AbstractFloat
+    res = ones(typeof(fw),size(df,1))
+    if useWeights
+        res =  one(fw) ./ map((x)->(convert(typeof(fw),x)), df[:,column])  
+    end
+    return res
+end
 """
 Construct mixed model equations with
 
@@ -286,13 +293,20 @@ function getMME(mme::MME, df::DataFrame)
     if mme.mmeLhs != false
       error("Please build your model again using the function build_model().")
     end
+    
+    use64 = mme.MCMCinfo == false || mme.MCMCinfo.double_precision
+    
+    useWeights = mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
+    
     #Heterogeneous residuals
-    if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
-        invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
+    if use64
+       invweights = makeWeights(Float64(1.0),useWeights, df, "weights")
+       mme.invweights =invweights
     else
-        invweights = ones(size(df,1))
+       invweights = makeWeights(Float32(1.0),useWeights, df, "weights")
+       mme.invweights =invweights
     end
-    mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
+
     #Make incidence matrices X for each term
     for trm in mme.modelTerms
       if trm.X == false
@@ -346,13 +360,14 @@ function getMME(mme::MME, df::DataFrame)
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
-    vv      = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(y) : Float32.(y))
+    #vv      = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(y) : Float32.(y))
+    # This recoding should make it easy for julia to reason about the type of vv
+    vv::Union{Vector{Float64},Vector{Float32}} = use64 ? Float64.(y) : Float32.(y)
     ySparse = sparse(ii,jj,vv)
 
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
-
     if mme.nModels==1     #single-trait (lambda version)
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
@@ -370,7 +385,6 @@ function getMME(mme::MME, df::DataFrame)
       mme.mmeLhs = X'Ri*X
       mme.mmeRhs = X'Ri*ySparse
     end
-
     #Random effects parts in MME
     if mme.nModels == 1
       #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
@@ -391,8 +405,8 @@ function getMME(mme::MME, df::DataFrame)
     #No phenotypic data for some levels of a factor in multi-trait analysis
     #e.g., y3:x3:f in https://github.com/reworkhow/JWAS.jl/blob/
     #a6f4595796b70811c0b745af525e7e0a822bb954/src/5.Datasets/data/example/phenotypes.txt
-    for i in size(mme.mmeLhs,1)
-      if mme.mmeLhs[i,i] == 0.0
+    for (i,d) in enumerate(Array(diag(mme.mmeLhs)))
+      if iszero(d)
         error("No phenotypic data for ",getNames(mme)[i])
       end
     end

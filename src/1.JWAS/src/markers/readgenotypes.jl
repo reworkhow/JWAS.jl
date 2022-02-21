@@ -103,13 +103,13 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         #set type for each column
         ncol= length(row1)
         etv = Array{DataType}(undef,ncol)
-        fill!(etv,Float64)
+        fill!(etv,Float32)
         etv[1]=String
         close(myfile)
         #read a large genotype file
         data      = CSV.read(file,DataFrame,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
-        obsID     = map(string,data[!,1])
-        genotypes = map(Float32,Matrix(data[!,2:end]))
+        obsID     = data[!,1]
+        genotypes = Matrix(data[!,2:end])
     elseif typeof(file) == DataFrames.DataFrame #Datafarme
         println("The first column in the dataframe should be individual IDs.")
         println("The data type of markers should be Number.")
@@ -119,7 +119,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             markerID = string.(1:(size(file,2)-1))
         end
         obsID     = map(string,file[!,1])
-        genotypes = map(Float32,convert(Matrix,file[!,2:end]))
+        genotypes = map(Float32,Matrix(file[!,2:end]))
     elseif typeof(file) <: Union{Array{Float64,2},Array{Float32,2},Array{Any,2}} #Array
         if length(header) != (size(file,2)+1)
             header = ["id"; string.(1:size(file,2))]
