@@ -65,10 +65,9 @@ function categorical_censored_traits_setup!(mme,df)
     # set up liability (update mme.ySparse)
     ############################################################################
     for t in censored_categorical_trait_index
-        σ2 = (mme.traits_type[t] == "categorical" && !is_multi_trait) ? 1.0 : R[t,t]
         for i in 1:nInd
             if lower_bound[i,t] != upper_bound[i,t]
-                ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(σ2)), lower_bound[i,t], upper_bound[i,t]))
+                ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(R[t,t])), lower_bound[i,t], upper_bound[i,t])) #mme.R has been fixed to 1.0 for category single-trait analysis
             else
                 ySparse[i,t] = lower_bound[i,t]
             end
@@ -158,4 +157,16 @@ function update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thre
         lower_bound[:,trait_index] = thresholds_all[t][whichcategory]
         upper_bound[:,trait_index] = thresholds_all[t][whichcategory.+1]
     end
+end
+
+
+# print an example for deprecated JWAS function runMCMC(categorical_trait,censored_trait)
+function print_single_categorical_censored_trait_example()
+    @error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example.")
+    printstyled("1. Example to build model for single categorical trait:\n"; color=:red)
+    printstyled("      model_equation  = \"y = intercept + x1 + x2 + x2*x3 + ID + dam + genotypes\"
+      model = build_model(model_equation,categorical_trait=[\"y\"])\n"; color=:red)
+    printstyled("2. Example to build model for single censored trait:\n"; color=:red)
+    printstyled("      model_equation  = \"y = intercept + x1 + x2 + x2*x3 + ID + dam + genotypes\"
+      model = build_model(model_equation,censored_trait=[\"y\"])\n"; color=:red)
 end

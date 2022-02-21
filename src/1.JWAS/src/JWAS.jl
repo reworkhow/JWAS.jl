@@ -38,7 +38,7 @@ include("single_step/SSBR.jl")
 include("single_step/SSGBLUP.jl")
 
 #Categorical and Censored Traits
-include("categorical_trait/categorical_trait.jl")
+include("categorical_and_censored_trait/categorical_and_censored_trait.jl")
 
 #Structure Equation Models
 include("structure_equation_model/SEM.jl")
@@ -220,7 +220,8 @@ function runMCMC(mme::MME,df;
         end
     end
     if categorical_trait != false || censored_trait != false
-        error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example." )
+        print_single_categorical_censored_trait_example()
+        error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example.")
     end
     ############################################################################
     # censored traits
