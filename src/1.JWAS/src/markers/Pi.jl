@@ -17,7 +17,7 @@ function samplePi(deltaArray::Union{Array{Array{Float64,1},1},Array{Array{Float3
   end
 
   iloci = 1
-  nLoci_array=zeros(2^ntraits)
+  nLoci_array=zeros(length(BigPi))
   for i in keys(BigPi) #assume order of key won't change
     temp2 = broadcast(-,temp,i')
     nLoci =  sum(mean(abs.(temp2),dims=2).==0.0)
