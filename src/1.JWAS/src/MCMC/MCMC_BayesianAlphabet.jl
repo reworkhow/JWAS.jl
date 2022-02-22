@@ -10,8 +10,9 @@ function MCMC_BayesianAlphabet(mme,df)
     estimate_variance        = mme.MCMCinfo.estimate_variance
     invweights               = mme.invweights
     update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
-    categorical_trait        = mme.MCMCinfo.categorical_trait
-    censored_trait           = mme.MCMCinfo.censored_trait
+    has_categorical_trait    = "categorical" ∈ mme.traits_type
+    has_censored_trait       = "censored"    ∈ mme.traits_type
+    categorical_trait_index  = findall(x -> x=="categorical", mme.traits_type)
     missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
     constraint               = mme.MCMCinfo.constraint
     causal_structure         = mme.causal_structure
@@ -23,11 +24,8 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
-    if categorical_trait == true
-        category_obs,threshold = categorical_trait_setup!(mme)
-    end
-    if censored_trait != false
-        lower_bound,upper_bound = censored_trait_setup!(mme)
+    if has_categorical_trait || has_censored_trait
+        category_obs,thresholds,lower_bound,upper_bound = categorical_censored_traits_setup!(mme,df)
     end
     ############################################################################
     # Working Variables
@@ -39,12 +37,9 @@ function MCMC_BayesianAlphabet(mme,df)
     #mme.sol (its starting values were set in runMCMC)
     mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
-    if categorical_trait == true
-        mme.R  = mme.meanVare = mme.meanVare2 = 1.0
-    else
-        mme.meanVare  = zero(mme.R)
-        mme.meanVare2 = zero(mme.R)
-    end
+    mme.meanVare  = zero(mme.R)
+    mme.meanVare2 = zero(mme.R)
+
     #polygenic effects (pedigree), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
@@ -133,6 +128,7 @@ function MCMC_BayesianAlphabet(mme,df)
         #Starting value for Ri is made based on missing value pattern
         #(imputed phenotypes will not used to compute first mmeRhs)
         Ri         = mkRi(mme,df,invweights)
+        dropzeros!(Ri)
     end
     ############################################################################
     # Starting values for SEM
@@ -155,25 +151,27 @@ function MCMC_BayesianAlphabet(mme,df)
     if nonlinear_function != false
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
-
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
-        # 0. Categorical traits (liabilities)
+        # 0. Categorical and censored traits
         ########################################################################
-        if categorical_trait == true
-            ycorr = categorical_trait_sample_liabilities(mme,ycorr,category_obs,threshold)
-            writedlm(outfile["threshold"],threshold',',')
-        end
-        if censored_trait != false
-            ycorr = censored_trait_sample_liabilities(mme,ycorr,lower_bound,upper_bound)
+        if has_categorical_trait || has_censored_trait
+            sample_liabilities!(mme,ycorr,lower_bound,upper_bound) #update mme.ySparse, ycorr
             writedlm(outfile["liabilities"],mme.ySparse',',')
+            if has_categorical_trait
+                #sample threshold for categorical traits
+                thresholds=categorical_trait_sample_threshold(mme, thresholds, category_obs) #update thresholds
+                writedlm(outfile["threshold"],vcat(thresholds...),',')
+                update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds,categorical_trait_index) # update lower_bound, upper_bound
+            end
         end
         ########################################################################
         # 1. Non-Marker Location Parameters
         ########################################################################
         # 1.1 Update Left-hand-side of MME
         if is_multi_trait
-            mme.mmeLhs =  mme.X'Ri* mme.X #normal equation, Ri is changed
+            mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
+            dropzeros!(mme.mmeLhs)
         end
         addVinv(mme)
         # 1.2 Update Right-hand-side of MME
@@ -211,10 +209,10 @@ function MCMC_BayesianAlphabet(mme,df)
                         if is_mega_trait
                             megaBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
                         else
-                            MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances)
+                            MTBayesABC!(Mi,wArray,mme.R,locus_effect_variances,mme.nModels)
                         end
                     elseif is_nnbayes_partial
-                        BayesABC!(Mi,wArray[i],mme.R[i,i],locus_effect_variances)
+                        BayesABC!(Mi,wArray[i],mme.R[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
                     else
                         BayesABC!(Mi,ycorr,mme.R,locus_effect_variances)
                     end
@@ -307,8 +305,8 @@ function MCMC_BayesianAlphabet(mme,df)
                                         mme.df.residual, mme.scaleR,
                                         invweights,constraint)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
-            else
-                if categorical_trait == false
+            else #single trait
+                if !has_categorical_trait # fixed mme.R=1 for single categorical trait
                     mme.ROld = mme.R
                     mme.R    = sample_variance(ycorr,length(ycorr), mme.df.residual, mme.scaleR, invweights)
                 end
@@ -355,9 +353,9 @@ function MCMC_BayesianAlphabet(mme,df)
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
             output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
-            if causal_structure != false
-                writedlm(causal_structure_outfile,sample4λ_vec',',')
-            end
+             if causal_structure != false
+                 writedlm(causal_structure_outfile,sample4λ_vec',',')
+             end
         end
         ########################################################################
         # 3.2 Printout
@@ -378,11 +376,11 @@ function MCMC_BayesianAlphabet(mme,df)
       if causal_structure != false
         close(causal_structure_outfile)
       end
-      if categorical_trait == true
-         close(outfile["threshold"])
-      end
-      if censored_trait != false
+      if has_categorical_trait || has_censored_trait
          close(outfile["liabilities"])
+         if has_categorical_trait
+             close(outfile["threshold"])
+         end
       end
     end
     if methods == "GBLUP"
