@@ -46,6 +46,7 @@ JWAS.jl
 * Single Step Analysis
 * Categorical Trait Analysis
 * Censored Trait Analysis
+* Joint Analysis for Continuous, Categorical, and Censored Traits
 * Multi-class Bayesian Analysis
 * Neural Networks (NN-LMM)
 * Cross Validation
