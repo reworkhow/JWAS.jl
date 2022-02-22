@@ -37,11 +37,8 @@ include("markers/Pi.jl")
 include("single_step/SSBR.jl")
 include("single_step/SSGBLUP.jl")
 
-#Categorical Traits
-include("categorical_trait/categorical_trait.jl")
-
-#Censored Traits
-include("censored_trait/censored_trait.jl")
+#Categorical and Censored Traits
+include("categorical_and_censored_trait/categorical_and_censored_trait.jl")
 
 #Structure Equation Models
 include("structure_equation_model/SEM.jl")
@@ -158,8 +155,6 @@ function runMCMC(mme::MME,df;
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
-                categorical_trait               = false,
-                censored_trait                  = false,
                 causal_structure                = false,
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = true,
@@ -181,10 +176,13 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimateScale                   = false)
+                estimateScale                   = false,
+                categorical_trait               = false,  #this has been moved to build_model()
+                censored_trait                  = false)  #this has been moved to build_model()
 
-
-    #Neural Network
+    ############################################################################
+    # Neural Network
+    ############################################################################
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
         mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
@@ -207,7 +205,9 @@ function runMCMC(mme::MME,df;
             mme.M[1].trait_names=mme.latent_traits
         end
     end
+    ############################################################################
     #for deprecated JWAS fucntions
+    ############################################################################
     if mme.M != 0
         for Mi in mme.M
             if Mi.name == false
@@ -218,6 +218,18 @@ function runMCMC(mme::MME,df;
                 Mi.method            = methods
             end
         end
+    end
+    if categorical_trait != false || censored_trait != false
+        print_single_categorical_censored_trait_example()
+        error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example.")
+    end
+    ############################################################################
+    # censored traits
+    ############################################################################
+    #add the column :traitname using trait's lower bound
+    censored_trait_index = findall(x -> x=="censored", mme.traits_type)
+    for i in censored_trait_index
+        df[!,mme.lhsVec[i]]= df[!,Symbol(mme.lhsVec[i],"_l")]
     end
     ############################################################################
     # Set a seed in the random number generator
@@ -251,7 +263,6 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   categorical_trait,censored_trait,
                    seed,double_precision,output_folder)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
@@ -440,7 +451,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_nnbayes_partial = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
@@ -474,7 +485,7 @@ function getMCMCinfo(mme)
         println()
     end
     if mme.nModels == 1
-        @printf("%-30s %20.3f\n","residual variances:", (MCMCinfo.categorical_trait ? 1.0 : mme.R))
+        @printf("%-30s %20.3f\n","residual variances:", mme.R)
     else
         @printf("%-30s\n","residual variances:")
         Base.print_matrix(stdout,round.(mme.R,digits=3))

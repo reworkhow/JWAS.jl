@@ -35,8 +35,9 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false,
-                     user_σ2_yobs = false, user_σ2_weightsNN = false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
+                     user_σ2_yobs = false, user_σ2_weightsNN = false,
+                     censored_trait = false, categorical_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -134,6 +135,15 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
       mme.fixed_σ2_NN     = true
       printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
+    end
+  end
+
+  #setup traits_type (by default is "continuous")
+  for t in 1:mme.nModels
+    if string(mme.lhsVec[t]) ∈ censored_trait
+      mme.traits_type[t]="censored"
+    elseif string(mme.lhsVec[t]) ∈ categorical_trait
+      mme.traits_type[t]="categorical"
     end
   end
 
