@@ -203,6 +203,12 @@ function runMCMC(mme::MME,df;
             mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
             #rename genotype names
             mme.M[1].trait_names=mme.latent_traits
+            #change model terms for partial-connected NN
+            if is_nnbayes_partial
+                for i in 1:mme.nModels
+                    mme.M[i].trait_names=[mme.latent_traits[i]]
+                end
+            end
         end
     end
     ############################################################################
@@ -271,6 +277,10 @@ function runMCMC(mme::MME,df;
     ############################################################################
     errors_args(mme)       #check errors in function arguments
     df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
+    if mme.nonlinear_function != false #NN-LMM
+        #initiliza missing omics data  (after check_pedigree_genotypes_phenotypes() because non-genotyped inds are removed)
+        nnlmm_initialize_missing(mme,df)
+    end
     prediction_setup(mme)  #set prediction equation, defaulting to genetic values
     check_outputID(mme)    #check individual of interest for prediction
     df_whole,train_index = make_dataframes(df,mme)
