@@ -1,11 +1,21 @@
-#MTBayesC requires the support for prior for delta for d is the set
-#of all 2^ntrait outcomes of dj:
-function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances)
-    MTBayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                locus_effect_variances,genotypes.π)
+# Reference:
+#Cheng et al. 2018 Genomic prediction from multiple-trait bayesian regression methods using mixture priors. Genetics209:  89–103.
+# Gibbs sampler I: only one of the t indicator lables is sampled at a time.
+# Gibbs sampler II: all indicator labels are sampled jointly, can be used for the restrictive model assuming any particular locus affects all traits or none of them.
+
+function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances,nModels)
+    if length(genotypes.π) == 2^nModels  #Gibbs sampler I
+        MTBayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                    ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                    locus_effect_variances,genotypes.π)
+    else  #Gibbs sampler II
+        MTBayesABC_samplerII!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                    ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                    locus_effect_variances,genotypes.π)
+    end
 end
 
+#Gibbs sampler I
 function MTBayesABC!(xArray,xRinvArray,xpRinvx,
                      wArray,betaArray, #betaArray is a vector of length t, each element is length p.
                      deltaArray,
@@ -80,6 +90,101 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
     end
 end
 
+
+#Gibbs sampler II
+function MTBayesABC_samplerII!(xArray,
+                    xRinvArray,
+                    xpRinvx,
+                    wArray, #ycorr
+                    betaArray,
+                    deltaArray,
+                    alphaArray,
+                    vare, #mme.R, t-by-t
+                    varEffects, # vector of length #SNPs, each element is a t-by-t covariance matrix
+                    BigPi) #genotypes.π
+
+    nMarkers = length(xArray)
+    ntraits  = length(alphaArray)
+
+    Rinv     = inv(vare) #inv(mme.R)
+    Ginv     = inv.(varEffects)
+
+    β        = zeros(typeof(betaArray[1][1]),ntraits)
+    newα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    δ        = zeros(typeof(deltaArray[1][1]),ntraits)
+    w        = zeros(typeof(wArray[1][1]),ntraits) #for rhs
+
+    nlable    = length(BigPi) #e.g.,length(Dict([1.0; 1.0]=>0.3,[0.0; 0.0]=>0.7))=2
+    probDelta = Array{Float64}(undef, nlable)
+    logDelta  = Array{Float64}(undef, nlable)
+    βeta      = Array{Array{Float64,1}}(undef, nlable)
+    RinvLhs   = Array{Array{Float64,2}}(undef, nlable) # D*inv(R)*D
+    RinvRhs   = Array{Array{Float64,2}}(undef, nlable) # inv(R)*D
+
+
+    iloci=1
+    for i in keys(BigPi)
+        D  = diagm(i)
+        RinvLhs[iloci] = D*Rinv*D # D*inv(R)*D
+        RinvRhs[iloci] = Rinv*D   # inv(R)*D
+        iloci += 1
+    end
+
+    for marker=1:nMarkers
+        x, xRinv = xArray[marker], xRinvArray[marker]
+
+        for trait = 1:ntraits
+            β[trait]  = betaArray[trait][marker]
+         oldα[trait]  = newα[trait] = alphaArray[trait][marker]
+            δ[trait]  = deltaArray[trait][marker]
+            w[trait]  = dot(xRinv,wArray[trait])+xpRinvx[marker]*oldα[trait] #w=xj'(ycorr+xj) t-by-1
+        end
+
+        #full conditional distribution of β
+        stdnorm = randn(ntraits)
+        iloci=1
+        for pi_t in values(BigPi)
+            lhs       = RinvLhs[iloci]*xpRinvx[marker]+Ginv[marker]  #C: t-by-t
+            rhs       = RinvRhs[iloci]'w  #t-by-1
+            invLhs    = inv(lhs)
+            invLhsC   = cholesky(Hermitian(invLhs)).L # L, where LL'=invLhs Q:why Hermitian
+            gHat      = invLhs*rhs  #t-by-1
+            logDelta[iloci] = -0.5*(log(det(lhs))-rhs'gHat)+log(pi_t)
+            βeta[iloci]     = gHat + invLhsC*stdnorm  #var(Lz)=LL'=invLhs=inv(C)
+            iloci += 1
+        end
+
+        #marginal full conditional probability of δ
+        for l in 1:nlable
+          denominator_l = 0.0  #denominator
+          for i in 1:nlable
+            denominator_l += exp(logDelta[i]-logDelta[l])
+          end
+          probDelta[l]=1/denominator_l
+        end
+
+
+
+        #choose label
+        whichlabel = rand(Categorical(probDelta)) #e.g., 1 means the 1st label
+        δ           = copy(collect(keys(BigPi))[whichlabel]) ##copy required,otherwise modifiying keys(BigPi)
+        β           = βeta[whichlabel]
+        newα        = diagm(δ)*β
+
+
+        # adjust for locus j
+        for trait in 1:ntraits
+            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])  #update wArray (ycorr)
+            betaArray[trait][marker]       = β[trait]
+            deltaArray[trait][marker]      = δ[trait]
+            alphaArray[trait][marker]      = newα[trait]
+        end
+
+    end
+end
+
+#block
 function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances)
     MTBayesABC_block!(genotypes.MArray,genotypes.MRinvArray,genotypes.mpRinvm,
                 genotypes.genotypes,genotypes.MpRinvM,

@@ -35,7 +35,9 @@ models          = build_model(model_equations,R);
 ```
 """
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false) #nonlinear_function(x1,x2) = x1+x2
+                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
+                     user_σ2_yobs = false, user_σ2_weightsNN = false,
+                     censored_trait = false, categorical_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -54,7 +56,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
-      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function)
+      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
       #NNBayes: re-write model equations by treating hidden nodes as multiple traits
       model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
     end
@@ -128,6 +130,21 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+    if user_σ2_yobs != false && user_σ2_weightsNN != false
+      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
+      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
+      mme.fixed_σ2_NN     = true
+      printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
+    end
+  end
+
+  #setup traits_type (by default is "continuous")
+  for t in 1:mme.nModels
+    if string(mme.lhsVec[t]) ∈ censored_trait
+      mme.traits_type[t]="censored"
+    elseif string(mme.lhsVec[t]) ∈ categorical_trait
+      mme.traits_type[t]="categorical"
+    end
   end
 
   return mme
@@ -305,39 +322,6 @@ function getMME(mme::MME, df::DataFrame)
        X = [X mme.modelTerms[i].X]
     end
 
-    #Make response vector (y)
-    ############################################################################
-    # Latent Traits
-    ############################################################################
-    #mme.ySparse: latent traits
-    #yobs       : single observed trait
-    if mme.nonlinear_function != false
-        mme.yobs = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
-        if mme.latent_traits != false
-          ######################################################################
-          #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
-          #with prefix 1, 2... , e.g., height1, height2...
-          #if data for latent traits are included in the dataset, column names
-          #will be used as shown below.e.g.,
-          #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
-          #"gene1" and "gene2" are columns in the dataset.
-          ######################################################################
-          #change lhsVec to omics gene name
-          mme.lhsVec = Symbol.(mme.latent_traits)
-          #rename genotype names
-          mme.M[1].trait_names=mme.latent_traits
-          #save omics data missing pattern
-          mme.missingPattern = .!ismissing.(convert(Matrix,df[!,mme.lhsVec]))
-          #replace missing data with values in yobs
-          for i in mme.lhsVec      #for each omics feature
-            for j in 1:size(df,1)  #for each observation
-              if ismissing(df[j,i])
-                df[j,i]=mme.yobs[j]
-              end
-            end
-          end
-        end
-    end
 
     y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
     for i=2:size(mme.lhsVec,1)

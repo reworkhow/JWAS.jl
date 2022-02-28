@@ -31,7 +31,7 @@ function GBLUP_setup(Mi::Genotypes) #for both single-trait and multi-trait analy
 end
 
 function megaGBLUP!(Mi::Genotypes,wArray,vare,Rinv)
-    for i in 1:length(wArray) #ntraits
+    Threads.@threads for i in 1:length(wArray) #ntraits
         GBLUP!(Mi.genotypes,Mi.α[i],Mi.D,wArray[i],vare[i,i],Mi.G[i,i],Rinv,Mi.nObs)
     end
 end
