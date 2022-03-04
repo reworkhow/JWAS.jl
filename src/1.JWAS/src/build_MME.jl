@@ -58,7 +58,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       #NNBayes: check parameters
       num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
       #NNBayes: re-write model equations by treating hidden nodes as multiple traits
-      model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
+      model_equations, yobs_name = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected,latent_traits)
     end
     is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false #1.partial connected NN 2. fully connected NN + non-NN
 
@@ -130,6 +130,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+    mme.yobs_name            = Symbol(yobs_name)
     if user_σ2_yobs != false && user_σ2_weightsNN != false
       mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
       mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN

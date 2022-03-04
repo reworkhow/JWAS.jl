@@ -10,14 +10,14 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
         end
     end
     if ngeno==0
-        error("please load genotypes.")
+        println("Genotype is not loaded. Pedigree-BLUP are expected to be used between input and middle layer.")
     end
 
     # (ii) determine whether partial/fully connected neural network
     if isa(nonlinear_function, Function)   #e.g., nonlinear_function is PGM
         nargs_nonlinear = first(methods(nonlinear_function)).nargs-1 #e.g., PGM(x1,x2) has 2 arguments
         is_activation_fcn = false
-        if ngeno == 1    # fully-connected (equivalent to y=geno1+geno1+geno1 (memory efficient))
+        if ngeno <= 1    # zero geno is for pedigree-blup; fully-connected (equivalent to y=geno1+geno1+geno1 (memory efficient))
             is_fully_connected = true
             num_hidden_nodes = nargs_nonlinear
         elseif ngeno == nargs_nonlinear # partial-connected
@@ -30,7 +30,7 @@ function nnbayes_check_print_parameter(model_equations,num_hidden_nodes,nonlinea
         is_activation_fcn = true
         if num_hidden_nodes != false && typeof(num_hidden_nodes) == Int64
             num_hidden_nodes = num_hidden_nodes
-            if ngeno == 1 # fully-connected
+            if ngeno <= 1 # zero geno is for pedigree-blup; fully-connected
                 is_fully_connected = true
             elseif ngeno  == num_hidden_nodes #partial-connected
                 is_fully_connected = false
@@ -77,16 +77,21 @@ end
 
 
 #Below function is to re-phase modelm for NNBayes
-function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
+function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected,latent_traits)
 
-    lhs, rhs = strip.(split(model_equations,"="))
+    lhs, rhs = strip.(split(model_equations,"=")) #lhs is name for yobs
     model_equations = ""
 
     if is_fully_connected == true   #fully-connected
       # old: y=intercept+geno
-      # new: y1=intercept+geno;y2=intercept+geno
       for i = 1:num_hidden_nodes
-        model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+        if latent_traits==false #all middle nodes are missing
+            # new: y1=intercept+geno;y2=intercept+geno
+            model_equations = model_equations*lhs*string(i)*"="*rhs*";"
+        else #user-provided middle nodes
+            # new: omics1=intercept+geno;omics2=intercept+geno
+            model_equations = model_equations*latent_traits[i]*"="*rhs*";"
+        end
       end
     elseif is_fully_connected == false   #partially-connected
       # old: y=intercept+geno1+geno2
@@ -106,6 +111,8 @@ function nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connec
       end
     end
     model_equations = model_equations[1:(end-1)] #remove the semicolon at the end
+
+    return model_equations,lhs
 end
 
 

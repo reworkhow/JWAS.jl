@@ -241,6 +241,9 @@ function getEBV(mme,traiti)
             EBV += EBV_term
         end
     end
+    if mme.nonlinear_function != false #NNBayes: add intercept
+        EBV = EBV .+ location_parameters[(location_parameters[!,:Effect].=="intercept").&(location_parameters[!,:Trait].==traiti_name),:Estimate]
+    end
     is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0
         for i in 1:length(mme.M)
@@ -456,9 +459,8 @@ function output_MCMC_samples(mme,vRes,G0,
          end
     end
     if mme.nonlinear_function != false #NNBayes
-        EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
         if mme.is_activation_fcn == false  #user-defined nonlinear function
-            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
+            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...) #note intercept has been included in EBVmat
         else  #activation function
             BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')

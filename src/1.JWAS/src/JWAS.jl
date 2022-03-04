@@ -184,11 +184,12 @@ function runMCMC(mme::MME,df;
     # Neural Network
     ############################################################################
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
-    if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
-        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]  # e.g., change :y1 -> :y
-        for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
-            df[!,i]= yobs
+    if mme.nonlinear_function != false
+        if mme.latent_traits == false  #modify data to add phenotypes for hidden nodes
+            yobs = df[!,Symbol(string(mme.yobs_name))]
+            for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
+                df[!,i]= yobs
+            end
         end
         ######################################################################
         #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
@@ -199,10 +200,6 @@ function runMCMC(mme::MME,df;
         #"gene1" and "gene2" are columns in the dataset.
         ######################################################################
         if mme.latent_traits != false
-            #change lhsVec to omics gene name
-            mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
-            #rename genotype names
-            mme.M[1].trait_names=mme.latent_traits
             #change model terms for partial-connected NN
             if is_nnbayes_partial
                 for i in 1:mme.nModels
