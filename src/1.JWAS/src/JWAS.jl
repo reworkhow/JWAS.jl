@@ -190,16 +190,15 @@ function runMCMC(mme::MME,df;
             for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
                 df[!,i]= yobs
             end
-        end
-        ######################################################################
-        #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
-        #with prefix 1, 2... , e.g., height1, height2...
-        #if data for latent traits are included in the dataset, column names
-        #will be used as shown below.e.g.,
-        #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
-        #"gene1" and "gene2" are columns in the dataset.
-        ######################################################################
-        if mme.latent_traits != false
+        else #user-provided middle nodes
+            ######################################################################
+            #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
+            #with prefix 1, 2... , e.g., height1, height2...
+            #if data for latent traits are included in the dataset, column names
+            #will be used as shown below.e.g.,
+            #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
+            #"gene1" and "gene2" are columns in the dataset.
+            ######################################################################
             #change model terms for partial-connected NN
             if is_nnbayes_partial
                 for i in 1:mme.nModels

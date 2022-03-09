@@ -250,20 +250,21 @@ function getX(trm::ModelTerm,mme::MME)
        trm.nLevels  = length(dict) #before add key "missing"
        #3.2. Levels for each observation
        #Get the random effect in interactions
-       data=[]
-       for i in trm.data
-         for factorstr in getFactor(i) #two ways:animal*age;age*animal
-           if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
-             data = [data;factorstr]
-           end
-         end
-       end
-       if length(data) < length(trm.data)
-         error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
-         trm.trmStr,". ","This may happen if missing values are not considered in missingstrings.")
-       elseif length(data) > length(trm.data)
-         error("Same level names are found for the two terms in the interaction.")
-       end
+       # data=[]
+       # for i in trm.data
+       #   for factorstr in getFactor(i) #two ways:animal*age;age*animal
+       #     if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
+       #       data = [data;factorstr]
+       #     end
+       #   end
+       # end
+       # if length(data) < length(trm.data)
+       #   error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
+       #   trm.trmStr,". ","This may happen if missing values are not considered in missingstrings.")
+       # elseif length(data) > length(trm.data)
+       #   error("Same level names are found for the two terms in the interaction.")
+       # end
+       data=trm.data
     end
     #4. missing values in random effects
     #e.g, founders in pedigree are "missing" ("0") for materal effects
