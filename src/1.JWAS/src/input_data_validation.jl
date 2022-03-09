@@ -331,7 +331,8 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #Whole Data
     #***************************************************************************
     #Make incidence matrices X for each term (whole data)
-    for term in mme.modelTerms
+    println("---------1")
+    @time for term in mme.modelTerms
       getData(term,df_whole,mme)
       getX(term,mme)
     end
@@ -340,7 +341,8 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
-    for term in mme.MCMCinfo.prediction_equation
+    println("---------2")
+    @time for term in mme.MCMCinfo.prediction_equation
         Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
                vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
         mme.output_X[term] = Zout*mme.modelTermDict[term].X
@@ -348,14 +350,16 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #Training data
     #***************************************************************************
-    for term in mme.modelTerms
+    println("---------3")
+    @time for term in mme.modelTerms
         train_sel = [i in train_index for i=1:size(df_whole,1)]
         term.X = term.X[repeat(train_sel,mme.nModels),:]
     end
     df = df_whole[train_index,:]
     #require all levels for output id being observed in training data
     #for any fixed factor or i.i.d random factor
-    for term in mme.modelTerms
+    println("---------4")
+    @time for term in mme.modelTerms
         if term.nLevels > 1 && term.random_type in ["fixed","I"]
             train_effects = vec(sum(term.X,dims=1) .!= 0.0)
             if sum(train_effects) != length(train_effects) #where zero columns exist
@@ -368,7 +372,8 @@ function make_incidence_matrices(mme,df_whole,train_index)
 end
 
 function init_mixed_model_equations(mme,df,starting_value)
-    getMME(mme,df)
+    println("---------5")
+    @time getMME(mme,df)
     ############################################################################
     #starting value for non-marker location parameters (sol) can be provided
     ############################################################################
