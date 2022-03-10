@@ -299,39 +299,44 @@ function getMME(mme::MME, df::DataFrame)
       error("Please build your model again using the function build_model().")
     end
     #Heterogeneous residuals
-    if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
+    println("-----------g.1")
+    @time if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
         invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
     else
         invweights = ones(size(df,1))
     end
     mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     #Make incidence matrices X for each term
-    for trm in mme.modelTerms
+    println("-----------g.2")
+    @time for trm in mme.modelTerms
       if trm.X == false
         getData(trm,df,mme)
         getX(trm,mme)
       end
     end
     #concatenate all terms
-    X   = mme.modelTerms[1].X
+    println("-----------g.3")
+    @time X   = mme.modelTerms[1].X
     for i=2:length(mme.modelTerms)
        X = [X mme.modelTerms[i].X]
     end
 
-
-    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
-    for i=2:size(mme.lhsVec,1)
+    println("-----------g.4")
+    @time y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    @time for i=2:size(mme.lhsVec,1)
       y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
     vv      = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(y) : Float32.(y))
-    ySparse = sparse(ii,jj,vv)
+    @time ySparse = sparse(ii,jj,vv)
+    @time dropzeros!(ySparse)
 
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
 
+    println("-----------g.5")
     if mme.nModels==1     #single-trait (lambda version)
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
@@ -346,11 +351,12 @@ function getMME(mme::MME, df::DataFrame)
       else  #multi-trait
         Ri = mkRi(mme,df,mme.invweights)
       end
-      mme.mmeLhs = X'Ri*X
-      mme.mmeRhs = X'Ri*ySparse
+      @time mme.mmeLhs = X'Ri*X
+      @time mme.mmeRhs = X'Ri*ySparse
     end
 
     #Random effects parts in MME
+    println("-----------g.6")
     if mme.nModels == 1
       #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
       for random_term in mme.rndTrmVec #trick
@@ -361,16 +367,17 @@ function getMME(mme::MME, df::DataFrame)
         random_term.GiOld = copy(random_term.GiNew)
       end
     else
-      addVinv(mme)
+      @time addVinv(mme)
     end
-
-    dropzeros!(mme.mmeLhs)
-    dropzeros!(mme.mmeRhs)
+    println("-----------g.7")
+    @time dropzeros!(mme.mmeLhs)
+    @time dropzeros!(mme.mmeRhs)
 
     #No phenotypic data for some levels of a factor in multi-trait analysis
     #e.g., y3:x3:f in https://github.com/reworkhow/JWAS.jl/blob/
     #a6f4595796b70811c0b745af525e7e0a822bb954/src/5.Datasets/data/example/phenotypes.txt
-    for i in size(mme.mmeLhs,1)
+    println("-----------g.8")
+    @time for i in size(mme.mmeLhs,1)
       if mme.mmeLhs[i,i] == 0.0
         error("No phenotypic data for ",getNames(mme)[i])
       end
