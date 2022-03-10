@@ -342,10 +342,22 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
     println("---------2")
-    @time for term in mme.MCMCinfo.prediction_equation
-        Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
+    @time if mme.nonlinear_function != false #NN-MM
+        # terms in prediction_equation are "snp1:ID","snp2:ID",...,they should have identical output_X
+        # thus only need to calcualte once to avoid repeated computation for thousands of hidden nodes
+        term1=mme.MCMCinfo.prediction_equation[1]
+        Zout = mkmat_incidence_factor(string(mme.modelTermDict[term1].iModel) .* mme.output_ID,
                vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
-        mme.output_X[term] = Zout*mme.modelTermDict[term].X
+        mme.output_X[term1] = Zout*mme.modelTermDict[term1].X
+        for term in mme.MCMCinfo.prediction_equation[2:end]
+            mme.output_X[term] = copy(mme.output_X[term1])
+        end
+    else
+        for term in mme.MCMCinfo.prediction_equation
+            Zout = mkmat_incidence_factor(string(mme.modelTermDict[term].iModel) .* mme.output_ID,
+                   vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
+            mme.output_X[term] = Zout*mme.modelTermDict[term].X
+        end
     end
     #***************************************************************************
     #Training data
