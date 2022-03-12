@@ -152,6 +152,7 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
     @showprogress "running MCMC ..." for iter=1:chain_length
+        println("--------In iteration $iter")
         ########################################################################
         # 0. Categorical and censored traits
         ########################################################################
@@ -352,7 +353,8 @@ function MCMC_BayesianAlphabet(mme,df)
             nsamples       = (iter-burnin)/output_samples_frequency
             output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
-            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+            println("--------output_MCMC_samples")
+            @time output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
              if causal_structure != false
                  writedlm(causal_structure_outfile,sample4λ_vec',',')
              end

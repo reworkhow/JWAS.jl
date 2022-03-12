@@ -158,7 +158,12 @@ function nnbayes_mega_trait(mme)
             Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
         end
     end
-
+    if length(mme.rndTrmVec) > 0
+        for random_term in mme.rndTrmVec
+            random_term.df    = random_term.df - mme.nModels
+            random_term.scale = diag(random_term.scale/(random_term.df - 1))*(random_term.df-2)/random_term.df #diag(R_prior_mean)*(ν-2)/ν
+        end
+    end
 end
 
 # below function is to modify essential parameters for partial connected NN

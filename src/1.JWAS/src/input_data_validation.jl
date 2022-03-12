@@ -331,8 +331,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #Whole Data
     #***************************************************************************
     #Make incidence matrices X for each term (whole data)
-    println("---------1")
-    @time for term in mme.modelTerms
+    for term in mme.modelTerms
       getData(term,df_whole,mme)
       getX(term,mme)
     end
@@ -341,16 +340,17 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
-    println("---------2")
-    @time if mme.nonlinear_function != false #NN-MM
+    if mme.nonlinear_function != false #NN-MM
         # terms in prediction_equation are "snp1:ID","snp2:ID",...,they should have identical output_X
         # thus only need to calcualte once to avoid repeated computation for thousands of hidden nodes
-        term1=mme.MCMCinfo.prediction_equation[1]
-        Zout = mkmat_incidence_factor(string(mme.modelTermDict[term1].iModel) .* mme.output_ID,
-               vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
-        mme.output_X[term1] = Zout*mme.modelTermDict[term1].X
-        for term in mme.MCMCinfo.prediction_equation[2:end]
-            mme.output_X[term] = copy(mme.output_X[term1])
+        if length(mme.MCMCinfo.prediction_equation) > 0
+            term1=mme.MCMCinfo.prediction_equation[1]
+            Zout = mkmat_incidence_factor(string(mme.modelTermDict[term1].iModel) .* mme.output_ID,
+                   vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
+            output_X1 = Zout*mme.modelTermDict[term1].X
+            for term in mme.MCMCinfo.prediction_equation
+                mme.output_X[term] = copy(output_X1)
+            end
         end
     else
         for term in mme.MCMCinfo.prediction_equation
@@ -362,16 +362,14 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #Training data
     #***************************************************************************
-    println("---------3")
-    @time for term in mme.modelTerms
+    for term in mme.modelTerms
         train_sel = [i in train_index for i=1:size(df_whole,1)]
         term.X = term.X[repeat(train_sel,mme.nModels),:]
     end
     df = df_whole[train_index,:]
     #require all levels for output id being observed in training data
     #for any fixed factor or i.i.d random factor
-    println("---------4")
-    @time for term in mme.modelTerms
+    for term in mme.modelTerms
         if term.nLevels > 1 && term.random_type in ["fixed","I"]
             train_effects = vec(sum(term.X,dims=1) .!= 0.0)
             if sum(train_effects) != length(train_effects) #where zero columns exist

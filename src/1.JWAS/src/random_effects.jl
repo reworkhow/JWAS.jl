@@ -195,6 +195,7 @@ end
 #if sample residual variances, similar approaches to update the LHS is used.
 ################################################################################
 function addVinv(mme::MME)
+    is_mega_trait = mme.MCMCinfo.mega_trait
     for random_term in mme.rndTrmVec
       term_array = random_term.term_array
       myI        = SparseMatrixCSC{(mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64 : Float32}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
@@ -203,14 +204,20 @@ function addVinv(mme::MME)
           randTrmi   = mme.modelTermDict[termi]
           startPosi  = randTrmi.startPos
           endPosi    = startPosi + randTrmi.nLevels - 1
-          for (j,termj) in enumerate(term_array)
-            randTrmj    = mme.modelTermDict[termj]
-            startPosj   = randTrmj.startPos
-            endPosj     = startPosj + randTrmj.nLevels - 1
-            #lamda version (single trait) or not (multi-trait)
-            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.R - random_term.GiOld[i,j]*mme.ROld))
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
-            mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddVinv
+          if is_mega_trait #not lambda version
+            myaddVinv   =  Vi*random_term.Gi[i,i]
+            mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] =
+            mme.mmeLhs[startPosi:endPosi,startPosi:endPosi] + myaddVinv
+          else
+            for (j,termj) in enumerate(term_array)
+              randTrmj    = mme.modelTermDict[termj]
+              startPosj   = randTrmj.startPos
+              endPosj     = startPosj + randTrmj.nLevels - 1
+              #lamda version (single trait) or not (multi-trait)
+              myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.R - random_term.GiOld[i,j]*mme.ROld))
+              mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
+              mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddVinv
+            end
           end
       end
     end

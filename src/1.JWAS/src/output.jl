@@ -94,7 +94,7 @@ function output_result(mme,output_folder,
                        solMean,meanVare,G0Mean,
                        solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
-  location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
+  location_parameters = reformat2dataframe([getNames_3col(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
   output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
@@ -170,19 +170,7 @@ end
 
 #Reformat Output Array to DataFrame
 function reformat2dataframe(res::Array)
-    out_names = Array{String}(undef,size(res,1),3)
-    for rowi in 1:size(res,1)
-        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keepempty=false)]
-    end
-
-    if size(out_names,2)==1 #convert vector to matrix
-        out_names = reshape(out_names,length(out_names),1)
-    end
-    #out_names=permutedims(out_names,[2,1]) #rotate
-    out_values   = map(Float64,res[:,2])
-    out_variance = convert.(Union{Missing, Float64},res[:,3])
-    out =[out_names out_values out_variance]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:SD])
+    out = DataFrame(res, [:Trait, :Effect, :Level, :Estimate,:SD])
     return out
 end
 
@@ -225,8 +213,7 @@ NNBayes_partial:     y1=M1*α1[1]
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
-
-    location_parameters = reformat2dataframe([getNames(mme) mme.sol zero(mme.sol)])
+    location_parameters = reformat2dataframe([getNames_3col(mme) mme.sol zero(mme.sol)])
     for term in keys(mme.output_X)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
@@ -298,9 +285,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   #non-marker random effects variances
-  for i in  mme.rndTrmVec
-      trmStri   = join(i.term_array, "_")                  #x2
-      push!(outvar,trmStri*"_variances")
+  if mme.MCMCinfo.mega_trait == false
+      for i in  mme.rndTrmVec
+          trmStri   = join(i.term_array, "_")                  #x2
+          push!(outvar,trmStri*"_variances")
+      end
   end
 
   #EBV
@@ -353,10 +342,12 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       writedlm(outfile[trmStr],transubstrarr(getNames(trmi)),',')
   end
 
-  for effect in  mme.rndTrmVec
-    trmStri   = join(effect.term_array, "_")                  #x2
-    thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
-    writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
+  if mme.MCMCinfo.mega_trait != true  #no need to save this for mega_trait
+      for effect in  mme.rndTrmVec
+        trmStri   = join(effect.term_array, "_")                  #x2
+        thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
+        writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
+      end
   end
 
   if mme.M !=0
@@ -368,7 +359,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
   if mme.pedTrmVec != 0
       pedtrmvec  = mme.pedTrmVec
-      thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
+      if mme.MCMCinfo.mega_trait == false
+          thisheader = repeat(pedtrmvec,inner=length(pedtrmvec)).*"_".*repeat(pedtrmvec,outer=length(pedtrmvec))
+      else #mega_trait
+          thisheader = transubstrarr(map(string,pedtrmvec))
+      end
       writedlm(outfile["polygenic_effects_variance"],transubstrarr(thisheader),',')
   end
 
@@ -398,13 +393,18 @@ function output_MCMC_samples(mme,vRes,G0,
     #location parameters
     output_location_parameters_samples(mme,mme.sol,outfile)
     #random effects variances
-    for effect in  mme.rndTrmVec
-        trmStri   = join(effect.term_array, "_")
-        writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
+    if mme.MCMCinfo.mega_trait == false #not needed for mega_trait
+        for effect in  mme.rndTrmVec
+            trmStri   = join(effect.term_array, "_")
+            writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
+        end
     end
 
     if mme.MCMCinfo.mega_trait != false
         vRes=diag(vRes)
+        if mme.pedTrmVec != 0
+            G0=diag(G0)
+        end
     end
     writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
 

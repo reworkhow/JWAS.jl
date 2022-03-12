@@ -299,44 +299,39 @@ function getMME(mme::MME, df::DataFrame)
       error("Please build your model again using the function build_model().")
     end
     #Heterogeneous residuals
-    println("-----------g.1")
-    @time if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
+    if mme.MCMCinfo != false && mme.MCMCinfo.heterogeneous_residuals == true
         invweights = 1 ./ convert(Array,df[!,Symbol("weights")])
     else
         invweights = ones(size(df,1))
     end
     mme.invweights = (mme.MCMCinfo == false || mme.MCMCinfo.double_precision ? Float64.(invweights) : Float32.(invweights))
     #Make incidence matrices X for each term
-    println("-----------g.2")
-    @time for trm in mme.modelTerms
+    for trm in mme.modelTerms
       if trm.X == false
         getData(trm,df,mme)
         getX(trm,mme)
       end
     end
     #concatenate all terms
-    println("-----------g.3")
-    @time X   = mme.modelTerms[1].X
+    X   = mme.modelTerms[1].X
     for i=2:length(mme.modelTerms)
        X = [X mme.modelTerms[i].X]
     end
 
-    println("-----------g.4")
-    @time y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
-    @time for i=2:size(mme.lhsVec,1)
+    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    for i=2:size(mme.lhsVec,1)
       y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
     vv      = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(y) : Float32.(y))
-    @time ySparse = sparse(ii,jj,vv)
-    @time dropzeros!(ySparse)
+    ySparse = sparse(ii,jj,vv)
+    dropzeros!(ySparse)
 
     #Make lhs and rhs for MME
     mme.X       = X
     mme.ySparse = ySparse
 
-    println("-----------g.5")
     if mme.nModels==1     #single-trait (lambda version)
         mme.mmeLhs = X'*Diagonal(mme.invweights)*X
         mme.mmeRhs = X'*Diagonal(mme.invweights)*ySparse
@@ -351,8 +346,8 @@ function getMME(mme::MME, df::DataFrame)
       else  #multi-trait
         Ri = mkRi(mme,df,mme.invweights)
       end
-      @time mme.mmeLhs = X'Ri*X
-      @time mme.mmeRhs = X'Ri*ySparse
+      mme.mmeLhs = X'Ri*X
+      mme.mmeRhs = X'Ri*ySparse
     end
 
     #Random effects parts in MME
@@ -401,4 +396,22 @@ function getNames(trm::ModelTerm)
         push!(names,trm.trmStr*":"*name)
     end
     return names
+end
+
+#return 3 columns ("snp1","ID","a2") directly, instead of "snp1:ID:a2"
+#"snp1": mme.modelTerms.iTrait
+function getNames_3col(mme::MME)
+    n_para          = length(mme.sol)
+    trait_names_all = Array{AbstractString}(undef,n_para) #snp1
+    trm_names_all   = Array{AbstractString}(undef,n_para) #ID
+    name_all        = Array{AbstractString}(undef,n_para) #a2
+    for trm in mme.modelTerms
+        num_row         = length(trm.names)
+        start_pos       = trm.startPos
+        end_pos         = trm.startPos + num_row - 1
+        trait_names_all[start_pos:end_pos] .= trm.iTrait
+        trm_names_all[start_pos:end_pos] .= trm.trmStr2
+        name_all[start_pos:end_pos] = trm.names
+    end
+    return [trait_names_all trm_names_all name_all]
 end

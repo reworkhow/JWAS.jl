@@ -9,11 +9,12 @@
 mutable struct ModelTerm
     iModel::Int64                  # 1st (1) or 2nd (2) model_equation
     iTrait::AbstractString         # trait 1 ("y1") or trait 2 ("y2") (trait name)
-                                   # | trmStr  | nFactors  | factors |
-                                   # |---------|-----------|---------|
-    trmStr::AbstractString         # | "y1:A"  |     1     | :A      |
-    nFactors::Int64                # | "y2:A"  |     1     | :A      |
-    factors::Array{Symbol,1}       # | "y1:A*B"|     2     | :A,:B   |
+                                   # | trmStr  | nFactors  | factors | trmStr2 |
+                                   # |---------|-----------|---------|---------|
+    trmStr::AbstractString         # | "y1:A"  |     1     | :A      | "A"     |
+    nFactors::Int64                # | "y2:A"  |     1     | :A      | "A"     |
+    factors::Array{Symbol,1}       # | "y1:A*B"|     2     | :A,:B   | "A*B"   |
+    trmStr2::AbstractString
 
                                                      #DATA             |          str               |     val       |
                                                      #                :|----------------------------|---------------|
@@ -37,12 +38,13 @@ mutable struct ModelTerm
     function ModelTerm(trmStr,m,traitname)
         iModel    = m
         trmStr    = strip(trmStr)
+        trmStr2   = trmStr
         traitname = strip(traitname)
         factorVec = split(trmStr,"*")
         nFactors  = length(factorVec)
         factors   = [Symbol(strip(f)) for f in factorVec]
         trmStr    = traitname*":"*trmStr
-        new(iModel,traitname,trmStr,nFactors,factors,[],zeros(1),0,[],0,false,"fixed")
+        new(iModel,traitname,trmStr,nFactors,factors,trmStr2,[],zeros(1),0,[],0,false,"fixed")
     end
 end
 

@@ -157,7 +157,7 @@ function runMCMC(mme::MME,df;
                 fitting_J_vector                = true,  #parameters for single-step analysis
                 causal_structure                = false,
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
-                missing_phenotypes              = true,
+                missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
@@ -344,8 +344,7 @@ function runMCMC(mme::MME,df;
     #and individuals of interest
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
-    println("-----------make_incidence_matrices")
-    @time df=make_incidence_matrices(mme,df_whole,train_index)
+    df=make_incidence_matrices(mme,df_whole,train_index)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)

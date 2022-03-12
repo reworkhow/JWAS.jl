@@ -113,10 +113,20 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
               endPosj   = startPosj + randTrmj.nLevels - 1
               S[i,j]    = sol[startPosi:endPosi]'*Vi*sol[startPosj:endPosj]
               S[j,i]    = S[i,j]
+              if mme.MCMCinfo.mega_trait #diagonal elements only
+                  break
+              end
           end
       end
        q  = mme.modelTermDict[term_array[1]].nLevels
-       G0 = rand(InverseWishart(random_term.df + q, convert(Array,Symmetric(random_term.scale + S))))
+       if mme.MCMCinfo.mega_trait #diagonal elements only, from scale-inv-⁠χ2
+           G0  = zeros(mme.nModels,mme.nModels)
+           for traiti in 1:mme.nModels
+               G0[traiti,traiti] = (S[traiti,traiti] + random_term.df*random_term.scale[traiti])/rand(Chisq(q + random_term.df))
+           end
+       else
+           G0 = rand(InverseWishart(random_term.df + q, convert(Array,Symmetric(random_term.scale + S))))
+       end
        if mme.MCMCinfo.double_precision == false
            G0 = Float32.(G0)
        end
