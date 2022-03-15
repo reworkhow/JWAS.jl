@@ -335,7 +335,8 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits (NNBayes)
         ########################################################################
         if nonlinear_function != false #to update ycorr (wArray) and mme.ySparse
-            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
+            println("-------------sample_latent_traits")
+            @time sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
