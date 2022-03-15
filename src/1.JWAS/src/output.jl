@@ -212,9 +212,14 @@ NNBayes_partial:     y1=M1*α1[1]
 """
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
+    if mme.sol_names==false
+        mme.sol_names=getNames_3col(mme)
+    end
     EBV=zeros(length(mme.output_ID))
-    location_parameters = reformat2dataframe([getNames_3col(mme) mme.sol zero(mme.sol)])
-    for term in keys(mme.output_X)
+    println("-----reformat2dataframe")
+    @time location_parameters = reformat2dataframe([mme.sol_names mme.sol zero(mme.sol)])
+    println("-----for")
+    @time for term in keys(mme.output_X)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
             sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
@@ -438,17 +443,17 @@ function output_MCMC_samples(mme,vRes,G0,
 
     if mme.MCMCinfo.outputEBV == true
          println("-----------------EBVmat")
-         @time EBVmat = myEBV = getEBV(mme,1)
-         @time writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         println("---trait1")
+         EBVmat = myEBV = getEBV(mme,1)
+         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              println("---trait$traiti")
-             @time myEBV = getEBV(mme,traiti) #actually BV
+             myEBV = getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             @time writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
-         println("-----------------mygvar")
-         @time if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              #single-trait: a scalar ;  multi-trait: a matrix; mega-trait: a vector
              mygvar = cov(EBVmat) #this might be slow in megatrats
              if mme.MCMCinfo.mega_trait != false
@@ -461,8 +466,7 @@ function output_MCMC_samples(mme,vRes,G0,
              writedlm(outfile["heritability"],heritability,',')
          end
     end
-    println("------------BV_NN")
-    @time if mme.nonlinear_function != false #NNBayes
+    if mme.nonlinear_function != false #NNBayes
         if mme.is_activation_fcn == false  #user-defined nonlinear function
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...) #note intercept has been included in EBVmat
         else  #activation function

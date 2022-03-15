@@ -35,14 +35,12 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     #location parameters
     #mme.sol (its starting values were set in runMCMC)
-    println("---------------m.1")
     mme.solMean, mme.solMean2  = zero(mme.sol),zero(mme.sol)
     #residual variance
     mme.meanVare  = zero(mme.R)
     mme.meanVare2 = zero(mme.R)
 
     #polygenic effects (pedigree), e.g, Animal+ Maternal
-    println("---------------m.2")
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
     end
@@ -105,8 +103,7 @@ function MCMC_BayesianAlphabet(mme,df)
     end
 
     #phenotypes corrected for all effects
-    println("---------------m.3")
-    @time ycorr = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
+    ycorr = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
     if mme.M != 0
         for Mi in mme.M
             for traiti in 1:Mi.ntraits
@@ -120,15 +117,13 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     #More on Multi-Trait
     ############################################################################
-    println("---------------m.4")
-    @time if is_multi_trait
+    if is_multi_trait
         wArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,mme.nModels)
         for traiti = 1:mme.nModels
             startPosi             = (traiti-1)*length(mme.obsID)  + 1
             ptr                   = pointer(ycorr,startPosi)
             wArray[traiti]        = unsafe_wrap(Array,ptr,length(mme.obsID))
         end
-        println("---------------m.4.1")
         #Starting value for Ri is made based on missing value pattern
         #(imputed phenotypes will not used to compute first mmeRhs)
         if mme.MCMCinfo.mega_trait == true  #multiple single trait
@@ -147,8 +142,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     #  SET UP OUTPUT MCMC samples
     ############################################################################
-    println("---------------m.5")
-    @time if output_samples_frequency != 0
+    if output_samples_frequency != 0
         outfile=output_MCMC_samples_setup(mme,chain_length-burnin,
                                           output_samples_frequency,
                                           output_folder*"/MCMC_samples")

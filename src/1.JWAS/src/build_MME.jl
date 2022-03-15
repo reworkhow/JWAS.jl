@@ -351,7 +351,6 @@ function getMME(mme::MME, df::DataFrame)
     end
 
     #Random effects parts in MME
-    println("-----------g.6")
     if mme.nModels == 1
       #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
       for random_term in mme.rndTrmVec #trick
@@ -362,17 +361,15 @@ function getMME(mme::MME, df::DataFrame)
         random_term.GiOld = copy(random_term.GiNew)
       end
     else
-      @time addVinv(mme)
+      addVinv(mme)
     end
-    println("-----------g.7")
-    @time dropzeros!(mme.mmeLhs)
-    @time dropzeros!(mme.mmeRhs)
+    dropzeros!(mme.mmeLhs)
+    dropzeros!(mme.mmeRhs)
 
     #No phenotypic data for some levels of a factor in multi-trait analysis
     #e.g., y3:x3:f in https://github.com/reworkhow/JWAS.jl/blob/
     #a6f4595796b70811c0b745af525e7e0a822bb954/src/5.Datasets/data/example/phenotypes.txt
-    println("-----------g.8")
-    @time for i in size(mme.mmeLhs,1)
+    for i in size(mme.mmeLhs,1)
       if mme.mmeLhs[i,i] == 0.0
         error("No phenotypic data for ",getNames(mme)[i])
       end

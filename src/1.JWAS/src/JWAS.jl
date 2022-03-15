@@ -350,15 +350,13 @@ function runMCMC(mme::MME,df;
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     # initiate Mixed Model Equations and check starting values
-    println("-----------init_mixed_model_equations")
     @time init_mixed_model_equations(mme,df,starting_value)
     ############################################################################
     # MCMC
     ############################################################################
-    println("-----------describe")
-    @time describe(mme)
+    describe(mme)
     println("-----------MCMC_BayesianAlphabet")
-    @time mme.output=MCMC_BayesianAlphabet(mme,df)
+    mme.output=MCMC_BayesianAlphabet(mme,df)
 
     ############################################################################
     # Save output to text files
@@ -452,7 +450,6 @@ function describe(model::MME;data=false)
     if model.MCMCinfo != false && model.MCMCinfo.printout_model_info == true
         getMCMCinfo(model)
     end
-    println("-----aa-------")
 end
 
 """

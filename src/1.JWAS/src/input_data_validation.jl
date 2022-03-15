@@ -382,8 +382,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
 end
 
 function init_mixed_model_equations(mme,df,starting_value)
-    println("---------5")
-    @time getMME(mme,df)
+    getMME(mme,df)
     ############################################################################
     #starting value for non-marker location parameters (sol) can be provided
     ############################################################################
