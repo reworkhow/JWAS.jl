@@ -391,7 +391,8 @@ function output_MCMC_samples(mme,vRes,G0,
                              outfile=false)
     ntraits     = size(mme.lhsVec,1)
     #location parameters
-    output_location_parameters_samples(mme,mme.sol,outfile)
+    println("----------------output_location_parameters_samples")
+    @time output_location_parameters_samples(mme,mme.sol,outfile)
     #random effects variances
     if mme.MCMCinfo.mega_trait == false #not needed for mega_trait
         for effect in  mme.rndTrmVec
@@ -436,16 +437,18 @@ function output_MCMC_samples(mme,vRes,G0,
     end
 
     if mme.MCMCinfo.outputEBV == true
-         EBVmat = myEBV = getEBV(mme,1)
-         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         println("-----------------EBVmat")
+         @time EBVmat = myEBV = getEBV(mme,1)
+         @time writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
-             myEBV = getEBV(mme,traiti) #actually BV
+             println("---trait$traiti")
+             @time myEBV = getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             @time writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
-
-         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+         println("-----------------mygvar")
+         @time if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              #single-trait: a scalar ;  multi-trait: a matrix; mega-trait: a vector
              mygvar = cov(EBVmat) #this might be slow in megatrats
              if mme.MCMCinfo.mega_trait != false
@@ -458,7 +461,8 @@ function output_MCMC_samples(mme,vRes,G0,
              writedlm(outfile["heritability"],heritability,',')
          end
     end
-    if mme.nonlinear_function != false #NNBayes
+    println("------------BV_NN")
+    @time if mme.nonlinear_function != false #NNBayes
         if mme.is_activation_fcn == false  #user-defined nonlinear function
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...) #note intercept has been included in EBVmat
         else  #activation function
