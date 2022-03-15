@@ -13,11 +13,10 @@ end
 #make tricky Ri (big) allowing NA in phenotypes and fixed effects
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame,Rinv)
+    println("-------mkRi (nn-mm should not use)")
     resVar   = ResVar(mme.R,Dict())
     tstMsng  = .!ismissing.(Matrix(df[!,mme.lhsVec]))
-    if mme.missingPattern == false
-        mme.missingPattern = tstMsng
-    end
+    mme.missingPattern = tstMsng
     ntrait = size(tstMsng,2)
     nObs   = size(tstMsng,1)
     ii = Array{Int64}(undef,nObs*ntrait^2)

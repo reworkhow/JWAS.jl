@@ -355,8 +355,10 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # MCMC
     ############################################################################
-    describe(mme)
-    mme.output=MCMC_BayesianAlphabet(mme,df)
+    println("-----------describe")
+    @time describe(mme)
+    println("-----------MCMC_BayesianAlphabet")
+    @time mme.output=MCMC_BayesianAlphabet(mme,df)
 
     ############################################################################
     # Save output to text files
@@ -450,6 +452,7 @@ function describe(model::MME;data=false)
     if model.MCMCinfo != false && model.MCMCinfo.printout_model_info == true
         getMCMCinfo(model)
     end
+    println("-----aa-------")
 end
 
 """
