@@ -37,7 +37,8 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
-                     censored_trait = false, categorical_trait = false)
+                     censored_trait = false, categorical_trait = false,
+                     is_ssnnmm = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -126,6 +127,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
 
   #NNBayes:
   if nonlinear_function != false
+    mme.is_ssnnmm            = is_ssnnmm
     mme.is_fully_connected   = is_fully_connected
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
@@ -393,22 +395,4 @@ function getNames(trm::ModelTerm)
         push!(names,trm.trmStr*":"*name)
     end
     return names
-end
-
-#return 3 columns ("snp1","ID","a2") directly, instead of "snp1:ID:a2"
-#"snp1": mme.modelTerms.iTrait
-function getNames_3col(mme::MME)
-    n_para          = length(mme.sol)
-    trait_names_all = Array{AbstractString}(undef,n_para) #snp1
-    trm_names_all   = Array{AbstractString}(undef,n_para) #ID
-    name_all        = Array{AbstractString}(undef,n_para) #a2
-    for trm in mme.modelTerms
-        num_row         = length(trm.names)
-        start_pos       = trm.startPos
-        end_pos         = trm.startPos + num_row - 1
-        trait_names_all[start_pos:end_pos] .= trm.iTrait
-        trm_names_all[start_pos:end_pos] .= trm.trmStr2
-        name_all[start_pos:end_pos] = trm.names
-    end
-    return [trait_names_all trm_names_all name_all]
 end

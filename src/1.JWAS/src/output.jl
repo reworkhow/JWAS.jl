@@ -94,7 +94,7 @@ function output_result(mme,output_folder,
                        solMean,meanVare,G0Mean,
                        solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
-  location_parameters = reformat2dataframe([getNames_3col(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
+  location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
   output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
@@ -170,7 +170,19 @@ end
 
 #Reformat Output Array to DataFrame
 function reformat2dataframe(res::Array)
-    out = DataFrame(res, [:Trait, :Effect, :Level, :Estimate,:SD])
+    out_names = Array{String}(undef,size(res,1),3)
+    for rowi in 1:size(res,1)
+        out_names[rowi,:]=[strip(i) for i in split(res[rowi,1],':',keepempty=false)]
+    end
+
+    if size(out_names,2)==1 #convert vector to matrix
+        out_names = reshape(out_names,length(out_names),1)
+    end
+    #out_names=permutedims(out_names,[2,1]) #rotate
+    out_values   = map(Float64,res[:,2])
+    out_variance = convert.(Union{Missing, Float64},res[:,3])
+    out =[out_names out_values out_variance]
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:SD])
     return out
 end
 
@@ -212,14 +224,10 @@ NNBayes_partial:     y1=M1*α1[1]
 """
 function getEBV(mme,traiti)
     traiti_name = string(mme.lhsVec[traiti])
-    if mme.sol_names==false
-        mme.sol_names=getNames_3col(mme)
-    end
     EBV=zeros(length(mme.output_ID))
-    println("-----reformat2dataframe")
-    @time location_parameters = reformat2dataframe([mme.sol_names mme.sol zero(mme.sol)])
-    println("-----for")
-    @time for term in keys(mme.output_X)
+
+    location_parameters = reformat2dataframe([getNames(mme) mme.sol zero(mme.sol)])
+    for term in keys(mme.output_X)
         mytrait, effect = split(term,':')
         if mytrait == traiti_name
             sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
@@ -249,6 +257,20 @@ function getEBV(mme,traiti)
             end
         end
     end
+    return EBV
+end
+
+
+function getEBV_ssnnmm(mme,traiti) #traiti=1
+    traiti_name = string(mme.lhsVec[traiti]) #"snp1"
+    trm       = mme.modelTermDict["$traiti_name:ID"]
+    term_nrow = length(trm.names)
+    start_pos = trm.startPos
+    end_pos   = trm.startPos + term_nrow - 1
+    term_sol  = mme.sol[start_pos:end_pos]
+    term_X    = mme.output_X["$traiti_name:ID"]  #"snp1:ID"
+    EBV       = term_X*term_sol
+    #single-step NN-MM: do not add intercept
     return EBV
 end
 ################################################################################
@@ -396,8 +418,7 @@ function output_MCMC_samples(mme,vRes,G0,
                              outfile=false)
     ntraits     = size(mme.lhsVec,1)
     #location parameters
-    println("----------------output_location_parameters_samples")
-    @time output_location_parameters_samples(mme,mme.sol,outfile)
+    output_location_parameters_samples(mme,mme.sol,outfile)
     #random effects variances
     if mme.MCMCinfo.mega_trait == false #not needed for mega_trait
         for effect in  mme.rndTrmVec
@@ -443,12 +464,11 @@ function output_MCMC_samples(mme,vRes,G0,
 
     if mme.MCMCinfo.outputEBV == true
          println("-----------------EBVmat")
-         println("---trait1")
-         EBVmat = myEBV = getEBV(mme,1)
+         EBVmat = myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              println("---trait$traiti")
-             myEBV = getEBV(mme,traiti) #actually BV
+             @time myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
              writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
