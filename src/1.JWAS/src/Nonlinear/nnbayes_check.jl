@@ -199,10 +199,10 @@ function nnlmm_initialize_missing(mme,df)
       #but we already set y1,...,y5 as yobs, so we have to build missingPattern
       # byhand.
       mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
-      # add indicators for individuals with full omics data, so their omics won't be sampled
-      n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
-      n_omics          = length(mme.lhsVec)             #number of omics
-      full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
-      mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
     end
+    # add indicators for individuals with full omics data, so their omics won't be sampled
+    n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
+    n_omics          = length(mme.lhsVec)             #number of omics
+    full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
+    mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
 end
