@@ -157,7 +157,7 @@ function runMCMC(mme::MME,df;
                 fitting_J_vector                = true,  #parameters for single-step analysis
                 causal_structure                = false,
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
-                missing_phenotypes              = true,
+                missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
