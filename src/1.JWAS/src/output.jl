@@ -263,14 +263,17 @@ end
 
 function getEBV_ssnnmm(mme,traiti) #traiti=1
     traiti_name = string(mme.lhsVec[traiti]) #"snp1"
-    trm       = mme.modelTermDict["$traiti_name:ID"]
+    trm       = mme.modelTermDict["$traiti_name:ID"]   #mme.output_X: snp$i:ID
     term_nrow = length(trm.names)
     start_pos = trm.startPos
     end_pos   = trm.startPos + term_nrow - 1
     term_sol  = mme.sol[start_pos:end_pos]
     term_X    = mme.output_X["$traiti_name:ID"]  #"snp1:ID"
     EBV       = term_X*term_sol
-    #single-step NN-MM: do not add intercept
+    #add intercept
+    intercept_trm_start_pos = mme.modelTermDict["$traiti_name:intercept"].startPos
+    intercept_sol           = mme.sol[intercept_trm_start_pos]
+    EBV = EBV .+ intercept_sol
     return EBV
 end
 ################################################################################
