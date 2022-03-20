@@ -212,7 +212,6 @@ function nnlmm_initialize_missing(mme,df)
       # byhand.
       mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
     end
-    
     # add indicators for individuals with full omics data, so their omics won't be sampled
     n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
     n_omics          = length(mme.lhsVec)             #number of omics
