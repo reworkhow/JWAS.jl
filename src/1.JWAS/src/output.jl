@@ -466,12 +466,10 @@ function output_MCMC_samples(mme,vRes,G0,
     end
 
     if mme.MCMCinfo.outputEBV == true
-         println("-----------------EBVmat")
          EBVmat = myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
-             println("---trait$traiti")
-             @time myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
+             myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
              writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
