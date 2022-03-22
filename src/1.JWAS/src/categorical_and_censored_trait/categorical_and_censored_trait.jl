@@ -50,6 +50,14 @@ function categorical_censored_traits_setup!(mme,df)
                     thresholds_all[t] = [tmin; 0; range(1,length=ncategories[t]-1,stop=tmax)]
                 end
             end
+            # check whether the categories are 1,2,3...; otherwise it will cause indexing error
+            category_obs_t     = category_obs[:,t]
+            user_categories    = sort(unique(category_obs_t))
+            correct_categories = collect(1:ncategories[t])
+            if user_categories != correct_categories
+                trait_name = mme.lhsVec[trait_index]
+                error("For categorical trait $trait_name, the categories should be ",correct_categories," ; instead of ",user_categories)
+            end
         end
         # update lower_bound and upper_bound
         update_bounds_from_threshold!(lower_bound,upper_bound,category_obs,thresholds_all,categorical_trait_index)
