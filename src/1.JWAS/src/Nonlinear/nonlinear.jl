@@ -16,6 +16,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     σ2_yobs      = mme.σ2_yobs      # residual variance of yobs (scalar)
     σ2_weightsNN = mme.σ2_weightsNN # variance of nn weights between middle and output layers
 
+    incomplete_omics = mme.incomplete_omics #indicator for ind with incomplete omics
+
     #reshape the vector to nind X ntraits
     nobs, ntraits = length(mme.obsID), mme.nModels
     ylats_old     = reshape(ylats_old,nobs,ntraits) #Tianjing's mme.Z
@@ -24,30 +26,29 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ycorr2        = reshape(ycorr,nobs,ntraits)
 
     #sample latent trait
-    incomplete_omics = mme.incomplete_omics #indicator for ind with incomplete omics
-    if mme.is_activation_fcn == true #Neural Network with activation function
-        if sum(incomplete_omics) != 0   #at least 1 ind with incomplete omics
-            #step 1. sample latent trait (only for individuals with incomplete omics data
+    if sum(incomplete_omics) != 0   #at least 1 ind with incomplete omics
+        #step 1. sample latent trait for individuals with incomplete omics data
+        if mme.is_activation_fcn == true #Neural Network with activation function
             ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.weights_NN,mme.R,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
-            #step 2. update ylats with sampled latent traits
-            ylats_old[incomplete_omics,:] = ylats_new
-            #step 3. for individuals with partial omics data, put back the partial real omics.
-            ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
+        else  #user-defined function, MH
+            candidates       = μ_ylats[incomplete_omics,:]+randn(size(μ_ylats[incomplete_omics,:]))  #candidate samples
+            if nonlinear_function == "Neural Network (MH)" # current NN-MM do not allow "Neural Network (MH)"
+                μ_yobs_candidate = [ones(sum(incomplete_omics)) nonlinear_function.(candidates)]*mme.weights_NN
+                μ_yobs_current   = X*mme.weights_NN
+            else #user-defined non-linear function
+                μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates[incomplete_omics,:],:,i) for i in 1:ntraits])...)
+                μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old[incomplete_omics,:],:,i) for i in 1:ntraits])...)
+            end
+            llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
+            llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
+            mhRatio          = exp.(llh_candidate - llh_current)
+            updateus         = rand(sum(incomplete_omics)) .< mhRatio
+            ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
         end
-    else  #user-defined function, MH
-        candidates       = μ_ylats+randn(size(μ_ylats))  #candidate samples
-        if nonlinear_function == "Neural Network (MH)"
-            μ_yobs_candidate = [ones(nobs) nonlinear_function.(candidates)]*weights
-            μ_yobs_current   = X*weights
-        else #user-defined non-linear function
-            μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates,:,i) for i in 1:ntraits])...)
-            μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old,:,i) for i in 1:ntraits])...)
-        end
-        llh_current      = -0.5*(yobs - μ_yobs_current ).^2/σ2_yobs
-        llh_candidate    = -0.5*(yobs - μ_yobs_candidate).^2/σ2_yobs
-        mhRatio          = exp.(llh_candidate - llh_current)
-        updateus         = rand(nobs) .< mhRatio
-        ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
+        #step 2. update ylats with sampled latent traits
+        ylats_old[incomplete_omics,:] = ylats_new
+        #step 3. for individuals with partial omics data, put back the partial real omics.
+        ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
     end
 
     #sample neural network weights between hidden and output layer
@@ -63,11 +64,12 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     nTrain           = sum(trainingInd)
     nOmics           = size(ylats_old_train,2)
 
-    #RR-BLUP: omics~yobs
-    g_z       = nonlinear_function.(ylats_old_train)
-    yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
-
+    #RR-BLUP to sample neural network weights: omics~yobs (no needed for user-defined function)
     if mme.is_activation_fcn == true #Neural Network with activation function
+        #calcluate g(Z), e.g., tanh(Z)
+        g_z       = nonlinear_function.(ylats_old_train)
+        yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
+
         #sample mean of phenotype
         # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
         yobs_corr = yobs_corr .+ mme.weights_NN[1]
