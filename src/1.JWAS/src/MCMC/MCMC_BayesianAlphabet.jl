@@ -155,6 +155,7 @@ function MCMC_BayesianAlphabet(mme,df)
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
     @showprogress "running MCMC ..." for iter=1:chain_length
+        println("------iteration $iter")
         ########################################################################
         # 0. Categorical and censored traits
         ########################################################################
@@ -172,31 +173,31 @@ function MCMC_BayesianAlphabet(mme,df)
         # 1. Non-Marker Location Parameters
         ########################################################################
         # 1.1 Update Left-hand-side of MME
-        if is_multi_trait
+        @time if is_multi_trait
             mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
             dropzeros!(mme.mmeLhs)
         end
-        addVinv(mme)
+        @time addVinv(mme)
         # 1.2 Update Right-hand-side of MME
         if is_multi_trait
             if mme.MCMCinfo.missing_phenotypes==true
               ycorr[:]=sampleMissingResiduals(mme,ycorr)
             end
         end
-        ycorr[:] = ycorr + mme.X*mme.sol
-        if is_multi_trait
+        @time ycorr[:] = ycorr + mme.X*mme.sol
+        @time if is_multi_trait
             mme.mmeRhs =  mme.X'Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
         # 1.3 Gibbs sampler
-        if is_multi_trait
+        @time if is_multi_trait
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        ycorr[:] = ycorr - mme.X*mme.sol
+        @time ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
@@ -299,11 +300,11 @@ function MCMC_BayesianAlphabet(mme,df)
             # 3.1 Variance of Non-marker Random Effects
             # e.g, i.i.d; polygenic effects (pedigree)
             ########################################################################
-            sampleVCs(mme,mme.sol)
+            @time sampleVCs(mme,mme.sol)
             ########################################################################
             # 3.2 Residual Variance
             ########################################################################
-            if is_multi_trait
+            @time if is_multi_trait
                 mme.R = sample_variance(wArray, length(mme.obsID),
                                         mme.df.residual, mme.scaleR,
                                         invweights,constraint)
@@ -327,7 +328,7 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 5. Latent Traits (NNBayes)
         ########################################################################
-        if nonlinear_function != false #to update ycorr (wArray) and mme.ySparse
+        @time if nonlinear_function != false #to update ycorr (wArray) and mme.ySparse
             sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
@@ -350,7 +351,7 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 3.1 Save MCMC samples
         ########################################################################
-        if iter>burnin && (iter-burnin)%output_samples_frequency == 0
+        @time if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             #MCMC samples from posterior distributions
             nsamples       = (iter-burnin)/output_samples_frequency
             output_posterior_mean_variance(mme,nsamples)
