@@ -466,11 +466,15 @@ function output_MCMC_samples(mme,vRes,G0,
 
     if mme.MCMCinfo.outputEBV == true
          EBVmat = myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
-         # writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         if mme.nonlinear_function==false  #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
+             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         end
          for traiti in 2:ntraits
              myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             # writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             if mme.nonlinear_function==false #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
+                 writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             end
              EBVmat = [EBVmat myEBV]
          end
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
