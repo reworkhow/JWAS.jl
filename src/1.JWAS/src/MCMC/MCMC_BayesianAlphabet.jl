@@ -21,6 +21,17 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
+
+    estimate_any_marker_effect_var = false
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.estimateVariance == true
+                estimate_any_marker_effect_var = true
+            end
+        end
+    end
+    @show estimate_any_marker_effect_var
+
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -132,7 +143,13 @@ function MCMC_BayesianAlphabet(mme,df)
             Ri         = mkRi(mme,df,invweights) #will return a sparse matrix
             dropzeros!(Ri)
         end
+
+        mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
+        dropzeros!(mme.mmeLhs)
     end
+
+    addVinv(mme)
+
     ############################################################################
     # Starting values for SEM
     ############################################################################
@@ -173,11 +190,13 @@ function MCMC_BayesianAlphabet(mme,df)
         # 1. Non-Marker Location Parameters
         ########################################################################
         # 1.1 Update Left-hand-side of MME
-        @time if is_multi_trait
+        if is_multi_trait && estimate_variance == true
             mme.mmeLhs = mme.X'Ri*mme.X #normal equation, Ri is changed
             dropzeros!(mme.mmeLhs)
         end
-        @time addVinv(mme)
+        if (estimate_variance == true || estimate_any_marker_effect_var == true)
+            addVinv(mme)
+        end
         # 1.2 Update Right-hand-side of MME
         if is_multi_trait
             if mme.MCMCinfo.missing_phenotypes==true
