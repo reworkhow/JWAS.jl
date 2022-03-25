@@ -264,9 +264,8 @@ end
 function getEBV_ssnnmm(mme,traiti) #traiti=1
     traiti_name = string(mme.lhsVec[traiti]) #"snp1"
     trm       = mme.modelTermDict["$traiti_name:ID"]   #mme.output_X: snp$i:ID
-    term_nrow = length(trm.names)
     start_pos = trm.startPos
-    end_pos   = trm.startPos + term_nrow - 1
+    end_pos   = trm.startPos + trm.nLevels - 1
     term_sol  = mme.sol[start_pos:end_pos]
     term_X    = mme.output_X["$traiti_name:ID"]  #"snp1:ID"
     EBV       = term_X*term_sol
@@ -467,11 +466,11 @@ function output_MCMC_samples(mme,vRes,G0,
 
     if mme.MCMCinfo.outputEBV == true
          EBVmat = myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
-         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         # writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             # writedlm(outfile["EBV_"*trait_name],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false

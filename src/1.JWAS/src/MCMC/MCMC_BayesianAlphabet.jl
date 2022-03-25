@@ -203,20 +203,20 @@ function MCMC_BayesianAlphabet(mme,df)
               ycorr[:]=sampleMissingResiduals(mme,ycorr)
             end
         end
-        @time ycorr[:] = ycorr + mme.X*mme.sol
-        @time if is_multi_trait
+        ycorr[:] = ycorr + mme.X*mme.sol
+        if is_multi_trait
             mme.mmeRhs =  mme.X'Ri*ycorr
         else
             mme.mmeRhs = (invweights == false) ? mme.X'ycorr : mme.X'Diagonal(invweights)*ycorr
         end
         # 1.3 Gibbs sampler
-        @time if is_multi_trait
+        if is_multi_trait
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs)
         else
             Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         end
 
-        @time ycorr[:] = ycorr - mme.X*mme.sol
+        ycorr[:] = ycorr - mme.X*mme.sol
         ########################################################################
         # 2. Marker Effects
         ########################################################################
@@ -373,7 +373,7 @@ function MCMC_BayesianAlphabet(mme,df)
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
             #MCMC samples from posterior distributions
             nsamples       = (iter-burnin)/output_samples_frequency
-            @time output_posterior_mean_variance(mme,nsamples)
+            output_posterior_mean_variance(mme,nsamples)
             #mean and variance of posterior distribution
             @time output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
              if causal_structure != false

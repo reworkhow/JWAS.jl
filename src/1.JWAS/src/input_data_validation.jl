@@ -315,6 +315,11 @@ function make_dataframes(df,mme)
     "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
     writedlm("IDs_for_individuals_with_phenotypes.txt",unique(df_whole[train_index,1]))
     mme.obsID = map(string,df_whole[train_index,1])
+    if mme.nonlinear_function != false
+        mme.incomplete_omics = mme.incomplete_omics[train_index]
+        mme.yobs             = mme.yobs[train_index]
+        mme.missingPattern   = mme.missingPattern[train_index,:]
+    end
     return df_whole,train_index
 end
 
@@ -348,6 +353,10 @@ function make_incidence_matrices(mme,df_whole,train_index)
             Zout = mkmat_incidence_factor(string(mme.modelTermDict[term1].iModel) .* mme.output_ID,
                    vcat(Tuple([string(i) .* df_whole[!,1] for i=1:mme.nModels])...))
             output_X1 = Zout*mme.modelTermDict[term1].X
+            if output_X1==I
+                n=size(output_X1,1)
+                output_X1 = I(n)
+            end
             for term in mme.MCMCinfo.prediction_equation
                 mme.output_X[term] = copy(output_X1)
             end
