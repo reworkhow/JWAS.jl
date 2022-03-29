@@ -155,6 +155,15 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             "These are removed from the analysis.\n",bold=false,color=:red)
         end
     end
+    #print trait types information if there is categorical or censored trait
+    categorical_trait_index = findall(x -> x=="categorical", mme.traits_type)
+    censored_trait_index    = findall(x -> x=="censored",    mme.traits_type)
+    if length(categorical_trait_index)>0
+        printstyled("Categorical traits are: ", string.(mme.lhsVec[categorical_trait_index]),"\n",color=:green)
+    end
+    if length(censored_trait_index)>0
+        printstyled("Censored traits are:    ", string.(mme.lhsVec[censored_trait_index]),"\n",color=:green)
+    end
     if mme.ped != false #1)incomplete genomic data 2)PBLUP or 3)complete genomic data with polygenic effect
         pedID = map(string,collect(keys(mme.ped.idMap)))
         if !issubset(phenoID,pedID)
