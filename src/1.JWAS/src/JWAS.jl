@@ -286,7 +286,12 @@ function runMCMC(mme::MME,df;
         if single_step_analysis == true
             SSBRrun(mme,df_whole,train_index,big_memory)
         end
-        set_marker_hyperparameters_variances_and_pi(mme)
+        if mme.is_ssnnmm==false
+            set_marker_hyperparameters_variances_and_pi(mme)
+        end
+    end
+    if single_step_analysis == true && mme.is_ssnnmm
+        return "genotype imputation end"
     end
     ############################################################################
     # Adhoc functions

@@ -14,6 +14,9 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     println("imputing missing genotypes")
     flush(stdout)
     @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
+    if mme.is_ssnnmm
+        return "aaa"
+    end
     println("completed imputing genotypes")
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual

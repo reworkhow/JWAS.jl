@@ -255,6 +255,7 @@ mutable struct MME
     fixed_σ2_NN
     incomplete_omics
     is_ssnnmm #single-step NN-MM
+    middle_nodes_starting_values
 
     traits_type   #by default all traits are continuous
 
@@ -282,7 +283,7 @@ mutable struct MME
                    0,
                    false,false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,false,
+                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,false,false,
                    repeat(["continuous"],nModels))
     end
 end

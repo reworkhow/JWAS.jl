@@ -198,12 +198,25 @@ function nnlmm_initialize_missing(mme,df)
     if mme.latent_traits != false  #NN-LMM-Omics
       #save omics data missing pattern
       mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
-      #replace missing data with values in yobs
-      for i in mme.lhsVec      #for each omics feature
-        for j in 1:size(df,1)  #for each observation
-          if ismissing(df[j,i])
-            df[j,i]=mme.yobs[j]
+      #set starting values for missing data
+      if mme.middle_nodes_starting_values == false  #replace missing data with values in yobs
+          for i in mme.lhsVec      #for each omics feature
+            for j in 1:size(df,1)  #for each observation
+              if ismissing(df[j,i])
+                df[j,i]=mme.yobs[j]
+              end
+            end
           end
+      else #replace missing data with values in user-provided starting values
+          for i in mme.lhsVec        #for each omics feature
+            which_col = findall(x -> x == string(i), names(mme.middle_nodes_starting_values))[1]
+            for j in 1:size(df,1)  #for each observation
+                ind_id = df[j,1]
+                if ismissing(df[j,i])
+                    which_row = findall(x -> x == ind_id, mme.middle_nodes_starting_values[:,1])[1]
+                    df[j,i] = mme.middle_nodes_starting_values[which_row,which_col]
+                end
+            end
         end
       end
     else  #NN-Bayes with hidden nodes (G3 paper)
