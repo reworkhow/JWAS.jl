@@ -167,7 +167,7 @@ function output_result(mme,output_folder,
           end
       elseif mme.MCMCinfo.RRM != false
           EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:size(mme.MCMCinfo.RRM,2)]
-      end 
+      end
 
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
@@ -182,7 +182,12 @@ function output_result(mme,output_folder,
       end
 
       if mme.MCMCinfo.output_heritability == true  && mme.MCMCinfo.single_step_analysis == false
-          for i in ["genetic_variance","heritability"]
+          if mme.MCMCinfo.RRM == false
+              genetic_trm_vec = ["genetic_variance","heritability"]
+          else
+              genetic_trm_vec = ["genetic_variance"]
+          end
+          for i in genetic_trm_vec
               samplesfile = output_file*"_"*i*".txt"
               samples,names = readdlm(samplesfile,',',header=true)
               samplemean    = vec(mean(samples,dims=1))
@@ -311,13 +316,19 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   if mme.pedTrmVec != 0
       push!(outvar,"polygenic_effects_variance")
   end
-  if mme.M !=0 #write samples for marker effects to a text file
+  if mme.M !=0 #write samples for marker effects to a text fil
       for Mi in mme.M
-          for traiti in Mi.trait_names
-              push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+          if mme.MCMCinfo.RRM != false
+              for traiti in string.(mme.lhsVec)
+                  push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+              end
+          else
+              for traiti in Mi.trait_names
+                  push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+              end
           end
-          push!(outvar,"marker_effects_variances"*"_"*Mi.name)
           push!(outvar,"pi"*"_"*Mi.name)
+          push!(outvar,"marker_effects_variances"*"_"*Mi.name)
       end
   end
 
@@ -338,9 +349,12 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       for traiti in 1:ntraits
           push!(outvar,"EBV_"*string(mme.lhsVec[traiti]))
       end
-      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM == false
           push!(outvar,"genetic_variance")
           push!(outvar,"heritability")
+      elseif mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM != false
+          printstyled("The heritability of RRM is not provided. \n",bold=false,color=:red)
+          push!(outvar,"genetic_variance")
       end
       if mme.nonlinear_function != false  #NNBayes
           push!(outvar,"EBV_NonLinear")
@@ -385,8 +399,14 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   if mme.M !=0
       for Mi in mme.M
-          for traiti in Mi.trait_names
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+          if mme.MCMCinfo.RRM != false
+              for traiti in string.(mme.lhsVec)
+                 writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti], transubstrarr(Mi.markerID),',')
+              end
+          else
+              for traiti in Mi.trait_names
+                  writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+              end
           end
       end
   end
@@ -400,9 +420,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       for traiti in 1:ntraits
           writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],transubstrarr(mme.output_ID),',')
       end
-      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+      if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM == false
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
+      elseif mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM != false
+          writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
       end
       if mme.nonlinear_function != false #NNBayes
           writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
@@ -435,8 +457,14 @@ function output_MCMC_samples(mme,vRes,G0,
     is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-          for traiti in 1:Mi.ntraits
-              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
+          if mme.MCMCinfo.RRM != false
+              for traiti in 1:ntraits
+                 writedlm(outfile["marker_effects_"*Mi.name*"_"*string.(mme.lhsVec)[traiti]], Mi.α[traiti]',',')
+              end
+          else
+              for traiti in 1:Mi.ntraits
+                  writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
+              end
           end
           if Mi.G != false
               if mme.nModels == 1
@@ -466,12 +494,16 @@ function output_MCMC_samples(mme,vRes,G0,
              EBVmat = [EBVmat myEBV]
          end
 
-         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM == false
              mygvar = cov(EBVmat)
              genetic_variance = (ntraits == 1  ? mygvar : vec(mygvar)')
              heritability     = (ntraits == 1  ? mygvar/(mygvar+vRes) : (diag(mygvar./(mygvar.+vRes)))')
              writedlm(outfile["genetic_variance"],genetic_variance,',')
              writedlm(outfile["heritability"],heritability,',')
+         elseif mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false && mme.MCMCinfo.RRM != false
+             mygvar = cov(EBVmat)
+             genetic_variance = (ntraits == 1  ? mygvar : vec(mygvar)')
+             writedlm(outfile["genetic_variance"],genetic_variance,',')
          end
     end
     if mme.nonlinear_function != false #NNBayes

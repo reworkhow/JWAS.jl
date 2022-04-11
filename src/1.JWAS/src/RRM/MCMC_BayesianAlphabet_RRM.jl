@@ -34,6 +34,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
     if mme.M != 0
         for Mi in mme.M
             Mi.genotypes = Z * Mi.genotypes
+            Mi.obsID     = unique(df[!,1])
             Mi.nObs      = length(mme.obsID)
         end
     end

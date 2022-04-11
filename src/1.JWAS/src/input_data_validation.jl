@@ -361,7 +361,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #for any fixed factor or i.i.d random factor
     for term in mme.modelTerms
         if term.nLevels > 1 && term.random_type in ["fixed","I"]
-            train_effects = vec(sum(term.X,dims=1) .!= 0.0)
+            train_effects = vec(sum(term.X,dims=1) .!= 0.0) # vector of T/F indicating whether is a non-zero column
             if sum(train_effects) != length(train_effects) #where zero columns exist
                 error("Some levels in $(term.trmStr) for individuals of interest are not found in training individuals (IDs with non-missing records).",
                       "You may delete those rows or replace those values with missing.")

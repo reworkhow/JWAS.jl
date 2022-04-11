@@ -56,7 +56,7 @@ mutable struct GibbsMats
 end
 
 ################################################################################
-#align genotypes with phenotyps given IDs #MAY USE TOO MUCH MEMORY
+#align genotypes with phenotypes given IDs #MAY USE TOO MUCH MEMORY
 ################################################################################
 #input: mme.M.genotypes (1) complete genomic data  -> all genotyped individuals
 #                       (2)* incomplete genomic data -> all pedigree individuals
