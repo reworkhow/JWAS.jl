@@ -24,8 +24,10 @@ function errors_args(mme)
             if Mi.method in ["RR-BLUP","BayesL","GBLUP","BayesA"]
                 if Mi.π != false
                     printstyled(Mi.method," runs with π = false.\n",bold=false,color=:red)
+                    Mi.π = false
                 elseif Mi.estimatePi == true
                     printstyled(Mi.method," runs with estimatePi = false.\n",bold=false,color=:red)
+                    Mi.estimatePi = false
                 end
             end
             if Mi.method == "BayesA"
@@ -55,9 +57,6 @@ function errors_args(mme)
     end
     if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
-    end
-    if mme.MCMCinfo.categorical_trait != false && mme.nModels != 1
-        error("Categorical traits are only allowed in single trait analysis")
     end
 end
 
@@ -151,9 +150,6 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         if !issubset(phenoID,mme.M[1].obsID)
             index = [phenoID[i] in mme.M[1].obsID for i=1:length(phenoID)]
             df    = df[index,:]
-            if mme.MCMCinfo.censored_trait != false
-                mme.MCMCinfo.censored_trait = mme.MCMCinfo.censored_trait[index]
-            end
             printstyled("In this complete genomic data (non-single-step) analyis, ",
             length(index)-sum(index)," phenotyped individuals are not genotyped. ",
             "These are removed from the analysis.\n",bold=false,color=:red)
@@ -226,7 +222,8 @@ function set_default_priors_for_variance_components(mme,df)
   #residual effects
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.R = mme.ROld = vare[1,1]
+    is_categorical_trait = mme.traits_type==["categorical"]
+    mme.R = mme.ROld = is_categorical_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
     mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
@@ -261,6 +258,15 @@ end
 #missing values are used for some individuals of interest for which data is not available.
 function make_dataframes(df,mme)
     #***************************************************************************
+    #NN-Bayes Omics: individuals with all omics data but no yobs should be kept
+    #                since the omics data can help better estimate marker effect
+    #***************************************************************************
+    if mme.nonlinear_function != false && mme.latent_traits != false
+        lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
+    else
+        lhsVec = mme.lhsVec #reference, not copy
+    end
+    #***************************************************************************
     #Whole Data (training + individuals of interest)
     #***************************************************************************
     #expand phenotype dataframe to include individuals of interest (to make incidencee matrices)
@@ -278,8 +284,8 @@ function make_dataframes(df,mme)
     #(non-missing observations, only these ar used in mixed model equations)
     #***************************************************************************
     #remove individuals whose phenotypes are missing for all traits fitted in the model
-    missingdf  = ismissing.(Matrix(df_whole[!,mme.lhsVec]))
-    allmissing = fill(true,mme.nModels)
+    missingdf  = ismissing.(Matrix(df_whole[!,lhsVec]))
+    allmissing = fill(true,length(lhsVec))
     train_index = Array{Int64,1}()
     for i in 1:size(missingdf,1)
         if missingdf[i,:] != allmissing
@@ -361,7 +367,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #for any fixed factor or i.i.d random factor
     for term in mme.modelTerms
         if term.nLevels > 1 && term.random_type in ["fixed","I"]
-            train_effects = vec(sum(term.X,dims=1) .!= 0.0) # vector of T/F indicating whether is a non-zero column
+            train_effects = vec(sum(term.X,dims=1) .!= 0.0)
             if sum(train_effects) != length(train_effects) #where zero columns exist
                 error("Some levels in $(term.trmStr) for individuals of interest are not found in training individuals (IDs with non-missing records).",
                       "You may delete those rows or replace those values with missing.")

@@ -56,7 +56,7 @@ mutable struct GibbsMats
 end
 
 ################################################################################
-#align genotypes with phenotypes given IDs #MAY USE TOO MUCH MEMORY
+#align genotypes with phenotyps given IDs #MAY USE TOO MUCH MEMORY
 ################################################################################
 #input: mme.M.genotypes (1) complete genomic data  -> all genotyped individuals
 #                       (2)* incomplete genomic data -> all pedigree individuals
@@ -154,7 +154,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 if Mi.method!="GBLUP"
                     genetic2marker(Mi,Mi.π)
                     println()
-                    if Mi.ntraits != 1 || mme.MCMCinfo.RRM != false #multi-trait or RRM
+                    if mme.nModels != 1 || mme.MCMCinfo.RRM != false
                       if !isposdef(Mi.G) #also work for scalar
                         error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
                       end
@@ -179,7 +179,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
             #(3) scale parameter for marker effect variance
             if Mi.ntraits == 1 && mme.MCMCinfo.RRM == false
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
-            else #multi-trait or RRM
+            else
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
             end
         end
@@ -200,6 +200,6 @@ function genetic2marker(M::Genotypes,Pi::Dict)
   M.G = M.genetic_variance ./ denom
 end
 
-function genetic2marker(M::Genotypes,π::Float64) #single-trait analysis
+function genetic2marker(M::Genotypes,π::Float64)
     M.G = M.genetic_variance/((1-π)*M.sum2pq)
 end

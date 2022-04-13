@@ -1,4 +1,5 @@
-function get_Hi(pedigree,genotypes)
+#http://nce.ads.uga.edu/wiki/lib/exe/fetch.php?media=singlestepblupf90.pdf
+function get_Hi(pedigree,genotypes;weight_for_G::Float64 = 1.0)
     #***********************************************************************
     #Hi = Ai + [0 0;0 inv(G)- inv(A_gg)]
     #***********************************************************************
@@ -15,15 +16,16 @@ function get_Hi(pedigree,genotypes)
         M,p,freq = genotypes.genotypes, genotypes.nMarkers, genotypes.alleleFreq #already centered
         M        = M ./ sqrt.(2*freq.*(1 .- freq))
         G        = (M*M'+ I*0.00001)/p
-        add_small_value_count = 0
-        while isposdef(G) == false
-            println("The relationship matrix is not positive definite. A very small number is added to the diagonal.")
-            G += I*0.00001
-            add_small_value_count += 1
-            if add_small_value_count > 10
-                error("Please provide a positive-definite realtionship matrix.")
-            end
-        end
+    end
+    if 0.0 <= weight_for_G <= 1.0
+        weight_for_G = round(weight_for_G, digits=3)
+        weight_for_A = round(1-weight_for_G, digits=3)
+        G = weight_for_G*G + weight_for_A*A_gg
+        println("The genomic relationship matrix is calculated as
+        G = $weight_for_G G + $weight_for_A A.")
+    end
+    if isposdef(G) == false
+        error("Please provide a positive-definite relationship matrix.")
     end
 
     IDs      = pedigree.IDs

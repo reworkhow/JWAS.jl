@@ -54,15 +54,7 @@ function get_mΦΦarray(Φ,T,mArray)
     return mΦΦarray
 end
 
-function BayesABCRRM!(genotypes, wArray, yfull,vare,locus_effect_variances, Φ, zeros_indicator, mΦΦArray)
-    BayesABCRRM!(genotypes.mArray, wArray, yfull, genotypes.β, genotypes.δ,
-                genotypes.α,vare,locus_effect_variances,genotypes.π, Φ, zeros_indicator, mΦΦArray)
-end
-
-
-
-
-function BayesABCRRM!(xArray,wArray,yfull,
+function BayesABCRRM!(xArray,xpx,wArray,yfull,
                       betaArray,deltaArray,alphaArray,
                       vare,varEffects,BigPi,
                       Φ, zeros_indicator, mΦΦArray)
