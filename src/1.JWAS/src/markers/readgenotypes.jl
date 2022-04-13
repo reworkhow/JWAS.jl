@@ -69,7 +69,7 @@ end
         * This matrix needs to be column-wise sorted by marker positions.
         * rowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n
         * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
-* If `quality_control`=true,
+* If `quality_control`=true, defaulting to `true`,
     * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
     * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
@@ -80,13 +80,14 @@ end
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
+
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                        method = "BayesC",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
-                       quality_control=false, MAF = 0.01)
+                       quality_control=true, MAF = 0.01, missing_value = 9.0)
     #Read the genotype file
     if typeof(file) <: AbstractString
         printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
@@ -157,14 +158,14 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     #Naive Quality Control 1, replace missing values with column means
     if quality_control == true
         for genoi in eachcol(genotypes)
-            missing_obs        = findall(x->x==9.0,genoi)
+            missing_obs        = findall(x->x==float(missing_value),genoi)
             nonmissing_obs     = deleteat!(collect(1:nObs),missing_obs)
             genoi[missing_obs] .= mean(genoi[nonmissing_obs])
             if findfirst(x->(x>2.0||x<0.0),genoi) != nothing #issue71, genotype score
                 @warn "genotype scores out of the range 0 to 2 are found."
             end
         end
-        printstyled("Missing values are replaced by column means.\n",bold=true)
+        printstyled("Missing values ($missing_value) are replaced by column means.\n",bold=true)
     end
 
     markerMeans   = center==true ? center!(genotypes) : mean(genotypes,dims=1) #centering genotypes or not
@@ -197,7 +198,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             genotypes = genotypes + I*0.00001
             add_small_value_count += 1
             if add_small_value_count > 10
-                error("Please provide a positive-definite realtionship matrix.")
+                error("Please provide a positive-definite relationship matrix.")
             end
         end
     end
