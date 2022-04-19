@@ -196,6 +196,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
 
             if mme.pedTrmVec != 0
                 mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
+                mme.G0Mean2 += (inv(mme.Gi) .^2 - mme.G0Mean2 )/nsamples
             end
             if mme.M != 0
                 for Mi in mme.M
