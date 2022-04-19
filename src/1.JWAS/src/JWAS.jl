@@ -186,8 +186,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Neural Network
     ############################################################################
-                estimateScale                   = false)
-    #Neural Network
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
         mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
@@ -384,6 +382,27 @@ function runMCMC(mme::MME,df;
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
+    ############################################################################
+    # Incomplete Genomic Data (Single-Step)
+    ############################################################################
+    #1)reorder in A (pedigree) as ids for genotyped then non-genotyped inds
+    #2)impute genotypes for non-genotyped individuals
+    #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
+    if single_step_analysis == true
+        SSBRrun(mme,df,big_memory)
+    end
+
+    #save MCMC samples for all parameters (?seperate function user call)
+    if output_samples_for_all_parameters == true
+        allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
+        allparameters=unique(allparameters)
+        for parameter in allparameters
+            outputMCMCsamples(mme,parameter)
+        end
+    end
+    ############################################################################
+    # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
+    ############################################################################
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
     ############################################################################
