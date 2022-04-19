@@ -5,10 +5,11 @@ using Random
 using GSL;
 using Distributions;
 data_path = "/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/"
-geno_file = data_path * "Genotype2_50.csv"
-RR_pheno = data_path * "RR_BLUE_missing2_PSA.csv"
-pheno = CSV.read(RR_pheno, DataFrame)
-ncoef = 3
+geno_file = data_path * "Genotype2_first5k.csv";
+# generate dataframe having Day columns
+RR_pheno = data_path * "RR_PSA_rep1.csv"
+pheno = CSV.read(RR_pheno, DataFrame)[:,2:end]
+ncoef = 2
 tp = length(unique(pheno[!, :time]));
 ### Generate Lengendre Polynomial Covariates
 function generatefullPhi(timevec, ncoeff = 3)
@@ -30,66 +31,44 @@ end
 
 myPhi = generatefullPhi(pheno[!, :time], ncoef);
 
+IDs = unique(pheno[!, :ID])
+Random.seed!(123)
+nind = size(IDs,1)
+nt = 119
+testingInd = sample(IDs,nt,replace=false)
+trainingInd = filter!(x->x ∉ testingInd,IDs);
+pheno_training = filter(row -> row.ID in trainingInd, copy(pheno))
+pheno_training
 
-# add corresponding Phi1 and Phi2 columns to the pheno_training data frame
-nrec = size(pheno,1)
+pheno_training[!,:PE] = pheno_training[!,:ID]
+pheno_testing = filter(row -> row.ID in testingInd, copy(pheno));
+cd(data_path * "RRM_new")
+nrec = size(pheno_training,1)
 wholePhi = Array{Float64}(undef, nrec, ncoef);
 r = 1
-for timei in pheno[!, :time]
+for timei in pheno_training[!, :time]
     wholePhi[r,:] = myPhi[timei,:]
     global r += 1
 end
 for i in 1:ncoef
-    pheno[!,Symbol("Phi$i")] = wholePhi[:,i]
+    pheno_training[!,Symbol("Phi$i")] = wholePhi[:,i]
 end
+fixed_effect = join(" + Phi" .* string.(collect(1:ncoef)))
+model_equation = "PSA = geno" * fixed_effect * " + Phi1*PE" #*hetero_residual
+#Pi = Dict(fill(1.,2) => 0.7, fill(0.,2)=> 0.3, [1.,0] => 0., [0.,1.] => 0.)
 
-
-cd(data_path * "RRM_new")
-
-hetero_residual = join("+ Day" .* string.(collect(1:10)))
-model_equation = "PSA = geno + Phi1 + Phi2 + Phi3 + Phi1*ID + Phi2*ID + Phi3*ID"  * hetero_residual
 geno = get_genotypes(geno_file, separator = ',', method = "BayesC", estimatePi = true);
 model = build_model(model_equation);
 for i in 1:ncoef
     set_covariate(model, "Phi$i")
 end
-for i in 1:3
-    set_random(model, "Phi$i*ID")
-end
-
-for d in 1:10
-    set_random(model, "Day$d")
-end
+set_random(model, "Phi1*PE")
+@time output=runMCMC(model,pheno_training,
+    chain_length=5000,burnin=1000,RRM=myPhi, output_samples_for_all_parameters = true);
 
 
-# results 14
-#@time output_old=runMCMC(model,pheno,
-#    chain_length=5000,RRM=myPhi, output_samples_for_all_parameters = true,seed = 123);
-
-
-#results 15
-#
-@time output_new=runMCMC(model,pheno, burnin = 1000,
-    chain_length=5000,RRM=myPhi, output_samples_for_all_parameters = true,seed = 123);
-
-model.scaleR
-
-
-output_old
-
-
-
-EBV_ids = readdlm("/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/RRM_new/results17/MCMC_samples_marker_effects_1.txt", header = true, ',')[1]
-EBV_ids[:,3]
-#u1 = CSV.read("/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/RRM_new/results1/EBV_1.txt", DataFrame) # estimated first random regression coefficients for individuals
-#u2 = CSV.read("/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/RRM_new/results/EBV_2.txt", DataFrame) # estimated first random regression coefficients for individuals
-#EBVs = DataFrame(ID = u1[!, :ID],u1 = u1[!, :EBV],u2 = u2[!, :EBV])
-
-
-
-    #### Validation (sample codes, users need to do the training/testing split)
-u1 = CSV.read("/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/RRM_new/results1/EBV_1.txt", DataFrame) # estimated first random regression coefficients for individuals
-u2 = CSV.read("/Users/apple/Box/Jiayi_Computer/UCD_PhD/RRM/simple_simulation/simulation_testCode/RRM_new/results/EBV_2.txt", DataFrame) # estimated first random regression coefficients for individuals
+u1 = output1["EBV_1"] # estimated first random regression coefficients for individuals
+u2 = output1["EBV_2"] # estimated first random regression coefficients for individuals
 EBVs = DataFrame(ID = u1[!, :ID],u1 = u1[!, :EBV],u2 = u2[!, :EBV])
 
 # Calculate the BV for individuals
@@ -120,6 +99,11 @@ for timei = 1:tp
     res = cor(final_dfi[!,:EBV], final_dfi[!,:PSA])
     push!(accuracy, res)
 end
+
 accuracy
+mean(accuracy)
+
+accuracy
+
 
 mean(accuracy)

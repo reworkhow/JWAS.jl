@@ -38,7 +38,6 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
     #residual variance
     mme.meanVare = mme.meanVare2 = 0.0
 
-
     #polygenic effects (A), e.g, Animal+ Maternal
     if mme.pedTrmVec != 0
        mme.G0Mean,mme.G0Mean2  = zero(mme.Gi),zero(mme.Gi)
@@ -72,6 +71,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
             end
         end
     end
+
 
     #Pi value
     if mme.M != 0
@@ -110,10 +110,12 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
         ycorr[:] = ycorr - mme.X*mme.sol
 
+
+
         ########################################################################
         # 1.2 Marker Effects
         ########################################################################
-        yfull[:]   = T'ycorr
+         yfull[:]  = T'ycorr
 
         if mme.M != 0
             for Mi in mme.M
@@ -128,7 +130,6 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
                     end
                 end
             end
-
 
         # MTBayesABC!(mArray,mpm,wArray,
         #           betaArray,
@@ -152,11 +153,12 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         ########################################################################
         sampleVCs(mme,mme.sol)
         addVinv(mme)
+
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
         mme.ROld = mme.R
-        mme.R = sample_variance(ycorr, length(ycorr), mme.df.residual, false, false)
+        mme.R = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleR)
 
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -194,6 +196,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
 
             if mme.pedTrmVec != 0
                 mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
+                mme.G0Mean2 += (inv(mme.Gi) .^2 - mme.G0Mean2 )/nsamples
             end
             if mme.M != 0
                 for Mi in mme.M
