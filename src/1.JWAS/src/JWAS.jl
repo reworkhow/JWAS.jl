@@ -134,27 +134,29 @@ function runMCMC(mme::MME,df;
                 output_samples_file               = "MCMC_samples",
                 update_priors_frequency::Integer  = 0,
                 #Methods
-                methods                         = "conventional (no markers)",
-                estimate_variance               = true,
-                Pi                              = 0.0,
-                estimatePi                      = false,
-                estimateScale                   = false,
-                single_step_analysis            = false, #parameters for single-step analysis
-                pedigree                        = false, #parameters for single-step analysis
-                categorical_trait               = false,
-                missing_phenotypes              = true,
-                constraint                      = false,
-                causal_structure                = false,
+                methods                           = "conventional (no markers)",
+                estimate_variance                 = true,
+                Pi                                = 0.0,
+                estimatePi                        = false,
+                estimateScale                     = false,
+                single_step_analysis              = false, #parameters for single-step analysis
+                pedigree                          = false, #parameters for single-step analysis
+                categorical_trait                 = false,
+                missing_phenotypes                = true,
+                constraint                        = false,
+                causal_structure                  = false,
                 #Genomic Prediction
-                outputEBV                       = true,
-                output_heritability             = true,  #complete or incomplete genomic data
+                outputEBV                         = true,
+                output_heritability               = true,  #complete or incomplete genomic data
                 #MISC
-                seed                            = false,
-                printout_model_info             = true,
-                printout_frequency              = chain_length+1,
-                big_memory                      = false,
-                double_precision                = false,
-                RRM                             = false) # Φ
+                seed                              = false,
+                printout_model_info               = true,
+                printout_frequency                = chain_length+1,
+                big_memory                        = false,
+                double_precision                  = false,
+                RRM                               = false, # Φ
+                output_samples_for_all_parameters = false,
+                ) # Φ
 
     ############################################################################
     # Pre-Check
@@ -233,6 +235,15 @@ function runMCMC(mme::MME,df;
     #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
     if single_step_analysis == true
         SSBRrun(mme,df,big_memory)
+    end
+
+    #save MCMC samples for all parameters (?seperate function user call)
+    if output_samples_for_all_parameters == true
+        allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
+        allparameters=unique(allparameters)
+        for parameter in allparameters
+            outputMCMCsamples(mme,parameter)
+        end
     end
     ############################################################################
     # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
