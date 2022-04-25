@@ -136,6 +136,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     end
 
     out=[]
+    winVarProps_out=[]
     if GWAS == true
         println("Compute the posterior probability of association of the genomic window that explains more than ",threshold," of the total genetic variance.")
         for i in 1:length(marker_effects_file)
@@ -195,6 +196,9 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
              push!(out,outi)
              outfile="GWAS_"*replace(string.(marker_effects_file[i]),"/"=>"_")
              CSV.write(outfile, outi)
+             if output_winVarProps
+                  push!(winVarProps_out,winVarProps)
+             end
         end
     end
     if genetic_correlation == true && length(marker_effects_file) ==2
@@ -240,7 +244,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
              outfile="GWAS_"*replace(string.(marker_effects_file[1]),"/"=>"_")*"_"*replace(string.(marker_effects_file[2]),"/"=>"_")
              CSV.write(outfile, outi)
     end
-    return output_winVarProps ? (Tuple(out),winVarProps) : Tuple(out)
+    return output_winVarProps ? (Tuple(out),Tuple(winVarProps_out)) : Tuple(out)
 end
 
 function GWAS(marker_effects_file::AbstractString,map_file::AbstractString,mme;
