@@ -1,6 +1,0 @@
-markerID,chromosome,position
-m1,1,16977
-m2,1,434311
-m3,1,1025513
-m4,2,70350
-m5,2,101135
