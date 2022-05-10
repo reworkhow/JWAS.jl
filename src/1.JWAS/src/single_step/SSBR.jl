@@ -16,15 +16,20 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
-    add_term(mme,"ϵ") #impuatation residual
+
+    #comment "ϵ"
+    #add_term(mme,"ϵ") #impuatation residual
+
     if mme.MCMCinfo.fitting_J_vector == true
         add_term(mme,"J") #centering parameter
     end
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in df_whole[!,1]] #true/false
-    data_ϵ    = deepcopy(df_whole[!,1])
-    data_ϵ[.!isnongeno].="missing"
-    df_whole[!,Symbol("ϵ")]=data_ϵ
+
+    #comment "ϵ"
+    #data_ϵ    = deepcopy(df_whole[!,1])
+    #data_ϵ[.!isnongeno].="missing"
+    #df_whole[!,Symbol("ϵ")]=data_ϵ
 
     if mme.MCMCinfo.fitting_J_vector == true
         df_whole[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
@@ -39,10 +44,11 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
         if mme.MCMCinfo.fitting_J_vector == true
             mme.output_X[string(traiti)*":J"] = mme.output_X["J"]
         end
-        mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
+        #comment "ϵ"
+        #mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
     end
     delete!(mme.output_X, "J")
-    delete!(mme.output_X, "ϵ")
+    #delete!(mme.output_X, "ϵ")
 
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
@@ -50,7 +56,8 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     if mme.MCMCinfo.fitting_J_vector == true
         outputMCMCsamples(mme,"J")
     end
-    outputMCMCsamples(mme,"ϵ")
+    #comment "ϵ"
+    #outputMCMCsamples(mme,"ϵ")
 end
 
 ############################################################################

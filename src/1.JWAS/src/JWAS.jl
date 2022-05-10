@@ -303,7 +303,7 @@ function runMCMC(mme::MME,df;
 
     if mme.M!=0
         if single_step_analysis == true
-            SSBRrun(mme,df_whole,train_index,big_memory)
+            SSBRrun(mme,df_whole,train_index,big_memory) 
         end
         set_marker_hyperparameters_variances_and_pi(mme)
     end
