@@ -59,6 +59,46 @@ function prediction_setup(model)
 end
 
 """
+    prediction_setup(mme::MME,df::DataFrame)
+
+* (internal function) Create incidence matrices for individuals of interest based on a usere-defined
+prediction equation, defaulting to genetic values including effects defined with genomic and pedigre
+information. For now, genomic data is always included.
+* J and ϵ are always included in single-step analysis (added in SSBR.jl)
+"""
+function prediction_setup(model)
+    if model.MCMCinfo.prediction_equation == false
+        prediction_equation = []
+        if model.pedTrmVec != 0
+            for i in model.pedTrmVec
+                push!(prediction_equation,i)
+            end
+        end
+    else
+        prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
+        if model.MCMCinfo.output_heritability != false
+            printstyled("User-defined prediction equation is provided. ","The heritability is the ",
+            "proportion of phenotypic variance explained by the value defined by the prediction equation.\n",
+            bold=false,color=:green)
+        end
+        for i in prediction_equation
+            term_symbol = Symbol(split(i,":")[end])
+            if !(haskey(model.modelTermDict,i) || (isdefined(Main,term_symbol) && typeof(getfield(Main,term_symbol)) == Genotypes))
+                error("Terms $i in the prediction equation is not found.")
+            end
+        end
+    end
+    printstyled("Predicted values for individuals of interest will be obtained as the summation of ",
+    prediction_equation, " (Note that genomic data is always included for now).",bold=false,color=:green)
+    if length(prediction_equation) == 0 && model.M == false
+        println("Default or user-defined prediction equation are not available.")
+        model.MCMCinfo.outputEBV = false
+    end
+    filter!(e->(e in keys(model.modelTermDict)),prediction_equation) #remove "genotypes" for now
+    model.MCMCinfo.prediction_equation = prediction_equation
+end
+
+"""
     outputEBV(model,IDs::Array)
 
 Output estimated breeding values and prediction error variances for IDs.
@@ -359,6 +399,21 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
               push!(outvar,"threshold_"*string(mme.lhsVec[t]))
           end
       end
+      if mme.nonlinear_function != false  #NNBayes
+          push!(outvar,"EBV_NonLinear")
+          if mme.is_activation_fcn == true #Neural Network with activation function
+              push!(outvar,"neural_networks_bias_and_weights")
+          end
+      end
+  end
+  #categorical traits
+  has_categorical_trait    = "categorical" ∈ mme.traits_type
+  has_censored_trait       = "censored"    ∈ mme.traits_type
+  if has_categorical_trait || has_censored_trait
+      push!(outvar,"liabilities")
+      if has_categorical_trait
+            push!(outvar,"threshold")
+      end
   end
 
   for i in outvar
@@ -417,6 +472,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           if mme.MCMCinfo.RRM == false
               writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
           end
+      end
+      if mme.nonlinear_function != false #NNBayes
+          writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
       end
       if mme.nonlinear_function != false #NNBayes
           writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')

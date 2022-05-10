@@ -108,7 +108,7 @@ function BayesABC_block!(XArray,XRinvArray,xpRinvx,
             end
         end
 
-        yCorr[:]  = yCorr + XArray[i]*(αold-α)[(start_pos+1):(start_pos+block_size)]
+        yCorr[:]  = yCorr + XArray[i]*(αold-α)[(start_pos+1):(start_pos+block_size)] #?subset at first is better
         start_pos += block_size
     end
 end

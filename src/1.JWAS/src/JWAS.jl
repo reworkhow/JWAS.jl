@@ -383,15 +383,22 @@ function runMCMC(mme::MME,df;
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     ############################################################################
-    # Incomplete Genomic Data (Single-Step)
+    #fast blocks #now only work for one geno
     ############################################################################
-    #1)reorder in A (pedigree) as ids for genotyped then non-genotyped inds
-    #2)impute genotypes for non-genotyped individuals
-    #3)add ϵ (imputation errors) and J as variables in data for non-genotyped inds
-    if single_step_analysis == true
-        SSBRrun(mme,df,big_memory)
+    if fast_blocks != false
+        if fast_blocks == true
+            block_size = Int(floor(sqrt(mme.M[1].nObs)))
+        elseif typeof(fast_blocks) <: Number
+            block_size = Int(floor(fast_blocks))
+        end
+        mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
+        mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1])))
+        println("BLOCK SIZE: $block_size")
+        flush(stdout)
     end
-
+    ############################################################################
+    # Adhoc functions
+    ############################################################################
     #save MCMC samples for all parameters (?seperate function user call)
     if output_samples_for_all_parameters == true
         allparameters=[term[2] for term in split.(keys(mme.modelTermDict),":")]
@@ -400,9 +407,57 @@ function runMCMC(mme::MME,df;
             outputMCMCsamples(mme,parameter)
         end
     end
+    #structure equation model
+    mme.causal_structure = causal_structure
+    if causal_structure != false
+        #no missing phenotypes and residual covariance for identifiability
+        mme.MCMCinfo.missing_phenotypes, mme.MCMCinfo.constraint = false, true
+        if !istril(causal_structure)
+            error("The causal structue needs to be a lower triangular matrix.")
+        end
+    end
+    # Double Precision
+    if double_precision == true
+        if mme.M != 0
+            for Mi in mme.M
+                Mi.genotypes = map(Float64,Mi.genotypes)
+                Mi.G         = map(Float64,Mi.G)
+                Mi.α         = map(Float64,Mi.α)
+            end
+        end
+        for random_term in mme.rndTrmVec
+            random_term.Vinv  = map(Float64,random_term.Vinv)
+            random_term.GiOld = map(Float64,random_term.GiOld)
+            random_term.GiNew = map(Float64,random_term.GiNew)
+            random_term.Gi    = map(Float64,random_term.Gi)
+        end
+        mme.Gi = map(Float64,mme.Gi)
+    end
+
+    # NNBayes mega trait: from multi-trait to multiple single-trait
+    if mme.MCMCinfo.mega_trait == true
+        printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+        printstyled(" - Multi-threaded parallelism:       $nThread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
+        nnbayes_mega_trait(mme)
+    elseif mme.nonlinear_function != false  #only print for NNBayes
+        printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+    end
+
+    # NNBayes: modify parameters for partial connected NN
+    if is_nnbayes_partial
+        nnbayes_partial_para_modify2(mme)
+    end
     ############################################################################
-    # Initiate Mixed Model Equations for Non-marker Parts (run after SSBRrun for ϵ & J)
+    #Make incidence matrices and genotype covariates for training observations
+    #and individuals of interest
     ############################################################################
+    #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
+    df=make_incidence_matrices(mme,df_whole,train_index)
+    flush(stdout)
+    #align genotypes with 1) phenotypes IDs; 2) output IDs.
+    if mme.M != false
+        align_genotypes(mme,output_heritability,single_step_analysis)
+    end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
     ############################################################################
