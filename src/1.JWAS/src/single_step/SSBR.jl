@@ -15,6 +15,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     #comment "ϵ"
     #add_term(mme,"ϵ") #impuatation residual
 
+
     if mme.MCMCinfo.fitting_J_vector == true
         add_term(mme,"J") #centering parameter
     end
@@ -25,6 +26,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     #data_ϵ    = deepcopy(df_whole[!,1])
     #data_ϵ[.!isnongeno].="missing"
     #df_whole[!,Symbol("ϵ")]=data_ϵ
+
 
     if mme.MCMCinfo.fitting_J_vector == true
         df_whole[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
@@ -38,16 +40,21 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
     #mme.output_X["ϵ"]=mkmat_incidence_factor(mme.output_ID,ped.IDs)[:,1:size(Ai_nn,1)]
 
+  
+
     #add trait name to output_X
     for traiti in mme.lhsVec
         if mme.MCMCinfo.fitting_J_vector == true
             mme.output_X[string(traiti)*":J"] = mme.output_X["J"]
         end
+
         #comment "ϵ"
         #mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
     end
     delete!(mme.output_X, "J")
     #delete!(mme.output_X, "ϵ")
+
+  
 
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
@@ -57,6 +64,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     end
     #comment "ϵ"
     #outputMCMCsamples(mme,"ϵ")
+
 end
 
 ############################################################################
