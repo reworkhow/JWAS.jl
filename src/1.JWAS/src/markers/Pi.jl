@@ -4,20 +4,20 @@
 #
 ################################################################################
 #single-trait
-function samplePi(nEffects, nTotal)
+function samplePi(nEffects::Number, nTotal::Number)
     return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end
 
 #multi-trait
-function samplePi(deltaArray,BigPi,BigPiMean,iter)
+function samplePi(deltaArray::Union{Array{Array{Float64,1},1},Array{Array{Float32,1},1}},BigPi)
   temp = deltaArray[1]
-  nTraits = size(deltaArray,1)
-  for traiti = 2:nTraits
+  ntraits = size(deltaArray,1)
+  for traiti = 2:ntraits
     temp = [temp deltaArray[traiti]]
   end
 
   iloci = 1
-  nLoci_array=zeros(2^nTraits)
+  nLoci_array=zeros(length(BigPi))
   for i in keys(BigPi) #assume order of key won't change
     temp2 = broadcast(-,temp,i')
     nLoci =  sum(mean(abs.(temp2),dims=2).==0.0)

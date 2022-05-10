@@ -99,9 +99,9 @@ body {font-family: Arial;}
 
 <div id="phenotypes" class="tabcontent">
 <p>ID,y1,y2,y3,x1,x2,x3,dam</p>
-<p>a1,-0.06,3.58,-1.18,0.9,2,m,0</p>
-<p>a2,-0.6,4.9,0.88,0.3,1,f,0</p>
-<p>a3,-2.07,3.19,0.73,0.7,2,f,0</p>
+<p>a1,-0.06,3.58,-1.18,0.9,2,m,NA</p>
+<p>a2,-0.6,4.9,0.88,0.3,1,f,NA</p>
+<p>a3,-2.07,3.19,0.73,0.7,2,f,NA</p>
 <p>a4,-2.63,6.97,-0.83,0.6,1,m,a2</p>
 <p>a5,2.31,3.5,-1.52,0.4,2,m,a2</p>
 <p>a6,0.93,4.87,-0.01,05,2,f,a3</p>
@@ -175,53 +175,72 @@ using JWAS,CSV,DataFrames
 ---
 The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for reading text files.
 
+## Step 2: Read Data
 
-## Step 2: Read data
-
+#### Read Phenotypic Data
 ```julia
-phenotypes = CSV.read("phenotypes.txt",delim = ',',header=true)
-pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
-head(phenotypes)
+phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true,,missingstrings=["NA"])
+first(phenotypes)
 ```
 
 output:
 ```julia
 6×8 DataFrames.DataFrame
-│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam │
-├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼─────┤
-│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ 0   │
-│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ 0   │
-│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ 0   │
-│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2  │
-│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2  │
-│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3  │
+│ Row │ ID │ y1    │ y2   │ y3    │ x1  │ x2 │ x3 │ dam       │
+├─────┼────┼───────┼──────┼───────┼─────┼────┼────┼───────────┤
+│ 1   │ a1 │ -0.06 │ 3.58 │ -1.18 │ 0.9 │ 2  │ m  │ missing   │
+│ 2   │ a2 │ -0.6  │ 4.9  │ 0.88  │ 0.3 │ 1  │ f  │ missing   │
+│ 3   │ a3 │ -2.07 │ 3.19 │ 0.73  │ 0.7 │ 2  │ f  │ missing   │
+│ 4   │ a4 │ -2.63 │ 6.97 │ -0.83 │ 0.6 │ 1  │ m  │ a2        │
+│ 5   │ a5 │ 2.31  │ 3.5  │ -1.52 │ 0.4 │ 2  │ m  │ a2        │
+│ 6   │ a6 │ 0.93  │ 4.87 │ -0.01 │ 5.0 │ 2  │ f  │ a3        │
+```
+
+---
+The **phenotypic data** is read on line 1. On line 2, the first several rows of the phenotypic data are shown.
+
+#### Read Pedigree Data
+
+```julia
+pedigree   = get_pedigree("pedigree.txt",separator=",",header=true)
 ```
 
 - link to documentation for [`get_pedigree`](@ref)
 
 ---
-The **phenotypic data** is read on line 1, and the **pedigree data** is read on line 2. On line 3, the first several rows of data are shown.
+The **pedigree data** is read on line 1.
+
+#### Read Genomic Data
+
+```julia
+genotypes  = get_genotypes("genotypes.txt",G,method="BayesC",separator=",",header=true) #G is optional
+```
+
+- link to documentation for [`get_genotypes`](@ref)
+
+---
+On line 1, the genomic information is read on line 1 with the genotype file.  and variance `G` (a 3x3 matrix). In Bayesian analysis, the `G` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G` is not provided, a value is calculated from responses (phenotypes).
+
 
 ## Step 3: Build Model Equations
 
 ```julia
-model_equation = "y1 = intercept + x1 + x3 + ID + dam
-                  y2 = intercept + x1 + x2 + x3 + ID  
-                  y3 = intercept + x1 + x1*x3 + x2 + ID"
-model=build_model(model_equation, R)
+model_equation = "y1 = intercept + x1 + x3 + ID + dam + genotypes
+                  y2 = intercept + x1 + x2 + x3 + ID + genotypes
+                  y3 = intercept + x1 + x1*x3 + x2 + ID + genotypes"
+model=build_model(model_equation,R) #R is optional
 ```
 
 - link to documentation for [`build_model`](@ref)
 
 ---
-The non-genomic part of the model equation for a 3-trait analysis is defined on the first 3 lines.
-* The effects fitted in the model for trait `y1` are the intercept, `x1`, `x3`, direct genetic effects (`ID`) and maternal genetic effects (`dam`).
-* The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3` and direct genetic effects (`ID`).
-* The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2` and direct genetic effects (`ID`).
+The model equation for a 3-trait analysis is defined on the first 3 lines.
+* The effects fitted in the model for trait `y1` are the intercept, `x1`, `x3`, direct genetic effects (`ID`), maternal genetic effects (`dam`), and molecular marker effects (`genotypes`).
+* The effects fitted in the model for trait `y2` are the intercept, `x1`, `x2`, `x3`, direct genetic effects (`ID`), and molecular marker effects (`genotypes`).
+* The effects fitted in the model for trait `y3` are the intercept, `x1`, the interaction between `x1` and `x3`, `x2`, direct genetic effects (`ID`), and , and molecular marker effects (`genotypes`).
 
-On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix).
-By default, all effects are treated as fixed and classed as factors (categorical variables)
-rather than covariates (quantitative variables).
+On the last line, the model is built given the model equation and residual variance `R` (a 3x3 matrix). In Bayesian analysis, `R` is the mean for the prior assigned for the residual variance with degree of freedom `df`, defaulting to 4.0. If `R` is not provided, a value is calculated from responses (phenotypes).
+By default, all effects are treated as fixed and classed as factors (categorical variables) rather than covariates (quantitative variables).
 
 ## Step 4: Set Factors or Covariate
 ```julia
@@ -231,33 +250,23 @@ set_covariate(model,"x1")
 - link to documentation for [`set_covariate`](@ref)
 
 ---
-On line 1, the effect `x1` is defined to be a covariate rather than class effect.
+On line 1, the effect `x1` is defined to be a covariate (a quantitative variable) rather than a factor (a categorical variable).
 
 ## Step 5: Set Random or Fixed Effects
 ```julia
-set_random(model,"x2",G1)
-set_random(model,"ID dam",pedigree,G2)
+set_random(model,"x2",G1) #G1 is optional
+set_random(model,"ID dam",pedigree,G2) #G2 is optional
 ```
 - link to documentation for [`set_random`](@ref)
 
 ---
 On line 1, the `x2` class effect is defined as random with variance `G1`(a 2x2 matrix). On line 2, direct genetic effects and
-maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree.
+maternal genetic effects are fitted as `ID` and `dam` with `G2` (a 4x4 matrix) and the inverse of the numerator relationship matrix defined from pedigree. In Bayesian analysis, `G1` and `G2` are the means for the priors assigned for the variances with degree of freedom `df`, defaulting to 4.0. If `G1` or `G2` is not provided, a value is calculated from responses (phenotypes).
 
-## Step 6: Use Genomic Information
+## Step 6: Run Bayesian Analysis
 ```julia
-add_genotypes(model,"genotypes.txt",G3,separator=',')
-```
-
-- link to documentation for [`add_genotypes`](@ref)
-
----
-On line 1, the genomic part of the model is defined with the genotype file and variance `G3` (a 3x3 matrix).
-
-## Step 7: Run Bayesian Analysis
-```julia
-outputMCMCsamples(model,"x2")
-out=runMCMC(model,phenotypes,methods="BayesC",output_samples_frequency=100)
+outputMCMCsamples(model,"dam")
+out=runMCMC(model,phenotypes)
 ```
 
 - link to documentation for [`outputMCMCsamples`](@ref)
@@ -270,13 +279,11 @@ MCMC samples for marker effects, location parameters specified on line 1, and al
 are saved every `output_samples_frequency` iterations to files.
 
 ---
-Several steps above can be skipped if no related information is available, e.g., step 6 is skipped
-for pedigree-based LMM. Several detailed examples are available in the examples section. Here is the link
-to documentation for all [Public functions](@ref).
+Several steps above can be skipped if no related information is available, e.g., step 4 is skipped if all effects are classed as factors. Several detailed examples are available in the examples section. Here is the link to documentation for all [Public functions](@ref).
 
 ## check results
 
-Posterior means of location parameters, most variance components, and marker effects are saved in `out`.
+Posterior means (estimate) and standard deviations (SD) of location parameters, most variance components, and marker effects are saved as the variable `out` and in text files.
 They can be listed and obtained as
 ```julia
 keys(out)
@@ -284,28 +291,67 @@ keys(out)
 # output:
 #
 # Base.KeyIterator for a Dict{Any,Any} with 7 entries. Keys:
-#   "Posterior mean of polygenic effects covariance matrix"
+#   "polygenic effects covariance matrix"
 #   "Model frequency"
-#   "Posterior mean of residual covariance matrix"
-#   "Posterior mean of marker effects"
-#   "Posterior mean of marker effects covariance matrix"
-#   "Posterior mean of location parameters"
-#   "Posterior mean of Pi"
+#   "residual covariance matrix"
+#   "marker effects"
+#   "marker effects variance"
+#   "location parameters"
+#   "Pi"
 
-out["Posterior mean of residual covariance matrix"]
+out["residual variance"]
 
 # output:
 #
-# 3×3 Array{Float64,2}:
-#   0.674651   -0.103877   0.0834044
-#  -0.103877    0.828135  -0.121798
-#   0.0834044  -0.121798   0.720751
+#Covariance	Estimate	SD
+#y1_y1	1.65265	0.29405
+#y1_y2	-0.0290279	0.02347
+#y1_y3	-0.252009	0.048289
+#y2_y1	-0.0290279	0.02347
+#y2_y2	0.977405	0.009732
+#y2_y3	0.0451994	0.095828
+#y3_y1	-0.252009	0.048289
+#y3_y2	0.0451994	0.095828
+#y3_y3	0.363878	0.049278
 
 ```
 
-MCMC samples for marker effects, location parameters specified in step 7, and all variance components are saved to text
-files in your working directory. They can be obtained as
+In addition, MCMC samples from posterior distributions of marker effects, all variance components, and location parameters specified in step 7, are saved to text
+files in your working directory. Users can compute the posterior distributions of parameters of interest using these MCMC samples files. A list of output files are shown below.
 
-```julia
-res=readdlm("MCMC_samples_marker_effects_y1.txt",',',header=true)
-```
+### Output files:
+
+Below is a list of files containing estimates and standard deviations for variables of interest. 
+
+| file name      | description |
+| -----------    | ----------- |
+| EBV_y1.txt     | estimated breeding values for trait named "y1"       |
+| EBV_y2.txt     | estimated breeding values for trait named "y2"       |
+| EBV_y3.txt     | estimated breeding values for trait named "y3"       |
+|genetic_variance.txt                   | estimated genetic variance-covariance for all traits |
+|heritability.txt                       | estimated heritability                               |
+|location_parameters.txt                | estimated non-genetic effects                        |
+|pi_genotypes.txt                       | estimated pi                                         |
+|polygenic_effects_covariance_matrix.txt| estimated variance-covariance between polygenic effects (y1_ID, y2_ID, y3_ID, y1_dam)|
+|marker_effects_genotypes.txt           | estimated marker effects for all traits              |
+|residual_variance.txt                  | estimated residual variance-covariance for all traits| 
+
+Below is a list of files containing MCMC samples for variables of interest. 
+
+| file name      | description |
+| -----------    | ----------- |
+| MCMC_samples_EBV_y1.txt     | MCMC samples from the posterior distribution of breeding values for trait named "y1"       |
+| MCMC_samples_EBV_y2.txt     | MCMC samples from the posterior distribution of breeding values for trait named "y2"       |
+| MCMC_samples_EBV_y3.txt     | MCMC samples from the posterior distribution of breeding values for trait named "y3"       |
+|MCMC_samples_genetic_variance.txt                   | MCMC samples from the posterior distribution of genetic variance-covariance for all traits   |
+|MCMC_samples_heritability.txt                       | MCMC samples from the posterior distribution of heritability                                 | 
+|MCMC_samples_marker_effects_genotypes_y1            |MCMC samples from the posterior distribution of marker effects for trait named "y1"           |
+|MCMC_samples_marker_effects_genotypes_y2            |MCMC samples from the posterior distribution of marker effects for trait named "y2"           |
+|MCMC_samples_marker_effects_genotypes_y3            |MCMC samples from the posterior distribution of marker effects for trait named "y3"           |
+|MCMC_samples_marker_effects_variances_genotypes.txt | MCMC samples from the posterior distribution of marker effect variance for all traits        |
+|MCMC_samples_pi_genotypes.txt                       | MCMC samples from the posterior distribution of pi                                           |
+|MCMC_samples_polygenic_effects_variance.txt         |  MCMC samples from the posterior distribution of variance-covariance between y1_ID, y2_ID, y3_ID, y1_dam|
+|MCMC_samples_residual_variance.txt                  |  MCMC samples from the posterior distribution of residual variance-covariance for all traits |
+|MCMC_samples_y1.dam.txt                             | MCMC samples from the posterior distribution of dam effect for y1|
+|MCMC_samples_y1.ID_y2.ID_y3.ID_y1.dam_variances.txt | MCMC samples from the posterior distribution of variance-covariance between y1_ID, y2_ID, y3_ID, y1_dam|
+|MCMC_samples_y2.x2_y3.x2_variances.txt              | MCMC samples from the posterior distribution of variance-covariance between y2_x2 and y3_x2| 

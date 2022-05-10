@@ -10,20 +10,14 @@ Pages = ["public.md"]
 Modules = [JWAS]
 ```
 
-```@index
-Pages = ["public.md"]
-Modules = [JWAS.misc]
-```
-
-
 ## Public Interface
 
 ```@docs
 build_model
+get_pedigree
+get_genotypes
 set_covariate
 set_random
-get_pedigree
-add_genotypes
 runMCMC
 outputEBV
 outputMCMCsamples
@@ -33,9 +27,4 @@ solve
 
 ```@docs
 GWAS
-get_additive_genetic_variances
-get_heritability
-get_correlations
-get_breeding_values
-QC
 ```

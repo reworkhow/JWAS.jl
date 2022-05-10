@@ -1,11 +1,12 @@
 using Documenter, JWAS
 
 makedocs(
-    modules = [JWAS,JWAS.misc,JWAS.Datasets,JWAS.PedModule],
+    modules = [JWAS,JWAS.Datasets,JWAS.PedModule],
     doctest=false,
     clean  =true,
-    format = :html,
-#    assets = ["assets/favicon.ico"],
+#    format = Documenter.HTML(analytics = "UA-90474609-3",
+#                             assets = ["assets/favicon.ico"],
+#                             canonical="https://docs.juliadiffeq.org/stable/"),
     sitename = "JWAS.jl",
     authors = "Hao Cheng, Rohan Fernando, Dorian Garrick and contributors.",
     pages = Any[

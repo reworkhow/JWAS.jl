@@ -5,12 +5,12 @@ using SparseArrays
 using ProgressMeter
 
 export get_pedigree
-export getinfo
+export get_info
 
 """
-    get_pedigree(pedfile::AbstractString;header=false,separator=',')
+    get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
 * Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
-  and **separator** (defaulting to `,`).
+  , **separator** (defaulting to `,`) and missing values (defaulting to ["0"])
 * Pedigree file format:
 
 ```
@@ -19,11 +19,16 @@ c,a,b
 d,a,c
 ```
 """
-function get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
-    printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
-
-    df  = CSV.read(pedfile,types=[String,String,String],
-                    delim=separator,header=header,missingstrings=missingstrings)
+function get_pedigree(pedfile::Union{AbstractString,DataFrames.DataFrame};header=false,separator=',',missingstrings=["0"])
+    if typeof(pedfile) <: AbstractString
+        printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
+        df  = CSV.read(pedfile,DataFrame,types=[String,String,String],
+                        delim=separator,header=header,missingstrings=missingstrings)
+    elseif typeof(pedfile) == DataFrames.DataFrame
+        df  = pedfile
+    else
+        error("Please provide a file path or a dataframe.")
+    end
     df[!,1]=strip.(string.(df[!,1]))
     df[!,2]=strip.(string.(df[!,2]))
     df[!,3]=strip.(string.(df[!,3]))
@@ -40,7 +45,7 @@ function get_pedigree(pedfile::AbstractString;header=false,separator=',',missing
 
     ped.IDs=getIDs(ped)
 
-    getinfo(ped)
+    get_info(ped)
     writedlm("IDs_for_individuals_with_pedigree.txt",ped.IDs)
 
     return ped
@@ -164,7 +169,7 @@ function HAi(ped::Pedigree)
     ii = Int64[]
     jj = Int64[]
     vv = Float64[]
-    for ind in keys(ped.idMap)
+    @showprogress "calculating A inverse..." for ind in keys(ped.idMap)
         sire = ped.idMap[ind].sire
         dam  = ped.idMap[ind].dam
         sirePos = sire=="missing" ? 0 : ped.idMap[sire].seqID
@@ -269,14 +274,14 @@ function getInbreeding(ped::Pedigree)
 end
 
 """
-    get_info(pedigree::Pedigree)
+    get_info(pedigree::Pedigree;Ai=false)
 * Print summary informtion from a pedigree object including number of individulas, sires.
   dams and founders. Return individual IDs, inverse of numerator relationship matrix,
-  and inbreeding coefficients.
+  and inbreeding coefficients if **Ai**=`true`.
 
 """
-function getinfo(pedigree::Pedigree;Ai=false)
-    println("Pedigree informatin:")
+function get_info(pedigree::Pedigree;Ai=false)
+    println("Pedigree information:")
     println("#individuals: ",length(pedigree.idMap))
     sires  = [pednode.sire for pednode in values(pedigree.idMap)]
     dams = [pednode.dam for pednode in values(pedigree.idMap)]

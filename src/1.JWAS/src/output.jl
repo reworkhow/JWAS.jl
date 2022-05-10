@@ -9,6 +9,46 @@
 #*******************************************************************************
 ################################################################################
 """
+    prediction_setup(mme::MME,df::DataFrame)
+
+* (internal function) Create incidence matrices for individuals of interest based on a usere-defined
+prediction equation, defaulting to genetic values including effects defined with genomic and pedigre
+information. For now, genomic data is always included.
+* J and ϵ are always included in single-step analysis (added in SSBR.jl)
+"""
+function prediction_setup(model)
+    if model.MCMCinfo.prediction_equation == false
+        prediction_equation = []
+        if model.pedTrmVec != 0
+            for i in model.pedTrmVec
+                push!(prediction_equation,i)
+            end
+        end
+    else
+        prediction_equation = string.(strip.(split(model.MCMCinfo.prediction_equation,"+")))
+        if model.MCMCinfo.output_heritability != false
+            printstyled("User-defined prediction equation is provided. ","The heritability is the ",
+            "proportion of phenotypic variance explained by the value defined by the prediction equation.\n",
+            bold=false,color=:green)
+        end
+        for i in prediction_equation
+            term_symbol = Symbol(split(i,":")[end])
+            if !(haskey(model.modelTermDict,i) || (isdefined(Main,term_symbol) && typeof(getfield(Main,term_symbol)) == Genotypes))
+                error("Terms $i in the prediction equation is not found.")
+            end
+        end
+    end
+    printstyled("Predicted values for individuals of interest will be obtained as the summation of ",
+    prediction_equation, " (Note that genomic data is always included for now).",bold=false,color=:green)
+    if length(prediction_equation) == 0 && model.M == false
+        println("Default or user-defined prediction equation are not available.")
+        model.MCMCinfo.outputEBV = false
+    end
+    filter!(e->(e in keys(model.modelTermDict)),prediction_equation) #remove "genotypes" for now
+    model.MCMCinfo.prediction_equation = prediction_equation
+end
+
+"""
     outputEBV(model,IDs::Array)
 
 Output estimated breeding values and prediction error variances for IDs.
@@ -50,65 +90,52 @@ end
 #when MCMC is running; Other paramters (e.g., EBV), which is a function of those
 #are calculated from files storing MCMC samples at the end of MCMC.
 ################################################################################
-function output_result(mme,output_file,
-                       solMean,meanVare,
-                       G0Mean,meanAlpha,meanDelta,meanVara,estimatePi,mean_pi,estimateScale,meanScaleVar,
-                       solMean2      = missing,
-                       meanVare2     = missing,
-                       G0Mean2       = missing,
-                       meanAlpha2    = mme.nModels == 1 ? missing : fill(missing,mme.nModels),
-                       meanVara2     = missing,
-                       mean_pi2      = missing,
-                       meanScaleVar2 = missing)
+function output_result(mme,output_folder,
+                       solMean,meanVare,G0Mean,
+                       solMean2 = missing,meanVare2 = missing,G0Mean2 = missing)
   output = Dict()
-  location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(solMean2 .- solMean .^2)])
+  location_parameters = reformat2dataframe([getNames(mme) solMean sqrt.(abs.(solMean2 .- solMean .^2))])
   output["location parameters"] = location_parameters
+  output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
 
-  if mme.MCMCinfo.RRM == false
-      output["residual variance"]   = matrix2dataframe(string.(mme.lhsVec),meanVare,meanVare2)
-  else
-      output["residual variance"]   = matrix2dataframe(["1"],meanVare,meanVare2)
-  end
 
   if mme.pedTrmVec != 0
     output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
   end
-
-  ntraits     = length(mme.lhsVec)
   if mme.M != 0
-    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
-        meanAlpha =[meanAlpha]
-        meanAlpha2=[meanAlpha2]
-        meanDelta = [meanDelta]
-    end
-    traiti      = 1
-    whichtrait  = fill(string(mme.lhsVec[traiti]),length(mme.M.markerID))
-    whichmarker = mme.M.markerID
-    whicheffect = meanAlpha[traiti]
-    whicheffectsd = sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2)
-    whichdelta    = meanDelta[traiti]
-    for traiti in 2:mme.nModels
-        whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(mme.M.markerID)))
-        whichmarker    = vcat(whichmarker,mme.M.markerID)
-        whicheffect    = vcat(whicheffect,meanAlpha[traiti])
-        whicheffectsd  = vcat(whicheffectsd,sqrt.(meanAlpha2[traiti] .- meanAlpha[traiti] .^2))
-        whichdelta     = vcat(whichdelta,meanDelta[traiti])
-    end
-    output["marker effects"]=
-    DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:Std_Error,:Model_Frequency])
-
-    output["marker effects variance"] = matrix2dataframe(string.(mme.lhsVec),meanVara,meanVara2)
-    if estimatePi == true
-        output["Pi"] = dict2dataframe(mean_pi,mean_pi2)
-    end
-    if estimateScale == true
-        output["ScaleEffectVar"] = matrix2dataframe(string.(mme.lhsVec),meanScaleVar,meanScaleVar2)
-    end
+      for Mi in mme.M
+          traiti      = 1
+          whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
+          whichmarker = Mi.markerID
+          whicheffect = Mi.meanAlpha[traiti]
+          whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
+          whichdelta    = Mi.meanDelta[traiti]
+          for traiti in 2:Mi.ntraits
+              whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
+              whichmarker    = vcat(whichmarker,Mi.markerID)
+              whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
+              whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
+              whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+          end
+          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+          #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
+          if Mi.estimatePi == true
+              output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+          end
+          if Mi.estimateScale == true
+              output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
+          end
+      end
   end
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
-      for traiti in 1:ntraits
-          EBVkey         = "EBV"*"_"*string(mme.lhsVec[traiti])
+      output_file = output_folder*"/MCMC_samples"
+      EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
+      if mme.nonlinear_function != false  #NNBayes
+          push!(EBVkeys, "EBV_NonLinear")
+          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
+      end
+      for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
           EBV            = vec(mean(EBVsamples,dims=1))
@@ -125,10 +152,18 @@ function output_result(mme,output_file,
               samples,names = readdlm(samplesfile,',',header=true)
               samplemean    = vec(mean(samples,dims=1))
               samplevar     = vec(std(samples,dims=1))
-              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:Std_Error])
+              output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
           end
       end
-
+      if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
+          myvar         = "neural_networks_bias_and_weights"
+          samplesfile   = output_file*"_"*myvar*".txt"
+          samples       = readdlm(samplesfile,',',header=false)
+          names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
+          samplemean    = vec(mean(samples,dims=1))
+          samplevar     = vec(std(samples,dims=1))
+          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:SD])
+      end
   end
   return output
 end
@@ -147,16 +182,19 @@ function reformat2dataframe(res::Array)
     out_values   = map(Float64,res[:,2])
     out_variance = convert.(Union{Missing, Float64},res[:,3])
     out =[out_names out_values out_variance]
-    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:Std_Error])
+    out = DataFrame(out, [:Trait, :Effect, :Level, :Estimate,:SD])
     return out
 end
 
-function matrix2dataframe(names,meanVare,meanVare2)
-    names     = repeat(names,inner=length(names)).*"_".*repeat(names,outer=length(names))
-    meanVare  = (typeof(meanVare) <: Union{Number,Missing}) ? meanVare : vec(meanVare)
-    meanVare2 = (typeof(meanVare2) <: Union{Number,Missing}) ? meanVare2 : vec(meanVare2)
-    stdVare   = sqrt.(meanVare2 .- meanVare .^2)
-    DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:Std_Error])
+#convert a scalar (single-trait), a matrix (multi-trait), a vector (mega-trait) to a DataFrame
+function matrix2dataframe(names,meanVare,meanVare2) #also works for scalar
+    if !(typeof(meanVare) <: Vector)
+        names = repeat(names,inner=length(names)).*"_".*repeat(names,outer=length(names))
+    end
+    meanVare  = (typeof(meanVare)  <: Union{Number,Missing,Vector}) ? meanVare  : vec(meanVare)
+    meanVare2 = (typeof(meanVare2) <: Union{Number,Missing,Vector}) ? meanVare2 : vec(meanVare2)
+    stdVare   = sqrt.(abs.(meanVare2 .- meanVare .^2))
+    DataFrame([names meanVare stdVare],[:Covariance,:Estimate,:SD])
 end
 
 function dict2dataframe(mean_pi,mean_pi2)
@@ -167,69 +205,56 @@ function dict2dataframe(mean_pi,mean_pi2)
     end
     mean_pi  = (typeof(mean_pi) <: Union{Number,Missing}) ? mean_pi : collect(values(mean_pi))
     mean_pi2 = (typeof(mean_pi2) <: Union{Number,Missing}) ? mean_pi2 : collect(values(mean_pi2))
-    stdpi    = sqrt.(mean_pi2 .- mean_pi .^2)
-    DataFrame([names mean_pi stdpi],[:π,:Estimate,:Std_Error])
+    stdpi    = sqrt.(abs.(mean_pi2 .- mean_pi .^2))
+    DataFrame([names mean_pi stdpi],[:π,:Estimate,:SD])
 end
 
 """
-    getEBV(model::MME,sol,α,traiti)
+    getEBV(model::MME,traiti)
 
 (internal function) Get breeding values for individuals defined by outputEBV(),
 defaulting to all genotyped individuals. This function is used inside MCMC functions for
 one MCMC samples from posterior distributions.
+e.g.,
+non-NNBayes_partial (multi-classs Bayes) : y1=M1*α1[1]+M2*α2[1]+M3*α3[1]
+                                           y2=M1*α1[2]+M2*α2[2]+M3*α3[2];
+NNBayes_partial:     y1=M1*α1[1]
+                     y2=M2*α2[1]
+                     y3=M3*α3[1];
 """
-function getEBV(mme,sol,α,traiti)
-    traiti = string(mme.lhsVec[traiti])
+function getEBV(mme,traiti)
+    traiti_name = string(mme.lhsVec[traiti])
     EBV=zeros(length(mme.output_ID))
 
-    location_parameters = reformat2dataframe([getNames(mme) sol zero(sol)])
-    if mme.pedTrmVec != 0
-        for pedtrm in mme.pedTrmVec
-            mytrait, effect = split(pedtrm,':')
-            if mytrait == traiti
-                sol_pedtrm     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti),:Estimate])
-                EBV_pedtrm     = mme.output_X[pedtrm]*sol_pedtrm
-                EBV += EBV_pedtrm
+    location_parameters = reformat2dataframe([getNames(mme) mme.sol zero(mme.sol)])
+    for term in keys(mme.output_X)
+        mytrait, effect = split(term,':')
+        if mytrait == traiti_name
+            sol_term     = map(Float64,location_parameters[(location_parameters[!,:Effect].==effect).&(location_parameters[!,:Trait].==traiti_name),:Estimate])
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+                sol_term = sol_term[1]
+            end
+            EBV_term = mme.output_X[term]*sol_term
+            if length(sol_term) == 1 #1-element Array{Float64,1} doesn't work below; Will be deleted
+                EBV_term = vec(EBV_term)
+            end
+            EBV += EBV_term
+        end
+    end
+    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
+    if mme.M != 0
+        for i in 1:length(mme.M)
+            Mi=mme.M[i]
+            if !is_partial_connect  #non-NNBayes_partial
+                EBV += Mi.output_genotypes*Mi.α[traiti]
+            else  #NNBayes_partial
+                if i==traiti
+                    EBV = Mi.output_genotypes*mme.M[i].α[1]
+                end
             end
         end
     end
-
-    if mme.M != 0
-        EBV += mme.output_genotypes*α
-    end
-
-    if haskey(mme.output_X,"J") #single-step analyis
-        for traiti in 1:mme.nModels
-            sol_J  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="J").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])[1]
-            sol_ϵ  = map(Float64,location_parameters[(location_parameters[!,:Effect].=="ϵ").&(location_parameters[!,:Trait].==string(mme.lhsVec[traiti])),:Estimate])
-            EBV_J  = mme.output_X["J"]*sol_J
-            EBV_ϵ  = mme.output_X["ϵ"]*sol_ϵ
-            EBV   += (EBV_J+EBV_ϵ)
-        end
-    end
-
     return EBV
-end
-
-"""
-    get_outputX_others(model)
-
-(internal function) Make incidence matrices for effects involved in
-calculation of EBV including J, ϵ, pedTrmVec except marker covariates.
-"""
-function get_outputX_others(model,single_step_analysis)
-    #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
-    if single_step_analysis == true
-        model.output_X["ϵ"]=mkmat_incidence_factor(model.output_ID,
-                            PedModule.getIDs(model.ped))[:,1:length(model.ped.setNG)]
-        #Note that model.output_X["J"] is in SSBRrun
-    end
-    if model.pedTrmVec != 0
-        for i in model.pedTrmVec
-            model.output_X[i]=mkmat_incidence_factor(model.output_ID,
-                                                     model.modelTermDict[i].names)
-        end
-    end
 end
 ################################################################################
 #*******************************************************************************
@@ -254,11 +279,13 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       push!(outvar,"polygenic_effects_variance")
   end
   if mme.M !=0 #write samples for marker effects to a text file
-      for traiti in 1:ntraits
-          push!(outvar,"marker_effects_"*string(mme.lhsVec[traiti]))
+      for Mi in mme.M
+          for traiti in Mi.trait_names
+              push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+          end
+          push!(outvar,"marker_effects_variances"*"_"*Mi.name)
+          push!(outvar,"pi"*"_"*Mi.name)
       end
-      push!(outvar,"marker_effects_variances")
-      push!(outvar,"pi")
   end
 
   #non-marker location parameters
@@ -282,6 +309,21 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           push!(outvar,"genetic_variance")
           push!(outvar,"heritability")
       end
+      if mme.nonlinear_function != false  #NNBayes
+          push!(outvar,"EBV_NonLinear")
+          if mme.is_activation_fcn == true #Neural Network with activation function
+              push!(outvar,"neural_networks_bias_and_weights")
+          end
+      end
+  end
+  #categorical traits
+  has_categorical_trait    = "categorical" ∈ mme.traits_type
+  has_censored_trait       = "censored"    ∈ mme.traits_type
+  if has_categorical_trait || has_censored_trait
+      push!(outvar,"liabilities")
+      if has_categorical_trait
+            push!(outvar,"threshold")
+      end
   end
 
   for i in outvar
@@ -296,7 +338,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   #add headers
   mytraits=map(string,mme.lhsVec)
-  varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
+  if mme.MCMCinfo.mega_trait == false
+      varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
+  else
+      varheader = transubstrarr(map(string,mme.lhsVec))
+  end
   writedlm(outfile["residual_variance"],transubstrarr(varheader),',')
 
   for trmi in  mme.outputSamplesVec
@@ -311,8 +357,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   end
 
   if mme.M !=0
-      for traiti in 1:ntraits
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(mme.M.markerID),',')
+      for Mi in mme.M
+          for traiti in Mi.trait_names
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+          end
       end
   end
   if mme.pedTrmVec != 0
@@ -329,77 +377,94 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
+      if mme.nonlinear_function != false #NNBayes
+          writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
+      end
   end
 
   return outfile
 end
 """
-    output_MCMC_samples(mme,sol,vRes,G0,π=false,α=false,locusEffectVar=false,outfile=false)
+    output_MCMC_samples(mme,vRes,G0,outfile=false)
 
 (internal function) Save MCMC samples every output_samples_frequency iterations to the text file.
 """
-function output_MCMC_samples(mme,sol,vRes,G0,
-                             π=false,
-                             α=false,
-                             locusEffectVar=false,
+function output_MCMC_samples(mme,vRes,G0,
                              outfile=false)
-  ntraits     = size(mme.lhsVec,1)
-  #location parameters
-  output_location_parameters_samples(mme,sol,outfile)
-  #random effects variances
-  for effect in  mme.rndTrmVec
-    trmStri   = join(effect.term_array, "_")
-    writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
-  end
+    ntraits     = size(mme.lhsVec,1)
+    #location parameters
+    output_location_parameters_samples(mme,mme.sol,outfile)
+    #random effects variances
+    for effect in  mme.rndTrmVec
+        trmStri   = join(effect.term_array, "_")
+        writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
+    end
 
-  writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
+    if mme.MCMCinfo.mega_trait != false
+        vRes=diag(vRes)
+    end
+    writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
 
-  if mme.pedTrmVec != 0
-    writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
-  end
-  if mme.M != 0 && outfile != false
-      if ntraits == 1
-          writedlm(outfile["marker_effects_"*string(mme.lhsVec[1])],α',',')
-      else
-          for traiti in 1:ntraits
-              writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],α[traiti]',',')
+    if mme.pedTrmVec != 0
+        writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
+    end
+    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
+    if mme.M != 0 && outfile != false
+      for Mi in mme.M
+          for traiti in 1:Mi.ntraits
+              writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
+          end
+          if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
+              if mme.nModels == 1
+                  writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
+              else
+                  if Mi.method == "BayesB"
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],hcat([x for x in Mi.G]...),',')
+                  else
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G,',')
+                  end
+              end
+          end
+          writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
+          if !(typeof(Mi.π) <: Number) #add a blank line
+              println(outfile["pi"*"_"*Mi.name])
           end
       end
-      if locusEffectVar!=false
-          writedlm(outfile["marker_effects_variances"],locusEffectVar',',')
-      end
-      writedlm(outfile["pi"],π,',')
-      if !(typeof(π) <: Number) #add a blank line
-          println(outfile["pi"])
-      end
-  end
+    end
 
-  if mme.MCMCinfo.outputEBV == true #add error message
-      if mme.output_ID != 0 &&  (mme.pedTrmVec != 0 || mme.M != 0 )
-          if ntraits == 1
-             myEBV = getEBV(mme,sol,α,1)
-             writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-             if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
-                 mygvar = var(myEBV)
-                 writedlm(outfile["genetic_variance"],mygvar,',')
-                 writedlm(outfile["heritability"],mygvar/(mygvar+vRes),',')
+    if mme.MCMCinfo.outputEBV == true
+         EBVmat = myEBV = getEBV(mme,1)
+         writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
+         for traiti in 2:ntraits
+             myEBV = getEBV(mme,traiti) #actually BV
+             trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
+             writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             EBVmat = [EBVmat myEBV]
+         end
+
+         if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+             #single-trait: a scalar ;  multi-trait: a matrix; mega-trait: a vector
+             mygvar = cov(EBVmat) #this might be slow in megatrats
+             if mme.MCMCinfo.mega_trait != false
+                 mygvar=diag(mygvar)
              end
-          else
-              EBVmat = myEBV = getEBV(mme,sol,α[1],1)
-              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
-              for traiti in 2:ntraits
-                  myEBV = getEBV(mme,sol,α[traiti],traiti) #actually BV
-                  writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
-                  EBVmat = [EBVmat myEBV]
-              end
-              if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
-                  mygvar = cov(EBVmat)
-                  writedlm(outfile["genetic_variance"],vec(mygvar)',',')
-                  writedlm(outfile["heritability"],(diag(mygvar./(mygvar.+vRes)))',',')
-              end
-          end
-       end
-  end
+             genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
+             heritability = (ntraits == 1 ? mygvar/(mygvar+vRes) :
+                            (typeof(mygvar)<:Vector ? (mygvar./(mygvar+vRes))' : (diag(mygvar)./(diag(mygvar)+diag(vRes)))'))
+             writedlm(outfile["genetic_variance"],genetic_variance,',')
+             writedlm(outfile["heritability"],heritability,',')
+         end
+    end
+    if mme.nonlinear_function != false #NNBayes
+        EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
+        if mme.is_activation_fcn == false  #user-defined nonlinear function
+            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
+        else  #activation function
+            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
+            writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
+        end
+        writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+    end
 end
 """
     output_location_parameters_samples(mme::MME,sol,outfile)
@@ -427,4 +492,45 @@ function transubstrarr(vec)
         res[1,i]=vec[i]
     end
     return res
+end
+
+#output mean and variance of posterior distribution of parameters of interest
+function output_posterior_mean_variance(mme,nsamples)
+    mme.solMean   += (mme.sol - mme.solMean)/nsamples
+    mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
+    mme.meanVare  += (mme.R - mme.meanVare)/nsamples
+    mme.meanVare2 += (mme.R .^2 - mme.meanVare2)/nsamples
+
+    if mme.pedTrmVec != 0
+        mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
+        mme.G0Mean2 += (inv(mme.Gi) .^2  - mme.G0Mean2 )/nsamples
+    end
+    if mme.M != 0
+        for Mi in mme.M
+            for trait in 1:Mi.ntraits
+                Mi.meanAlpha[trait] += (Mi.α[trait] - Mi.meanAlpha[trait])/nsamples
+                Mi.meanAlpha2[trait]+= (Mi.α[trait].^2 - Mi.meanAlpha2[trait])/nsamples
+                Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
+            end
+            if Mi.estimatePi == true
+                if Mi.ntraits == 1 || mme.MCMCinfo.mega_trait
+                    Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
+                    Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
+                else
+                    for i in keys(Mi.π)
+                      Mi.mean_pi[i] += (Mi.π[i]-Mi.mean_pi[i])/nsamples
+                      Mi.mean_pi2[i] += (Mi.π[i].^2-Mi.mean_pi2[i])/nsamples
+                    end
+                end
+            end
+            if Mi.method != "BayesB"
+                Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
+                Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+            end
+            if Mi.estimateScale == true
+                Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
+                Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+            end
+        end
+    end
 end

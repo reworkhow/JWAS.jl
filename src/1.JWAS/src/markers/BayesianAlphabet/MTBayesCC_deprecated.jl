@@ -9,15 +9,15 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,
                                     invR0,invG0,iIter,BigPi,labels)
 
     nMarkers = length(xArray)
-    nTraits  = length(alphaArray)
+    ntraits  = length(alphaArray)
     Ginv     = invG0
     Rinv     = invR0
 
-       α = zeros(nTraits)
-    newu = zeros(nTraits)
-    oldu = zeros(nTraits)
-       δ = zeros(nTraits)
-       w = zeros(nTraits) #for rhs
+       α = zeros(ntraits)
+    newu = zeros(ntraits)
+    oldu = zeros(ntraits)
+       δ = zeros(ntraits)
+       w = zeros(ntraits) #for rhs
 
 
       nlable    = length(labels)
@@ -38,20 +38,20 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,
 
         x    = xArray[marker]
 
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             α[trait]  = alphaArray[trait][marker]
          oldu[trait]  = newu[trait] = uArray[trait][marker]
             #δ[trait]  = deltaArray[trait][marker]
             w[trait]  = dot(x,wArray[trait])+xpx[marker]*oldu[trait]
         end
 
-        stdnorm = randn(nTraits)
+        stdnorm = randn(ntraits)
         for label in 1:length(labels)
             lhs       = RinvLhs[label]*xpx[marker]+Ginv
             rhs       = w'*RinvRhs[label]
-            invLhs    = inv(lhs)                #nTrait X nTrait
+            invLhs    = inv(lhs)                #ntraits X ntraits
             invLhsC   = chol(Hermitian(invLhs))
-            #gHat     = lhsC\rhs' #nTrait X 1
+            #gHat     = lhsC\rhs' #ntraits X 1
             gHat      = invLhs*rhs'
             #probDelta[label]= sqrt(1.0/det(lhsC))*exp(0.5*(rhs*gHat)[1,1])+BigPi[label]
             #logDelta[label]=-0.5*(log(det(lhsC))-(rhs*gHat)[1,1])+log(BigPi[label])
@@ -79,7 +79,7 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,
         newu        = diagm(δ)*α #α.*δ
 
         # adjust for locus j
-        for trait = 1:nTraits
+        for trait = 1:ntraits
             BLAS.axpy!(oldu[trait]-newu[trait],x,wArray[trait])
             alphaArray[trait][marker]      = α[trait]
             deltaArray[trait][marker]      = δ[trait]
@@ -90,8 +90,8 @@ end
 
 function samplePi(deltaArray,BigPi,BigPiMean,iter,labels)
   temp = deltaArray[1]
-  nTraits = size(deltaArray,1)
-  for traiti = 2:nTraits
+  ntraits = size(deltaArray,1)
+  for traiti = 2:ntraits
     temp = [temp deltaArray[traiti]]
   end
 

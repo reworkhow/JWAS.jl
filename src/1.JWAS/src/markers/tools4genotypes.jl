@@ -12,33 +12,37 @@ end
 function get_column_ref(X)
     ncol = size(X)[2]
     xArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncol)
-    for i=1:ncol
+    @showprogress "building prerequisite matrices ..." for i=1:ncol
         xArray[i] = get_column(X,i)
     end
     return xArray
 end
 
 function center!(X)
-    nrow,ncol = size(X)
+    nrow     = size(X,1)
     colMeans = mean(X,dims=1)
     BLAS.axpy!(-1,ones(nrow)*colMeans,X)
     return colMeans
 end
 
-function center(X)
-    nrow,ncol = size(X)
-    colMeans = mean(X,dims=1)
-    return colMeans
-end
-
 function getXpRinvX(X, Rinv)
-    XpRinvX = [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
+    XpRinvX = @showprogress "building prerequisite matrices ..." [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 
 function getXpRinvX(X)
-    XpRinvX = [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
+    XpRinvX = @showprogress "building prerequisite matrices ..." [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
     return XpRinvX
+end
+
+function get_column_blocks_ref(X,fast_blocks=false)
+    xArray = Array{typeof(X)}(undef,length(fast_blocks))
+    @showprogress "building prerequisite matrices ..." for i in 1:length(fast_blocks)
+        pos_start = fast_blocks[i]
+        pos_end   = (i != length(fast_blocks)) ? (fast_blocks[i+1]-1) : size(X,2)
+        xArray[i] = view(X,:,pos_start:pos_end)
+    end
+    return xArray
 end
 
 mutable struct GibbsMats
@@ -46,21 +50,32 @@ mutable struct GibbsMats
     nrows::Int64
     ncols::Int64
     xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
-    xpx::Union{Array{Float64,1},Array{Float32,1}}
     xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
-    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}};Rinv=false) ###More
+    XArray
+    XRinvArray
+    XpRinvX
+    function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv;fast_blocks=false)
+        #single-locus, adjusting y, approach
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
-        xpx         = getXpRinvX(X)
-        if Rinv==false
-            xRinvArray = xArray
-            xpRinvx    = xpx
+        xpRinvx     = getXpRinvX(X,Rinv)
+        if Rinv == ones(length(Rinv))
+            xRinvArray = xArray  #avoid using extra memory for xRinvArray
         else
             xRinvArray = [x.*Rinv for x in xArray]
-            xpRinvx    = getXpRinvX(X,Rinv)
         end
-        new(X,nrows,ncols,xArray,xpx,xRinvArray,xpRinvx)
+        #block, adjusting rhs and/or y, approach
+        if fast_blocks != false
+            XArray = get_column_blocks_ref(X,fast_blocks)
+            XRinvArray = @showprogress "building prerequisite matrices ..." [X'Diagonal(Rinv) for X in XArray]
+            XpRinvX = @showprogress "building prerequisite matrices ..." [XRinvArray[i]*XArray[i] for i in 1:length(XArray)]
+        else
+            XArray = XRinvArray = XpRinvX = false
+        end
+        new(X,nrows,ncols,
+            xArray,xRinvArray,xpRinvx,
+            XArray,XRinvArray,XpRinvX)
     end
 end
 
@@ -76,21 +91,39 @@ end
 #Note that Aligning genotypes with phenotypes and output_ID in single-step analysis
 #(incomplete genomic data) has been moved to SSBR.jl file.
 function align_genotypes(mme::MME,output_heritability=false,single_step_analysis=false)
-    if mme.output_ID != 0 && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
-        Zo  = mkmat_incidence_factor(mme.output_ID,mme.M.obsID)
-        mme.output_genotypes =  Zo*mme.M.genotypes
-    end
-    #***************************************************************************
-    #Align genotypes with phenotypes
-    #Change mme.M.genotypes to phenotyped individuals to accommodate
-    #individuals with repeated records or individuals without records
-    #
-    #**********CENTERING?*******************************************************
-    if mme.obsID != mme.M.obsID && single_step_analysis==false && mme.MCMCinfo.methods != "GBLUP"
-        Z  = mkmat_incidence_factor(mme.obsID,mme.M.obsID)
-        mme.M.genotypes = Z*mme.M.genotypes
-        mme.M.obsID     = mme.obsID
-        mme.M.nObs      = length(mme.M.obsID)
+    if single_step_analysis==false
+        if mme.output_ID != 0
+            for Mi in mme.M
+                if mme.output_ID != Mi.obsID
+                    Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,Mi.obsID))
+                    Mi.output_genotypes =  Zo*Mi.genotypes
+                else
+                    Mi.output_genotypes =  Mi.genotypes #why this is a copy
+                end
+                if Mi.isGRM #relationship matrix is provided
+                    Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+                    Mi.output_genotypes = Mi.output_genotypes*Z'
+                end
+            end
+        end
+        #***************************************************************************
+        #Align genotypes with phenotypes
+        #Change mme.M.genotypes to phenotyped individuals to accommodate
+        #individuals with repeated records or individuals without records
+        #
+        #**********CENTERING?*******************************************************
+        if mme.obsID != mme.M[1].obsID
+            for Mi in mme.M
+                Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+                genotypes = Z*Mi.genotypes
+                if Mi.isGRM #relationship matrix is provided
+                    genotypes = genotypes*Z'
+                end
+                Mi.genotypes = genotypes
+                Mi.obsID     = mme.obsID
+                Mi.nObs      = length(mme.obsID)
+            end
+        end
     end
 end
 
@@ -119,58 +152,66 @@ end
 ################################################################################
 #Set Marker Effcets Hyperparameters: Variances and Pi
 ################################################################################
-function set_marker_hyperparameters_variances_and_pi(mme::MME,Pi,methods)
-  #multi-trait (Pi)
-  if  Pi==0.0 && (mme.nModels !=1 || mme.MCMCinfo.RRM != false)
-      println()
-      printstyled("Pi (Π) is not provided.\n",bold=false)
-      printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
-      mykey=Array{Float64}(undef,0)
-      ntraits=mme.nModels
-      if mme.MCMCinfo.RRM != false
-          ntraits = size(mme.MCMCinfo.RRM,2)
-      end
-      Pi=Dict{Array{Float64,1},Float64}()
-      #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
-      for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
-        Pi[parse.(Float64, split(i,""))]=0.0
-      end
-      Pi[ones(ntraits)]=1.0
-  end
-  #marker effect variances
-  if mme.M.G == false && methods!="GBLUP"
-      genetic2marker(mme.M,Pi)
-      println()
-      if mme.nModels != 1 || mme.MCMCinfo.RRM != false
-        if !isposdef(mme.M.G) #also work for scalar
-          error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+function set_marker_hyperparameters_variances_and_pi(mme::MME)
+    if mme.M != 0
+        for Mi in mme.M
+            #(1) Pi in multi-trait analysis
+            if mme.nModels !=1 && Mi.π==0.0 && !(Mi.method in ["RR-BLUP","BayesL"])
+                println()
+                printstyled("Pi (Π) is not provided.\n",bold=false)
+                printstyled("Pi (Π) is generated assuming all markers have effects on all traits.\n",bold=false)
+                mykey=Array{Float64}(undef,0)
+                ntraits=mme.nModels
+                Pi=Dict{Array{Float64,1},Float64}()
+                #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
+                for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
+                    Pi[parse.(Float64, split(i,""))]=0.0
+                end
+                Pi[ones(ntraits)]=1.0
+                Mi.π = Pi
+            end
+            #(2) marker effect variances
+            if Mi.G == false
+                if Mi.method!="GBLUP"
+                    genetic2marker(Mi,Mi.π)
+                    println()
+                    if mme.nModels != 1
+                      if !isposdef(Mi.G) #also work for scalar
+                        error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
+                      end
+                      println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
+                      println("The mean of the prior for the marker effects covariance matrix is:")
+                      if mme.MCMCinfo.printout_model_info==true
+                          Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                      end
+                    else
+                      if !isposdef(Mi.G) #positive scalar (>0)
+                        error("Marker effects variance is negative!")
+                      end
+                      println("The prior for marker effects variance is calculated from the genetic variance and π.")
+                      print("The mean of the prior for the marker effects variance is: ")
+                      print(round.(Mi.G,digits=6))
+                    end
+                    print("\n\n\n")
+                elseif Mi.method == "GBLUP"
+                    Mi.G  = Mi.genetic_variance
+                end
+            end
+            #(3) scale parameter for marker effect variance
+            if Mi.ntraits == 1
+                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
+            else
+                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
+            end
         end
-        println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
-        println("The mean of the prior for the marker effects covariance matrix is:")
-        Base.print_matrix(stdout,round.(mme.M.G,digits=6))
-      else
-        if !isposdef(mme.M.G) #positive scalar (>0)
-          error("Marker effects variance is negative!")
-        end
-        println("The prior for marker effects variance is calculated from the genetic variance and π.")
-        print("The mean of the prior for the marker effects variance is: ")
-        print(round.(mme.M.G,digits=6))
-      end
-      print("\n\n\n")
-  end
-  if (mme.nModels !=1 || mme.MCMCinfo.RRM != false)
-      mme.M.scale = mme.M.G*(mme.df.marker - mme.nModels - 1)
-  else
-      mme.M.scale = mme.M.G*(mme.df.marker-2)/mme.df.marker #scale parameter for marker effect variance
-  end
-  return Pi
+    end
 end
 
-function genetic2marker(M::Genotypes,Pi::Dict) #multi-trait or RRM
-  nTraits = size(M.genetic_variance,1)
-  denom   = zeros(nTraits,nTraits)
-  for i in 1:nTraits
-    for j in i:nTraits
+function genetic2marker(M::Genotypes,Pi::Dict)
+  ntraits = size(M.genetic_variance,1)
+  denom   = zeros(ntraits,ntraits)
+  for i in 1:ntraits
+    for j in i:ntraits
       pi_selected = filter(d->d.first[i]==1.0 && d.first[j]==1.0,Pi)
 
       denom[i,j] = M.sum2pq*sum(values(pi_selected))
@@ -180,6 +221,6 @@ function genetic2marker(M::Genotypes,Pi::Dict) #multi-trait or RRM
   M.G = M.genetic_variance ./ denom
 end
 
-function genetic2marker(M::Genotypes,π::Float64) #single-trait analysis
+function genetic2marker(M::Genotypes,π::Float64)
     M.G = M.genetic_variance/((1-π)*M.sum2pq)
 end

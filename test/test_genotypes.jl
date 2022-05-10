@@ -1,10 +1,11 @@
 using CSV,DataFrames,JWAS,JWAS.Datasets,DelimitedFiles,CSV
 
-genofile                  = Datasets.dataset("example","genotypes.txt")
-genofile_noheader         = Datasets.dataset("example","genotypes_noheader.txt")
+
+genofile   = Datasets.dataset("genotypes.txt",dataset_name="example")
+genofile_noheader    = Datasets.dataset("genotypes_noheader.txt",dataset_name="example")
 geno                      = readdlm(genofile,',')
 geno_array,markerIDs,obsID = map(Float64,geno[2:end,2:end]),geno[1,:],geno[2:end,1]
-geno_dataframe            = CSV.read(genofile)[:,2:end]
+geno_dataframe            = CSV.read(genofile,DataFrame)[:,2:end]
 
 println("load genotype ...")
 

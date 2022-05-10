@@ -86,22 +86,18 @@ In multi-trait BayesC$\Pi$, the prior for $\alpha_{lk}$, the marker effect of tr
 univariate normal distribution conditional on $\sigma_{k}^{2}$:
 
 ```math
-\begin{align*}
-\alpha_{lk}\mid\pi_{k},\sigma_{k}^{2} & \begin{cases}
-\sim N\left(0,\,\sigma_{k}^{2}\right) & probability\;(1-\pi_{k})\\
-0 & probability\;\pi_{k}
+\alpha_{lk}\mid\pi_{k},\sigma_{k}^{2}  \begin{cases}
+\sim N\left(0,\,\sigma_{k}^{2}\right)  & \:probability\;(1-\pi_{k})\\
+0  & \:probability\;\pi_{k}
 \end{cases}
-\end{align*}
 ```
 and the covariance between effects for traits $k$ and $k'$ at the same locus, i.e., $\alpha_{lk}$ and $\alpha_{lk^{'}}$ is
 
 ```math
-\begin{align*}
 cov\left(\alpha_{lk},\alpha_{lk^{'}}\mid\sigma_{kk^{'}}\right)=\begin{cases}
 \sigma_{kk^{'}} & \:if\:both\,\alpha_{lk}\neq0\:and\:\alpha_{lk^{'}}\neq0\\
 0 & \:otherwise
 \end{cases}.
-\end{align*}
 ```
 
 The vector of marker effects
@@ -120,10 +116,7 @@ for  $\boldsymbol{\delta}_{l}$: $(0,\,0)$, $(0,\,1)$, $(1,\,0)$, $(1,\,1)$. Supp
 outcomes for  $\boldsymbol{\delta}_{l}$, then the prior for  $\boldsymbol{\delta}_{l}$ is a categorical distribution
 
 ```math
-\begin{align*}
- & p\left(\boldsymbol{\delta}_{l}=``i"\right)\\
-= & \Pi_{1}I\left(\boldsymbol{\delta}_{l}=``1"\right)+\Pi_{2}I\left(\boldsymbol{\delta}_{l}=``2"\right)+...+\Pi_{l}I\left(\boldsymbol{\delta}_{l}=``l"\right),
-\end{align*}
+p\left(\boldsymbol{\delta}_{l}=``i"\right)= \Pi_{1}I\left(\boldsymbol{\delta}_{l}=``1"\right)+\Pi_{2}I\left(\boldsymbol{\delta}_{l}=``2"\right)+...+\Pi_{l}I\left(\boldsymbol{\delta}_{l}=``l"\right),
 ```
 
 where $\sum_{i=1}^{l}\Pi_{i}=1$ with $\Pi_{i}$ being the prior probability that the vector $\boldsymbol{\delta}_{l}$ corresponds to the vector labelled $"i"$. A Dirichlet distribution with all parameters equal to one, i.e., a uniform distribution, can be used for the prior for
@@ -136,8 +129,9 @@ Wishart prior, $W_{t}^{-1}\left(\mathbf{S}_{\beta},\nu_{\beta}\right)$. Multi-tr
 multi-trait BayesB method where $\boldsymbol{\delta}_{l}$ is always a vector of ones.
 
 > #### references
-> * Meuwissen T, Hayes B, Goddard M. Prediction of total genetic value using genome-wide dense marker maps. Genetics, 157:1819–1829, 2001.
-> * Fernando R, Garrick D. Bayesian methods applied to GWAS. Methods Mol Biol. 2013;1019:237–274.
-> * Cheng H, Garrick D, Fernando R. A fast and efficient Gibbs sampler for BayesB in whole- genome analyses. Genet Sel Evol, 2015, 47:80.
-> * Fernando R, Dekkers J,Garrick D. A class of Bayesian methods to combine large numbers of genotyped and non-genotyped animals for whole-genome analyses. Genetics Selection Evolution, 2015 46(1), 50.
-> * Cheng H, Kizilkaya K, Zeng J, Garrick D, Fernando R. Genomic Prediction from Multiple-trait Bayesian Regression Methods using Mixture Priors. Genetics. 2018
+> * Meuwissen T, Hayes B, Goddard M. Prediction of total genetic value using genome-wide dense marker maps. Genetics, 2001,157:1819–1829.
+> * Fernando R, Garrick D. Bayesian methods applied to GWAS. Methods Mol Biol. 2013, 1019:237–274.
+> * Cheng H, Garrick D, Fernando R. A fast and efficient Gibbs sampler for BayesB in whole- genome analyses. Genetics Selection Evolution, 2015, 47:80.
+> * Fernando R, Dekkers J, Garrick D. A class of Bayesian methods to combine large numbers of genotyped and non-genotyped animals for whole-genome analyses. Genetics Selection Evolution, 2015, 46(1), 50.
+> * Fernando R, Cheng H, Golden B, Garrick D.. Computational strategies for alternative single-step Bayesian regression models with large numbers of genotyped and non-genotyped animals. Genetics Selection Evolution, 2016, 48(1), 96.
+> * Cheng H, Kizilkaya K, Zeng J, Garrick D, Fernando R. Genomic Prediction from Multiple-trait Bayesian Regression Methods using Mixture Priors. Genetics. 2018, 209(1).
