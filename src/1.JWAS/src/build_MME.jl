@@ -38,7 +38,8 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
                      censored_trait = false, categorical_trait = false,
-                     is_ssnnmm = false, middle_nodes_starting_values=false)
+                     is_ssnnmm = false, middle_nodes_starting_values=false,
+                     save_middle_nodes = false)
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
     end
@@ -126,6 +127,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
 
   #NNBayes:
   mme.is_ssnnmm            = is_ssnnmm
+  mme.save_middle_nodes    = save_middle_nodes
   if nonlinear_function != false
     mme.middle_nodes_starting_values=middle_nodes_starting_values
     mme.is_fully_connected   = is_fully_connected

@@ -335,6 +335,9 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           if mme.is_activation_fcn == true #Neural Network with activation function
               push!(outvar,"neural_networks_bias_and_weights")
           end
+          if mme.save_middle_nodes == true
+              push!(outvar,"middle_nodes")
+          end
       end
   end
   #categorical traits
@@ -498,6 +501,9 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+        if mme.save_middle_nodes == true
+            writedlm(outfile["middle_nodes"],vec(mme.middle_nodes)',',')
+        end
     end
 end
 """

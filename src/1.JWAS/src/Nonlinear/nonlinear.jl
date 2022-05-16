@@ -50,6 +50,8 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         #step 3. for individuals with partial omics data, put back the partial real omics.
         ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
     end
+    #update samples for saving results
+    mme.middle_nodes = ylats_old
 
     #sample neural network weights between hidden and output layer
     ############################################################################
