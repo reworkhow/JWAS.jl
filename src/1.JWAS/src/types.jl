@@ -301,9 +301,18 @@ mutable struct NNMM
     save_middle_nodes
     middle_nodes
 
-    NNMM(nModels)=new(false,false,1.0,
+    nnmm_method #method to sample neural network weights between middle and output layers
+    nnmm_π  #for BayesC
+    nnmm_δ  #for BayesC
+
+    nnmm_β        #for BayesC
+    nnmm_samplePi #for BayesC
+
+    NNMM(n_models,n_middle_nodes)=new(false,false,1.0,
                       false,false,false,
-                      false,false,1.0/sqrt(nModels),
+                      false,false,1.0/sqrt(n_models),
                       false,false,false,
-                      false,false,false)
+                      false,false,false,
+                      "RR-BLUP",0.0,zeros(n_middle_nodes),
+                      zeros(n_middle_nodes),false)
 end

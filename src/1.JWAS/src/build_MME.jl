@@ -39,7 +39,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
                      censored_trait = false, categorical_trait = false,
                      is_ssnnmm = false, middle_nodes_starting_values=false,
-                     save_middle_nodes = false)
+                     save_middle_nodes = false,nnmm_method=false,nnmm_samplePi=true)
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
     end
@@ -128,7 +128,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
   ##############################################################################
   # NN-MM
   ##############################################################################
-  nnmm                   = NNMM(nModels)
+  nnmm                   = NNMM(nModels,num_hidden_nodes)
   nnmm.is_ssnnmm         = is_ssnnmm
   nnmm.save_middle_nodes = save_middle_nodes
   if nonlinear_function != false
@@ -138,6 +138,22 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     nnmm.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     nnmm.latent_traits        = latent_traits
     nnmm.yobs_name            = Symbol(yobs_name)
+    if nnmm_method == "BayesC" #by default is RR-BLUP
+        nnmm.nnmm_method = nnmm_method
+        nnmm.nnmm_samplePi = true
+        if nnmm_samplePi == false
+          nnmm.nnmm_samplePi = false
+        end
+    end
+
+    if nnmm.nnmm_method ∈ ["RR-BLUP","BayesC"]
+        printstyled(" - Sample neural network weights: ",nnmm.nnmm_method,".\n",bold=false,color=:green)
+        printstyled(" - Sample π for neural network weights: ",nnmm.nnmm_samplePi,".\n",bold=false,color=:green)
+    else
+        error("only RR-BLUP and BayesC are suppoted")
+    end
+
+
     if user_σ2_yobs != false && user_σ2_weightsNN != false
       nnmm.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
       nnmm.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN

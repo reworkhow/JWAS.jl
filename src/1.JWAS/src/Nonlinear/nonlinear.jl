@@ -68,9 +68,10 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
 
     #RR-BLUP to sample neural network weights: omics~yobs (no needed for user-defined function)
     if mme.NNMM.is_activation_fcn == true #Neural Network with activation function
-
         #calcluate g(Z), e.g., tanh(Z)
         g_z       = nonlinear_function.(ylats_old_train)
+        nnmmGibbs = GibbsMats(Matrix(g_z),ones(nTrain))
+        g_z_array, g_z_Rinv_array, gzpgz  = nnmmGibbs.xArray, nnmmGibbs.xRinvArray,nnmmGibbs.xpRinvx #g_z_array==g_z_Rinv_array
         yobs_corr = yobs_train .- mme.NNMM.weights_NN[1] - g_z*mme.NNMM.weights_NN[2:end] #y corrected for all
 
         #sample mean of phenotype
@@ -80,17 +81,22 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         mme.NNMM.weights_NN[1] = μ1
         yobs_corr = yobs_corr .- mme.NNMM.weights_NN[1]
 
-        #sample omics effects
-        # w1~N( lhs^-1 * rhs, lhs^-1 σ2_e  )
-        for j in 1:nOmics
-            x=g_z[:,j]
-            rhs=dot(x,yobs_corr)+dot(x,x)*mme.NNMM.weights_NN[j+1] #the first element is μ1
-            lhs=dot(x,x)+σ2_yobs/mme.NNMM.σ2_weightsNN
-            invLhs=1/lhs
-            meanj=invLhs*rhs
-            oldAlpha = mme.NNMM.weights_NN[j+1]
-            mme.NNMM.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*σ2_yobs)
-            yobs_corr=yobs_corr+(oldAlpha-mme.NNMM.weights_NN[j+1])*x
+        #sample weights between middle and output layers (w1)
+        w1 = mme.NNMM.weights_NN[2:end]
+        if mme.NNMM.nnmm_method=="RR-BLUP" #changed: mme.NNMM.weights_NN, yobs_corr
+            BayesL!(g_z_array,g_z_Rinv_array,gzpgz,
+                    yobs_corr,w1,[1.0],σ2_yobs,mme.NNMM.σ2_weightsNN)
+        elseif mme.NNMM.nnmm_method=="BayesC" #changed: mme.NNMM.weights_NN, mme.NNMM.nnmm_β,mme.NNMM.nnmm_δ,yobs_corr
+            BayesABC!(g_z_array,g_z_Rinv_array,gzpgz,
+                      yobs_corr,
+                      w1,mme.NNMM.nnmm_β,mme.NNMM.nnmm_δ,
+                      σ2_yobs, repeat([mme.NNMM.σ2_weightsNN],nOmics), mme.NNMM.nnmm_π)
+        end
+        mme.NNMM.weights_NN[2:end] = w1 #update weights_NN
+
+        # sample Pi
+        if mme.NNMM.nnmm_method=="BayesC" &&  mme.NNMM.nnmm_samplePi==true #changed: mme.NNMM.nnmm_π
+            mme.NNMM.nnmm_π = samplePi(sum(mme.NNMM.nnmm_δ), nOmics)
         end
     end
 
@@ -98,14 +104,13 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     mme.ySparse = vec(ylats_old)
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
-    #sample σ2_yobs
-    if mme.NNMM.is_activation_fcn == false  # user-defined nonlinear function
-        residuals = yobs_train-nonlinear_function.(Tuple([view(ylats_old_train,:,i) for i in 1:ntraits])...)
-    else   # Neural Network with activation function
-        residuals = yobs_corr
-    end
-
+    # sample variance components
     if mme.NNMM.fixed_σ2_NN==false
+        if mme.NNMM.is_activation_fcn == false  # user-defined nonlinear function
+            residuals = yobs_train-nonlinear_function.(Tuple([view(ylats_old_train,:,i) for i in 1:ntraits])...)
+        else   # Neural Network with activation function
+            residuals = yobs_corr
+        end
         mme.NNMM.σ2_yobs      = sample_variance(residuals, nTrain, 4, 1) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
         mme.NNMM.σ2_weightsNN = sample_variance(mme.NNMM.weights_NN[2:end], nOmics, 4, 1)
     end
