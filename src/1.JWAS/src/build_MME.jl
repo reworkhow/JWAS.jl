@@ -39,7 +39,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
                      censored_trait = false, categorical_trait = false,
                      is_ssnnmm = false, middle_nodes_starting_values=false,
-                     save_middle_nodes = false,nnmm_method=false,nnmm_samplePi=true)
+                     save_middle_nodes = false,nnmm_method=false,nnmm_samplePi=true,nnmm_Pi=false)
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
     end
@@ -143,6 +143,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
         nnmm.nnmm_samplePi = true
         if nnmm_samplePi == false
           nnmm.nnmm_samplePi = false
+        end
+        if nnmm_Pi != false #user-defined starting values (0 by default)
+          nnmm.nnmm_π = nnmm_Pi
         end
     end
 
