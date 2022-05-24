@@ -332,6 +332,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       if mme.NNMM.nonlinear_function != false  #NNBayes
           push!(outvar,"EBV_NonLinear")
+          push!(outvar,"nnmm_pi")
           if mme.NNMM.is_activation_fcn == true #Neural Network with activation function
               push!(outvar,"neural_networks_bias_and_weights")
           end
@@ -501,6 +502,7 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["neural_networks_bias_and_weights"],mme.NNMM.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+        writedlm(outfile["nnmm_pi"],mme.NNMM.nnmm_π,',')
         if mme.NNMM.save_middle_nodes == true
             writedlm(outfile["middle_nodes"],vec(mme.NNMM.middle_nodes)',',')
         end
