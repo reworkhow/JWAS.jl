@@ -13,10 +13,10 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ylats_old = mme.ySparse         # current values of each latent trait; [trait_1_obs;trait_2_obs;...]
     μ_ylats   = mme.ySparse - ycorr # mean of each latent trait, [trait_1_obs-residuals;trait_2_obs-residuals;...]
                                     # = vcat(getEBV(mme,1).+mme.sol[1],getEBV(mme,2).+mme.sol[2]))
-    σ2_yobs      = mme.σ2_yobs      # residual variance of yobs (scalar)
-    σ2_weightsNN = mme.σ2_weightsNN # variance of nn weights between middle and output layers
+    σ2_yobs      = mme.NNMM.σ2_yobs      # residual variance of yobs (scalar)
+    σ2_weightsNN = mme.NNMM.σ2_weightsNN # variance of nn weights between middle and output layers
 
-    incomplete_omics = mme.incomplete_omics #indicator for ind with incomplete omics
+    incomplete_omics = mme.NNMM.incomplete_omics #indicator for ind with incomplete omics
 
     #reshape the vector to nind X ntraits
     nobs, ntraits = length(mme.obsID), mme.nModels
@@ -28,13 +28,13 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     #sample latent trait
     if sum(incomplete_omics) != 0   #at least 1 ind with incomplete omics
         #step 1. sample latent trait for individuals with incomplete omics data
-        if mme.is_activation_fcn == true #Neural Network with activation function
-            ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.weights_NN,mme.R,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
+        if mme.NNMM.is_activation_fcn == true #Neural Network with activation function
+            ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.NNMM.weights_NN,mme.R,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
         else  #user-defined function, MH
             candidates       = μ_ylats[incomplete_omics,:]+randn(size(μ_ylats[incomplete_omics,:]))  #candidate samples
             if nonlinear_function == "Neural Network (MH)" # current NN-MM do not allow "Neural Network (MH)"
-                μ_yobs_candidate = [ones(sum(incomplete_omics)) nonlinear_function.(candidates)]*mme.weights_NN
-                μ_yobs_current   = X*mme.weights_NN
+                μ_yobs_candidate = [ones(sum(incomplete_omics)) nonlinear_function.(candidates)]*mme.NNMM.weights_NN
+                μ_yobs_current   = X*mme.NNMM.weights_NN
             else #user-defined non-linear function
                 μ_yobs_candidate = nonlinear_function.(Tuple([view(candidates[incomplete_omics,:],:,i) for i in 1:ntraits])...)
                 μ_yobs_current   = nonlinear_function.(Tuple([view(ylats_old[incomplete_omics,:],:,i) for i in 1:ntraits])...)
@@ -51,7 +51,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
     end
     #update samples for saving results
-    mme.middle_nodes = ylats_old
+    mme.NNMM.middle_nodes = ylats_old
 
     #sample neural network weights between hidden and output layer
     ############################################################################
@@ -67,29 +67,30 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     nOmics           = size(ylats_old_train,2)
 
     #RR-BLUP to sample neural network weights: omics~yobs (no needed for user-defined function)
-    if mme.is_activation_fcn == true #Neural Network with activation function
+    if mme.NNMM.is_activation_fcn == true #Neural Network with activation function
+
         #calcluate g(Z), e.g., tanh(Z)
         g_z       = nonlinear_function.(ylats_old_train)
-        yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
+        yobs_corr = yobs_train .- mme.NNMM.weights_NN[1] - g_z*mme.NNMM.weights_NN[2:end] #y corrected for all
 
         #sample mean of phenotype
         # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
-        yobs_corr = yobs_corr .+ mme.weights_NN[1]
+        yobs_corr = yobs_corr .+ mme.NNMM.weights_NN[1]
         μ1 = sum(yobs_corr)/nTrain + randn()*sqrt(σ2_yobs/nTrain)
-        mme.weights_NN[1] = μ1
-        yobs_corr = yobs_corr .- mme.weights_NN[1]
+        mme.NNMM.weights_NN[1] = μ1
+        yobs_corr = yobs_corr .- mme.NNMM.weights_NN[1]
 
         #sample omics effects
         # w1~N( lhs^-1 * rhs, lhs^-1 σ2_e  )
         for j in 1:nOmics
             x=g_z[:,j]
-            rhs=dot(x,yobs_corr)+dot(x,x)*mme.weights_NN[j+1] #the first element is μ1
-            lhs=dot(x,x)+σ2_yobs/mme.σ2_weightsNN
+            rhs=dot(x,yobs_corr)+dot(x,x)*mme.NNMM.weights_NN[j+1] #the first element is μ1
+            lhs=dot(x,x)+σ2_yobs/mme.NNMM.σ2_weightsNN
             invLhs=1/lhs
             meanj=invLhs*rhs
-            oldAlpha = mme.weights_NN[j+1]
-            mme.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*σ2_yobs)
-            yobs_corr=yobs_corr+(oldAlpha-mme.weights_NN[j+1])*x
+            oldAlpha = mme.NNMM.weights_NN[j+1]
+            mme.NNMM.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*σ2_yobs)
+            yobs_corr=yobs_corr+(oldAlpha-mme.NNMM.weights_NN[j+1])*x
         end
     end
 
@@ -98,14 +99,14 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     ycorr[:]    = mme.ySparse - vec(μ_ylats) # =(ylats_new - ylats_old) + ycorr: update residuls (ycorr)
 
     #sample σ2_yobs
-    if mme.is_activation_fcn == false  # user-defined nonlinear function
+    if mme.NNMM.is_activation_fcn == false  # user-defined nonlinear function
         residuals = yobs_train-nonlinear_function.(Tuple([view(ylats_old_train,:,i) for i in 1:ntraits])...)
     else   # Neural Network with activation function
         residuals = yobs_corr
     end
 
-    if mme.fixed_σ2_NN==false
-        mme.σ2_yobs      = sample_variance(residuals, nTrain, 4, 1) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
-        mme.σ2_weightsNN = sample_variance(mme.weights_NN[2:end], nOmics, 4, 1)
+    if mme.NNMM.fixed_σ2_NN==false
+        mme.NNMM.σ2_yobs      = sample_variance(residuals, nTrain, 4, 1) #(dot(x,x) + df*scale)/rand(Chisq(n+df))
+        mme.NNMM.σ2_weightsNN = sample_variance(mme.NNMM.weights_NN[2:end], nOmics, 4, 1)
     end
 end

@@ -125,25 +125,31 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.M = genotypes
   end
 
-  #NNBayes:
-  mme.is_ssnnmm            = is_ssnnmm
-  mme.save_middle_nodes    = save_middle_nodes
+  ##############################################################################
+  # NN-MM
+  ##############################################################################
+  nnmm                   = NNMM(nModels)
+  nnmm.is_ssnnmm         = is_ssnnmm
+  nnmm.save_middle_nodes = save_middle_nodes
   if nonlinear_function != false
-    mme.middle_nodes_starting_values=middle_nodes_starting_values
-    mme.is_fully_connected   = is_fully_connected
-    mme.is_activation_fcn    = is_activation_fcn
-    mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
-    mme.latent_traits        = latent_traits
-    mme.yobs_name            = Symbol(yobs_name)
+    nnmm.middle_nodes_starting_values = middle_nodes_starting_values
+    nnmm.is_fully_connected   = is_fully_connected
+    nnmm.is_activation_fcn    = is_activation_fcn
+    nnmm.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
+    nnmm.latent_traits        = latent_traits
+    nnmm.yobs_name            = Symbol(yobs_name)
     if user_σ2_yobs != false && user_σ2_weightsNN != false
-      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
-      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
-      mme.fixed_σ2_NN     = true
+      nnmm.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
+      nnmm.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
+      nnmm.fixed_σ2_NN     = true
       printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
     end
   end
+  mme.NNMM=nnmm
 
-  #setup traits_type (by default is "continuous")
+  ##############################################################################
+  # setup traits_type (by default is "continuous")
+  ##############################################################################
   for t in 1:mme.nModels
     if string(mme.lhsVec[t]) ∈ censored_trait
       mme.traits_type[t]="censored"
@@ -151,6 +157,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       mme.traits_type[t]="categorical"
     end
   end
+
 
   return mme
 end

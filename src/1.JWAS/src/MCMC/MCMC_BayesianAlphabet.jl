@@ -18,9 +18,9 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     is_mega_trait            = mme.MCMCinfo.mega_trait
-    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
-    is_activation_fcn        = mme.is_activation_fcn
-    nonlinear_function       = mme.nonlinear_function
+    is_nnbayes_partial       = mme.NNMM.nonlinear_function != false && mme.NNMM.is_fully_connected==false
+    is_activation_fcn        = mme.NNMM.is_activation_fcn
+    nonlinear_function       = mme.NNMM.nonlinear_function
 
     estimate_any_marker_effect_var = false
     if mme.M != 0
@@ -169,7 +169,7 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # # Initialize mme for hmc before Gibbs
     if nonlinear_function != false
-        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
+        mme.NNMM.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
     @showprogress "running MCMC ..." for iter=1:chain_length
         println("------iteration $iter")
@@ -348,7 +348,7 @@ function MCMC_BayesianAlphabet(mme,df)
         # 5. Latent Traits (NNBayes)
         ########################################################################
         @time if nonlinear_function != false #to update ycorr (wArray) and mme.ySparse
-            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
+            sample_latent_traits(mme.NNMM.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER

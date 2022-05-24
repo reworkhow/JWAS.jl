@@ -243,21 +243,7 @@ mutable struct MME
 
     causal_structure
 
-    nonlinear_function #user-provide function, "tanh"
-    weights_NN
-    σ2_yobs
-    is_fully_connected
-    is_activation_fcn  #Neural Network with activation function (not user-defined function)
-    latent_traits #["z1","z2"], for intermediate omics data,
-    yobs          #for single observed trait, and mme.ySparse is for latent traits
-    yobs_name
-    σ2_weightsNN
-    fixed_σ2_NN
-    incomplete_omics
-    is_ssnnmm #single-step NN-MM
-    middle_nodes_starting_values
-    save_middle_nodes
-    middle_nodes
+    NNMM                                          #NNMM objoect
 
     traits_type   #by default all traits are continuous
 
@@ -285,7 +271,39 @@ mutable struct MME
                    0,
                    false,false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,false,false,false,false,
+                   0, #NNMM
                    repeat(["continuous"],nModels))
     end
+end
+
+
+################################################################################
+#the class NNMM is shown below for NN-MM model
+################################################################################
+mutable struct NNMM
+    nonlinear_function #user-provide function, "tanh"
+    weights_NN
+    σ2_yobs
+
+    is_fully_connected
+    is_activation_fcn  #Neural Network with activation function (not user-defined function)
+    latent_traits #["z1","z2"], for intermediate omics data,
+
+    yobs          #for single observed trait, and mme.ySparse is for latent traits
+    yobs_name
+    σ2_weightsNN
+
+    fixed_σ2_NN
+    incomplete_omics
+    is_ssnnmm #single-step NN-MM
+
+    middle_nodes_starting_values
+    save_middle_nodes
+    middle_nodes
+
+    NNMM(nModels)=new(false,false,1.0,
+                      false,false,false,
+                      false,false,1.0/sqrt(nModels),
+                      false,false,false,
+                      false,false,false)
 end

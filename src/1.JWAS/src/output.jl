@@ -131,7 +131,7 @@ function output_result(mme,output_folder,
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
-      if mme.nonlinear_function != false  #NNBayes
+      if mme.NNMM.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
           EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
       end
@@ -155,7 +155,7 @@ function output_result(mme,output_folder,
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
           end
       end
-      if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
+      if mme.NNMM.nonlinear_function != false && mme.NNMM.is_activation_fcn == true  #Neural Network with activation function
           myvar         = "neural_networks_bias_and_weights"
           samplesfile   = output_file*"_"*myvar*".txt"
           samples       = readdlm(samplesfile,',',header=false)
@@ -241,10 +241,10 @@ function getEBV(mme,traiti)
             EBV += EBV_term
         end
     end
-    if mme.nonlinear_function != false #NNBayes: add intercept
+    if mme.NNMM.nonlinear_function != false #NNBayes: add intercept
         EBV = EBV .+ location_parameters[(location_parameters[!,:Effect].=="intercept").&(location_parameters[!,:Trait].==traiti_name),:Estimate]
     end
-    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_partial_connect = mme.NNMM.nonlinear_function != false && mme.NNMM.is_fully_connected==false
     if mme.M != 0
         for i in 1:length(mme.M)
             Mi=mme.M[i]
@@ -330,12 +330,12 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           push!(outvar,"genetic_variance")
           push!(outvar,"heritability")
       end
-      if mme.nonlinear_function != false  #NNBayes
+      if mme.NNMM.nonlinear_function != false  #NNBayes
           push!(outvar,"EBV_NonLinear")
-          if mme.is_activation_fcn == true #Neural Network with activation function
+          if mme.NNMM.is_activation_fcn == true #Neural Network with activation function
               push!(outvar,"neural_networks_bias_and_weights")
           end
-          if mme.save_middle_nodes == true
+          if mme.NNMM.save_middle_nodes == true
               push!(outvar,"middle_nodes")
           end
       end
@@ -407,7 +407,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
-      if mme.nonlinear_function != false #NNBayes
+      if mme.NNMM.nonlinear_function != false #NNBayes
           writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
       end
   end
@@ -443,7 +443,7 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.pedTrmVec != 0
         writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
     end
-    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_partial_connect = mme.NNMM.nonlinear_function != false && mme.NNMM.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
           for traiti in 1:Mi.ntraits
@@ -468,14 +468,14 @@ function output_MCMC_samples(mme,vRes,G0,
     end
 
     if mme.MCMCinfo.outputEBV == true
-         EBVmat = myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
-         if mme.nonlinear_function==false  #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
+         EBVmat = myEBV = mme.NNMM.is_ssnnmm ? getEBV_ssnnmm(mme,1) : getEBV(mme,1)
+         if mme.NNMM.nonlinear_function==false  #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
              writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          end
          for traiti in 2:ntraits
-             myEBV = mme.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
+             myEBV = mme.NNMM.is_ssnnmm ? getEBV_ssnnmm(mme,traiti) : getEBV(mme,traiti) #actually BV
              trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             if mme.nonlinear_function==false #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
+             if mme.NNMM.nonlinear_function==false #NN-MM: do not save EBV for middle nodes, save time when too many middle nodes
                  writedlm(outfile["EBV_"*trait_name],myEBV',',')
              end
              EBVmat = [EBVmat myEBV]
@@ -493,16 +493,16 @@ function output_MCMC_samples(mme,vRes,G0,
              writedlm(outfile["heritability"],heritability,',')
          end
     end
-    if mme.nonlinear_function != false #NNBayes
-        if mme.is_activation_fcn == false  #user-defined nonlinear function
-            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...) #note intercept has been included in EBVmat
+    if mme.NNMM.nonlinear_function != false #NNBayes
+        if mme.NNMM.is_activation_fcn == false  #user-defined nonlinear function
+            BV_NN = mme.NNMM.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...) #note intercept has been included in EBVmat
         else  #activation function
-            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
-            writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
+            BV_NN = [ones(size(EBVmat,1)) mme.NNMM.nonlinear_function.(EBVmat)]*mme.NNMM.weights_NN
+            writedlm(outfile["neural_networks_bias_and_weights"],mme.NNMM.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
-        if mme.save_middle_nodes == true
-            writedlm(outfile["middle_nodes"],vec(mme.middle_nodes)',',')
+        if mme.NNMM.save_middle_nodes == true
+            writedlm(outfile["middle_nodes"],vec(mme.NNMM.middle_nodes)',',')
         end
     end
 end

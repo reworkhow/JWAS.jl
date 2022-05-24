@@ -193,28 +193,28 @@ end
 
 #below function is to initialize missing omics with yobs
 function nnlmm_initialize_missing(mme,df)
-    #define mme.yobs here because ungenotyped inds has been removed from df
-    mme.yobs = df[!,mme.yobs_name]  # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
-    if mme.latent_traits != false  #NN-LMM-Omics
+    #define mme.NNMM.yobs here because ungenotyped inds has been removed from df
+    mme.NNMM.yobs = df[!,mme.NNMM.yobs_name]  # mme.NNMM.yobs = DataFrames.recode(df[!,mme.NNMM.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+    if mme.NNMM.latent_traits != false  #NN-LMM-Omics
       #save omics data missing pattern
       mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
       #set starting values for missing data
-      if mme.middle_nodes_starting_values == false  #replace missing data with values in yobs
+      if mme.NNMM.middle_nodes_starting_values == false  #replace missing data with values in yobs
           for i in mme.lhsVec      #for each omics feature
             for j in 1:size(df,1)  #for each observation
               if ismissing(df[j,i])
-                df[j,i]=mme.yobs[j]
+                df[j,i]=mme.NNMM.yobs[j]
               end
             end
           end
       else #replace missing data with values in user-provided starting values
           for i in mme.lhsVec        #for each omics feature
-            which_col = findall(x -> x == string(i), names(mme.middle_nodes_starting_values))[1]
+            which_col = findall(x -> x == string(i), names(mme.NNMM.middle_nodes_starting_values))[1]
             for j in 1:size(df,1)  #for each observation
                 ind_id = df[j,1]
                 if ismissing(df[j,i])
-                    which_row = findall(x -> x == ind_id, mme.middle_nodes_starting_values[:,1])[1]
-                    df[j,i] = mme.middle_nodes_starting_values[which_row,which_col]
+                    which_row = findall(x -> x == ind_id, mme.NNMM.middle_nodes_starting_values[:,1])[1]
+                    df[j,i] = mme.NNMM.middle_nodes_starting_values[which_row,which_col]
                 end
             end
         end
@@ -229,5 +229,5 @@ function nnlmm_initialize_missing(mme,df)
     n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
     n_omics          = length(mme.lhsVec)             #number of omics
     full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
-    mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+    mme.NNMM.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
 end

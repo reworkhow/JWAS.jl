@@ -156,8 +156,8 @@ function runMCMC(mme::MME,df;
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
                 causal_structure                = false,
-                mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
-                missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
+                mega_trait                      = mme.NNMM.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
+                missing_phenotypes              = mme.NNMM.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
@@ -183,10 +183,10 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Neural Network
     ############################################################################
-    is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
-    if mme.nonlinear_function != false
-        if mme.latent_traits == false  #modify data to add phenotypes for hidden nodes
-            yobs = df[!,Symbol(string(mme.yobs_name))]
+    is_nnbayes_partial = (mme.NNMM.nonlinear_function != false && mme.NNMM.is_fully_connected==false)
+    if mme.NNMM.nonlinear_function != false
+        if mme.NNMM.latent_traits == false  #modify data to add phenotypes for hidden nodes
+            yobs = df[!,Symbol(string(mme.NNMM.yobs_name))]
             for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
                 df[!,i]= yobs
             end
@@ -196,13 +196,13 @@ function runMCMC(mme::MME,df;
             #with prefix 1, 2... , e.g., height1, height2...
             #if data for latent traits are included in the dataset, column names
             #will be used as shown below.e.g.,
-            #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
+            #mme.NNMM.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
             #"gene1" and "gene2" are columns in the dataset.
             ######################################################################
             #change model terms for partial-connected NN
             if is_nnbayes_partial
                 for i in 1:mme.nModels
-                    mme.M[i].trait_names=[mme.latent_traits[i]]
+                    mme.M[i].trait_names=[mme.NNMM.latent_traits[i]]
                 end
             end
         end
@@ -273,7 +273,7 @@ function runMCMC(mme::MME,df;
     ############################################################################
     errors_args(mme)       #check errors in function arguments
     df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
-    if mme.nonlinear_function != false #NN-LMM
+    if mme.NNMM.nonlinear_function != false #NN-LMM
         #initiliza missing omics data  (after check_pedigree_genotypes_phenotypes() because non-genotyped inds are removed)
         nnlmm_initialize_missing(mme,df)
     end
@@ -286,11 +286,11 @@ function runMCMC(mme::MME,df;
         if single_step_analysis == true
             SSBRrun(mme,df_whole,train_index,big_memory)
         end
-        if mme.is_ssnnmm==false
+        if mme.NNMM.is_ssnnmm==false
             set_marker_hyperparameters_variances_and_pi(mme)
         end
     end
-    if single_step_analysis == true && mme.is_ssnnmm
+    if single_step_analysis == true && mme.NNMM.is_ssnnmm
         return "genotype imputation end"
     end
     ############################################################################
@@ -336,7 +336,7 @@ function runMCMC(mme::MME,df;
         printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
         printstyled(" - Multi-threaded parallelism:       $nThread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
         nnbayes_mega_trait(mme)
-    elseif mme.nonlinear_function != false  #only print for NNBayes
+    elseif mme.NNMM.nonlinear_function != false  #only print for NNBayes
         printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
     end
 
@@ -462,7 +462,7 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_nnbayes_partial = mme.NNMM.nonlinear_function != false && mme.NNMM.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return

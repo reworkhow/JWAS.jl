@@ -251,8 +251,8 @@ function make_dataframes(df,mme)
     #NN-Bayes Omics: individuals with all omics data but no yobs should be kept
     #                since the omics data can help better estimate marker effect
     #***************************************************************************
-    if mme.nonlinear_function != false && mme.latent_traits != false
-        lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
+    if mme.NNMM.nonlinear_function != false && mme.NNMM.latent_traits != false
+        lhsVec = [mme.NNMM.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
     else
         lhsVec = mme.lhsVec #reference, not copy
     end
@@ -315,9 +315,9 @@ function make_dataframes(df,mme)
     "These individual IDs are saved in the file IDs_for_individuals_with_phenotypes.txt.\n",bold=false,color=:green)
     writedlm("IDs_for_individuals_with_phenotypes.txt",unique(df_whole[train_index,1]))
     mme.obsID = map(string,df_whole[train_index,1])
-    if mme.nonlinear_function != false
-        mme.incomplete_omics = mme.incomplete_omics[train_index]
-        mme.yobs             = mme.yobs[train_index]
+    if mme.NNMM.nonlinear_function != false
+        mme.NNMM.incomplete_omics = mme.NNMM.incomplete_omics[train_index]
+        mme.NNMM.yobs             = mme.NNMM.yobs[train_index]
         mme.missingPattern   = mme.missingPattern[train_index,:]
     end
     return df_whole,train_index
@@ -345,7 +345,7 @@ function make_incidence_matrices(mme,df_whole,train_index)
     #***************************************************************************
     #check whehter all levels in output_X exist in training data
     #e.g, g1,g2,g6 in output but g6 doesn't exist in g1,g2
-    if mme.nonlinear_function != false #NN-MM
+    if mme.NNMM.nonlinear_function != false #NN-MM
         # terms in prediction_equation are "snp1:ID","snp2:ID",...,they should have identical output_X
         # thus only need to calcualte once to avoid repeated computation for thousands of hidden nodes
         if length(mme.MCMCinfo.prediction_equation) > 0
