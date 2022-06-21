@@ -63,11 +63,10 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     nTrain           = sum(trainingInd)
     nOmics           = size(ylats_old_train,2)
 
-    #RR-BLUP: omics~yobs
-    g_z       = nonlinear_function.(ylats_old_train)
-    yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
-
     if mme.is_activation_fcn == true #Neural Network with activation function
+        #RR-BLUP: omics~yobs
+        g_z       = nonlinear_function.(ylats_old_train)
+        yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
         #sample mean of phenotype
         # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
         yobs_corr = yobs_corr .+ mme.weights_NN[1]

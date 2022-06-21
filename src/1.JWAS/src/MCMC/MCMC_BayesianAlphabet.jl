@@ -333,9 +333,9 @@ function MCMC_BayesianAlphabet(mme,df)
         if update_priors_frequency !=0 && iter%update_priors_frequency==0
             if mme.M!=0 && methods != "BayesB"
                 if is_multi_trait
-                    mme.M.scale = meanVara*(mme.df.marker-Mi.ntraits-1)
+                    mme.M[1].scale = mme.M[1].meanVara*(mme.df.marker-mme.M[1].ntraits-1)
                 else
-                    mme.M.scale   = meanVara*(mme.df.marker-2)/mme.df.marker
+                    mme.M[1].scale   = mme.M[1].meanVara*(mme.df.marker-2)/mme.df.marker
                 end
             end
             if mme.pedTrmVec != 0
