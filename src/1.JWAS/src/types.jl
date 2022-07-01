@@ -307,6 +307,9 @@ mutable struct NNMM
 
     nnmm_β        #for BayesC
     nnmm_samplePi #for BayesC
+    save_σ2_yobs
+
+    save_σ2_weightsNN
 
     NNMM(n_models,n_middle_nodes)=new(false,false,1.0,
                       false,false,false,
@@ -314,5 +317,6 @@ mutable struct NNMM
                       false,false,false,
                       false,false,false,
                       "RR-BLUP",0.0,zeros(n_middle_nodes),
-                      zeros(n_middle_nodes),false)
+                      zeros(n_middle_nodes),false,false,
+                      false)
 end

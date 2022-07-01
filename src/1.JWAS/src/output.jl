@@ -339,6 +339,12 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           if mme.NNMM.save_middle_nodes == true
               push!(outvar,"middle_nodes")
           end
+          if mme.NNMM.save_σ2_yobs == true
+              push!(outvar,"σ2_yobs")
+          end
+          if mme.NNMM.save_σ2_weightsNN == true
+              push!(outvar,"σ2_weightsNN")
+          end
       end
   end
   #categorical traits
@@ -505,6 +511,12 @@ function output_MCMC_samples(mme,vRes,G0,
         writedlm(outfile["nnmm_pi"],mme.NNMM.nnmm_π,',')
         if mme.NNMM.save_middle_nodes == true
             writedlm(outfile["middle_nodes"],vec(mme.NNMM.middle_nodes)',',')
+        end
+        if mme.NNMM.save_σ2_yobs == true
+            writedlm(outfile["σ2_yobs"],mme.NNMM.σ2_yobs,',')
+        end
+        if mme.NNMM.save_σ2_weightsNN == true
+            writedlm(outfile["σ2_weightsNN"],mme.NNMM.σ2_weightsNN,',')
         end
     end
 end
