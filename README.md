@@ -23,7 +23,7 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
   flowchart TD;
       A["phenotypes.csv"] --> A2(CSV.read) --> D(build_model)
       B["pedigree.csv"] --> B2(get_pedigree) --> D(build_model)
-      C["genotyeps.csv"] --> C2(get_genotypes) --> D(build_model)
+      C["genotypes.csv"] --> C2(get_genotypes) --> D(build_model)
       D --> E(set_covariate);
       D --> F(set_random);
       E --> H{runMCMC}
