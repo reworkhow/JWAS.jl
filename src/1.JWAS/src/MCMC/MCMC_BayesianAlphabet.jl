@@ -149,7 +149,8 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # # Initialize mme for hmc before Gibbs
     if nonlinear_function != false
-        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
+        mme.weights_NN      = zeros(mme.nModels+1,length(mme.yobs_name)) #each column is w1 for one yobs
+        mme.weights_NN[1,:] = mean.(eachcol(df[:,mme.yobs_name]))
     end
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################

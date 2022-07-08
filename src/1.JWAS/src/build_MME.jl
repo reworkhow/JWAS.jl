@@ -37,7 +37,7 @@ models          = build_model(model_equations,R);
 function build_model(model_equations::AbstractString, R = false; df = 4.0,
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
-                     censored_trait = false, categorical_trait = false)
+                     censored_trait = false, categorical_trait = false, yobs_name=false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
       error("The covariance matrix is not positive definite.")
@@ -56,6 +56,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
       end
       printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
       #NNBayes: check parameters
+      if yobs_name != false && length(yobs_name)>1  #multiple yobs, e.g., yobs=["height","weight"]
+        model_equations=strip(split(model_equations,[';','\n'],keepempty=false)[1]) #only keep the first model equation
+      end
       num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
       #NNBayes: re-write model equations by treating hidden nodes as multiple traits
       model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
@@ -130,6 +133,12 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     mme.is_activation_fcn    = is_activation_fcn
     mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
     mme.latent_traits        = latent_traits
+    if yobs_name != false && length(yobs_name)>1  #multiple yobs, e.g., yobs=[:height,:weight]
+      nyobs=length(yobs_name)
+      mme.yobs_name    = yobs_name
+      mme.σ2_yobs      = I(nyobs)*mme.σ2_yobs
+      mme.σ2_weightsNN = I(nyobs)*mme.σ2_weightsNN
+    end
     if user_σ2_yobs != false && user_σ2_weightsNN != false
       mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
       mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN

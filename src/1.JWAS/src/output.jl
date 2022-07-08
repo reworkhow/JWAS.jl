@@ -132,8 +132,11 @@ function output_result(mme,output_folder,
       output_file = output_folder*"/MCMC_samples"
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:mme.nModels]
       if mme.nonlinear_function != false  #NNBayes
-          push!(EBVkeys, "EBV_NonLinear")
-          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
+          for i in mme.yobs_name
+              yobsi=string(i)
+              push!(EBVkeys, "EBV_NonLinear_$yobsi")
+          end
+          EBVkeys=EBVkeys[end-length(mme.yobs_name)+1:end]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
       end
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
@@ -143,6 +146,9 @@ function output_result(mme,output_folder,
           if vec(IDs) == mme.output_ID
               output[EBVkey] = DataFrame([mme.output_ID EBV PEV],[:ID,:EBV,:PEV])
           else
+              @show vec(IDs)
+              println("")
+              @show mme.output_ID
               error("The EBV file is wrong.")
           end
       end
@@ -156,13 +162,16 @@ function output_result(mme,output_folder,
           end
       end
       if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
-          myvar         = "neural_networks_bias_and_weights"
-          samplesfile   = output_file*"_"*myvar*".txt"
-          samples       = readdlm(samplesfile,',',header=false)
-          names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
-          samplemean    = vec(mean(samples,dims=1))
-          samplevar     = vec(std(samples,dims=1))
-          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:SD])
+          for i in 1:length(mme.yobs_name)
+              yobsi         = string(mme.yobs_name[i])
+              myvar         = "neural_networks_bias_and_weights_$yobsi"
+              samplesfile   = output_file*"_"*myvar*".txt"
+              samples       = readdlm(samplesfile,',',header=false)
+              names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
+              samplemean    = vec(mean(samples,dims=1))
+              samplevar     = vec(std(samples,dims=1))
+              output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:SD])
+          end
       end
   end
   return output
@@ -310,9 +319,15 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           push!(outvar,"heritability")
       end
       if mme.nonlinear_function != false  #NNBayes
-          push!(outvar,"EBV_NonLinear")
+          for i in mme.yobs_name
+              yobsi = string(i)
+              push!(outvar,"EBV_NonLinear_$yobsi")
+          end
           if mme.is_activation_fcn == true #Neural Network with activation function
-              push!(outvar,"neural_networks_bias_and_weights")
+              for i in mme.yobs_name
+                  yobsi = string(i)
+                  push!(outvar,"neural_networks_bias_and_weights_$yobsi")
+              end
           end
       end
   end
@@ -378,7 +393,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
       end
       if mme.nonlinear_function != false #NNBayes
-          writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
+          for i in mme.yobs_name
+              yobsi=string(i)
+              writedlm(outfile["EBV_NonLinear_$yobsi"],transubstrarr(mme.output_ID),',')
+          end
       end
   end
 
@@ -461,9 +479,15 @@ function output_MCMC_samples(mme,vRes,G0,
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else  #activation function
             BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
-            writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
+            for i in 1:length(mme.yobs_name)
+                yobsi = string(mme.yobs_name[i])
+                writedlm(outfile["neural_networks_bias_and_weights_$yobsi"],mme.weights_NN[:,i]',',')
+            end
         end
-        writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+        for i in 1:length(mme.yobs_name)
+            yobsi = string(mme.yobs_name[i])
+            writedlm(outfile["EBV_NonLinear_$yobsi"],BV_NN[:,i]',',')
+        end
     end
 end
 """

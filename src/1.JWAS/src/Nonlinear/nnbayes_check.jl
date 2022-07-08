@@ -182,7 +182,7 @@ end
 #below function is to initialize missing omics with yobs
 function nnlmm_initialize_missing(mme,df)
     #define mme.yobs here because ungenotyped inds has been removed from df
-    mme.yobs = df[!,mme.yobs_name]  # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
+    mme.yobs = Matrix(df[!,mme.yobs_name])  # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
     if mme.latent_traits != false  #NN-LMM-Omics
       #save omics data missing pattern
       mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
@@ -190,7 +190,7 @@ function nnlmm_initialize_missing(mme,df)
       for i in mme.lhsVec      #for each omics feature
         for j in 1:size(df,1)  #for each observation
           if ismissing(df[j,i])
-            df[j,i]=mme.yobs[j]
+            df[j,i]=mean(mme.yobs[j,:])
           end
         end
       end

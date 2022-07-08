@@ -185,10 +185,14 @@ function runMCMC(mme::MME,df;
     ############################################################################
     is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
     if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
-        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]  # e.g., change :y1 -> :y
+        if mme.yobs_name==false
+            mme.yobs_name=[Symbol(string(mme.lhsVec[1])[1:(end-1)])] #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
+            middle_start_vals = df[!,mme.yobs_name[1]]  # e.g., change :y1 -> :y; #use yobs to initialize middle nodes
+        else
+            middle_start_vals = vec(mean(Matrix(df[!,mme.yobs_name]),dims=2)) #use mean(yobs) to initialize middle nodes
+        end
         for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
-            df[!,i]= yobs
+            df[:,i]= middle_start_vals
         end
         ######################################################################
         #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
