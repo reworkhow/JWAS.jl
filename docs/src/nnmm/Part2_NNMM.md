@@ -8,8 +8,7 @@
 - Bayesian model: multiple independent single-trait BayesC (to sample marker effects on intemediate traits). Note, to use multi-trait Bayesian Alphabet models, please set `mega_trait=false` in `runMCMC()` function.
 - sample the unobserved intemediate traits in the middle layer: Hamiltonian Monte Carlo
 
-
-![](https://github.com/zhaotianjing/figures/blob/main/part2_example.png)
+![](https://github.com/zhaotianjing/figures/blob/main/part2_example.png?raw=true)
 
 ```julia
 # Step 1: Load packages
@@ -42,7 +41,7 @@ accuruacy  = cor(results[!,:EBV],results[!,:bv1])
 ```
 
 
-## Example output files:
+## Example output files
 
 The i-th middle nodes will be named as "trait name"+"i". In our example, the observed trait is named "y1", and there are 3 middle nodes, so the middle nodes are named as "y11", "y12", and "y13", respectively.
 

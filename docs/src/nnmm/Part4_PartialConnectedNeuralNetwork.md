@@ -11,7 +11,7 @@ In partial-connected neural networks, SNPs can be divided into groups by users, 
   - genotype group 3: single-trait BayesC
 - sample the unobserved intemediate traits in the middle layer: Hamiltonian Monte Carlo
 
-![](https://github.com/zhaotianjing/figures/blob/main/partial_example.png)
+![](https://github.com/zhaotianjing/figures/blob/main/partial_example.png?raw=true)
 
 ```julia
 # Step 1: Load packages
@@ -51,7 +51,7 @@ accuruacy  = cor(results[!,:EBV],results[!,:bv1])
 
 In below example, we assume genotype group i only affect omics i (here i =1,...,5).
 
-![](https://github.com/zhaotianjing/figures/blob/main/part4_partial_omics.png)
+![](https://github.com/zhaotianjing/figures/blob/main/part4_partial_omics.png?raw=true)
 
 ```julia
 # Step 1: Load packages

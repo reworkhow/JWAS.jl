@@ -3,7 +3,7 @@
 ## 1. Overview
 The Mixed Effect Neural Networks (NN-MM) extend linear mixed model ("MM") to multilayer neural networks ("NN") by adding one middle layer between genotype layer and phenotypes layer. Nodes in the middle layer represent intermediate traits, e.g., the known intermediate omics features such as gene expression levels can be incorporated in the middle layer. These three sequential layers form a unified network. 
 
-![](https://github.com/zhaotianjing/figures/blob/main/omics_example.png)
+![](https://github.com/zhaotianjing/figures/blob/main/omics_example.png?raw=true)
 
 NN-MM allow any patterns of missing data in the middle layer, and missing data will be sampled. In below figure, for an individual, the gene expression levels of the first two genes are 0.9 and 0.1, respectively, and the gene expression level of the last gene is missing to be sampled. The missing patterns of gene expression levels can be different for different individuals.
 
@@ -20,7 +20,7 @@ Details can be found in our publications:
 
 NN-MM can fit fully-connected neural networks ((a),(b)), or partial-connected neural networks ((c),(d)). Also, the relationship between middle layer (intermediate traits) and output layer (phenotypes) can be based on activation functions ((a),(c)), or pre-defined by a user-defined function ((b),(d)).
 
-![](https://github.com/zhaotianjing/figures/blob/main/wiki_full_vs_partial.png)
+![](https://github.com/zhaotianjing/figures/blob/main/wiki_full_vs_partial.png?raw=true)
 
 ## 4. Multi-threaded parallelism
 
