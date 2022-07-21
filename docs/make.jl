@@ -19,6 +19,13 @@ makedocs(
             "Public" => "manual/public.md",
             "Internals" => "manual/internals.md"
             ],
+        "Mixed Effects Neural Networks (NNMM)" => Any[
+                    "Part1.introduction" => "Part1_introduction.md"
+                    "Part2.NNMM" => "Part2_NNMM.md"
+                    "Part3.NNMM with intermediate omics" => "Part3_NNMMwithIntermediateOmics.md"
+                    "Part4.partial connected neural network" => "Part4_PartialConnectedNeuralNetwork.md"
+                    "Part5.user-defined onlinear function" => "Part5_UserDefinedNonlinearFunction.md"
+
         "Examples" => Any[
             "Examples" => "examples/examples.md"
         ],
