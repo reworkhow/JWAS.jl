@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Part 4. partial connected neural network · JWAS.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="JWAS.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit">JWAS.jl</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../theory/theory/">Some Theory</a></li><li><a class="tocitem" href="../../citing/citing/">Citing</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../manual/getstarted/">Get Started</a></li><li><a class="tocitem" href="../../manual/workflow/">Workflow</a></li><li><a class="tocitem" href="../../manual/public/">Public</a></li><li><a class="tocitem" href="../../manual/internals/">Internals</a></li></ul></li><li><span class="tocitem">Mixed Effects Neural Networks (NNMM)</span><ul><li><a class="tocitem" href="../Part1_introduction/">Part 1. introduction</a></li><li><a class="tocitem" href="../Part2_NNMM/">Part 2. NNMM</a></li><li><a class="tocitem" href="../Part3_NNMMwithIntermediateOmics/">Part 3. NNMM with intermediate omics</a></li><li class="is-active"><a class="tocitem" href>Part 4. partial connected neural network</a><ul class="internal"><li><a class="tocitem" href="#example(c):-partial-connected-neural-networks,-all-intemediate-traits-are-unobserved"><span>example(c): partial-connected neural networks, all intemediate traits are unobserved</span></a></li><li><a class="tocitem" href="#example(o3):-partial-connected-neural-networks-with-intermediate-omics-data"><span>example(o3): partial-connected neural networks with intermediate omics data</span></a></li></ul></li><li><a class="tocitem" href="../Part5_UserDefinedNonlinearFunction/">Part 5. user-defined onlinear function</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../examples/examples/">Examples</a></li></ul></li><li><a class="tocitem" href="../../FrequentlyAskedQuestions/FrequentlyAskedQuestions/">Frequently Asked Questions</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Mixed Effects Neural Networks (NNMM)</a></li><li class="is-active"><a href>Part 4. partial connected neural network</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Part 4. partial connected neural network</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/reworkhow/JWAS.jl/blob/master/docs/src/nnmm/Part4_PartialConnectedNeuralNetwork.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Partial-connected-neural-networks"><a class="docs-heading-anchor" href="#Partial-connected-neural-networks">Partial-connected neural networks</a><a id="Partial-connected-neural-networks-1"></a><a class="docs-heading-anchor-permalink" href="#Partial-connected-neural-networks" title="Permalink"></a></h1><p>In partial-connected neural networks, SNPs can be divided into groups by users, and each group connects to its own intermediate trait in the middle layer.  Genotype groups should be loaded seperatly.</p><h2 id="example(c):-partial-connected-neural-networks,-all-intemediate-traits-are-unobserved"><a class="docs-heading-anchor" href="#example(c):-partial-connected-neural-networks,-all-intemediate-traits-are-unobserved">example(c): partial-connected neural networks, all intemediate traits are unobserved</a><a id="example(c):-partial-connected-neural-networks,-all-intemediate-traits-are-unobserved-1"></a><a class="docs-heading-anchor-permalink" href="#example(c):-partial-connected-neural-networks,-all-intemediate-traits-are-unobserved" title="Permalink"></a></h2><ul><li>nonlinear function (to define relationship between middle layer and phenotye): tanh</li><li>number of nodes in the middle layer: 3</li><li>Bayesian model (to sample marker effects on intemediate traits): <ul><li>genotype group 1: single-trait BayesA</li><li>genotype group 2: single-trait BayesB</li><li>genotype group 3: single-trait BayesC</li></ul></li><li>sample the unobserved intemediate traits in the middle layer: Hamiltonian Monte Carlo</li></ul><p><img src="https://github.com/zhaotianjing/figures/blob/main/partial_example.png" alt/></p><pre><code class="language-julia"># Step 1: Load packages
+using JWAS,DataFrames,CSV,Statistics,JWAS.Datasets,Random
+Random.seed!(123)
+
+# Step 2: Read data
+phenofile   = dataset(&quot;phenotypes.csv&quot;)       
+genofile1   = dataset(&quot;genotypes_group1.csv&quot;)  #path of genotype group1
+genofile2   = dataset(&quot;genotypes_group2.csv&quot;)  #path of genotype group2
+genofile3   = dataset(&quot;genotypes_group3.csv&quot;)  #path of genotype group3
+
+phenotypes = CSV.read(phenofile,DataFrame,delim = &#39;,&#39;,header=true,missingstrings=[&quot;NA&quot;])
+geno1  = get_genotypes(genofile1,separator=&#39;,&#39;,method=&quot;BayesA&quot;);   #read genotype group1
+geno2  = get_genotypes(genofile2,separator=&#39;,&#39;,method=&quot;BayesB&quot;);   #read genotype group2
+geno3  = get_genotypes(genofile3,separator=&#39;,&#39;,method=&quot;BayesC&quot;);   #read genotype group3
+
+# Step 3: Build Model Equations
+model_equation = &quot;y1 = intercept + geno1 + geno2 + geno3&quot;;  #middle node1=intercept + geno1
+                                                            #middle node2=intercept + geno2
+                                                            #middle node3=intercept + geno3
+model = build_model(model_equation,nonlinear_function=&quot;tanh&quot;)
+
+# Step 4: Run Analysis
+out = runMCMC(model, phenotypes, chain_length=5000);
+
+# Step 5: Check Accuruacy
+results    = innerjoin(out[&quot;EBV_NonLinear&quot;], phenotypes, on = :ID)
+accuruacy  = cor(results[!,:EBV],results[!,:bv1])</code></pre><h2 id="example(o3):-partial-connected-neural-networks-with-intermediate-omics-data"><a class="docs-heading-anchor" href="#example(o3):-partial-connected-neural-networks-with-intermediate-omics-data">example(o3): partial-connected neural networks with intermediate omics data</a><a id="example(o3):-partial-connected-neural-networks-with-intermediate-omics-data-1"></a><a class="docs-heading-anchor-permalink" href="#example(o3):-partial-connected-neural-networks-with-intermediate-omics-data" title="Permalink"></a></h2><ul><li>Same as for fully-connected neural network with intermediate omics data, the names of omics features should be put in the <code>build_model()</code> function through the <code>latent_traits</code> argument. The order of omics and the order of genotype groups in the model equation should be consistant.</li></ul><p>In below example, we assume genotype group i only affect omics i (here i =1,...,5).</p><p><img src="https://github.com/zhaotianjing/figures/blob/main/part4_partial_omics.png" alt/></p><pre><code class="language-julia"># Step 1: Load packages
+using JWAS,DataFrames,CSV,Statistics,JWAS.Datasets,Random,HTTP 
+Random.seed!(1)
+
+# Step 2: Read data
+phenofile  = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/y.csv&quot;).body
+omicsfile  = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/omics.csv&quot;).body
+
+genofile1   = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/geno_group1.csv&quot;).body
+genofile2   = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/geno_group2.csv&quot;).body
+genofile3   = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/geno_group3.csv&quot;).body
+genofile4   = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/geno_group4.csv&quot;).body
+genofile5   = HTTP.get(&quot;https://raw.githubusercontent.com/zhaotianjing/nnmm_doc/main/data_simulation/geno_group5.csv&quot;).body
+
+phenotypes  = CSV.read(phenofile,DataFrame)
+omics       = CSV.read(omicsfile,DataFrame)[:,1:6] #only use first 5 omics for demonstration
+omics_names = names(omics)[2:end] #get names of omics
+insertcols!(omics,2,:y =&gt; phenotypes[:,:y], :bv =&gt; phenotypes[:,:bv]) #phenotype and omics should be in the same dataframe
+
+geno1_df    = CSV.read(genofile1,DataFrame)
+geno2_df    = CSV.read(genofile2,DataFrame)
+geno3_df    = CSV.read(genofile3,DataFrame)
+geno4_df    = CSV.read(genofile4,DataFrame)
+geno5_df    = CSV.read(genofile5,DataFrame)
+
+geno1  = get_genotypes(geno1_df,separator=&#39;,&#39;,method=&quot;BayesA&quot;);
+geno2  = get_genotypes(geno2_df,separator=&#39;,&#39;,method=&quot;BayesB&quot;);
+geno3  = get_genotypes(geno3_df,separator=&#39;,&#39;,method=&quot;BayesC&quot;);
+geno4  = get_genotypes(geno4_df,separator=&#39;,&#39;,method=&quot;RR-BLUP&quot;);
+geno5  = get_genotypes(geno5_df,separator=&#39;,&#39;,method=&quot;BayesL&quot;);
+
+
+# Step 3: Build Model Equations
+model_equation = &quot;y = intercept + geno1 + geno2 + geno3 + geno4 + geno5&quot;; #omics1=intercept+geno1; omics2=intercept+geno2; ...
+model = build_model(model_equation,
+		    num_hidden_nodes=5,
+		    nonlinear_function=&quot;sigmoid&quot;,
+	            latent_traits=omics_names)
+
+# Step 4: Run Analysis
+out = runMCMC(model, omics, chain_length=5000, printout_model_info=false);
+
+# Step 5: Check Accuruacy
+results    = innerjoin(out[&quot;EBV_NonLinear&quot;], omics, on = :ID)
+accuruacy  = cor(results[!,:EBV],results[!,:bv])</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Part3_NNMMwithIntermediateOmics/">« Part 3. NNMM with intermediate omics</a><a class="docs-footer-nextpage" href="../Part5_UserDefinedNonlinearFunction/">Part 5. user-defined onlinear function »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 21 July 2022 18:21">Thursday 21 July 2022</span>. Using Julia version 1.6.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
