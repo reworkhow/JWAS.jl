@@ -316,13 +316,13 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           end
       end
   end
-  #categorical traits
-  has_categorical_trait    = "categorical" ∈ mme.traits_type
-  has_censored_trait       = "censored"    ∈ mme.traits_type
-  if has_categorical_trait || has_censored_trait
-      push!(outvar,"liabilities")
-      if has_categorical_trait
-            push!(outvar,"threshold")
+  #categorical/censored traits
+  for t in 1:mme.nModels
+      if mme.traits_type[t] ∈ ["categorical","categorical(binary)","censored"] #liability are sampled
+          push!(outvar,"liabilities_"*string(mme.lhsVec[t]))
+          if mme.traits_type[t] ∈ ["categorical","categorical(binary)"] #thresholds will be saved
+              push!(outvar,"threshold_"*string(mme.lhsVec[t]))
+          end
       end
   end
 
@@ -464,6 +464,16 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
+    end
+    #categorical/binary/censored traits
+    ySparse = reshape(mme.ySparse,:,ntraits) #liability (=mme.ySparse)
+    for t in 1:mme.nModels
+        if mme.traits_type[t] ∈ ["categorical","categorical(binary)","censored"] #save liability
+            writedlm(outfile["liabilities_"*string(mme.lhsVec[t])], ySparse[:,t]', ',')
+            if mme.traits_type[t] ∈ ["categorical","categorical(binary)"] #save thresholds
+                writedlm(outfile["threshold_"*string(mme.lhsVec[t])], mme.thresholds[t]', ',')
+            end
+        end
     end
 end
 """
