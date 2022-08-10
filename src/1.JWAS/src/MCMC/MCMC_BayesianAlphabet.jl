@@ -297,7 +297,8 @@ function MCMC_BayesianAlphabet(mme,df)
             if is_multi_trait
                 mme.R = sample_variance(wArray, length(mme.obsID),
                                         mme.df.residual, mme.scaleR,
-                                        invweights,constraint)
+                                        invweights,constraint;
+                                        binary_trait_index=has_binary_trait ? findall(x->x=="categorical(binary)", mme.traits_type) : false)
                 Ri    = kron(inv(mme.R),spdiagm(0=>invweights))
             else #single trait
                 if !has_categorical_trait && !has_binary_trait # fixed mme.R=1 for single categorical/binary trait

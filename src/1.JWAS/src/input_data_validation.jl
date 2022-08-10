@@ -203,7 +203,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     if length(binary_trait_index)>0
         printstyled("Binary traits are: ",string.(mme.lhsVec[binary_trait_index]) ,"\n",color=:green)
         if mme.nModels>1
-            printstyled(" - note that the unit variance are not assumed for binary traits in multi-trait analysis." ,"\n",color=:green)
+            printstyled(" - note that binary traits are assumed to be independent with unit variance." ,"\n",color=:green)
         end
     end
 

@@ -66,7 +66,7 @@ function sample_variance(x, n, df, scale, invweights)
 end
 
 #multi-trait i.i.d  #?reduce(hcat,array of array)' may be used to replace loops with matrix multiplication
-function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint)
+function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; binary_trait_index=false)
     if invweights != false
         invweights  = Diagonal(invweights)
     end
@@ -84,7 +84,11 @@ function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint)
         end
     end
     if constraint == false
-        R  = rand(InverseWishart(df + nobs, convert(Array,Symmetric(scale + SSE))))
+        if binary_trait_index==false
+            R  = rand(InverseWishart(df + nobs, convert(Array,Symmetric(scale + SSE))))
+        else
+            R  = sample_from_conditional_inverse_Wishart(df + nobs, convert(Array,Symmetric(inv(scale + SSE))), binary_trait_index)
+        end
     else  #diagonal elements only, from scale-inv-⁠χ2
         R  = zeros(ntraits,ntraits)
         for traiti = 1:ntraits
