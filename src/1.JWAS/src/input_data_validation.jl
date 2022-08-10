@@ -177,7 +177,7 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
     for t in 1:mme.nModels
         if mme.traits_type[t] == "categorical"
             categorical_trait_name_t = mme.lhsVec[t] #e.g., :y1
-            category_obs_t           = map(Int,df[:,categorical_trait_name_t])
+            category_obs_t           = map(Int,skipmissing(df[:,categorical_trait_name_t]))
             n_categorical_t          = length(unique(category_obs_t))
             user_categories          = sort(unique(category_obs_t))
             correct_categories       = collect(1:n_categorical_t)

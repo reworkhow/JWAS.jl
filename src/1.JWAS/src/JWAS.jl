@@ -232,11 +232,9 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # censored traits
     ############################################################################
-    #add the column :traitname using trait's lower bound
-    censored_trait_index = findall(x -> x=="censored", mme.traits_type)
-    for i in censored_trait_index
-        df[!,mme.lhsVec[i]]= df[!,Symbol(mme.lhsVec[i],"_l")]
-    end
+    # Goal: add the column named "traitname" using trait's lower bound and upper
+    #       bound, to avoid the error that mme.lhsVec is not in df
+    add_censored_trait_column!(mme,df) #changed: df
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
