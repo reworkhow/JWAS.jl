@@ -13,6 +13,19 @@
 #inverse wishart distributions.
 ################################################################################
 
+# |---------------|-------------|-------------------------------------------------------|
+# | Analysis Type | Trait Type  |  Parameterization                                     |
+# |---------------|-------------|-------------------------------------------------------|
+# | single-trait  | censored    | NONE                                                  |
+# |               | categorical | vare=1; -Inf < t1=0 < t2 <...< t_{#category-1} < +Inf |
+# |               | binary      | vare=1; -Inf < t1=0 < +Inf                            |
+# |---------------|-------------|-------------------------------------------------------|
+# | multi-trait   | censored    | NONE                                                  |
+# |               | categorical | -Inf < t1=0 < t2=1 < t3 <...< t_{#category-1} < +Inf  |
+# |               | binary      | vare of binary traits=I; -Inf < t1=0 < +Inf           |
+# |---------------|-------------|-------------------------------------------------------|
+
+
 function categorical_censored_traits_setup!(mme,df)
     ############################################################################
     # Goal:
@@ -28,9 +41,9 @@ function categorical_censored_traits_setup!(mme,df)
 
     ySparse        = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also change since reshape is a reference, not copy
 
-    category_obs   = Dict() #e.g., [1] => [3,2,2,3,1,..] saves the observations for the 1st trait
-    upper_bound    = Dict() #e.g., [1] => [Inf,Inf,9,..] saves the upper bound for the 1st trait
-    lower_bound    = Dict() #e.g., [1] => [-Inf,-Inf,1,..] saves the lower bound for the 1st trait
+    category_obs   = Dict() #e.g., [1] => [3,1,2,...]         all observations for 1st trait
+    upper_bound    = Dict() #e.g., [1] => [Inf,Inf,9.8,...]   upper bounds for all observations for 1st trait
+    lower_bound    = Dict() #e.g., [1] => [-Inf,-Inf,1.5,...] lower bounds for all observations for 1st trait
 
     for t in 1:nTrait
         if mme.traits_type[t] ∈ ["categorical","categorical(binary)","censored"]
@@ -221,12 +234,10 @@ function sample_from_conditional_inverse_Wishart(df,scale,binary_trait_index)
     #  - df: degree of freedom of the conditional inverse Wishart
     #  - scale: scale of the conditional inverse Wishart
     #  - binary_trait_index: index of binary trait, e.g,[1,3] means the 1st and 3rd traits are binary
-    # Notes:
-    #  - in practice, this may cause convergence problem for residual covariance matrix
     ############################################################################
-    ntraits= size(scale,2)              #number of total traits
-    index2 = binary_trait_index         #index for binary traits "2"
-    index1 = setdiff(1:ntraits,index2)  #index for non-binary traits "1"
+    ntraits= size(scale,2)              #number of total traits, e.g., 5
+    index2 = binary_trait_index         #index for binary traits, e.g., [1, 3 , 4]
+    index1 = setdiff(1:ntraits,index2)  #index for non-binary traits, e.g.,[2, 5]
     n1     = length(index1)             #number of non-binary traits
     n2     = length(index2)             #number of binary traits
 
