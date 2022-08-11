@@ -2,14 +2,21 @@
 # Categorial and censored traits
 #1)Sorensen and Gianola, Likelihood, Bayesian, and MCMC Methods in Quantitative
 #Genetics
-#2)Wang, Chonglong, et al. Bayesian methods for jointly estimating genomic
-#breeding values of one continuous and one threshold trait. Plos one 12.4 (2017)
-#3)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
+#2)Wang et al.(2013). Bayesian methods for estimating GEBVs of threshold traits.
 #Heredity, 110(3), 213–219.
+#3)Korsgaard et al,(2003). Multivariate bayesian analysis of gaussian, right censored gaussian,
+#ordered categorical and binary traits using gibbs sampling.
+#4)Sorensen et al,(1995). Bayesian inference in threshold models using gibbs sampling.
+#5)Sorensen et al,(1998). Bayesian mixed-effects model analysis of a censored normal
+# distribution with animal breeding applications.
+#6)Korsgaard et al,(1999). A useful reparameterisation to obtain samples from conditional
+#inverse wishart distributions.
 ################################################################################
+
 function categorical_censored_traits_setup!(mme,df)
     ############################################################################
-    # initialize: mme.thresholds, lower_bound, upper_bound, liability(=mme.ySparse)
+    # Goal:
+    #   initialize mme.thresholds, lower_bound, upper_bound, liability(=mme.ySparse)
     ############################################################################
     nInd           = length(mme.obsID)
     nTrait         = mme.nModels
@@ -63,7 +70,7 @@ function categorical_censored_traits_setup!(mme,df)
                 if lower_bound[t][i] != upper_bound[t][i]
                     ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(R[t,t])), lower_bound[t][i], upper_bound[t][i])) #mme.R has been fixed to 1.0 for category single-trait analysis
                 else
-                    ySparse[i,t] = lower_bound[t][i]
+                    ySparse[i,t] = lower_bound[t][i] #mme.ySparse will also change since reshape is a reference, not copy
                 end
             end
         end
@@ -76,20 +83,22 @@ end
 
 
 function update_lower_upper_bound_with_threshold(thresholds, whichcategory)
+    ############################################################################
     # Goal:
     #  for a categorical trait (i.e., whichcategory), give the thresholds, return
     #  lower and upper bound of all individuals.
     # Arguments:
-    #  - thresholds: the threasholds for current trait. e.g, [-Inf,0,Inf]
-    #  - whichcategory: the observed categories for current trait. e.g., [1,0,1,0,...]
+    #  - thresholds: array, the threasholds for current trait. e.g, [-Inf,0,Inf]
+    #  - whichcategory: array, the observed categories for current trait. e.g., [1,0,1,0,...]
     # Output:
     #  - lower_bound, upper_bound: vector, length = number of individuals
     # Notes:
     #  - category "0" represents the missing categorical trait
-
-    lower_bound = zeros(length(whichcategory)) # initialize lower bound
-    upper_bound = zeros(length(whichcategory)) # initialize upper bound
-    for j in 1:length(whichcategory) # for each individual
+    ############################################################################
+    nInd        = length(whichcategory)
+    lower_bound = zeros(nInd) # initialize lower bound
+    upper_bound = zeros(nInd) # initialize upper bound
+    for j in 1:nInd # for each individual
         if whichcategory[j]==0  # "0" represents a missing categorical trait
             lower_bound[j]=-Inf # liability should be sampled from untruncated distribution
             upper_bound[j]=Inf  # thus lower and upper bounds are infinity
@@ -130,7 +139,7 @@ function categorical_trait_sample_threshold!(mme,lower_bound,upper_bound,categor
             for i in start_index:(length(mme.thresholds[t])-1) #e.g., t2 between categories 2 and 3; will be skipped for binary trait
                 lowerboundry_threshold  = maximum(ySparse[:,t][category_obs[t] .== (i-1)]) #lower bound for current threshold
                 upperboundry_threshold  = minimum(ySparse[:,t][category_obs[t] .== i])     #upper bound for current threshold
-                mme.thresholds[t][i] = rand(Uniform(lowerboundry_threshold,upperboundry_threshold))
+                mme.thresholds[t][i]    = rand(Uniform(lowerboundry_threshold,upperboundry_threshold))
             end
             ####################################################################
             # step2. update lower_bound, upper_bound from thresholds
@@ -189,8 +198,10 @@ end
 
 
 function print_single_categorical_censored_trait_example()
+    ############################################################################
     # Goal:
     #   print an example for deprecated JWAS function runMCMC(categorical_trait,censored_trait)
+    ############################################################################
     @error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example.")
     printstyled("1. Example to build model for single categorical trait:\n"; color=:red)
     printstyled("      model_equation  = \"y = intercept + x1 + x2 + x2*x3 + ID + dam + genotypes\"
@@ -202,6 +213,7 @@ end
 
 
 function sample_from_conditional_inverse_Wishart(df,scale,binary_trait_index)
+    ############################################################################
     # Goal:
     #   sample from conditional inverse Wishart distribution, where binary traits
     #   are independent with unit variance.
@@ -211,6 +223,7 @@ function sample_from_conditional_inverse_Wishart(df,scale,binary_trait_index)
     #  - binary_trait_index: index of binary trait, e.g,[1,3] means the 1st and 3rd traits are binary
     # Notes:
     #  - in practice, this may cause convergence problem for residual covariance matrix
+    ############################################################################
     ntraits= size(scale,2)              #number of total traits
     index2 = binary_trait_index         #index for binary traits "2"
     index1 = setdiff(1:ntraits,index2)  #index for non-binary traits "1"
@@ -237,6 +250,7 @@ end
 
 
 function add_censored_trait_column!(mme,df)
+    ############################################################################
     # Goal:
     #   add the column named "traitname" using trait's lower bound and upper bound
     # Arguments:
@@ -244,6 +258,7 @@ function add_censored_trait_column!(mme,df)
     # Notes:
     #   - for missing censored trait, the lower bound=-Inf and higher bound=Inf,
     #     or both are missing.
+    ############################################################################
     for t in 1:mme.nModels #for each trait
         if mme.traits_type[t] == "censored"
             trait_name       = mme.lhsVec[t]           #e.g., :y

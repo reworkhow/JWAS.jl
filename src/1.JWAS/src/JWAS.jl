@@ -234,7 +234,9 @@ function runMCMC(mme::MME,df;
     ############################################################################
     # Goal: add the column named "traitname" using trait's lower bound and upper
     #       bound, to avoid the error that mme.lhsVec is not in df
-    add_censored_trait_column!(mme,df) #changed: df
+    if "censored" ∈ mme.traits_type
+        add_censored_trait_column!(mme,df) #changed: df
+    end
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
