@@ -206,6 +206,28 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             printstyled(" - note that binary traits are assumed to be independent with unit variance." ,"\n",color=:green)
         end
     end
+    #4) Covariates
+    if length(mme.covVec)>0 #if there exist covariates
+        printstyled("Checking covariates...\n" ,bold=false,color=:green)
+        for term in mme.modelTerms #e.g., "y1:x1"
+            for i in 1:term.nFactors
+                #impute missing covariate using its mean
+                if term.factors[1] in mme.covVec && any(ismissing,df[:,term.factors[i]])
+                    printstyled("Missing values are found in covariate ",term.factors[i]," for some observations.",
+                            " Missing values will be imputed as the mean of observed values in column ",term.factors[i],"\n",
+                            bold=false,color=:red)
+                    trait_name=term.iTrait  #e.g., "y1"
+                    for ind in 1:size(df,1) #each row of df
+                        if ismissing(df[ind,term.factors[i]]) && ismissing(df[ind,trait_name]) #e.g., both y1 and x1 are missing
+                            df[ind,term.factors[i]]=mean(skipmissing(df[:,term.factors[i]]))   #impute missing covariate using its mean
+                        elseif ismissing(df[ind,term.factors[i]]) && !ismissing(df[ind,trait_name]) #e.g., y1 is known, but x1 is missing
+                            error("Please impute missing covariate ",term.factors[i]," for individual ", df[ind,1])
+                        end
+                    end
+                end
+            end
+        end
+    end
 
     rename!(df,strip.(names(df)))
     return df
