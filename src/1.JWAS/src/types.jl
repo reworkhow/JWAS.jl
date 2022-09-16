@@ -126,6 +126,21 @@ mutable struct Genotypes
 
   isGRM  #whether genotypes or relationship matirx is provided
 
+  #### Function Annotation
+  annMat ## annotation matrix (pxc), c:number of annotation categories
+  annCoef # cx1 solution
+  varl  # variance of liability
+  liability
+  μ
+  tmin
+  tmax
+  thresholds
+  lower_bound
+  upper_bound
+  Lhs
+
+
+
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          false,false,false,false,
@@ -133,7 +148,8 @@ mutable struct Genotypes
                                          false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,a9)
+                                         false,a9,
+                                         false,false,false,false,false,false,false,false,false,false,false)
 end
 
 mutable struct DF

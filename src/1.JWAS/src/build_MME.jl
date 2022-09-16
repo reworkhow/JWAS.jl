@@ -118,7 +118,7 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
 
   #create mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms)
-  filter!(x->x[2].random_type != "genotypes",dict)
+  filter!(x->x[2].random_type != "genotypes",dict)  #dict's [2] is linked to terms in modelTerms?
   mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
   if length(genotypes) != 0
     mme.M = genotypes

@@ -140,12 +140,13 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 ntraits=mme.nModels
                 Pi=Dict{Array{Float64,1},Float64}()
                 #for i in [ bin(n,ntraits) for n in 0:2^ntraits-1 ] `bin(n, pad)` is deprecated, use `string(n, base=2, pad=pad)
-                for i in [ string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1 ]
+                for i in [string(n,base=2,pad=ntraits) for n in 0:2^ntraits-1]
                     Pi[parse.(Float64, split(i,""))]=0.0
                 end
                 Pi[ones(ntraits)]=1.0
                 Mi.π = Pi
             end
+
             #(2) marker effect variances
             if Mi.G == false
                 if Mi.method!="GBLUP"
@@ -160,7 +161,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                       if mme.MCMCinfo.printout_model_info==true
                           Base.print_matrix(stdout,round.(Mi.G,digits=6))
                       end
-                    else
+                  else # mme.nModels = 1
                       if !isposdef(Mi.G) #positive scalar (>0)
                         error("Marker effects variance is negative!")
                       end
@@ -178,6 +179,10 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
             else
                 Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
+            end
+            ### Jiayi: for ST, pi changed from a scalar to a vector
+            if  mme.nModels == 1 && (Mi.method in ["BayesA","BayesB","BayesC"])
+                Mi.π = repeat([Mi.π],Mi.nMarkers)
             end
         end
     end

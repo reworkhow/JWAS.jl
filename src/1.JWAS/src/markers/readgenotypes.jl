@@ -56,7 +56,7 @@ end
                   center=true,quality_control=false,
                   method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimateScale=false,
                   G_is_marker_variance = false,df = 4.0)
-* Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
+* Get marker information from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
     * If a text file is provided, the file format should be:
       ```
       Animal,marker1,marker2,marker3,marker4,marker5
@@ -71,7 +71,7 @@ end
         * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
 * If `quality_control`=true, defaulting to `true`,
     * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
-    * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
+    * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is used, and fixed loci are removed.
 * **G** is the mean for the prior assigned for the genomic variance with degree of freedom **df**, defaulting to 4.0.
   If **G** is not provided, a value is calculated from responses (phenotypes).
 * Available `methods` include "conventional (no markers)", "RR-BLUP", "BayesA", "BayesB", "BayesC", "Bayesian Lasso", and "GBLUP".
@@ -87,7 +87,8 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        separator=',',header=true,rowID=false,
                        center=true,G_is_marker_variance = false,df = 4.0,
                        starting_value=false,
-                       quality_control=true, MAF = 0.01, missing_value = 9.0)
+                       quality_control=true, MAF = 0.01, missing_value = 9.0,
+                       annMat = false) ## annMat only works for ST (ABC)
     #Read the genotype file
     if typeof(file) <: AbstractString
         printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
@@ -211,6 +212,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     end
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
+    if annMat != false
+        genotypes.annMat = annMat
+    end
     genotypes.π          = Pi
     genotypes.df         = df #It will be modified base on number of traits in build_model()
     genotypes.estimateScale    = estimateScale

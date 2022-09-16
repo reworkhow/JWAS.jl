@@ -21,6 +21,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
+    is_annotated             = mme.M[1].annMat != false
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -69,7 +70,7 @@ function MCMC_BayesianAlphabet(mme,df)
             if Mi.method=="GBLUP"
                 GBLUP_setup(Mi)
             end
-            Mi.β                  = [copy(Mi.α[traiti]) for traiti = 1:Mi.ntraits] #partial marker effeccts used in BayesB
+            Mi.β                  = [copy(Mi.α[traiti]) for traiti = 1:Mi.ntraits] #partial marker effects used in BayesB
             Mi.δ                  = [ones(typeof(Mi.α[traiti][1]),Mi.nMarkers) for traiti = 1:Mi.ntraits] #inclusion indicator for marker effects
             Mi.meanAlpha          = [zero(Mi.α[traiti]) for traiti = 1:Mi.ntraits] #marker effects
             Mi.meanAlpha2         = [zero(Mi.α[traiti]) for traiti = 1:Mi.ntraits] #marker effects
@@ -78,6 +79,14 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.meanVara2          = zero(mme.R)  #variable to save variance for marker effect
             Mi.meanScaleVara      = zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
             Mi.meanScaleVara2     = zero(mme.R)  #variable to save Scale parameter for prior of marker effect variance
+            if is_annotated # Mi.δ are initiated to have both 0 and 1
+                if Mi.π[1] == 0.0
+                    Mi.δ[1][sample(collect(1:Mi.nMarkers),Int(floor(Mi.nMarkers * 0.1)),replace=false)] .= 0
+                else
+                    Mi.δ[1][sample(collect(1:Mi.nMarkers),Int(floor(Mi.nMarkers * Mi.π[1])),replace=false)] .= 0
+                end
+            end
+
             if is_multi_trait
                 if is_mega_trait
                     Mi.π        = zeros(Mi.ntraits)
@@ -93,8 +102,8 @@ function MCMC_BayesianAlphabet(mme,df)
                     end
                     #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)
                 end
-            else
-                Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
+            else #ST
+                Mi.mean_pi,Mi.mean_pi2 = zero(Mi.π),zero(Mi.π)     #inclusion probability
             end
         end
     end
@@ -151,6 +160,43 @@ function MCMC_BayesianAlphabet(mme,df)
     if nonlinear_function != false
         mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
     end
+
+    ############################################################################
+    # Initialize the delta liability for functional annotation
+    ############################################################################
+    if is_annotated
+        Mi = mme.M[1]
+        # variables
+        Mi.annCoef = zeros(size(Mi.annMat,2)) # cx1 solution
+        Mi.varl = 1 # variance of liability
+        Mi.liability = zero(Mi.δ[1])
+        Mi.μ = Mi.annMat * Mi.annCoef
+        Mi.tmin, Mi.tmax  = -10e6, +10e6
+        Mi.Lhs = Mi.annMat'Mi.annMat
+
+        ############################################################################
+        # setup upper and lower bounds
+        ############################################################################
+        Mi.upper_bound = Array{Float64}(undef, Mi.nMarkers)
+        Mi.lower_bound = Array{Float64}(undef, Mi.nMarkers)
+        Mi.thresholds = [Mi.tmin, 0, Mi.tmax] # binary category
+
+        # update_bounds_from_threshold (Mi.lower_bound,Mi.upper_bound,Mi.δ,Mi.thresholds)
+        Mi.lower_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 1]
+        Mi.upper_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 2]
+
+        ############################################################################
+        # set up liability (Mi.lability)
+        ############################################################################
+        for i in 1:Mi.nMarkers
+            if Mi.lower_bound[i] != Mi.upper_bound[i]
+                Mi.liability[i] = rand(truncated(Normal(Mi.μ[i], 1), Mi.lower_bound[i], Mi.upper_bound[i]))
+            else
+                Mi.liability[i] = Mi.lower_bound[i]
+            end
+        end
+    end
+
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical and censored traits
@@ -213,7 +259,7 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     elseif is_nnbayes_partial
                         BayesABC!(Mi,wArray[i],mme.R[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
-                    else
+                    else # ST w/wo annotation
                         BayesABC!(Mi,ycorr,mme.R,locus_effect_variances)
                     end
                 elseif Mi.method =="RR-BLUP"
@@ -263,8 +309,24 @@ function MCMC_BayesianAlphabet(mme,df)
                         else
                             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
                         end
-                    else
-                        Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
+                    elseif !is_annotated # ST wo annotation
+                        Mi.π = repeat([samplePi(sum(Mi.δ[1]), Mi.nMarkers)],Mi.nMarkers)
+                    else # ST W annotation
+                        # update upper and lower bounds (Mi.δ changed)
+                        Mi.lower_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 1]
+                        Mi.upper_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 2]
+                        # sample liability
+                        for i in 1:Mi.nMarkers
+                            Mi.liability[i] = rand(truncated(Normal(Mi.μ[i],Mi.varl),Mi.lower_bound[i],Mi.upper_bound[i]))
+                        end
+                        # sample annotation coefficient
+                        Rhs = Mi.annMat'Mi.liability
+                        Gibbs(Mi.Lhs, Mi.annCoef, Rhs, 1)
+                        Mi.μ = Mi.annMat * Mi.annCoef
+                        # sample π
+                        for i in 1:Mi.nMarkers
+                            Mi.π[i] = 1-cdf(Normal(0,1),Mi.μ[i])
+                        end
                     end
                 end
                 ########################################################################

@@ -16,15 +16,16 @@ end
 function BayesABC!(xArray,xRinvArray,xpRinvx,
                    yCorr,
                    α,β,δ,
-                   vare,varEffects,π)
+                   vare,varEffects,π) # π is a vector
 
-    logPi         = log(π)
-    logPiComp     = log(1-π)
+
+    nMarkers      = length(α)
+    logPi         = log.(π)
+    logPiComp     = log.(1 .- π)
     logDelta0     = logPi
     invVarRes     = 1/vare
-    invVarEffects = 1 ./  varEffects
+    invVarEffects = 1 ./ varEffects
     logVarEffects = log.(varEffects)
-    nMarkers      = length(α)
 
     for j=1:nMarkers
         x, xRinv = xArray[j], xRinvArray[j]
@@ -32,8 +33,8 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
         lhs = xpRinvx[j]*invVarRes + invVarEffects[j]
         invLhs = 1/lhs
         gHat   = rhs*invLhs
-        logDelta1  = -0.5*(log(lhs) + logVarEffects[j] - gHat*rhs) + logPiComp
-        probDelta1 = 1/(1+ exp(logDelta0 - logDelta1))
+        logDelta1  = -0.5*(log(lhs) + logVarEffects[j] - gHat*rhs) + logPiComp[j]
+        probDelta1 = 1/(1+ exp(logDelta0[j] - logDelta1))
         oldAlpha = α[j]
 
         if(rand()<probDelta1)

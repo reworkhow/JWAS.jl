@@ -285,6 +285,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
           push!(outvar,"pi"*"_"*Mi.name)
+
+          if Mi.annMat != false
+              push!(outvar,"delta_liability"*"_"*Mi.name)
+              push!(outvar,"annCoef"*"_"*Mi.name)
+          end
       end
   end
 
@@ -361,6 +366,10 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           for traiti in Mi.trait_names
               writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
+          if Mi.annMat != false
+              writedlm(outfile["pi"*"_"*Mi.name],transubstrarr(Mi.markerID),',')
+              writedlm(outfile["delta_liability"*"_"*Mi.name],transubstrarr(Mi.markerID),',')
+          end
       end
   end
   if mme.pedTrmVec != 0
@@ -414,6 +423,11 @@ function output_MCMC_samples(mme,vRes,G0,
           for traiti in 1:Mi.ntraits
               writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
           end
+          if Mi.annMat != false
+              writedlm(outfile["delta_liability"*"_"*Mi.name],Mi.liability',',')
+              writedlm(outfile[ "annCoef"*"_"*Mi.name],Mi.annCoef',',')
+          end
+
           if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
@@ -425,9 +439,13 @@ function output_MCMC_samples(mme,vRes,G0,
                   end
               end
           end
-          writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
-          if !(typeof(Mi.π) <: Number) #add a blank line
-              println(outfile["pi"*"_"*Mi.name])
+          if Mi.annMat != false
+              writedlm(outfile["pi"*"_"*Mi.name],Mi.π',',')
+          else
+              writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
+              if !(typeof(Mi.π) <: Number) #add a blank line
+                  println(outfile["pi"*"_"*Mi.name])
+              end
           end
       end
     end
