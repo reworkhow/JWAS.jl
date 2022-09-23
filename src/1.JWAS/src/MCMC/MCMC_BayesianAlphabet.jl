@@ -21,7 +21,7 @@ function MCMC_BayesianAlphabet(mme,df)
     is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
     is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
-    is_annotated             = mme.M[1].annMat != false
+    is_annotated             = mme.M[1].anno_obj != false # assume annotation only used for 1st Genotype type
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -79,19 +79,17 @@ function MCMC_BayesianAlphabet(mme,df)
             Mi.meanVara2          = zero(mme.R)  #variable to save variance for marker effect
             Mi.meanScaleVara      = zero(mme.R) #variable to save Scale parameter for prior of marker effect variance
             Mi.meanScaleVara2     = zero(mme.R)  #variable to save Scale parameter for prior of marker effect variance
-            if is_annotated # Mi.δ are initiated to have both 0 and 1
-                if Mi.π[1] == 0.0
-                    Mi.δ[1][sample(collect(1:Mi.nMarkers),Int(floor(Mi.nMarkers * 0.1)),replace=false)] .= 0
-                else
-                    Mi.δ[1][sample(collect(1:Mi.nMarkers),Int(floor(Mi.nMarkers * Mi.π[1])),replace=false)] .= 0
-                end
+            if is_annotated # Mi.δ are initiated to have both 0 and 1 to enable threshold model with different responses
+                exclude_prob = Mi.π[1] == 0.0 ? 0.1 : Mi.π[1]
+                Mi.δ[1][sample(collect(1:Mi.nMarkers),Int(floor(Mi.nMarkers * exclude_prob)),replace=false)] .= 0
             end
 
             if is_multi_trait
                 if is_mega_trait
-                    Mi.π        = zeros(Mi.ntraits)
-                    Mi.mean_pi  = zeros(Mi.ntraits)
-                    Mi.mean_pi2 = zeros(Mi.ntraits)
+                    ## Mi.π becomes an array of Mi.ntraits arrays of length Mi.nMarkers
+                    Mi.π        = [zero(Mi.α[traiti]) for traiti = 1:Mi.ntraits]
+                    Mi.mean_pi  = [zero(Mi.α[traiti]) for traiti = 1:Mi.ntraits]
+                    Mi.mean_pi2 = [zero(Mi.α[traiti]) for traiti = 1:Mi.ntraits]
                 else
                     Mi.π,Mi.mean_pi,Mi.mean_pi2 = copy(Mi.π),copy(Mi.π),copy(Mi.π)
                     if Mi.estimatePi == true
@@ -166,37 +164,22 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     if is_annotated
         Mi = mme.M[1]
-        # variables
-        Mi.annCoef = zeros(size(Mi.annMat,2)) # cx1 solution
-        Mi.varl = 1 # variance of liability
-        Mi.liability = zero(Mi.δ[1])
-        Mi.μ = Mi.annMat * Mi.annCoef
-        Mi.tmin, Mi.tmax  = -10e6, +10e6
-        Mi.Lhs = Mi.annMat'Mi.annMat
-
         ############################################################################
         # setup upper and lower bounds
         ############################################################################
-        Mi.upper_bound = Array{Float64}(undef, Mi.nMarkers)
-        Mi.lower_bound = Array{Float64}(undef, Mi.nMarkers)
-        Mi.thresholds = [Mi.tmin, 0, Mi.tmax] # binary category
-
-        # update_bounds_from_threshold (Mi.lower_bound,Mi.upper_bound,Mi.δ,Mi.thresholds)
-        Mi.lower_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 1]
-        Mi.upper_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 2]
-
-        ############################################################################
+        Mi.anno_obj.lower_bound = Mi.anno_obj.thresholds[Int.(Mi.δ[1]) .+ 1]
+        Mi.anno_obj.upper_bound = Mi.anno_obj.thresholds[Int.(Mi.δ[1]) .+ 2]
+        ##########################################################################
         # set up liability (Mi.lability)
         ############################################################################
         for i in 1:Mi.nMarkers
-            if Mi.lower_bound[i] != Mi.upper_bound[i]
-                Mi.liability[i] = rand(truncated(Normal(Mi.μ[i], 1), Mi.lower_bound[i], Mi.upper_bound[i]))
+            if Mi.anno_obj.lower_bound[i] != Mi.anno_obj.upper_bound[i]
+                Mi.anno_obj.liability[i] = rand(truncated(Normal(Mi.anno_obj.μ[i], Mi.anno_obj.varl), Mi.anno_obj.lower_bound[i], Mi.anno_obj.upper_bound[i]))
             else
-                Mi.liability[i] = Mi.lower_bound[i]
+                Mi.anno_obj.liability[i] = Mi.anno_obj.lower_bound[i]
             end
         end
     end
-
     @showprogress "running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical and censored traits
@@ -306,26 +289,35 @@ function MCMC_BayesianAlphabet(mme,df)
                     if is_multi_trait && !is_nnbayes_partial
                         if is_mega_trait
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
+                            # convert Mi.π from a vector of nModels πs to an array of nModels arrays of length Mi.nMarkers
+                            Mi.π = [repeat([Mi.π[i]],Mi.nMarkers) for i in 1:mme.nModels]
                         else
                             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
                         end
                     elseif !is_annotated # ST wo annotation
+                        # use samplePi(nEffects, nTotal) to get π samples for conventional ST
+                        # then repeat the sample to a vector of length Mi.nMarkers
                         Mi.π = repeat([samplePi(sum(Mi.δ[1]), Mi.nMarkers)],Mi.nMarkers)
                     else # ST W annotation
                         # update upper and lower bounds (Mi.δ changed)
-                        Mi.lower_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 1]
-                        Mi.upper_bound = Mi.thresholds[Int.(Mi.δ[1]) .+ 2]
+                        Mi_anno = Mi.anno_obj
+                        Mi_anno.lower_bound = Mi_anno.thresholds[Int.(Mi.δ[1]) .+ 1]
+                        Mi_anno.upper_bound = Mi_anno.thresholds[Int.(Mi.δ[1]) .+ 2]
                         # sample liability
                         for i in 1:Mi.nMarkers
-                            Mi.liability[i] = rand(truncated(Normal(Mi.μ[i],Mi.varl),Mi.lower_bound[i],Mi.upper_bound[i]))
+                            if Mi_anno.lower_bound[i] != Mi_anno.upper_bound[i]
+                                Mi_anno.liability[i] = rand(truncated(Normal(Mi_anno.μ[i],Mi_anno.varl),Mi_anno.lower_bound[i],Mi_anno.upper_bound[i]))
+                            else
+                                Mi_anno.liability[i] = Mi_anno.lower_bound[i]
+                            end
                         end
                         # sample annotation coefficient
-                        Rhs = Mi.annMat'Mi.liability
-                        Gibbs(Mi.Lhs, Mi.annCoef, Rhs, 1)
-                        Mi.μ = Mi.annMat * Mi.annCoef
+                        Rhs = Mi_anno.annMat'Mi_anno.liability
+                        Gibbs(Mi_anno.Lhs, Mi_anno.annCoef, Rhs, Mi_anno.varl)
+                        Mi_anno.μ = Mi_anno.annMat * Mi_anno.annCoef
                         # sample π
                         for i in 1:Mi.nMarkers
-                            Mi.π[i] = 1-cdf(Normal(0,1),Mi.μ[i])
+                            Mi.π[i] = 1-cdf(Normal(0,Mi_anno.varl),Mi_anno.μ[i])
                         end
                     end
                 end
@@ -350,6 +342,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 end
             end
         end
+
         ########################################################################
         # 3. Non-marker Variance Components
         ########################################################################
@@ -419,6 +412,7 @@ function MCMC_BayesianAlphabet(mme,df)
                  writedlm(causal_structure_outfile,sample4λ_vec',',')
              end
         end
+
         ########################################################################
         # 3.2 Printout
         ########################################################################
@@ -427,7 +421,6 @@ function MCMC_BayesianAlphabet(mme,df)
             println("Residual variance: ",round.(mme.meanVare,digits=6))
         end
     end
-
     ############################################################################
     # After MCMC
     ############################################################################
@@ -451,7 +444,6 @@ function MCMC_BayesianAlphabet(mme,df)
                output_folder*"/MCMC_samples_genetic_variance(REML)"*"_"*Mi.name*".txt")
         end
     end
-
     output=output_result(mme,output_folder,
                          mme.solMean,mme.meanVare,
                          mme.pedTrmVec!=0 ? mme.G0Mean : false,

@@ -91,7 +91,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        annMat = false) ## annMat only works for ST (ABC)
     #Read the genotype file
     if typeof(file) <: AbstractString
-        printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
+        printstyled("The delimiter in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
         printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
         #get marker IDs
         myfile = open(file)
@@ -212,13 +212,17 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     end
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
-    if annMat != false
-        genotypes.annMat = annMat
-    end
     genotypes.π          = Pi
     genotypes.df         = df #It will be modified base on number of traits in build_model()
     genotypes.estimateScale    = estimateScale
     genotypes.estimateVariance = estimateVariance
+
+    ############################################################################
+    # Initialize the anno_obj for functional annotation
+    ############################################################################
+    if annMat != false
+        genotypes.anno_obj = Annotation(annMat, 1, -Inf, +Inf)
+    end
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")

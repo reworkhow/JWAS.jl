@@ -531,7 +531,7 @@ function getMCMCinfo(mme)
                 end
                 if !(Mi.method in ["RR-BLUP","BayesL","GBLUP"])
                     if mme.nModels == 1
-                        @printf("%-30s %20s\n","average π",mean(Mi.π))
+                        @printf("%-30s %20s\n","(average) model inclusion probability",mean(Mi.π))
                     else
                         println("\nΠ: (Y(yes):included; N(no):excluded)\n")
                         print(string.(mme.lhsVec))

@@ -127,19 +127,7 @@ mutable struct Genotypes
   isGRM  #whether genotypes or relationship matirx is provided
 
   #### Function Annotation
-  annMat ## annotation matrix (pxc), c:number of annotation categories
-  annCoef # cx1 solution
-  varl  # variance of liability
-  liability
-  μ
-  tmin
-  tmax
-  thresholds
-  lower_bound
-  upper_bound
-  Lhs
-
-
+  anno_obj # An object of Annotation type to store annotation information
 
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
@@ -149,7 +137,7 @@ mutable struct Genotypes
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
                                          false,a9,
-                                         false,false,false,false,false,false,false,false,false,false,false)
+                                         false)
 end
 
 mutable struct DF
@@ -298,3 +286,20 @@ mutable struct MME
                    repeat(["continuous"],nModels))
     end
 end
+
+
+mutable struct Annotation
+    annMat ## annotation matrix (pxc), c:number of annotation categories
+    annCoef # cx1 solution
+    varl  # variance of liability
+    liability
+    μ     # mean of liability: μ = annMat * annCoef
+    tmin  # minimal threshold
+    tmax  # maximal threshold
+    thresholds # a vector of threshold [tmin,0,tmax] for binary catogory (δ)
+    lower_bound # a vector of length nMarkers for the lower_bound of SNP liability
+    upper_bound # a vector of length nMarkers for the upper_bound of SNP liability
+    Lhs         # unchanged left-hand side to solve annCoef (annMat'annMat)
+    Annotation(annMat, varl, tmin, tmax) = new(annMat, zeros(size(annMat,2)), varl, zeros(size(annMat,1)), zeros(size(annMat,1)), tmin, tmax, [tmin,0,tmax], false, false, annMat'annMat)
+end
+    

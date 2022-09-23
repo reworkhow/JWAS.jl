@@ -110,17 +110,30 @@ function output_result(mme,output_folder,
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
           whichdelta    = Mi.meanDelta[traiti]
+          # save pi in one dataframe
+          if mme.MCMCinfo.mega_trait
+              whichpi = Mi.mean_pi[traiti]
+              whichpisd = sqrt.(abs.(Mi.mean_pi2[traiti] .- Mi.mean_pi[traiti] .^2))
+          end
           for traiti in 2:Mi.ntraits
               whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
               whichmarker    = vcat(whichmarker,Mi.markerID)
               whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
               whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
               whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+              if mme.MCMCinfo.mega_trait
+                  whichpi = vcat(whichpi,Mi.mean_pi[traiti])
+                  whichpisd = vcat(whichpisd, sqrt.(abs.(Mi.mean_pi2[traiti] .- Mi.mean_pi[traiti] .^2)))
+              end
           end
           output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
-              output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+              if mme.MCMCinfo.mega_trait
+                  output["pi_"*Mi.name] = DataFrame([whichtrait whichmarker whichpi whichpisd],[:Trait,:Marker_ID,:Estimate,:SD])
+              else
+                  output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+              end
           end
           if Mi.estimateScale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
@@ -284,9 +297,14 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
               push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
           end
           push!(outvar,"marker_effects_variances"*"_"*Mi.name)
-          push!(outvar,"pi"*"_"*Mi.name)
-
-          if Mi.annMat != false
+          if mme.nModels > 1 && mme.MCMCinfo.mega_trait
+              for traiti in Mi.trait_names
+                  push!(outvar,"pi"*"_"*Mi.name*"_"*traiti)
+              end
+          else
+              push!(outvar,"pi"*"_"*Mi.name)
+          end
+          if Mi.anno_obj != false
               push!(outvar,"delta_liability"*"_"*Mi.name)
               push!(outvar,"annCoef"*"_"*Mi.name)
           end
@@ -340,7 +358,6 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
       end
       outfile[i]=open(file_i,"w")
   end
-
   #add headers
   mytraits=map(string,mme.lhsVec)
   if mme.MCMCinfo.mega_trait == false
@@ -366,8 +383,14 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           for traiti in Mi.trait_names
               writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
           end
-          if Mi.annMat != false
+          if mme.nModels==1 # ST
               writedlm(outfile["pi"*"_"*Mi.name],transubstrarr(Mi.markerID),',')
+          elseif mme.MCMCinfo.mega_trait # multiple single-traits
+              for traiti in Mi.trait_names
+                  writedlm(outfile["pi"*"_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+              end
+          end
+          if Mi.anno_obj != false
               writedlm(outfile["delta_liability"*"_"*Mi.name],transubstrarr(Mi.markerID),',')
           end
       end
@@ -390,7 +413,6 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
       end
   end
-
   return outfile
 end
 """
@@ -423,9 +445,9 @@ function output_MCMC_samples(mme,vRes,G0,
           for traiti in 1:Mi.ntraits
               writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
           end
-          if Mi.annMat != false
-              writedlm(outfile["delta_liability"*"_"*Mi.name],Mi.liability',',')
-              writedlm(outfile[ "annCoef"*"_"*Mi.name],Mi.annCoef',',')
+          if Mi.anno_obj != false
+              writedlm(outfile["delta_liability"*"_"*Mi.name],Mi.anno_obj.liability',',')
+              writedlm(outfile[ "annCoef"*"_"*Mi.name],Mi.anno_obj.annCoef',',')
           end
 
           if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
@@ -439,9 +461,14 @@ function output_MCMC_samples(mme,vRes,G0,
                   end
               end
           end
-          if Mi.annMat != false
+          # π & Π
+          if mme.nModels == 1  #ST
               writedlm(outfile["pi"*"_"*Mi.name],Mi.π',',')
-          else
+          elseif mme.MCMCinfo.mega_trait # multiple single-traits
+              for traiti in 1:Mi.ntraits
+                  writedlm(outfile["pi"*"_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.π[traiti]',',')
+              end
+          else # MT
               writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
               if !(typeof(Mi.π) <: Number) #add a blank line
                   println(outfile["pi"*"_"*Mi.name])
@@ -531,9 +558,14 @@ function output_posterior_mean_variance(mme,nsamples)
                 Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
             end
             if Mi.estimatePi == true
-                if Mi.ntraits == 1 || mme.MCMCinfo.mega_trait
+                if Mi.ntraits == 1
                     Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
                     Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
+                elseif mme.MCMCinfo.mega_trait
+                    for traiti in 1:Mi.ntraits
+                        Mi.mean_pi[traiti] += (Mi.π[traiti]-Mi.mean_pi[traiti])/nsamples
+                        Mi.mean_pi2[traiti] += (Mi.π[traiti].^2-Mi.mean_pi2[traiti])/nsamples
+                    end
                 else
                     for i in keys(Mi.π)
                       Mi.mean_pi[i] += (Mi.π[i]-Mi.mean_pi[i])/nsamples
