@@ -333,7 +333,7 @@ function sampleMarkerEffectsBayesCC!(xArray,xpx,wArray,alphaArray,meanAlphaArray
 
         # adjust for locus j
         for trait = 1:ntraits
-            BLAS.axpy!(oldu[trait]-newu[trait],x,wArray[trait])
+            axpy!(oldu[trait]-newu[trait],x,wArray[trait])
             meanAlphaArray[trait][j] += (α[trait] - meanAlphaArray[trait][j])/iIter
             meanDeltaArray[trait][j] += (δ[trait] - meanDeltaArray[trait][j])/iIter
             meanuArray[trait][j]     += (newu[trait] - meanuArray[trait][j])/iIter
