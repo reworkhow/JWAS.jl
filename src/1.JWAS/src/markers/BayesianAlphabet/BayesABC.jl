@@ -40,10 +40,10 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
             δ[j] = 1
             β[j] = gHat + randn()*sqrt(invLhs)
             α[j] = β[j]
-            BLAS.axpy!(oldAlpha-α[j],x,yCorr)
+            axpy!(oldAlpha-α[j],x,yCorr)
         else
             if (oldAlpha!=0)
-                BLAS.axpy!(oldAlpha,x,yCorr)
+                axpy!(oldAlpha,x,yCorr)
             end
             δ[j] = 0
             β[j] = randn()*sqrt(varEffects[j])

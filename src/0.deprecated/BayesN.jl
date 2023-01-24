@@ -38,7 +38,7 @@ function sampleEffectsBayesN!(yCorr, nObs, nWindows, windows, windowSizes, xArra
         probDelta1 = 1.0/(1.0 + exp(logDelta0ToDelta1))
         if (rand() < probDelta1)
             if (Δ[i]==0)
-                BLAS.axpy!(-1,windowEffect,yCorr)
+                axpy!(-1,windowEffect,yCorr)
             end
             Δ[i] = 1
             π = (windowSizes[i] - k)/windowSizes[i]
@@ -168,4 +168,3 @@ function BayesN!(options,X,y,C,Rinv)
 
     return output
 end
-

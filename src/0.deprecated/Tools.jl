@@ -20,7 +20,7 @@ end
 function center!(X)
     nrow,ncol = size(X)
     colMeans = mean(X,1)
-    BLAS.axpy!(-1,ones(nrow)*colMeans,X)
+    axpy!(-1,ones(nrow)*colMeans,X)
     return colMeans
 end
 
@@ -41,5 +41,3 @@ function get_dom_cov(x, n)  # create dominance covariates from additive covariat
     end
     return w
 end
-
-

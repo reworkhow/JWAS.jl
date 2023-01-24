@@ -42,6 +42,6 @@ function BayesL!(xArray,xRinvArray,xpRinvx,
         mean     = invLhs*rhs
         oldAlpha = α[j]
         α[j]     = mean + randn()*sqrt(invLhs*vRes)
-        BLAS.axpy!(oldAlpha-α[j],x,yCorr)
+        axpy!(oldAlpha-α[j],x,yCorr)
     end
 end

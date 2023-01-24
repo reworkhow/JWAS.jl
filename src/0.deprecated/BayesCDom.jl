@@ -26,13 +26,13 @@ function sampleEffectsBayesCDom!(yCorr, nObs, nMarkers, xArray, XpRinvX, markerM
         probDelta1::Float64 = 1.0/(1.0 + exp(logDelta0[1] - logDelta1))
         if (rand() < probDelta1)
             a[j] = gHat + randn()*sqrt(invLhs)
-            BLAS.axpy!(olda-a[j],x,yCorr)
-            BLAS.axpy!(a[j],x,gj)
+            axpy!(olda-a[j],x,yCorr)
+            axpy!(a[j],x,gj)
             nAddEff = nAddEff + 1
             δ[j,1] = 1
         else
             if (δ[j,1]!=0)
-                BLAS.axpy!(olda,x,yCorr)
+                axpy!(olda,x,yCorr)
             end
             a[j] = 0
             δ[j,1] = 0
@@ -52,13 +52,13 @@ function sampleEffectsBayesCDom!(yCorr, nObs, nMarkers, xArray, XpRinvX, markerM
         probDelta1 = 1.0/(1.0 + exp(logDelta0[2] - logDelta1))
         if (rand() < probDelta1)
             d[j] = gHat + randn()*sqrt(invLhs)
-            BLAS.axpy!(oldd-d[j],w,yCorr)
-            BLAS.axpy!(d[j],w,gj)
+            axpy!(oldd-d[j],w,yCorr)
+            axpy!(d[j],w,gj)
             nDomEff = nDomEff + 1
             δ[j,2] = 1
         else
             if (δ[j,2]!=0)
-                BLAS.axpy!(oldd,w,yCorr)
+                axpy!(oldd,w,yCorr)
             end
             d[j] = 0
             δ[j,2] = 0
@@ -67,15 +67,15 @@ function sampleEffectsBayesCDom!(yCorr, nObs, nMarkers, xArray, XpRinvX, markerM
         # estimate substitution effect by OLS
         if (a[j]!=0 && d[j]==0)
             α[j] = a[j]
-            BLAS.axpy!(1,gj,g)
-            BLAS.axpy!(1,gj,u)
+            axpy!(1,gj,g)
+            axpy!(1,gj,u)
         elseif (a[j]==0 && d[j]!=0)
             α[j] = 0
-            BLAS.axpy!(1,gj,g)
+            axpy!(1,gj,g)
         elseif (a[j]!=0 && d[j]!=0)
             α[j] = dot(x,gj-mean(gj))/dot(x,x)
-            BLAS.axpy!(1,gj,g)
-            BLAS.axpy!(α[j],x,u)
+            axpy!(1,gj,g)
+            axpy!(α[j],x,u)
         else
             α[j] = 0
         end
@@ -235,4 +235,3 @@ function BayesCDom!(options,X,y,C,Rinv)
 
     return output
 end
-

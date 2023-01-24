@@ -21,7 +21,7 @@ end
 function center!(X)
     nrow     = size(X,1)
     colMeans = mean(X,dims=1)
-    BLAS.axpy!(-1,ones(nrow)*colMeans,X)
+    axpy!(-1,ones(nrow)*colMeans,X)
     return colMeans
 end
 

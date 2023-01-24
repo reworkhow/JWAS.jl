@@ -70,13 +70,13 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
             if(rand()<probDelta1)
                 δ[k] = 1
                 β[k] = newα[k] = gHat1 + randn()*sqrt(invLhs1)
-                BLAS.axpy!(oldα[k]-newα[k],x,wArray[k])
+                axpy!(oldα[k]-newα[k],x,wArray[k])
             else
                 β[k] = gHat0 + randn()*sqrt(invLhs0)
                 δ[k] = 0
                 newα[k] = 0
                 if oldα[k] != 0
-                    BLAS.axpy!(oldα[k],x,wArray[k])
+                    axpy!(oldα[k],x,wArray[k])
                 end
             end
         end
@@ -173,7 +173,7 @@ function MTBayesABC_samplerII!(xArray,
 
         # adjust for locus j
         for trait in 1:ntraits
-            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])  #update wArray (ycorr)
+            axpy!(oldα[trait]-newα[trait],x,wArray[trait])  #update wArray (ycorr)
             betaArray[trait][marker]       = β[trait]
             deltaArray[trait][marker]      = δ[trait]
             alphaArray[trait][marker]      = newα[trait]

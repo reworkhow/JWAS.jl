@@ -45,7 +45,7 @@ function MTBayesL!(xArray,xRinvArray,xpRinvx,
             newα[trait] = alphaArray[trait][marker]
         end
         for trait = 1:ntraits
-            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])
+            axpy!(oldα[trait]-newα[trait],x,wArray[trait])
         end
     end
 end
