@@ -48,6 +48,9 @@ include("Nonlinear/nonlinear.jl")
 include("Nonlinear/bnn_hmc.jl")
 include("Nonlinear/nnbayes_check.jl")
 
+#Data encryption
+include("encryption/encryption_helper.jl")
+
 #input
 include("input_data_validation.jl")
 
@@ -159,6 +162,7 @@ function runMCMC(mme::MME,df;
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
+                encryption                      = false,
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
@@ -237,6 +241,17 @@ function runMCMC(mme::MME,df;
     if "censored" ∈ mme.traits_type
         add_censored_trait_column!(mme,df) #changed: df
     end
+
+    ############################################################################
+    # data encryption (random effects)
+    ############################################################################
+    # Goal: e.g., in model we have set_random("batch"), but in the df we have columns like "batch_1,batch_2,...".
+    # Here the goal is to randomly generate a column in df named "batch", with the number of levels obtained from df
+    if encryption != false
+        add_encrypted_random_variable_column!(mme,df) #changed: df
+        printstyled("the head of modified df is:",first(df,3)," \n",bold=false,color=:green)
+    end
+    
     ############################################################################
     # Set a seed in the random number generator
     ############################################################################
@@ -269,7 +284,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   seed,double_precision,output_folder)
+                   seed,double_precision,output_folder,encryption)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
     #       3)output individual IDs; 4)Priors  5)Prediction equation
@@ -349,6 +364,10 @@ function runMCMC(mme::MME,df;
     ############################################################################
     #make incidence matrices (non-genomic effects) (after SSBRrun for ϵ & J)
     df=make_incidence_matrices(mme,df_whole,train_index)
+    #data encryption (random effects): put back the encrypted X
+    if encryption != false
+        use_encrypted_X!(mme,df) #changed: term.X of random effects of type "I"
+    end
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
         align_genotypes(mme,output_heritability,single_step_analysis)

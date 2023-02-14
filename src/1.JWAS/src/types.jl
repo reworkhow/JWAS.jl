@@ -163,6 +163,7 @@ mutable struct MCMCinfo
     seed
     double_precision
     output_folder
+    encryption
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

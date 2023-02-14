@@ -348,6 +348,12 @@ function getMME(mme::MME, df::DataFrame)
       mme.mmeRhs = X'Ri*ySparse
     end
 
+    #Data encryption: remove very small values in Lhs
+    if mme.MCMCinfo.encryption==true
+      printstyled("Encryption: set zeros in mmeLhs. \n",bold=false,color=:green)
+      droptol!(mme.mmeLhs, 1e-10)
+    end
+
     #Random effects parts in MME
     if mme.nModels == 1
       #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
