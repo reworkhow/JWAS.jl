@@ -13,8 +13,13 @@ function add_encrypted_random_variable_column!(mme,df)
                   i+=1
                   nlevels+=1
             end
-            df[:,rnd_variable_name] = rand(1:nlevels,size(df,1))
-            printstyled("Encryption: a random column has been generated for $rnd_variable_name with $nlevels levels. \n",bold=false,color=:green)
+            df[:,rnd_variable_name]         = rand(1:nlevels,size(df,1))
+            df[1:nlevels,rnd_variable_name] = collect(1:nlevels) #make sure all levels are generated
+            if length(unique(df[:,rnd_variable_name]))==nlevels
+                  printstyled("Encryption: a random column has been generated for $rnd_variable_name with $nlevels levels. \n",bold=false,color=:green)
+            else
+                  error("wrong number of levels!")
+            end
       end
 end
 

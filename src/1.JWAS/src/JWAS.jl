@@ -249,7 +249,6 @@ function runMCMC(mme::MME,df;
     # Here the goal is to randomly generate a column in df named "batch", with the number of levels obtained from df
     if encryption != false
         add_encrypted_random_variable_column!(mme,df) #changed: df
-        printstyled("the head of modified df is:",first(df,3)," \n",bold=false,color=:green)
     end
     
     ############################################################################
