@@ -119,7 +119,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
             markerID = string.(1:(size(file,2)-1))
         end
         obsID     = map(string,file[!,1])
-        genotypes = map(Float32,convert(Matrix,file[!,2:end]))
+        genotypes = map(Float32,Matrix(file[!,2:end]))
     elseif typeof(file) <: Union{Array{Float64,2},Array{Float32,2},Array{Any,2}} #Array
         if length(header) != (size(file,2)+1)
             header = ["id"; string.(1:size(file,2))]
