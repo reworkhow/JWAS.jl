@@ -1,14 +1,18 @@
-#return column index for each level of variables in incidence matrix X
-#e.g. "A1"=>1,"A2"=>2
-function mkDict(a)
-  aUnique = unique(a)
-  d = Dict()
-  names = Array{Any}(undef,size(aUnique,1))
-  for (i,s) in enumerate(aUnique)
-    names[i] = s
-    d[s] = i
-  end
-  return d,names
+"""
+    mkDict(a::Vector{T}) where T <: Any
+
+    Get column index in the incidence matrix for each level of a factor (categorical variable) 
+    input:  a=["a1","a4","a1","a2"] 
+    output: d=Dict("a2" => 3, "a1" => 1, "a4" => 2), level_names=["a1","a4","a2"]
+    
+    note: enumerate(level_names) gives a list of tuples (index, element), reverse() to reverse (index,element) to (element,index)
+"""
+function mkDict(a::Vector{T}) where T <: Any
+    # Create a vector of unique levels from a
+    level_names = unique(a) #e.g., ["a1","a2","a1"] -> ["a1","a2"]
+    # Create a dictionary mapping each element to its index in level_names
+    d = Dict(map(reverse, enumerate(level_names))) #e.g., Dict("a1"=>1,"a2"=>2), level_names=["a1","a2"]
+    return d, level_names
 end
 
 """
