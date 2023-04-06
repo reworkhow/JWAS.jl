@@ -1,28 +1,28 @@
-#the function below using pointers is deprecated
-function get_column(X,j)
-    nrow,ncol = size(X)
-    if j>ncol||j<0
-        error("column number is wrong!")
-    end
-    indx = 1 + (j-1)*nrow
-    ptr = pointer(X,indx)
-    unsafe_wrap(Array,ptr,nrow) #pointer_to_array(ptr,nrow) #deprected in Julia 0.5
+"""
+    get_column_ref(X::Vector{T})
+
+    To obtain a vector of views (alias/pointer) for each column of the input matrix WITHOUT COPYING the underlying data. 
+    input:  a matrix X
+    output: a vector containing views of each column of the input matrix X
+"""
+function get_column_ref(X::AbstractArray{T,2}) where T <: Any
+      return [view(X, :, i) for i in 1:size(X, 2)] # Create a vector of views for each column of the matrix X
 end
 
-function get_column_ref(X)
-    ncol = size(X)[2]
-    xArray = Array{Union{Array{Float64,1},Array{Float32,1}}}(undef,ncol)
-    for i=1:ncol
-        xArray[i] = get_column(X,i)
-    end
-    return xArray
-end
+"""
+    This function centers columns of the input matrix X by subtracting their means along each column. The function operates in-place by modifying the original matrix X.
 
-function center!(X)
-    nrow     = size(X,1)
-    colMeans = mean(X,dims=1)
-    BLAS.axpy!(-1,ones(nrow)*colMeans,X)
-    return colMeans
+    Input:
+    - X::AbstractMatrix: a matrix to be centered
+
+    Output:
+    - col_means::Vector: a vector of mean values for each column in the original matrix, computed before centering.
+"""
+function center!(X::AbstractArray{T,2}) where T <: Any
+    col_means = mean(X, dims=1) # Calculate the means in each column
+    X .-= col_means  # Subtract column means from X, 
+                     # Note: in-place, using broadcasting, i.e. X[i,j] -= col_means[j]
+    return col_means # Return a row vector of column means (size 1 by ncol)
 end
 
 function getXpRinvX(X, Rinv)
@@ -39,8 +39,8 @@ mutable struct GibbsMats
     X::Union{Array{Float64,2},Array{Float32,2}}
     nrows::Int64
     ncols::Int64
-    xArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
-    xRinvArray::Array{Union{Array{Float64,1},Array{Float32,1}},1}
+    xArray     #do not declare type because it is a vector of views
+    xRinvArray #do not declare type because it is a vector of views
     xpRinvx::Union{Array{Float64,1},Array{Float32,1}}
     function GibbsMats(X::Union{Array{Float64,2},Array{Float32,2}},Rinv)
         nrows,ncols = size(X)
