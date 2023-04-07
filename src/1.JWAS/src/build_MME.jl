@@ -211,7 +211,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   end
   trm.data = str
   val=convert(Array,val)
-  DataFrames.recode!(val, missing => 0.0)
+  val = coalesce.(val, 0.0) #replace missing with 0.0
   trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
 
@@ -317,9 +317,9 @@ function getMME(mme::MME, df::DataFrame)
     end
 
 
-    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    y   = coalesce.(df[!,mme.lhsVec[1]], 0.0) #replace missing values with 0
     for i=2:size(mme.lhsVec,1)
-      y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
+      y   = [y; coalesce.(df[!,mme.lhsVec[i]], 0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))

@@ -13,24 +13,23 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 * **Installation**: at the Julia REPL, `using Pkg; Pkg.add("JWAS")`
 * **Documentation**: [available here](http://reworkhow.github.io/JWAS.jl/latest/)
 * **Examples**: [available here](https://github.com/reworkhow/JWAS.jl/wiki)
-* **Authors**: [Hao Cheng](http://qtl.rocks/chenglab.html), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](http://www.massey.ac.nz/massey/expertise/profile.cfm?stref=600130)
+* **Authors**: [Hao Cheng](https://qtl.rocks), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](http://www.massey.ac.nz/massey/expertise/profile.cfm?stref=600130)
 
 
 
 ### Structure of JWAS
 
+```mermaid
+  flowchart TD;
+      A["phenotypes.csv"] --> A2(CSV.read) --> D(build_model)
+      B["pedigree.csv"] --> B2(get_pedigree) --> D(build_model)
+      C["genotypes.csv"] --> C2(get_genotypes) --> D(build_model)
+      D --> E(set_covariate);
+      D --> F(set_random);
+      E --> H{runMCMC}
+      F --> H
 ```
-JWAS.jl
 
-├────── get_pedigree
-├────── get_genotypes
-├────── build_model
-├────── set_covariate
-├────── set_random
-├────── solve
-├────── runMCMC
-└────── ...
-```
 
 ### Help
 
@@ -46,8 +45,9 @@ JWAS.jl
 * Single Step Analysis
 * Categorical Trait Analysis
 * Censored Trait Analysis
+* Joint Analysis of Continuous, Categorical, and Censored Traits
 * Multi-class Bayesian Analysis
-* Neural Networks
+* Neural Networks (NN-MM)
 * Cross Validation
 * Genome Wide Association Study
 * Integrating Phenotypic Causal Networks in GWAS

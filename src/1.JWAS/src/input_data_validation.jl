@@ -181,6 +181,40 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
         df = sort(df,[:time,1])
     end
 
+    # check whether the categories are 1,2,3...; otherwise it will cause indexing error
+    for t in 1:mme.nModels
+        if mme.traits_type[t] == "categorical"
+            categorical_trait_name_t = mme.lhsVec[t] #e.g., :y1
+            category_obs_t           = map(Int,skipmissing(df[:,categorical_trait_name_t]))
+            n_categorical_t          = length(unique(category_obs_t))
+            user_categories          = sort(unique(category_obs_t))
+            correct_categories       = collect(1:n_categorical_t)
+            if user_categories != correct_categories
+                error("For categorical trait $categorical_trait_name_t, the categories should be ",correct_categories," ; instead of ",user_categories)
+            end
+            # modify trait type for binary traits
+            if n_categorical_t==2
+                mme.traits_type[t] = "categorical(binary)"
+            end
+        end
+    end
+    #print trait types information if there is categorical/binary/censored trait
+    binary_trait_index      = findall(x -> x == "categorical(binary)", mme.traits_type)
+    categorical_trait_index = findall(x -> x == "categorical",         mme.traits_type)
+    censored_trait_index    = findall(x -> x == "censored",            mme.traits_type)
+    if length(censored_trait_index)>0
+        printstyled("Censored traits are: ", string.(mme.lhsVec[censored_trait_index]),"\n",color=:green)
+    end
+    if length(categorical_trait_index)>0
+        printstyled("Categorical traits (>2 categories) are: ", string.(mme.lhsVec[categorical_trait_index]),"\n",color=:green)
+    end
+    if length(binary_trait_index)>0
+        printstyled("Binary traits are: ",string.(mme.lhsVec[binary_trait_index]) ,"\n",color=:green)
+        if mme.nModels>1
+            printstyled(" - note that binary traits are assumed to be independent with unit variance." ,"\n",color=:green)
+        end
+    end
+
     rename!(df,strip.(names(df)))
     return df
 end
@@ -222,8 +256,8 @@ function set_default_priors_for_variance_components(mme,df)
   #residual effects
   if mme.nModels==1 && isposdef(mme.R) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    is_categorical_trait = mme.traits_type==["categorical"]
-    mme.R = mme.ROld = is_categorical_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
+    is_categorical_or_binary_trait = mme.traits_type==["categorical"] || mme.traits_type==["categorical(binary)"]
+    mme.R = mme.ROld = is_categorical_or_binary_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
     mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
   elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
