@@ -103,10 +103,11 @@ function output_result(mme,output_folder,
   end
 
   if mme.pedTrmVec != 0
-    output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2)
+    output["polygenic effects covariance matrix"]=matrix2dataframe(mme.pedTrmVec,G0Mean,G0Mean2) 
   end
 
-  ntraits     = length(mme.lhsVec)
+  ntraits = length(mme.lhsVec)
+  ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : mme.nModels
 
   if mme.M != 0
       for Mi in mme.M
@@ -116,23 +117,14 @@ function output_result(mme,output_folder,
           whicheffect = Mi.meanAlpha[traiti]
           whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
           whichdelta    = Mi.meanDelta[traiti]
-          if mme.MCMCinfo.RRM == false
-              for traiti in 2:Mi.ntraits
-                  whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
-                  whichmarker    = vcat(whichmarker,Mi.markerID)
-                  whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
-                  whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
-                  whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
-              end
-          else
-              for traiti in 2:mme.nModels
-                  whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
-                  whichmarker    = vcat(whichmarker,Mi.markerID)
-                  whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
-                  whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
-                  whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
-              end
-          end
+          for traiti in 2:ntraits_geno
+                whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
+                whichmarker    = vcat(whichmarker,Mi.markerID)
+                whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
+                whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
+                whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+            end
+
           output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
@@ -143,6 +135,7 @@ function output_result(mme,output_folder,
           end
       end
   end
+
   #Get EBV and PEV from MCMC samples text files
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
@@ -299,21 +292,17 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   if mme.pedTrmVec != 0
       push!(outvar,"polygenic_effects_variance")
   end
+  
   if mme.M !=0 #write samples for marker effects to a text file
-      for Mi in mme.M
-          if mme.MCMCinfo.RRM == false
-              for traiti in Mi.trait_names
-                  push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
-              end
-          else
-              for traiti in 1:ntraits
-                  push!(outvar,"marker_effects_"*string(mme.lhsVec[traiti]))
-              end
-          end
-          push!(outvar,"marker_effects_variances"*"_"*Mi.name)
-          push!(outvar,"pi"*"_"*Mi.name)
-      end
-  end
+    for Mi in mme.M
+        geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+        for traiti in geno_names
+            push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+        end
+        push!(outvar,"marker_effects_variances"*"_"*Mi.name)
+        push!(outvar,"pi"*"_"*Mi.name)
+    end
+ end
 
   #non-marker location parameters
   for trmi in  mme.outputSamplesVec
@@ -337,7 +326,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           if mme.MCMCinfo.RRM == false
               push!(outvar,"heritability")
           else
-              printstyled("heritability is not computed for RRM. \n",bold=false,color=:green)
+              printstyled("heritability is not computed for Random Regression Model. \n",bold=false,color=:green)
           end
       end
       if mme.nonlinear_function != false  #NNBayes
@@ -386,19 +375,14 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
     thisheader= repeat(effect.term_array,inner=length(effect.term_array)).*"_".*repeat(effect.term_array,outer=length(effect.term_array))
     writedlm(outfile[trmStri*"_variances"],transubstrarr(thisheader),',') #1:x2_1:x2,1:x2_2:x2,2:x2_1:x2,2:x2_2:x2
   end
-
+  
   if mme.M !=0
-      for Mi in mme.M
-          if mme.MCMCinfo.RRM == false
-              for traiti in Mi.trait_names
-                  writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
-              end
-          else
-              for traiti in 1:ntraits
-                  writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],transubstrarr(Mi.markerID),',')
-              end
-          end
-      end
+    for Mi in mme.M
+        geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+        for traiti in geno_names
+            writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+        end
+    end
   end
 
   if mme.pedTrmVec != 0
@@ -451,17 +435,13 @@ function output_MCMC_samples(mme,vRes,G0,
     is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-          if mme.MCMCinfo.RRM == false
-              for traiti in 1:Mi.ntraits
-                  writedlm(outfile["marker_effects_"*Mi.name*"_"*Mi.trait_names[traiti]],Mi.α[traiti]',',')
-              end
-          else
-              for traiti in 1:ntraits
-                  writedlm(outfile["marker_effects_"*string(mme.lhsVec[traiti])],Mi.α[traiti]',',')
-              end
-          end
-
-          if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
+         ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : mme.nModels
+         geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+         for traiti in 1:ntraits_geno
+            writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
+         end
+          
+         if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
               else

@@ -38,6 +38,8 @@ function generatefullPhi(timevec, ncoeff=3)
     return Φ
 end
 
+
+
 function get_mΦΦarray(Φ,T,mArray)
     ninds    = length(mArray[1])
     nmarkers = length(mArray)
@@ -58,6 +60,13 @@ function BayesABCRRM!(xArray,xpx,wArray,yfull,
                       betaArray,deltaArray,alphaArray,
                       vare,varEffects,BigPi,
                       Φ, zeros_indicator, mΦΦArray)
+# Random Regression model for individual i with Φ being a txc matrix of legendre polynomials
+# u_i = Φ∑_{j=1}^p m_{ij}α_j 
+# t is the number of time points, c is the number of coefficients for additive genetic random regressions, p is the number of markers
+# u_i is a tx1 vector corresponding to the breeding values in t time points 
+# m_{ij} is the genotype of individual i at marker j
+# α_j is a cx1 vector of random regression coefficients for marker j
+
 #For example of n individuals, 5 time points and 3 RR coefficient
 #wArray is an array (of length number of timepoints)
 #                    of vectors (of length number of individuals)

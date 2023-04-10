@@ -163,7 +163,7 @@ function runMCMC(mme::MME,df;
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
-                RRM                             = false,
+                RRM                             = false, #  RRM -> false or a matrix (Phi: orthogonalized time covariates)
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
