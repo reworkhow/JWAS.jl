@@ -107,16 +107,16 @@ function output_result(mme,output_folder,
   end
 
   ntraits = length(mme.lhsVec)
-  ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
 
   if mme.M != 0
       for Mi in mme.M
-          traiti      = 1
-          whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
-          whichmarker = Mi.markerID
-          whicheffect = Mi.meanAlpha[traiti]
-          whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
-          whichdelta    = Mi.meanDelta[traiti]
+         ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
+         traiti      = 1
+         whichtrait  = fill(string(mme.lhsVec[traiti]),length(Mi.markerID))
+         whichmarker = Mi.markerID
+         whicheffect = Mi.meanAlpha[traiti]
+         whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
+         whichdelta    = Mi.meanDelta[traiti]
           for traiti in 2:ntraits_geno
                 whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
                 whichmarker    = vcat(whichmarker,Mi.markerID)

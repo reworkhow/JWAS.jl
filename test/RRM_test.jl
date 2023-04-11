@@ -192,8 +192,8 @@ set_covariate(model, "Phi2");
 
 #### Validation (sample codes)
 # estimated EBVs (coefficients) for individuals
-u1 = CSV.read("results/EBV_1.txt", DataFrame)
-u2 = CSV.read("results/EBV_2.txt", DataFrame)
+u1 = CSV.read("results1/EBV_1.txt", DataFrame)
+u2 = CSV.read("results1/EBV_2.txt", DataFrame)
 EBVs = DataFrame(
     ID=u1[!, :ID],
     u1=u1[!, :EBV],
@@ -240,7 +240,7 @@ trueQTLs = getdata("QTLpos_rep1.csv")[:, 2:end]
 # calculate the model frequency for coef i (1: intercept, 2: slope)
 coef = 2
 println("Coef $coef")
-mrk_eff_sample_c = "results/MCMC_samples_marker_effects_geno_$coef.txt"
+mrk_eff_sample_c = "results1/MCMC_samples_marker_effects_geno_$coef.txt"
 mrk_samples, markerID = readdlm(mrk_eff_sample_c, header=true, ',')
 markerID = vec(strip.(markerID, ['\"']))
 model_freq = vec(mean(mrk_samples .!= 0, dims=1))
