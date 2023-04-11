@@ -107,7 +107,7 @@ function output_result(mme,output_folder,
   end
 
   ntraits = length(mme.lhsVec)
-  ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : mme.nModels
+  ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
 
   if mme.M != 0
       for Mi in mme.M
@@ -435,7 +435,7 @@ function output_MCMC_samples(mme,vRes,G0,
     is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-         ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : mme.nModels
+         ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
          geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
          for traiti in 1:ntraits_geno
             writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
@@ -495,12 +495,14 @@ function output_MCMC_samples(mme,vRes,G0,
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')
     end
     #categorical/binary/censored traits
-    ySparse = reshape(mme.ySparse,:,ntraits) #liability (=mme.ySparse)
-    for t in 1:mme.nModels
-        if mme.traits_type[t] ∈ ["categorical","categorical(binary)","censored"] #save liability
-            writedlm(outfile["liabilities_"*string(mme.lhsVec[t])], ySparse[:,t]', ',')
-            if mme.traits_type[t] ∈ ["categorical","categorical(binary)"] #save thresholds
-                writedlm(outfile["threshold_"*string(mme.lhsVec[t])], mme.thresholds[t]', ',')
+    if !isempty(intersect(mme.traits_type, ["categorical","categorical(binary)","censored"]))
+        ySparse = reshape(mme.ySparse,:,ntraits) #liability (=mme.ySparse)
+        for t in 1:mme.nModels
+            if mme.traits_type[t] ∈ ["categorical","categorical(binary)","censored"] #save liability
+                writedlm(outfile["liabilities_"*string(mme.lhsVec[t])], ySparse[:,t]', ',')
+                if mme.traits_type[t] ∈ ["categorical","categorical(binary)"] #save thresholds
+                    writedlm(outfile["threshold_"*string(mme.lhsVec[t])], mme.thresholds[t]', ',')
+                end
             end
         end
     end
