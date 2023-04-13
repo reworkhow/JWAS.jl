@@ -43,6 +43,10 @@ include("categorical_and_censored_trait/categorical_and_censored_trait.jl")
 #Structure Equation Models
 include("structure_equation_model/SEM.jl")
 
+#Random Regression Model
+include("RRM/MCMC_BayesianAlphabet_RRM.jl")
+include("RRM/RRM.jl")
+
 #Latent Traits
 include("Nonlinear/nonlinear.jl")
 include("Nonlinear/bnn_hmc.jl")
@@ -159,6 +163,7 @@ function runMCMC(mme::MME,df;
                 mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
                 missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
                 constraint                      = false,
+                RRM                             = false, #  RRM -> false or a matrix (Phi: orthogonalized time covariates)
                 #Genomic Prediction
                 outputEBV                       = true,
                 output_heritability             = true,
@@ -269,7 +274,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,constraint,mega_trait,estimate_variance,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   seed,double_precision,output_folder)
+                   seed,double_precision,output_folder,RRM)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
     #       3)output individual IDs; 4)Priors  5)Prediction equation
@@ -359,7 +364,18 @@ function runMCMC(mme::MME,df;
     # MCMC
     ############################################################################
     describe(mme)
-    mme.output=MCMC_BayesianAlphabet(mme,df)
+    if RRM == false
+        mme.output=MCMC_BayesianAlphabet(mme,df)
+    else
+        mme.output=MCMC_BayesianAlphabet_RRM(mme,df,
+                                  Φ                        = RRM,
+                                  burnin                   = burnin,
+                                  outFreq                  = printout_frequency,
+                                  output_samples_frequency = output_samples_frequency,
+                                  update_priors_frequency  = update_priors_frequency,
+                                  output_folder            = mme.MCMCinfo.output_folder,
+                                  nIter                    = chain_length)
+    end
 
     ############################################################################
     # Save output to text files
@@ -512,7 +528,7 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance != false
-                    if mme.nModels == 1 || is_nnbayes_partial
+                    if (mme.nModels == 1 || is_nnbayes_partial) && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance)
                     else
                         @printf("%-30s\n","genetic variances (genomic):")
@@ -521,7 +537,7 @@ function getMCMCinfo(mme)
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if mme.nModels == 1 || is_nnbayes_partial
+                    if (mme.nModels == 1 || is_nnbayes_partial) && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G)
                     else
                         @printf("%-30s\n","marker effect variances:")
@@ -530,7 +546,7 @@ function getMCMCinfo(mme)
                     end
                 end
                 if !(Mi.method in ["RR-BLUP","BayesL","GBLUP"])
-                    if mme.nModels == 1
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20s\n","π",Mi.π)
                     else
                         println("\nΠ: (Y(yes):included; N(no):excluded)\n")

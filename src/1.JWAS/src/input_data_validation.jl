@@ -173,6 +173,14 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
             end
         end
     end
+
+    #***************************************************************************
+    # change the order of phenotypes in RRM as IDs nested in time
+    #***************************************************************************
+    if mme.MCMCinfo.RRM != false #sorted by time then ID (1st column)
+        df = sort(df,[:time,1])
+    end
+
     # check whether the categories are 1,2,3...; otherwise it will cause indexing error
     for t in 1:mme.nModels
         if mme.traits_type[t] == "categorical"
@@ -235,8 +243,10 @@ function set_default_priors_for_variance_components(mme,df)
     for Mi in mme.M
       if Mi.G == false && Mi.genetic_variance == false
           printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
-          if mme.nModels==1
+          if mme.nModels==1 && mme.MCMCinfo.RRM == false
               Mi.genetic_variance = varg[1,1]
+          elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
+              Mi.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
           elseif mme.nModels>1
               Mi.genetic_variance = varg
           end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
