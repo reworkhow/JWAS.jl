@@ -103,24 +103,27 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     end
 end
 
-#get an incidence matrix Z to reorder uID to yID by yID = Z*uID
-function mkmat_incidence_factor(yID,uID)
-    Z = spzeros(length(yID),length(uID))
-
-    uIDdict = Dict()
-    for (index,id) in enumerate(uID)
-        uIDdict[id]=index
-    end
-
-    rowi = 1
-    for id in yID
-        if haskey(uIDdict,id)
+"""
+mkmat_incidence_factor(yID::Vector, uID::Vector)
+    create an incidence matrix Z to reorder uID to yID by yID = Z*uID.
+    input: 
+        - yID: a vector containing the desired order of IDs
+        - uID: a vector containing the original order of IDs
+    output: 
+        - Z: a sparse matrix representing the incidence relationship between yID and uID (yID = Z*uID)
+"""
+function mkmat_incidence_factor(yID::Vector, uID::Vector)
+    Z = spzeros(length(yID), length(uID)) # initialize a sparse matrix Z with the dimensions of yID and uID
+    uIDdict = Dict(id => index for (index, id) in enumerate(uID))  # create a uID dictionary to map uID elements to their indices
+    
+    # iterate over yID elements to populate Z matrix
+    for (rowi, id) in enumerate(yID)
+        if haskey(uIDdict, id) # check if the current yID element exists in uID dictionary
             index = uIDdict[id]
         else
-            error(id, " is not found!")
+            error("$id is not found!") # error if the id is not found in the uID dictionary
         end
-        Z[rowi,index]=1
-        rowi = rowi+1
+        Z[rowi, index] = 1 # set the corresponding element in the Z matrix to 1
     end
     return Z
 end
