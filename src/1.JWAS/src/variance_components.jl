@@ -92,7 +92,7 @@ function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; b
     else  #diagonal elements only, from scale-inv-⁠χ2
         R  = zeros(ntraits,ntraits)
         for traiti = 1:ntraits
-            R[traiti,traiti]= (SSE[traiti,traiti]+df*scale[traiti])/rand(Chisq(nobs+df))
+            R[traiti,traiti]= (SSE[traiti,traiti]+scale[traiti])/rand(Chisq(nobs+df)) #scale is a vector in mega_trait, where t-th entry is the scale for t-th trait
         end
     end
     return R
