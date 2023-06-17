@@ -174,7 +174,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             end
             winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
             WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
-            prop_genvar = prop_genvar*100
+            prop_genvar = round.(prop_genvar*100,digits=6)
             winVarmean = vec(mean(winVar,dims=1))
             winVarstd  = vec(std(winVar,dims=1))
 
