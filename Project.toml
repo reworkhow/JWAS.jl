@@ -1,7 +1,7 @@
 name = "JWAS"
 uuid = "c9a035f4-d403-5e6b-8649-6be755bc4798"
 authors = ["Hao Cheng <qtlcheng@ucdavis.edu>"]
-version = "1.2.0"
+version = "1.2.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
