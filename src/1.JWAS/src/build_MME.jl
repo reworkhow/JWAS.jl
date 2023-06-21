@@ -9,7 +9,7 @@
 """
 function mkDict(a::Vector{T}) where T <: Any
     # Create a vector of unique levels from a
-    level_names = unique(a) #e.g., ["a1","a2","a1"] -> ["a1","a2"]
+    level_names = String.(unique(a)) #e.g., ["a1","a2","a1"] -> ["a1","a2"]; apply String() to avoid the String3 type in enumerate()
     # Create a dictionary mapping each element to its index in level_names
     d = Dict(map(reverse, enumerate(level_names))) #e.g., Dict("a1"=>1,"a2"=>2), level_names=["a1","a2"]
     return d, level_names
