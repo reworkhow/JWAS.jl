@@ -33,7 +33,7 @@ function categorical_censored_traits_setup!(mme,df)
     ############################################################################
     nInd           = length(mme.obsID)
     nTrait         = mme.nModels
-    R              = mme.R
+    R              = mme.R.val
 
     starting_value = mme.sol
     cmean          = mme.X*starting_value[1:size(mme.mmeLhs,1)] #maker effects defaulting to all zeros
@@ -81,7 +81,7 @@ function categorical_censored_traits_setup!(mme,df)
             ##################################################################################
             for i in 1:nInd
                 if lower_bound[t][i] != upper_bound[t][i]
-                    ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(R[t,t])), lower_bound[t][i], upper_bound[t][i])) #mme.R has been fixed to 1.0 for category single-trait analysis
+                    ySparse[i,t] = rand(truncated(Normal(cmean[i,t], sqrt(R[t,t])), lower_bound[t][i], upper_bound[t][i])) #mme.R.val has been fixed to 1.0 for category single-trait analysis
                 else
                     ySparse[i,t] = lower_bound[t][i] #mme.ySparse will also change since reshape is a reference, not copy
                 end
@@ -176,7 +176,7 @@ function sample_liabilities!(mme,ycorr,lower_bound,upper_bound)
     nInd           = length(mme.obsID)
     nTrait         = mme.nModels
     is_multi_trait = nTrait>1
-    R              = mme.R
+    R              = mme.R.val
     cmean          = reshape(cmean,      nInd,nTrait)
     ySparse        = reshape(mme.ySparse,nInd,nTrait) #mme.ySparse will also be updated since reshape is a reference, not copy
     ycorr_ref      = reshape(ycorr,      nInd,nTrait) #ycorr will be updated since reshape is a reference, not copy

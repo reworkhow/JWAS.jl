@@ -37,13 +37,20 @@ G               = [6.72   2.84
 set_random(model,"animal",ped,G)
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,G=false;df=4.0)
+function set_random(mme::MME,randomStr::AbstractString,ped::PedModule.Pedigree,
+                    ## variance: 
+                    G=false;
+                    df=4.0,
+                    estimate_variance=true, estimate_scale=false, 
+                    constraint=false #for multi-trait only, constraint=true means no covariance for this random effects among traits
+                    )
     if mme.ped == 0
       mme.ped = deepcopy(ped)
     else
       error("Pedigree information is already added. Polygenic effects can only be set for one time")
     end
-    set_random(mme,randomStr,G,Vinv=mme.ped,df=df)
+    set_random(mme,randomStr,G,Vinv=mme.ped,df=df,
+               estimate_variance=estimate_variance,estimate_scale=estimate_scale,constraint=constraint)
 end
 ############################################################################
 #Set specific ModelTerm as random  (Not specific for IID or A(pedigree))
@@ -83,7 +90,10 @@ G               = 0.6
 set_random(model,"litter",G,Vinv=inv(V),names=[a1;a2;a3])
 ```
 """
-function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0)
+function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],df=4.0,
+                    estimate_variance=true,estimate_scale=false,
+                    constraint=false #for multi-trait only, constraint=true means no covariance for this random effects among traits
+                    )
     ############################################################################
     #Pre-Check
     ############################################################################
@@ -94,6 +104,9 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     names   = string.(names)
     df      = Float32(df)
+    #check for constraint
+    #?now
+
     ############################################################################
     #add trait names (model equation number) to variables;
     #e.g., "litter"=>"y1:litter";"ϵ"=>"y1:ϵ"
@@ -116,6 +129,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
         error(trm," is not found in model equation.")
       end
     end                                               # "y1:litter"; "y2:litter"; "y1:group"
+    # 
+    # e.g. set model.modelTerms[4].random_type
     ############################################################################
     #Set type of model terms
     ############################################################################
@@ -139,7 +154,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     #Gi            : multi-trait;
     #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(Float32.(G))))
+    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(Float32.(G)))) #not reference
     ############################################################################
     #return random_effct type
     ############################################################################
@@ -149,8 +164,8 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       mme.Gi = Gi
       ν, k  = Float32(df), size(mme.pedTrmVec,1)
       νG0   = ν + k
-      mme.df.polygenic = νG0 #final df for this inverse wisahrt
-      mme.scalePed     = G*(mme.df.polygenic - k - 1)
+      df_polygenic = νG0 #final df for this inverse wisahrt
+      scale_polygenic  = G*(df_polygenic - k - 1)
       random_type = "A"
     elseif Vinv != 0
       random_type = "V"
@@ -161,10 +176,13 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
       random_type = "I"
     end
     term_array   = res
-    df           = df+length(term_array)
-    scale        = G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
+    df           = random_type == "A" ? df_polygenic : df+length(term_array)
+    scale        = random_type == "A" ? scale_polygenic : G*(df-length(term_array)-1)  #G*(df-2)/df #from inv χ to inv-wishat
     Vinv         = Float32.(Vinv)
-    randomEffect = RandomEffect(term_array,Gi,GiOld,GiNew,df,scale,Vinv,names,random_type)
+    Gi_struct = Variance(Gi, df, scale, estimate_variance, estimate_scale, constraint)
+    GiOld_struct = deepcopy(Gi_struct)
+    GiNew_struct = deepcopy(Gi_struct)
+    randomEffect = RandomEffect(term_array,Gi_struct,GiOld_struct,GiNew_struct, Vinv,names,random_type)
     push!(mme.rndTrmVec,randomEffect)
     nothing
 end
@@ -187,9 +205,9 @@ end
 #NOTE: SINGLE TRAIT
 #The equation Ai*(GiNew*R - GiOld*ROld) is used to update Ai part in LHS
 #The 1st time to add Ai to set up MME,
-#mme.GiOld == zeros(G),mme.GiNew == inv(G),mme.R == mme.Rold= R
+#mme.GiOld == zeros(G),mme.GiNew == inv(G), mme.R.val == mme.Rold= R
 #After that, if variances are constant,
-#mme.GiOld == mme.GiNew; mme.R == mme.Rold
+#mme.GiOld == mme.GiNew; mme.R.val == mme.Rold
 #If sampling genetic variances, mme.Ginew is updated with a new sample, then
 #LHS is update as Ai*(GiNew*R - GiOld*ROld), then GiOld = Ginew
 #if sample residual variances, similar approaches to update the LHS is used.
@@ -208,7 +226,7 @@ function addVinv(mme::MME)
             startPosj   = randTrmj.startPos
             endPosj     = startPosj + randTrmj.nLevels - 1
             #lamda version (single trait) or not (multi-trait)
-            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi[i,j]) : (Vi*(random_term.GiNew[i,j]*mme.R - random_term.GiOld[i,j]*mme.ROld))
+            myaddVinv   = (mme.nModels!=1) ? (Vi*random_term.Gi.val[i,j]) : (Vi*(random_term.GiNew.val[i,j]*mme.R.val - random_term.GiOld.val[i,j]*mme.ROld))
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] =
             mme.mmeLhs[startPosi:endPosi,startPosj:endPosj] + myaddVinv
           end

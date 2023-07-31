@@ -153,44 +153,44 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 Mi.π = Pi
             end
             #(2) marker effect variances
-            if Mi.G == false
+            if Mi.G.val == false
                 if Mi.method!="GBLUP"
                     genetic2marker(Mi,Mi.π)
                     println()
                     if mme.nModels != 1 || mme.MCMCinfo.RRM != false
-                      if !isposdef(Mi.G) #also work for scalar
+                      if !isposdef(Mi.G.val) #also work for scalar
                         error("Marker effects covariance matrix is not postive definite! Please modify the argument: Pi.")
                       end
                       println("The prior for marker effects covariance matrix is calculated from genetic covariance matrix and Π.")
                       println("The mean of the prior for the marker effects covariance matrix is:")
                       if mme.MCMCinfo.printout_model_info==true
-                          Base.print_matrix(stdout,round.(Mi.G,digits=6))
+                          Base.print_matrix(stdout,round.(Mi.G.val,digits=6))
                       end
                     else
-                      if !isposdef(Mi.G) #positive scalar (>0)
+                      if !isposdef(Mi.G.val) #positive scalar (>0)
                         error("Marker effects variance is negative!")
                       end
                       println("The prior for marker effects variance is calculated from the genetic variance and π.")
                       print("The mean of the prior for the marker effects variance is: ")
-                      print(round.(Mi.G,digits=6))
+                      print(round.(Mi.G.val,digits=6))
                     end
                     print("\n\n\n")
                 elseif Mi.method == "GBLUP"
-                    Mi.G  = Mi.genetic_variance
+                    Mi.G.val  = Mi.genetic_variance.val
                 end
             end
             #(3) scale parameter for marker effect variance
             if Mi.ntraits == 1 && mme.MCMCinfo.RRM == false
-                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)/Mi.df
+                Mi.G.scale = Mi.G.val*(Mi.G.df-Mi.ntraits-1)/Mi.G.df
             else
-                Mi.scale = Mi.G*(Mi.df-Mi.ntraits-1)
+                Mi.G.scale = Mi.G.val*(Mi.G.df-Mi.ntraits-1)
             end
         end
     end
 end
 
 function genetic2marker(M::Genotypes,Pi::Dict)
-  ntraits = size(M.genetic_variance,1)
+  ntraits = size(M.genetic_variance.val,1)
   denom   = zeros(ntraits,ntraits)
   for i in 1:ntraits
     for j in i:ntraits
@@ -200,9 +200,9 @@ function genetic2marker(M::Genotypes,Pi::Dict)
       denom[j,i] = denom[i,j]
     end
   end
-  M.G = M.genetic_variance ./ denom
+  M.G.val = M.genetic_variance.val ./ denom
 end
 
 function genetic2marker(M::Genotypes,π::Float64)
-    M.G = M.genetic_variance/((1-π)*M.sum2pq)
+    M.G.val = M.genetic_variance.val/((1-π)*M.sum2pq)
 end

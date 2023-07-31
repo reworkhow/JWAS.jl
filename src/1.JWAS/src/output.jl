@@ -130,7 +130,7 @@ function output_result(mme,output_folder,
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
           end
-          if Mi.estimateScale == true
+          if Mi.estimate_scale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
           end
       end
@@ -358,7 +358,7 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
 
   #add headers
   mytraits=map(string,mme.lhsVec)
-  if mme.MCMCinfo.mega_trait == false
+  if mme.R.constraint == false
       varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
   else
       varheader = transubstrarr(map(string,mme.lhsVec))
@@ -396,6 +396,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],transubstrarr(mme.output_ID),',')
       end
       if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
+          if mme.M[1].G.constraint == false  #may need change when there are multiple M
+              varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
+          else
+              varheader = transubstrarr(map(string,mme.lhsVec))
+          end
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           if mme.MCMCinfo.RRM == false
               writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
@@ -421,10 +426,10 @@ function output_MCMC_samples(mme,vRes,G0,
     #random effects variances
     for effect in  mme.rndTrmVec
         trmStri   = join(effect.term_array, "_")
-        writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi))',',')
+        writedlm(outfile[trmStri*"_variances"],vec(inv(effect.Gi.val))',',')
     end
 
-    if mme.MCMCinfo.mega_trait != false
+    if mme.R.constraint == true
         vRes=diag(vRes)
     end
     writedlm(outfile["residual_variance"],(typeof(vRes) <: Number) ? vRes : vec(vRes)' ,',')
@@ -441,14 +446,14 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
          end
           
-         if Mi.G != false && mme.MCMCinfo.mega_trait == false #Do not save marker effect variances in mega-trait analysis
+         if Mi.G.val != false && Mi.G.constraint == false #Do not save marker effect variances with constraint
               if mme.nModels == 1
-                  writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G',',')
+                  writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G.val',',')
               else
                   if Mi.method == "BayesB"
-                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],hcat([x for x in Mi.G]...),',')
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],hcat([x for x in Mi.G.val]...),',')
                   else
-                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G,',')
+                      writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G.val,',')
                   end
               end
           end
@@ -471,14 +476,15 @@ function output_MCMC_samples(mme,vRes,G0,
 
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              #single-trait: a scalar ;  multi-trait: a matrix; mega-trait: a vector
-             mygvar = cov(EBVmat) #this might be slow in megatrats
-             if mme.MCMCinfo.mega_trait != false
-                 mygvar=diag(mygvar)
+             if mme.M[1].G.constraint==true
+                mygvar = Diagonal(vec(var(EBVmat,dims=1)))
+             else
+                mygvar = cov(EBVmat)
              end
              genetic_variance = (ntraits == 1 ? mygvar : vec(mygvar)')
              if mme.MCMCinfo.RRM == false
-                 heritability = (ntraits == 1 ? mygvar/(mygvar+vRes) :
-                 (typeof(mygvar)<:Vector ? (mygvar./(mygvar+vRes))' : (diag(mygvar)./(diag(mygvar)+diag(vRes)))'))
+                 vRes = mme.R.constraint==true ? Diagonal(vRes) : vRes #change to diagonal matrix to avoid error
+                 heritability = (ntraits == 1 ? mygvar/(mygvar+vRes) : (diag(mygvar)./(diag(mygvar)+diag(vRes)))')
                  writedlm(outfile["heritability"],heritability,',')
              end
              writedlm(outfile["genetic_variance"],genetic_variance,',')
@@ -539,12 +545,13 @@ end
 function output_posterior_mean_variance(mme,nsamples)
     mme.solMean   += (mme.sol - mme.solMean)/nsamples
     mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
-    mme.meanVare  += (mme.R - mme.meanVare)/nsamples
-    mme.meanVare2 += (mme.R .^2 - mme.meanVare2)/nsamples
+    mme.meanVare  += (mme.R.val - mme.meanVare)/nsamples
+    mme.meanVare2 += (mme.R.val .^2 - mme.meanVare2)/nsamples
 
     if mme.pedTrmVec != 0
-        mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
-        mme.G0Mean2 += (inv(mme.Gi) .^2  - mme.G0Mean2 )/nsamples
+        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
+        mme.G0Mean  += (inv(mme.rndTrmVec[polygenic_pos].Gi.val)  - mme.G0Mean )/nsamples
+        mme.G0Mean2 += (inv(mme.rndTrmVec[polygenic_pos].Gi.val) .^2  - mme.G0Mean2 )/nsamples
     end
     if mme.M != 0
         for Mi in mme.M
@@ -554,7 +561,7 @@ function output_posterior_mean_variance(mme,nsamples)
                 Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
             end
             if Mi.estimatePi == true
-                if Mi.ntraits == 1 || mme.MCMCinfo.mega_trait
+                if Mi.ntraits == 1 || mme.M[1].G.constraint==true #may need to change for multiple M
                     Mi.mean_pi += (Mi.π-Mi.mean_pi)/nsamples
                     Mi.mean_pi2 += (Mi.π .^2-Mi.mean_pi2)/nsamples
                 else
@@ -565,12 +572,12 @@ function output_posterior_mean_variance(mme,nsamples)
                 end
             end
             if Mi.method != "BayesB"
-                Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
-                Mi.meanVara2 += (Mi.G .^2 - Mi.meanVara2)/nsamples
+                Mi.meanVara += (Mi.G.val - Mi.meanVara)/nsamples
+                Mi.meanVara2 += (Mi.G.val .^2 - Mi.meanVara2)/nsamples
             end
-            if Mi.estimateScale == true
-                Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
-                Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+            if Mi.estimate_scale == true
+                Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
+                Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
             end
         end
     end

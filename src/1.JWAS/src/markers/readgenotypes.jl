@@ -31,16 +31,16 @@ function add_genotypes(mme::MME,M::Union{AbstractString,Array{Float64,2},Array{F
     genotypei.ntraits = mme.nModels
     genotypei.trait_names = string.(mme.lhsVec)
     if mme.nModels != 1
-      genotypei.df = genotypei.df + mme.nModels
+      genotypei.G.df = genotypei.G.df + mme.nModels
     end
     genotypes = []
     push!(genotypes,genotypei)
     mme.M = genotypes
     if mme.nModels == 1 #?move to set_marker_hyperparameters_variances_and_pi?
-        mme.df.marker = Float32(df)
+        mme.M[1].G.df = Float32(df)
     else
         νG0   = Float32(df) + mme.nModels
-        mme.df.marker = νG0 #final df for inverse wishart
+        mme.M[1].G.df = νG0 #final df for inverse wishart
     end
 end
 ################################################################################
@@ -54,7 +54,7 @@ end
     get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                   separator=',',header=true,rowID=false,
                   center=true,quality_control=false,
-                  method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimateScale=false,
+                  method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimate_scale=false,
                   G_is_marker_variance = false,df = 4.0)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
     * If a text file is provided, the file format should be:
@@ -79,15 +79,22 @@ end
   a dictionary such as `Pi=Dict([1.0; 1.0]=>0.7,[1.0; 0.0]=>0.1,[0.0; 1.0]=>0.1,[0.0; 0.0]=>0.1)`, defaulting to `all markers
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
-* Scale parameter for prior of marker effect variance is estimated if `estimateScale` = true, defaulting to `false`.
+* Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
 
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                       method = "BayesC",Pi = 0.0,estimatePi = true, estimateVariance=true, estimateScale=false,
+                       ## method:
+                       method = "BayesC",Pi = 0.0,estimatePi = true, 
+                       ## variance:
+                       G_is_marker_variance = false, df = 4.0,
+                       estimate_variance=true, estimate_scale=false,
+                       constraint = false, #for multi-trait only, constraint=true means no genetic covariance among traits
+                       ## format:
                        separator=',',header=true,rowID=false,
-                       center=true,G_is_marker_variance = false,df = 4.0,
-                       starting_value=false,
-                       quality_control=true, MAF = 0.01, missing_value = 9.0)
+                       ## quality control:
+                       quality_control=true, MAF = 0.01, missing_value = 9.0,
+                       ## others:
+                       center=true,starting_value=false)
     #Read the genotype file
     if typeof(file) <: AbstractString
         printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
@@ -204,17 +211,16 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     end
 
     genotypes     = Genotypes(obsID,markerID,nObs,nMarkers,p,sum2pq,center,genotypes,isGRM)
-    if G_is_marker_variance == true
-        genotypes.G = G
-    else
-        genotypes.genetic_variance = G
-    end
+
+    genotypes.G                = Variance(G_is_marker_variance ? G : false, df,false,estimate_variance,estimate_scale,constraint) 
+    genotypes.genetic_variance = Variance(G_is_marker_variance ? false : G, df,false,estimate_variance,estimate_scale,constraint) 
+    
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
-    genotypes.df         = df #It will be modified base on number of traits in build_model()
-    genotypes.estimateScale    = estimateScale
-    genotypes.estimateVariance = estimateVariance
+    # genotypes.df         = df #It will be modified base on number of traits in build_model()
+    # genotypes.estimate_scale    = estimate_scale
+    # genotypes.estimate_variance = estimate_variance
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")

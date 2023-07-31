@@ -47,6 +47,25 @@ mutable struct ModelTerm
 end
 
 ################################################################################
+# struct for variance/covariance
+# e.g. Variance(1.5,4.0,1.3, true, false, true)
+# - marker effect variances (??locus-specific variance: how to reduce memory)
+# - residual variances
+# - variance for non-genetic effects 
+################################################################################
+mutable struct Variance
+    val::Union{AbstractFloat, AbstractArray, Bool}   #value of the variance, e.g., single-trait: 1.5, two-trait: [1.3 0.4; 0.4 0.8]
+    df::Union{AbstractFloat,Bool}                    #degrees of freedom, e.g., 4.0
+    scale::Union{AbstractFloat, AbstractArray, Bool} #scale, e.g., single-trait: 1.0, two-trait: [1.0 0; 0 1.0]
+
+    estimate_variance::Bool  #estimate_variance=true means estimate variance at each MCMC iteration
+    estimate_scale::Bool     #estimate_scale=true means estimate scale at each MCMC iteration
+    constraint::Bool        #constraint=true means in multi-trait analysis, covariance is zero
+end
+
+
+
+################################################################################
 #A class for residual covariance matrix for all observations of size (nob*nModel)
 #where Ri is modified based on missing pattern (number of Ri= 2^ntraits-1)
 #It allows using the same incidence matrix X for all traits in multi-trait analyses
@@ -54,7 +73,7 @@ end
 #or missing phenotypes are not imputed at each step of MCMC (no marker effects).
 ################################################################################
 mutable struct ResVar
-    R0::Union{Array{Float64,2},Array{Float32,2}}
+    R0::Union{Array{Float64,2},Array{Float32,2}} #2-by-2 co
     RiDict::Dict{BitArray{1},Union{Array{Float64,2},Array{Float32,2}}}
 end
 
@@ -66,11 +85,11 @@ end
 ################################################################################
 mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    Gi     #covariance matrix (multi-trait) #::Array{Float64,2}
+    Gi     #covariance matrix (multi-trait) #::Array{Float64,2}-> Variance struct
     GiOld  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
     GiNew  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
-    df::AbstractFloat
-    scale #::Array{Float64,2}
+    # df::AbstractFloat
+    # scale #::Array{Float64,2}
     Vinv # 0, identity matrix
     names #[] General IDs and Vinv matrix (order is important now)(modelterm.names)
     randomType::String
@@ -91,15 +110,15 @@ mutable struct Genotypes
   nLoci             #number of markers included in the model
   ntraits           #number of traits included in the model
 
-  genetic_variance  #genetic variance
-  G                 #marker effect variance; ST->Float64;MT->Array{Float64,2}
-  scale             #scale parameter for marker effect variance (G)
-  df                #degree of freedom
+  genetic_variance  #genetic variance, type: Variance struct
+  G       #marker effect variance; ST->Float64;MT->Array{Float64,2}, type: Variance struct
+#   scale             #scale parameter for marker effect variance (G)
+#   df                #degree of freedom
 
   method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
   estimatePi
-  estimateVariance
-  estimateScale
+  estimate_variance
+  estimate_scale
 
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
@@ -129,7 +148,7 @@ mutable struct Genotypes
 
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
-                                         false,false,false,false,
+                                         Variance(false,false,false,true,false,false),Variance(false,false,false,true,false,false), #false,false,
                                          false,true,true,false,
                                          false,false,false,false,false,false,
                                          false,false,false,false,
@@ -137,12 +156,12 @@ mutable struct Genotypes
                                          false,a9)
 end
 
-mutable struct DF
-    residual::AbstractFloat
-    polygenic::AbstractFloat  #df+size(mme.pedTrmVec,1)
-    marker::AbstractFloat
-    random::AbstractFloat
-end
+# mutable struct DF
+#     residual::AbstractFloat
+#     polygenic::AbstractFloat  #df+size(mme.pedTrmVec,1)
+#     marker::AbstractFloat
+#     random::AbstractFloat
+# end
 
 mutable struct MCMCinfo
     heterogeneous_residuals
@@ -154,8 +173,8 @@ mutable struct MCMCinfo
     single_step_analysis
     fitting_J_vector
     missing_phenotypes
-    constraint
-    mega_trait
+    # constraint
+    # mega_trait
     estimate_variance
     update_priors_frequency
     outputEBV
@@ -210,11 +229,11 @@ mutable struct MME
                                                   #may merge pedTrmVec here
 
                                                   #RESIDUAL EFFECTS
-    R                                             #residual covariance matrix (multi-trait) ::Array{Union{Float64,Float32},2}
+    R::Variance                                   #residual covariance matrix (multi-trait) ::Array{Union{Float64,Float32},2}
     missingPattern                                #for impuation of missing residual
     resVar                                        #for impuation of missing residual
     ROld                #initilized to 0 ??       #residual variance (single-trait) for
-    scaleR                                        #scale parameters
+    # scaleR                                      #scale parameters
     meanVare
     meanVare2
 
@@ -226,7 +245,7 @@ mutable struct MME
 
     outputSamplesVec::Array{ModelTerm,1}          #for which location parameters to save MCMC samples
 
-    df::DF                                        #prior degree of freedom
+    # df::DF                                        #prior degree of freedom
 
     output_ID
     output_genotypes
@@ -257,25 +276,18 @@ mutable struct MME
     traits_type   #by default all traits are continuous
     thresholds    #thresholds for categorial&binary traits. Dictionary: 1=>[-Inf,0,Inf], where 1 means the 1st trait
 
-    function MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
-        if nModels == 1
-            scaleR   = R*(ν-2)/ν
-            νR0      = ν
-        else
-            ν,k      = ν, nModels
-            νR0      = ν + k
-            scaleR   = R*(νR0 - k - 1)
-        end
+    function MME(nModels,modelVec,modelTerms,dict,lhsVec,R) #MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
+
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),false,false,
                    [],
-                   R,0,0,R,scaleR,false,false,
+                   R,0,0,R,false,false, #R,0,0,R,scaleR,false,false,
                    [],
                    0,
                    1,
                    [],
-                   DF(νR0,4,4,4),
+                #    DF(νR0,4,4,4),
                    0,0,Dict{String,Any}(),
                    0,
                    0,
