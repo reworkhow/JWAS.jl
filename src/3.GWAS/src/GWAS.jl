@@ -167,6 +167,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
                   end
                 end
             end
+            writedlm("MCMC_samples_local_genomic_variance"*string(i)*".txt",winVar,',')
             if local_EBV == true
                 df= DataFrame(localEBV)
                 rename!(df,Symbol.("w".*string.(1:nWindows)))
@@ -226,6 +227,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             end
             gcov[isnan.(gcov)] .= 0.0
             gcor[isnan.(gcor)] .= 0.0
+            writedlm("MCMC_samples_local_genomic_covariance"*".txt",gcov,',')
+
             gcovmean,gcovstd = vec(mean(gcov,dims=1)),vec(std(gcov,dims=1))
             gcormean,gcorstd = vec(mean(gcor,dims=1)),vec(std(gcor,dims=1))
             outi = DataFrame(trait  = fill("cor(t1,t2)",length(gcormean)),
