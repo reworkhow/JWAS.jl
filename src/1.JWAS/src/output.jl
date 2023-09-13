@@ -12,14 +12,14 @@
 # 
 # PEV: Prediction Error Variance of a random effect, PEV=var(u-u^hat)=var(u|y), 
 #      i.e., the variance of the posterior distribution of u. 
-# TERM 2 : Definition or description for TERM 2
-
+#
+#
 
 # ===============================================================================================================
 #                                PUBLIC FUNCTIONS
 # ===============================================================================================================
 """
-    prediction_setup(mme::MME,df::DataFrame)
+    prediction_setup(mme::MME)
 
 * (internal function) Create incidence matrices for individuals of interest based on a usere-defined
 prediction equation, defaulting to genetic values including effects defined with genomic and pedigre
@@ -91,6 +91,11 @@ function outputMCMCsamples(mme::MME,trmStrs::AbstractString...)
       end
     end
 end
+
+
+# ===============================================================================================================
+#                                PRIVATE FUNCTIONS
+# ===============================================================================================================
 
 ################################################################################
 #*******************************************************************************
@@ -267,7 +272,7 @@ function getEBV(mme,traiti)
     end
     is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0
-        for i in 1:length(mme.M)
+        for i in 1:length(mme.M) #for Mi in mme.M
             Mi=mme.M[i]
             if !is_partial_connect  #non-NNBayes_partial
                 EBV += Mi.output_genotypes*Mi.α[traiti]
