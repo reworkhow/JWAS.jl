@@ -1,13 +1,23 @@
-#This file is used for output, including results (posterior mean and varainces)
-#and MCMC samples.
-#1.public function
-#2.return point estimates as returned values (a dictionary) from runMCMC
-#3.return MCMC samples as text files
-################################################################################
-#*******************************************************************************
-#1. PUBLIC FUNCTIONS
-#*******************************************************************************
-################################################################################
+# ===============================================================================================================
+# This script handles the output of analysis, including results (posterior mean and variances) and MCMC samples.
+# Features:
+# - contains public functions
+# - returns point estimates and standard deveiations (as a dictionary) from runMCMC function
+# - outputs MCMC samples in text file format
+# ===============================================================================================================
+
+# =============================================================================
+#                                KEY TERMS & NOTATIONS
+# =============================================================================
+# 
+# PEV: Prediction Error Variance of a random effect, PEV=var(u-u^hat)=var(u|y), 
+#      i.e., the variance of the posterior distribution of u. 
+# TERM 2 : Definition or description for TERM 2
+
+
+# ===============================================================================================================
+#                                PUBLIC FUNCTIONS
+# ===============================================================================================================
 """
     prediction_setup(mme::MME,df::DataFrame)
 
@@ -142,7 +152,7 @@ function output_result(mme,output_folder,
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:ntraits]
       if mme.nonlinear_function != false  #NNBayes
           push!(EBVkeys, "EBV_NonLinear")
-          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, ENB_gene2,...)
+          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, EBV_gene2,...)
       end
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
