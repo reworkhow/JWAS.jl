@@ -29,7 +29,8 @@ end
 run genomic window-based GWAS
 
 * MCMC samples of marker effects are stored in **marker_effects_file** with delimiter ','.
-* **model** is either the model::MME used in analysis or the genotype cavariate matrix M::Array
+* **model** is either the model::MME used in analysis or the genotype covariate matrix M (a DataFrame with SNP IDs as the column name).
+
 * **map_file** has the (sorted) marker position information with delimiter ','. If the map file is not provided,
   i.e., **map_file**=`false`, a fake map file will be generated with **window_size** markers in each 1 Mb window, and
   each 1 Mb window will be tested.
@@ -78,7 +79,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
     mapfile = CSV.read(map_file, DataFrame, header = header, types=Dict(1 => String)) #the 1st column (markerID) must be string
     #remove SNPs in mapfile that are not used in Bayesian analysis (e.g., removed in QC)
-    snpID    = mme.M[1].markerID
+    snpID    = typeof(mme) == DataFrame ? names(mme) : mme.M[1].markerID
     in_snpID = findall(x -> x ∈ snpID, mapfile[:,1])
     mapfile  = mapfile[in_snpID,:]
     if length(in_snpID)==0
@@ -147,7 +148,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             winVarProps       = zeros(nsamples,nWindows)
             winVar            = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
-            X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+            # X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
+            X = (typeof(mme) == DataFrame ? Matrix(mme) : mme.M[1].output_genotypes)
             if local_EBV==true
                 nind     = size(X,1)
                 localEBV = zeros(nind,nWindows)
