@@ -481,20 +481,4 @@ function G_constraint!(mme)
 end
 
 
-#multi-trait constraint on non-genetic random effects: modify df and scale
-function A_constraint!(mme)
-    if mme > 0
-        for Mi in mme.M
-            #print
-            geno_name = Mi.name
-            printstyled("Constraint on marker effect variance matrix (i.e., zero covariance) for $geno_name \n",bold=false,color=:green)
-            #check
-            if mme.nModels == 1 && Mi.G.constraint==true
-                error("constraint==true is for multi-trait only")
-            end
-            #modify df and scale
-            Mi.G.df    = Mi.G.df - mme.nModels
-            Mi.G.scale = Diagonal(Mi.G.scale/(Mi.G.df - 1))*(Mi.G.df-2)/Mi.G.df #a diagonal matrix
-        end
-    end
-end
+#TO-DO: multi-trait constraint on non-genetic random effects: modify df and scale
