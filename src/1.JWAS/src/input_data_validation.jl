@@ -452,7 +452,7 @@ end
 #multi-trait constraint on R: modify df and scale for residual variance
 function R_constraint!(mme)
     #print
-    printstyled("Constraint on residual variance matrix (i.e., zero covariance)\n",bold=false,color=:green)
+    printstyled("Constraint on residual variance-covariance matrix (i.e., zero covariance)\n",bold=false,color=:green)
     #check
     if mme.nModels == 1 && mme.R.constraint==true
         error("constraint==true is for multi-trait only")
@@ -468,7 +468,7 @@ function G_constraint!(mme)
         for Mi in mme.M
             #print
             geno_name = Mi.name
-            printstyled("Constraint on marker effect variance matrix (i.e., zero covariance) for $geno_name \n",bold=false,color=:green)
+            printstyled("Constraint on marker effect variance-covariance matrix (i.e., zero covariance) for $geno_name \n",bold=false,color=:green)
             #check
             if mme.nModels == 1 && Mi.G.constraint==true
                 error("constraint==true is for multi-trait only")
