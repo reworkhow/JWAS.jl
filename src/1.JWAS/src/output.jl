@@ -396,11 +396,8 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
           writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],transubstrarr(mme.output_ID),',')
       end
       if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
-          if mme.M[1].G.constraint == false  #may need change when there are multiple M
-              varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
-          else
-              varheader = transubstrarr(map(string,mme.lhsVec))
-          end
+          varheader = repeat(mytraits,inner=length(mytraits)).*"_".*repeat(mytraits,outer=length(mytraits))
+
           writedlm(outfile["genetic_variance"],transubstrarr(varheader),',')
           if mme.MCMCinfo.RRM == false
               writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
@@ -446,7 +443,7 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
          end
           
-         if Mi.G.val != false && Mi.G.constraint == false #Do not save marker effect variances with constraint
+         if Mi.G.val != false && mme.nonlinear_function == false #do not save marker effect variances in NNMM to save space
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G.val',',')
               else
