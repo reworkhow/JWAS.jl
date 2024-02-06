@@ -517,11 +517,11 @@ function getMCMCinfo(mme)
         end
     end
     if mme.pedTrmVec!=0
-        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec) #print all polygenic models terms?
+        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
     end
     if mme.pedTrmVec!=0
         @printf("%-30s\n","genetic variances (polygenic):")
-        Base.print_matrix(stdout,round.(inv(mme.rndTrmVec[polygenic_pos].Gi.val),digits=3)) #print all polygenic models terms?
+        Base.print_matrix(stdout,round.(inv(mme.rndTrmVec[polygenic_pos].Gi.val),digits=3))
         println()
     end
     if mme.nModels == 1
