@@ -73,7 +73,7 @@ end
 #or missing phenotypes are not imputed at each step of MCMC (no marker effects).
 ################################################################################
 mutable struct ResVar
-    R0::Union{Array{Float64,2},Array{Float32,2}} #2-by-2 co
+    R0::Union{Array{Float64,2},Array{Float32,2}}
     RiDict::Dict{BitArray{1},Union{Array{Float64,2},Array{Float32,2}}}
 end
 
@@ -85,9 +85,9 @@ end
 ################################################################################
 mutable struct RandomEffect   #Better to be a dict? key: term_array::Array{AbstractString,1}??
     term_array::Array{AbstractString,1}
-    Gi     #covariance matrix (multi-trait) #::Array{Float64,2}-> Variance struct
-    GiOld  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
-    GiNew  #specific for lambda version of MME (single-trait) #::Array{Float64,2}
+    Gi     #covariance matrix (multi-trait) #the "Variance" object
+    GiOld  #specific for lambda version of MME (single-trait) #Variance.val has type ::Array{Float64,2}
+    GiNew  #specific for lambda version of MME (single-trait) #Variance.val has type ::Array{Float64,2}
     # df::AbstractFloat
     # scale #::Array{Float64,2}
     Vinv # 0, identity matrix
@@ -111,7 +111,7 @@ mutable struct Genotypes
   ntraits           #number of traits included in the model
 
   genetic_variance  #genetic variance, type: Variance struct
-  G       #marker effect variance; ST->Float64;MT->Array{Float64,2}, type: Variance struct
+  G       #marker effect variance; the "Variance" object, for Variance.val: ST->Float64;MT->Array{Float64,2}
 #   scale             #scale parameter for marker effect variance (G)
 #   df                #degree of freedom
 
@@ -277,7 +277,6 @@ mutable struct MME
     thresholds    #thresholds for categorial&binary traits. Dictionary: 1=>[-Inf,0,Inf], where 1 means the 1st trait
 
     function MME(nModels,modelVec,modelTerms,dict,lhsVec,R) #MME(nModels,modelVec,modelTerms,dict,lhsVec,R,ν)
-
         return new(nModels,modelVec,modelTerms,dict,lhsVec,[],
                    0,0,[],0,0,
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),false,false,

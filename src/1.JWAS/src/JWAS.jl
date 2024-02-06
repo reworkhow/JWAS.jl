@@ -340,15 +340,12 @@ function runMCMC(mme::MME,df;
         mme.Gi = map(Float64,mme.Gi)
     end
 
-
-
-
-    #constraint on covariance matrix: modify df and scale
+    #constraint on covariance matrix
     if mme.R.constraint==true
-      R_constraint!(mme)
+        R_constraint!(mme) #modify mme.R.df and mme.R.scale; scale is a diagonal matrix
     end
     if mme.M[1].G.constraint==true
-        G_constraint!(mme)
+        G_constraint!(mme) #modify Mi.G.df and Mi.G.scale; scale is a diagonal matrix
     end
 
     # NNBayes: modify parameters for partial connected NN
@@ -520,11 +517,11 @@ function getMCMCinfo(mme)
         end
     end
     if mme.pedTrmVec!=0
-        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
+        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec) #print all polygenic models terms?
     end
     if mme.pedTrmVec!=0
         @printf("%-30s\n","genetic variances (polygenic):")
-        Base.print_matrix(stdout,round.(inv(mme.rndTrmVec[polygenic_pos].Gi.val),digits=3))
+        Base.print_matrix(stdout,round.(inv(mme.rndTrmVec[polygenic_pos].Gi.val),digits=3)) #print all polygenic models terms?
         println()
     end
     if mme.nModels == 1

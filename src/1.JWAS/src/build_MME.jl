@@ -366,7 +366,7 @@ function getMME(mme::MME, df::DataFrame)
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
       # if mme.MCMCinfo.mega_trait == true  #multiple single trait
-      if mme.R.constraint == true #tj: Hao, please confirm!!!
+      if mme.R.constraint == true #tj: Hao, please confirm! now we do not have mege_trait option. We only have constraint option for variances
         Ri = Diagonal(repeat(mme.invweights,mme.nModels))
       else  #multi-trait
         Ri = mkRi(mme,df,mme.invweights)

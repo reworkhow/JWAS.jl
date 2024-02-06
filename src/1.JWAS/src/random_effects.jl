@@ -104,8 +104,10 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     names   = string.(names)
     df      = Float32(df)
-    #check for constraint
-    #?now
+    
+    if constraint != false #check constraint
+      error("Constraint for set_random is not supported now.")
+    end
 
     ############################################################################
     #add trait names (model equation number) to variables;
@@ -129,8 +131,6 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
         error(trm," is not found in model equation.")
       end
     end                                               # "y1:litter"; "y2:litter"; "y1:group"
-    # 
-    # e.g. set model.modelTerms[4].random_type
     ############################################################################
     #Set type of model terms
     ############################################################################
@@ -154,7 +154,7 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     end
     #Gi            : multi-trait;
     #GiOld & GiNew : single-trait, allow multiple correlated effects in single-trait
-    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(Float32.(G)))) #not reference
+    Gi = GiOld = GiNew = (G == false ? false : Symmetric(inv(Float32.(G))))
     ############################################################################
     #return random_effct type
     ############################################################################

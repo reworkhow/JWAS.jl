@@ -92,7 +92,7 @@ function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; b
     else  #diagonal elements only, from scale-inv-⁠χ2
         R  = Diagonal(zeros(ntraits))
         for traiti = 1:ntraits
-            R[traiti,traiti]= (SSE[traiti,traiti]+scale[traiti,traiti])/rand(Chisq(nobs+df)) #scale is a vector in mega_trait, where t-th entry is the scale for t-th trait
+            R[traiti,traiti]= (SSE[traiti,traiti]+df*scale[traiti,traiti])/rand(Chisq(nobs+df)) 
         end
     end
     return R
@@ -105,7 +105,6 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
       myI        = SparseMatrixCSC{mme.MCMCinfo.double_precision ? Float64 : Float32}(I, mme.modelTermDict[term_array[1]].nLevels, mme.modelTermDict[term_array[1]].nLevels)
       Vi         = (random_term.Vinv!=0) ? random_term.Vinv : myI
       S          = zeros(length(term_array),length(term_array))
-      @show size(S)
       for i = 1:length(term_array)
           termi      = term_array[i]
           randTrmi   = mme.modelTermDict[termi]
@@ -113,7 +112,6 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
           endPosi    = startPosi + randTrmi.nLevels - 1
           for j = i:length(term_array)
               termj     = term_array[j]
-              @show termi,termj
               randTrmj  = mme.modelTermDict[termj]
               startPosj = randTrmj.startPos
               endPosj   = startPosj + randTrmj.nLevels - 1
