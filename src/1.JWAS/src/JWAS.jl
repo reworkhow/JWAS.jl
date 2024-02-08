@@ -591,7 +591,9 @@ function getMCMCinfo(mme)
         @printf("%-30s %20.3f\n","polygenic effect variances:",mme.rndTrmVec[polygenic_pos].Gi.df)
     end
     if mme.M!=0
-        @printf("%-30s %20.3f\n","marker effect variances:",mme.M[1].G.df)
+        for Mi in mme.M
+            @printf("%-30s %20.3f\n","marker effect variances:",Mi.df)
+        end
     end
     @printf("\n\n\n")
 end
