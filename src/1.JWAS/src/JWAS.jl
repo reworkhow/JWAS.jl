@@ -592,7 +592,7 @@ function getMCMCinfo(mme)
     end
     if mme.M!=0
         for Mi in mme.M
-            @printf("%-30s %20.3f\n","marker effect variances:",Mi.df)
+            @printf("%-30s %20.3f\n","marker effect variances:",Mi.G.df)
         end
     end
     @printf("\n\n\n")
