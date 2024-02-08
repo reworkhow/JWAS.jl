@@ -38,9 +38,15 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString, R = false; df = 4.0,
+function build_model(model_equations::AbstractString, 
+                     ## residual variance: 
+                     R = false; df = 4.0, 
+                     estimate_variance=true, estimate_scale=false, 
+                     constraint=false, #for multi-trait only, constraint=true means no residual covariance among traits
+                     ## nnmm:
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
+                     ## censored, categorical traits:
                      censored_trait = false, categorical_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
@@ -107,10 +113,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
             genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
             genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
             if nModels != 1
-              genotypei.df = genotypei.df + nModels
+              genotypei.G.df = genotypei.G.df + nModels
             end
-            if !is_nnbayes_partial && (genotypei.G != false || genotypei.genetic_variance != false)
-              if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
+            if !is_nnbayes_partial && (genotypei.G.val != false || genotypei.genetic_variance.val != false)
+              if size(genotypei.G.val,1) != nModels && size(genotypei.genetic_variance.val,1) != nModels
                 error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
               end
             end
@@ -121,11 +127,27 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
 
   #create mme with genotypes
-  filter!(x->x.random_type != "genotypes",modelTerms)
-  filter!(x->x[2].random_type != "genotypes",dict)
-  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
+  filter!(x->x.random_type != "genotypes",modelTerms) #remove "genotypes" from modelTerms
+  filter!(x->x[2].random_type != "genotypes",dict)    #remove "genotypes" from dict
+  
+
+  #set scale and df for residual variance
+  if nModels == 1
+    scale_R = R*(df - 2)/df
+    df_R    = df 
+  else
+    scale_R = R*(df - 1)
+    df_R    = df + nModels
+  end
+  
+  #initialize mme
+  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec, 
+            Variance(R==false ? R : Float32.(R), #val
+                     Float32(df_R),              #df
+                     R==false ? R : scale_R,     #scale
+                     estimate_variance, estimate_scale, constraint))
   if length(genotypes) != 0
-    mme.M = genotypes
+    mme.M = genotypes #add genotypes into mme
   end
 
   #NNBayes:
@@ -343,7 +365,8 @@ function getMME(mme::MME, df::DataFrame)
     #such that no imputation of missing phenotypes is required.
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
-      if mme.MCMCinfo.mega_trait == true  #multiple single trait
+      # if mme.MCMCinfo.mega_trait == true  #multiple single trait
+      if mme.R.constraint == true #tj: Hao, please confirm! now we do not have mege_trait option. We only have constraint option for variances
         Ri = Diagonal(repeat(mme.invweights,mme.nModels))
       else  #multi-trait
         Ri = mkRi(mme,df,mme.invweights)
@@ -354,13 +377,13 @@ function getMME(mme::MME, df::DataFrame)
 
     #Random effects parts in MME
     if mme.nModels == 1
-      #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
+      #random_term.GiNew*mme.R.val - random_term.GiOld*mme.ROld
       for random_term in mme.rndTrmVec #trick
-        random_term.GiOld = zero(random_term.GiOld)
+        random_term.GiOld.val = zero(random_term.GiOld.val)
       end
       addVinv(mme)
       for random_term in mme.rndTrmVec #trick
-        random_term.GiOld = copy(random_term.GiNew)
+        random_term.GiOld.val = copy(random_term.GiNew.val)
       end
     else
       addVinv(mme)

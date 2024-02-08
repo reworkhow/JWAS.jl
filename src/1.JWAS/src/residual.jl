@@ -13,7 +13,7 @@ end
 #make tricky Ri (big) allowing NA in phenotypes and fixed effects
 #make ResVar, dictionary for Rinv, no sample Missing residuals
 function mkRi(mme::MME,df::DataFrame,Rinv)
-    resVar   = ResVar(mme.R,Dict())
+    resVar   = ResVar(mme.R.val,Dict())
     tstMsng  = .!ismissing.(Matrix(df[!,mme.lhsVec]))
     if mme.missingPattern == false
         mme.missingPattern = tstMsng
@@ -62,9 +62,9 @@ function sampleMissingResiduals(mme,resVec)
                 mybool = mybool .& (msngPtrn[:,i].==notmissing[i])
             end
             #create cov and var matrices for BLP imputation
-            Ri  = inv(Symmetric(mme.R[notmissing,notmissing]))
-            Rc  = mme.R[.!notmissing,notmissing]
-            L   = (cholesky(Symmetric(mme.R[.!notmissing,.!notmissing] - Rc*Ri*Rc')).U)#scalar cholesky
+            Ri  = inv(Symmetric(mme.R.val[notmissing,notmissing]))
+            Rc  = mme.R.val[.!notmissing,notmissing]
+            L   = (cholesky(Symmetric(mme.R.val[.!notmissing,.!notmissing] - Rc*Ri*Rc')).U)#scalar cholesky
             #imputation
             mydata[mybool,.!notmissing]= mydata[mybool,notmissing]*Ri*Rc' + randn(sum(mybool),sum(.!notmissing))*L
         end
@@ -84,8 +84,8 @@ end
 #             msng    = .!notMsng
 #             resi    = resVec[yIndex .+ i][notMsng]
 #             Ri      = mme.resVar.RiDict[notMsng][notMsng,notMsng]
-#             Rc      = mme.R[msng,notMsng]
-#             L       = (cholesky(Symmetric(mme.R[msng,msng] - Rc*Ri*Rc')).U)'
+#             Rc      = mme.R.val[msng,notMsng]
+#             L       = (cholesky(Symmetric(mme.R.val[msng,msng] - Rc*Ri*Rc')).U)'
 #             resVec[(yIndex .+ i)[msng]] = Rc*Ri*resi + L*randn(sum(msng))
 #             #resVec[yIndex+i][msng] = Rc*Ri*resi + L*randn(nMsng) this does not work!
 #         end

@@ -32,12 +32,12 @@ end
 
 function megaGBLUP!(Mi::Genotypes,wArray,vare,Rinv)
     Threads.@threads for i in 1:length(wArray) #ntraits
-        GBLUP!(Mi.genotypes,Mi.α[i],Mi.D,wArray[i],vare[i,i],Mi.G[i,i],Rinv,Mi.nObs)
+        GBLUP!(Mi.genotypes,Mi.α[i],Mi.D,wArray[i],vare[i,i],Mi.G.val[i,i],Rinv,Mi.nObs)
     end
 end
 
 function GBLUP!(Mi::Genotypes,ycorr,vare,Rinv) #single-trait
-    GBLUP!(Mi.genotypes,Mi.α[1],Mi.D,ycorr,vare,Mi.G[1,1],Rinv,Mi.nObs)
+    GBLUP!(Mi.genotypes,Mi.α[1],Mi.D,ycorr,vare,Mi.G.val[1,1],Rinv,Mi.nObs)
 end
 
 function GBLUP!(genotypes,α,D,ycorr,vare,vara,Rinv,nObs)
@@ -51,7 +51,7 @@ end
 
 function MTGBLUP!(Mi::Genotypes,ycorr_array,ycorr,vare,Rinv)
     iR0      = inv(vare)
-    iGM      = inv(Mi.G)
+    iGM      = inv(Mi.G.val)
     for trait = 1:Mi.ntraits
         ycorr_array[trait][:] = ycorr_array[trait] + Mi.genotypes*Mi.α[trait]
     end

@@ -40,7 +40,7 @@ function solve(mme::MME,
         return [getNames(mme) Gibbs(A,x,b,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="Gibbs" && mme.nModels==1
-        return [getNames(mme) Gibbs(A,x,b,mme.R,
+        return [getNames(mme) Gibbs(A,x,b,mme.R.val,
                               maxiter,printout_frequency=printout_frequency)]
     elseif solver=="default"
         println("To solve the equations, please choose a solver. (run ?solve for help)")

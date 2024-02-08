@@ -97,14 +97,14 @@ function MTBayesABC_samplerII!(xArray,
                     betaArray,
                     deltaArray,
                     alphaArray,
-                    vare, #mme.R, t-by-t
+                    vare, #mme.R.val, t-by-t
                     varEffects, # vector of length #SNPs, each element is a t-by-t covariance matrix
                     BigPi) #genotypes.π
 
     nMarkers = length(xArray)
     ntraits  = length(alphaArray)
 
-    Rinv     = inv(vare) #inv(mme.R)
+    Rinv     = inv(vare) #inv(mme.R.val)
     Ginv     = inv.(varEffects)
 
     β        = zeros(typeof(betaArray[1][1]),ntraits)

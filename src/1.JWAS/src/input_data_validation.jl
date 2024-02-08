@@ -35,7 +35,7 @@ function errors_args(mme)
                 println("BayesA is equivalent to BayesB with known π=0. BayesB with known π=0 runs.")
             end
             if Mi.method == "GBLUP"
-                if Mi.genetic_variance == false && Mi.G != false
+                if Mi.genetic_variance.val == false && Mi.G.val != false
                     error("Please provide values for the genetic variance for GBLUP analysis")
                 end
                 if mme.MCMCinfo.single_step_analysis == true
@@ -241,47 +241,47 @@ function set_default_priors_for_variance_components(mme,df)
   #genetic variance or marker effect variance
   if mme.M!=0
     for Mi in mme.M
-      if Mi.G == false && Mi.genetic_variance == false
+      if Mi.G.val == false && Mi.genetic_variance.val == false
           printstyled("Prior information for genomic variance is not provided and is generated from the data.\n",bold=false,color=:green)
           if mme.nModels==1 && mme.MCMCinfo.RRM == false
-              Mi.genetic_variance = varg[1,1]
+              Mi.genetic_variance.val = varg[1,1]
           elseif mme.nModels==1 && mme.MCMCinfo.RRM != false
-              Mi.genetic_variance = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
+              Mi.genetic_variance.val = diagm(0=>fill(varg[1,1],size(mme.MCMCinfo.RRM,2)))
           elseif mme.nModels>1
-              Mi.genetic_variance = varg
-          end #mme.M.G and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
+              Mi.genetic_variance.val = varg
+          end #mme.M.G.val and its scale parameter will be reset in function set_marker_hyperparameters_variances_and_pi
       end
     end
   end
   #residual effects
-  if mme.nModels==1 && isposdef(mme.R) == false #single-trait
+  if mme.nModels==1 && isposdef(mme.R.val) == false #single-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
     is_categorical_or_binary_trait = mme.traits_type==["categorical"] || mme.traits_type==["categorical(binary)"]
-    mme.R = mme.ROld = is_categorical_or_binary_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
-    mme.scaleR = mme.R*(mme.df.residual-2)/mme.df.residual
-  elseif mme.nModels>1 && isposdef(mme.R) == false #multi-trait
+    mme.R.val = mme.ROld = is_categorical_or_binary_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
+    mme.R.scale = mme.R.val*(mme.R.df-2)/mme.R.df
+  elseif mme.nModels>1 && isposdef(mme.R.val) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
-    mme.R = mme.ROld = vare
-    mme.scaleR = mme.R*(mme.df.residual - mme.nModels - 1)
+    mme.R.val = mme.ROld = vare
+    mme.R.scale = mme.R.val*(mme.R.df - mme.nModels - 1)
   end
   #random effects
   if length(mme.rndTrmVec) != 0
     for randomEffect in mme.rndTrmVec
-      if isposdef(randomEffect.Gi) == false
+      if isposdef(randomEffect.Gi.val) == false
         printstyled("Prior information for random effect variance is not provided and is generated from the data.\n",bold=false,color=:green)
-        myvarout  = [split(i,":")[1] for i in randomEffect.term_array]
-        myvarin   = string.(mme.lhsVec)
-        Zdesign   = mkmat_incidence_factor(myvarout,myvarin)
+        myvarout  = [split(i,":")[1] for i in randomEffect.term_array] #e.g., ["y1:x2","y2:x2"] -> ["y1","y2"]
+        myvarin   = string.(mme.lhsVec) #e.g., ["y1","y2","y3"]
+        Zdesign   = mkmat_incidence_factor(myvarout,myvarin) #design matrix (sparse)
         if randomEffect.randomType == "A"
             G = diagm(Zdesign*diag(varg))
         else
             G = diagm(Zdesign*diag(vare))
         end
-        randomEffect.Gi = randomEffect.GiOld = randomEffect.GiNew = Symmetric(inv(G))
-        randomEffect.scale = G*(randomEffect.df-length(randomEffect.term_array)-1)
+        randomEffect.Gi.val = randomEffect.GiOld.val = randomEffect.GiNew.val = Symmetric(inv(G))
+        randomEffect.Gi.scale = randomEffect.GiOld.scale = randomEffect.GiNew.scale = G*(randomEffect.Gi.df-length(randomEffect.term_array)-1)
         if randomEffect.randomType == "A"
-          mme.Gi = randomEffect.Gi
-          mme.scalePed = randomEffect.scale
+          mme.Gi = randomEffect.Gi.val
+          mme.scalePed = randomEffect.Gi.scale
         end
       end
     end
@@ -447,3 +447,38 @@ function init_mixed_model_equations(mme,df,starting_value)
         end
     end
 end
+
+
+#multi-trait constraint on R: modify df and scale for residual variance
+function R_constraint!(mme)
+    #print
+    printstyled("Constraint on residual variance-covariance matrix (i.e., zero covariance)\n",bold=false,color=:green)
+    #check
+    if mme.nModels == 1 && mme.R.constraint==true
+        error("constraint==true is for multi-trait only")
+    end
+    #modify df and scale
+    mme.R.df    = mme.R.df - mme.nModels
+    mme.R.scale = Diagonal(mme.R.scale/(mme.R.df - 1))*(mme.R.df-2)/mme.R.df #Diagonal(R_prior_mean)*(ν-2)/ν, a diagonal matrix
+end
+
+#multi-trait constraint on G: modify df and scale for marker effect variance
+function G_constraint!(mme)
+    if length(mme.M) > 0
+        for Mi in mme.M
+            #print
+            geno_name = Mi.name
+            printstyled("Constraint on marker effect variance-covariance matrix (i.e., zero covariance) for $geno_name \n",bold=false,color=:green)
+            #check
+            if mme.nModels == 1 && Mi.G.constraint==true
+                error("constraint==true is for multi-trait only")
+            end
+            #modify df and scale
+            Mi.G.df    = Mi.G.df - mme.nModels
+            Mi.G.scale = Diagonal(Mi.G.scale/(Mi.G.df - 1))*(Mi.G.df-2)/Mi.G.df #a diagonal matrix
+        end
+    end
+end
+
+
+#TO-DO: multi-trait constraint on non-genetic random effects: modify df and scale

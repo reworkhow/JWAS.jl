@@ -25,10 +25,10 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
             Mi.genotypes      = Z*Mi.genotypes
             Mi.obsID          = unique(df[!,1])
             Mi.nObs           = length(Mi.obsID)
-            Mi.meanVara       = zero(Mi.G) #variable to save variance for marker effect
-            Mi.meanVara2      = zero(Mi.G)
-            Mi.meanScaleVara  = zero(Mi.G) #variable to save Scale parameter for prior of marker effect variance
-            Mi.meanScaleVara2 = zero(Mi.G)
+            Mi.meanVara       = zero(Mi.G.val) #variable to save variance for marker effect
+            Mi.meanVara2      = zero(Mi.G.val)
+            Mi.meanScaleVara  = zero(Mi.G.val) #variable to save Scale parameter for prior of marker effect variance
+            Mi.meanScaleVara2 = zero(Mi.G.val)
         end
     end
 
@@ -101,13 +101,18 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
+    
+    if mme.pedTrmVec!=0
+        polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
+    end
+
     @showprogress "running MCMC for" for iter=1:nIter
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################
         ycorr[:] = ycorr + mme.X*mme.sol
         mme.mmeRhs = mme.X'ycorr
-        Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R)
+        Gibbs(mme.mmeLhs,mme.sol,mme.mmeRhs,mme.R.val)
         ycorr[:] = ycorr - mme.X*mme.sol
 
 
@@ -120,12 +125,12 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         if mme.M != 0
             for Mi in mme.M
                 if Mi.method in ["BayesC","BayesB","BayesA"]
-                    locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G,Mi.nMarkers) : Mi.G)
+                    locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G.val,Mi.nMarkers) : Mi.G.val)
                     BayesABCRRM!(Mi.mArray,Mi.mpRinvm,wArray,yfull,
                         Mi.β,
                         Mi.δ,
                         Mi.α,
-                        mme.R,locus_effect_variances,Mi.π,
+                        mme.R.val,locus_effect_variances,Mi.π,
                         Φ, whichzeros, Mi.mΦΦArray)
                     end
                 end
@@ -157,8 +162,8 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         ########################################################################
         # 2.3 Residual Variance
         ########################################################################
-        mme.ROld = mme.R
-        mme.R = sample_variance(ycorr, length(ycorr), mme.df.residual, mme.scaleR)
+        mme.ROld = mme.R.val
+        mme.R.val = sample_variance(ycorr, length(ycorr), mme.R.df, mme.R.scale)
 
         ########################################################################
         # 2.4 Marker Effects Variance
@@ -167,7 +172,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
            for Mi in mme.M
                if Mi.method in ["RR-BLUP","BayesC","GBLUP"]
                    data = (Mi.method == "BayesC" ? Mi.β : Mi.α)
-                   Mi.G =sample_variance(data, Mi.nMarkers, Mi.df, Mi.scale, false, false)
+                   Mi.G.val =sample_variance(data, Mi.nMarkers, Mi.G.df, Mi.G.scale, false, false)
                end
            end
        end
@@ -176,10 +181,10 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         ########################################################################
         if mme.M != 0
             for Mi in mme.M
-                if Mi.estimateScale == true
-                    a = size(Mi.G,1)*Mi.df/2  + 1
-                    b = sum(Mi.df ./ (2*Mi.G )) + 1
-                    Mi.scale = rand(Gamma(a,1/b))
+                if Mi.estimate_scale == true
+                    a = size(Mi.G.val,1)*Mi.G.df/2  + 1
+                    b = sum(Mi.G.df ./ (2*Mi.G.val )) + 1
+                    Mi.G.scale = rand(Gamma(a,1/b))
                 end
             end
         end
@@ -187,12 +192,18 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         # 3.1 Save MCMC samples
         ########################################################################
         if iter>burnin && (iter-burnin)%output_samples_frequency == 0
-            output_MCMC_samples(mme,mme.R,(mme.pedTrmVec!=0 ? inv(mme.Gi) : false),outfile)
+            if mme.pedTrmVec!=0
+                # polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
+                polygenic_effects_variance = inv(mme.rndTrmVec[polygenic_pos].Gi.val) 
+            else
+                polygenic_effects_variance=false 
+            end
+            output_MCMC_samples(mme,mme.R.val,polygenic_effects_variance,outfile)
             nsamples = (iter-burnin)/output_samples_frequency
             mme.solMean   += (mme.sol - mme.solMean)/nsamples
             mme.solMean2  += (mme.sol .^2 - mme.solMean2)/nsamples
-            mme.meanVare  += (mme.R - mme.meanVare)/nsamples
-            mme.meanVare2 += (mme.R .^2 - mme.meanVare2)/nsamples
+            mme.meanVare  += (mme.R.val- mme.meanVare)/nsamples
+            mme.meanVare2 += (mme.R.val.^2 - mme.meanVare2)/nsamples
 
             if mme.pedTrmVec != 0
                 mme.G0Mean  += (inv(mme.Gi)  - mme.G0Mean )/nsamples
@@ -212,13 +223,13 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
                         end
                     end
                     if Mi.method != "BayesB"
-                        Mi.meanVara += (Mi.G - Mi.meanVara)/nsamples
-                        Mi.meanVara2 += (Mi.G.^2 - Mi.meanVara2)/nsamples
+                        Mi.meanVara += (Mi.G.val - Mi.meanVara)/nsamples
+                        Mi.meanVara2 += (Mi.G.val.^2 - Mi.meanVara2)/nsamples
                     end
 
-                    if Mi.estimateScale == true
-                        Mi.meanScaleVara += (Mi.scale - Mi.meanScaleVara)/nsamples
-                        Mi.meanScaleVara2 += (Mi.scale .^2 - Mi.meanScaleVara2)/nsamples
+                    if Mi.estimate_scale == true
+                        Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
+                        Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
                     end
                 end
             end
