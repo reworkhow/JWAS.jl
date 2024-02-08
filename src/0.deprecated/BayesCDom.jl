@@ -1,3 +1,15 @@
+function get_dom_cov(x, n)  # create dominance covariates from additive covariates
+    w = zeros(n)
+    for i=1:n
+        if (x[i] > 1)
+            w[i] = 2 - x[i]
+        else
+            w[i] = x[i]
+        end
+    end
+    return w
+end
+
 function sampleEffectsBayesCDom!(yCorr, nObs, nMarkers, xArray, XpRinvX, markerMeans, Rinv,
                               a, d, α, δ, π, varEffects, vare, u, g)
     logVarEffects = log(varEffects)
