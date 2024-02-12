@@ -145,7 +145,7 @@ function output_result(mme,output_folder,
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
           end
-          if Mi.estimate_scale == true
+          if Mi.G.estimate_scale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
           end
       end
@@ -587,7 +587,7 @@ function output_posterior_mean_variance(mme,nsamples)
                 Mi.meanVara += (Mi.G.val - Mi.meanVara)/nsamples
                 Mi.meanVara2 += (Mi.G.val .^2 - Mi.meanVara2)/nsamples
             end
-            if Mi.estimate_scale == true
+            if Mi.G.estimate_scale == true
                 Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
                 Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
             end

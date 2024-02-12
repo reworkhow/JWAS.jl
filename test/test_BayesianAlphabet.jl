@@ -51,12 +51,12 @@ for single_step in [false,true]
             outputMCMCsamples(model1,"x2")
 
             if single_step == false
-                  out1=runMCMC(model1,phenotypes,estimate_variance=true,heterogeneous_residuals=false,
+                  out1=runMCMC(model1,phenotypes,heterogeneous_residuals=false, #estimate all variances==true by default
                                double_precision=true,
                                chain_length=100,output_samples_frequency=10,
                                printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
-                  out1=runMCMC(model1,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,
+                  out1=runMCMC(model1,phenotypes_ssbr,heterogeneous_residuals=false, #estimate all variances==true by default
                               chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,seed=314);
             end
@@ -110,10 +110,10 @@ for single_step in [false,true]
             outputMCMCsamples(model2,"x2")
 
             if single_step == false
-                  out2=runMCMC(model2,phenotypes,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
+                  out2=runMCMC(model2,phenotypes,heterogeneous_residuals=false,double_precision=true, #estimate all variances==true by default
                               chain_length=100,output_samples_frequency=10,printout_frequency=50,seed=314);
             elseif single_step == true && test_method!="conventional (no markers)" && test_method!="GBLUP"
-                  out2=runMCMC(model2,phenotypes_ssbr,estimate_variance=true,heterogeneous_residuals=false,double_precision=true,
+                  out2=runMCMC(model2,phenotypes_ssbr,heterogeneous_residuals=false,double_precision=true, #estimate all variances==true by default
                               chain_length=100,output_samples_frequency=10,printout_frequency=50,
                               single_step_analysis=true,pedigree=pedigree,seed=314);
             end

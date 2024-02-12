@@ -181,7 +181,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         ########################################################################
         if mme.M != 0
             for Mi in mme.M
-                if Mi.estimate_scale == true
+                if Mi.G.estimate_scale == true
                     a = size(Mi.G.val,1)*Mi.G.df/2  + 1
                     b = sum(Mi.G.df ./ (2*Mi.G.val )) + 1
                     Mi.G.scale = rand(Gamma(a,1/b))
@@ -227,7 +227,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
                         Mi.meanVara2 += (Mi.G.val.^2 - Mi.meanVara2)/nsamples
                     end
 
-                    if Mi.estimate_scale == true
+                    if Mi.G.estimate_scale == true
                         Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
                         Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
                     end

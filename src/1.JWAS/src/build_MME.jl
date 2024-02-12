@@ -16,13 +16,14 @@ function mkDict(a::Vector{T}) where T <: Any
 end
 
 """
-    build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0)
+    build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0, estimate_variance=true)
 
 * Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
   is the mean for the prior assigned for the residual variance with degree of freedom **df**, defaulting
   to 4.0. If **R** is not provided, a value is calculated from responses (phenotypes).
 * By default, all variabels in model_equations are factors (categorical) and fixed. Set variables
   to be covariates (continuous) or random using functions `set_covariate()` or `set_random()`.
+* The argument `estimate_variance` indicates whether to estimate the residual variance; `estimate_variance=true` is the default.
 
 ```julia
 #single-trait
@@ -55,6 +56,9 @@ function build_model(model_equations::AbstractString,
     if !(typeof(model_equations)<:AbstractString) || model_equations==""
       error("Model equations are wrong.\n
       To find an example, type ?build_model and press enter.\n")
+    end
+    if estimate_scale != false
+      error("estimate scale for residual variance is not supported now.")
     end
 
     ############################################################################

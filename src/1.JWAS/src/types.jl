@@ -117,8 +117,8 @@ mutable struct Genotypes
 
   method            #prior for marker effects (Bayesian ALphabet, GBLUP ...)
   estimatePi
-  estimate_variance
-  estimate_scale
+#   estimate_variance
+#   estimate_scale
 
   mArray            #a collection of matrices used in Bayesian Alphabet
   mRinvArray        #a collection of matrices used in Bayesian Alphabet
@@ -149,7 +149,7 @@ mutable struct Genotypes
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
                                          Variance(false,false,false,true,false,false),Variance(false,false,false,true,false,false), #false,false,
-                                         false,true,true,false,
+                                         false,true, #true,false,
                                          false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
@@ -175,7 +175,7 @@ mutable struct MCMCinfo
     missing_phenotypes
     # constraint
     # mega_trait
-    estimate_variance
+    # estimate_variance
     update_priors_frequency
     outputEBV
     output_heritability
