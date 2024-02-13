@@ -7,7 +7,6 @@ function MCMC_BayesianAlphabet(mme,df)
     burnin                   = mme.MCMCinfo.burnin
     output_samples_frequency = mme.MCMCinfo.output_samples_frequency
     output_folder            = mme.MCMCinfo.output_folder
-    estimate_variance        = mme.MCMCinfo.estimate_variance
     invweights               = mme.invweights
     update_priors_frequency  = mme.MCMCinfo.update_priors_frequency
     has_categorical_trait    = "categorical"         ∈ mme.traits_type
@@ -267,7 +266,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 # Variance of Marker Effects
                 ########################################################################
-                if Mi.estimate_variance == true #methd specific estimate_variance
+                if Mi.G.estimate_variance == true #methd specific estimate_variance
                     sample_marker_effect_variance(Mi)
                     if mme.MCMCinfo.double_precision == false && Mi.method != "BayesB"
                         Mi.G.val = Float32.(Mi.G.val)
@@ -276,7 +275,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 # Scale Parameter in Priors for Marker Effect Variances
                 ########################################################################
-                if Mi.estimate_scale == true
+                if Mi.G.estimate_scale == true
                     if !is_multi_trait
                         a = size(Mi.G.val,1)*Mi.G.df/2   + 1
                         b = sum(Mi.G.df ./ (2*Mi.G.val)) + 1
@@ -288,15 +287,20 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         # 3. Non-marker Variance Components
         ########################################################################
-        if estimate_variance == true
-            ########################################################################
-            # 3.1 Variance of Non-marker Random Effects
-            # e.g, i.i.d; polygenic effects (pedigree)
-            ########################################################################
-            sampleVCs(mme,mme.sol)
-            ########################################################################
-            # 3.2 Residual Variance
-            ########################################################################
+
+        ########################################################################
+        # 3.1 Variance of Non-marker Random Effects
+        # e.g, i.i.d; polygenic effects (pedigree)
+        ########################################################################
+        if length(mme.rndTrmVec)>0
+            if mme.rndTrmVec[1].Gi.estimate_variance == true
+                sampleVCs(mme,mme.sol)
+            end
+        end
+        ########################################################################
+        # 3.2 Residual Variance
+        ########################################################################
+        if mme.R.estimate_variance == true
             if is_multi_trait
                 mme.R.val = sample_variance(wArray, length(mme.obsID),
                                         mme.R.df, mme.R.scale,

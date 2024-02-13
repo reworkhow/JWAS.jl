@@ -54,7 +54,7 @@ end
     get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                   separator=',',header=true,rowID=false,
                   center=true,quality_control=false,
-                  method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimate_scale=false,
+                  method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimate_scale=false,estimate_variance=true,
                   G_is_marker_variance = false,df = 4.0)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
     * If a text file is provided, the file format should be:
@@ -218,9 +218,6 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
-    # genotypes.df         = df #It will be modified base on number of traits in build_model()
-    # genotypes.estimate_scale    = estimate_scale
-    # genotypes.estimate_variance = estimate_variance
 
     writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")

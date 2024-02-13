@@ -81,7 +81,6 @@ export dataset
             output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
             update_priors_frequency::Integer  = 0,
             #Methods
-            estimate_variance               = true,
             single_step_analysis            = false, #parameters for single-step analysis
             pedigree                        = false, #parameters for single-step analysis
             fitting_J_vector                = true,  #parameters for single-step analysis
@@ -107,8 +106,7 @@ export dataset
             ##for deprecated JWAS
             methods                         = "conventional (no markers)",
             Pi                              = 0.0,
-            estimatePi                      = false,
-            estimate_scale                   = false)
+            estimatePi                      = false)
 
 **Run MCMC for Bayesian Linear Mixed Models with or without estimation of variance components.**
 
@@ -126,7 +124,6 @@ export dataset
         * Priors are updated every `update_priors_frequency` iterations, defaulting to `0`.
 * Methods
     * Single step analysis is allowed if `single_step_analysis` = `true` and `pedigree` is provided.
-    * Variance components are estimated if `estimate_variance`=true, defaulting to `true`.
     * Miscellaneous Options
         * Missing phenotypes are allowed in multi-trait analysis with `missing_phenotypes`=true, defaulting to `true`.
         * Catogorical Traits are allowed if `categorical_trait`=true, defaulting to `false`. Phenotypes should be coded as 1,2,3...
@@ -155,7 +152,6 @@ function runMCMC(mme::MME,df;
                 output_samples_frequency::Integer = chain_length>1000 ? div(chain_length,1000) : 1,
                 update_priors_frequency::Integer  = 0,
                 #Methods
-                estimate_variance               = true,
                 single_step_analysis            = false, #parameters for single-step analysis
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
@@ -181,7 +177,8 @@ function runMCMC(mme::MME,df;
                 methods                         = "conventional (no markers)",
                 Pi                              = 0.0,
                 estimatePi                      = false,
-                estimate_scale                   = false,
+                estimate_scale                   = false, #this has been moved to get_genotypes()
+                estimate_variance               = true,   #this has been moved to build_MME() and set_random()
                 categorical_trait               = false,  #this has been moved to build_model()
                 censored_trait                  = false)  #this has been moved to build_model()
 
@@ -230,7 +227,7 @@ function runMCMC(mme::MME,df;
                 Mi.name              = "geno"
                 Mi.π                 = Pi
                 Mi.estimatePi        = estimatePi
-                Mi.estimate_scale     = estimate_scale
+                Mi.G.estimate_scale  = estimate_scale
                 Mi.method            = methods
             end
         end
@@ -238,6 +235,13 @@ function runMCMC(mme::MME,df;
     if categorical_trait != false || censored_trait != false
         print_single_categorical_censored_trait_example()
         error("The arguments 'categorical_trait' and  'censored_trait' has been moved to build_model(). Please check our latest example.")
+    end
+    if estimate_scale != false #user set estimate_variance=true in runMCMC()
+        error("The argument 'estimate_scale' for marker effect variance has been moved to get_genotypes().")
+    end
+    if estimate_variance != true #user set estimate_variance=false in runMCMC()
+        error("The argument 'estimate_variance' for non-marker variance components has been moved to build_MME() for residual variance,
+               and set_random() for random terms.")
     end
     ############################################################################
     # censored traits
@@ -277,7 +281,7 @@ function runMCMC(mme::MME,df;
     mme.MCMCinfo = MCMCinfo(heterogeneous_residuals,
                    chain_length,burnin,output_samples_frequency,
                    printout_model_info,printout_frequency, single_step_analysis,
-                   fitting_J_vector,missing_phenotypes,estimate_variance,
+                   fitting_J_vector,missing_phenotypes,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
                    seed,double_precision,output_folder,RRM)
     ############################################################################
@@ -575,7 +579,7 @@ function getMCMCinfo(mme)
                     end
                     @printf("%-30s %20s\n","estimatePi",Mi.estimatePi ? "true" : "false")
                 end
-                @printf("%-30s %20s\n","estimate_scale",Mi.estimate_scale ? "true" : "false")
+                @printf("%-30s %20s\n","estimate_scale",Mi.G.estimate_scale ? "true" : "false")
             end
         end
     end

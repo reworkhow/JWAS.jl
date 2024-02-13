@@ -106,7 +106,10 @@ function set_random(mme::MME,randomStr::AbstractString,G=false;Vinv=0,names=[],d
     df      = Float32(df)
     
     if constraint != false #check constraint
-      error("Constraint for set_random is not supported now.")
+      error("Constraint for variance of random term is not supported now.")
+    end
+    if estimate_scale != false
+      error("Estimate scale for variance of random term is not supported now.")
     end
 
     ############################################################################

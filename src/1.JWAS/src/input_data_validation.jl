@@ -58,6 +58,13 @@ function errors_args(mme)
     if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")
     end
+    if mme.M!=0 && mme.nModels>1 #multi-trait with genotypes
+        for Mi in mme.M
+            if Mi.G.estimate_scale==true
+                error("estimate_scale=true is only supported for single trait now.")
+            end
+        end
+    end
 end
 
 function check_outputID(mme)

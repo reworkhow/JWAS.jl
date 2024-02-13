@@ -65,7 +65,7 @@ for single_step in [false, true]
 
 
         if single_step == false # genomic models or PBLUP
-            out1 = runMCMC(model1, phenotypes, estimate_variance=true, heterogeneous_residuals=false,
+            out1 = runMCMC(model1, phenotypes, heterogeneous_residuals=false, #estimate all variances==true by default
                 double_precision=true,
                 chain_length=1000, output_samples_frequency=10,
                 printout_frequency=100, seed=314)
@@ -75,7 +75,7 @@ for single_step in [false, true]
             PA_dict[newdir] = accuracy
         elseif single_step == true && test_method != "PBLUP" && test_method != "GBLUP"
             # genomic model, no PBLUP/GBLUP
-            out1 = runMCMC(model1, phenotypes, estimate_variance=true, heterogeneous_residuals=false,
+            out1 = runMCMC(model1, phenotypes, heterogeneous_residuals=false, #estimate all variances==true by default
                 chain_length=1000, output_samples_frequency=10, printout_frequency=100,
                 single_step_analysis=true, pedigree=pedigree, seed=314)
             results = innerjoin(out1["EBV_t1"], phenotypes, on=:ID)
@@ -134,14 +134,14 @@ for single_step in [false, true]
 
 
         if single_step == false
-            out2 = runMCMC(model2, phenotypes, estimate_variance=true, heterogeneous_residuals=false, double_precision=true,
+            out2 = runMCMC(model2, phenotypes, heterogeneous_residuals=false, double_precision=true, #estimate all variances==true by default
                 chain_length=1000, output_samples_frequency=10, printout_frequency=100, seed=314)
             results = innerjoin(out2["EBV_t1"], phenotypes, on=:ID)
             ind_id = findall(x -> !ismissing(x), results[!, :t1])
             accuracy = cor(results[ind_id, :EBV], results[ind_id, :t1])
             PA_dict[newdir] = accuracy
         elseif single_step == true && test_method != "PBLUP" && test_method != "GBLUP"
-            out2 = runMCMC(model2, phenotypes, estimate_variance=true, heterogeneous_residuals=false, double_precision=true,
+            out2 = runMCMC(model2, phenotypes, heterogeneous_residuals=false, double_precision=true, #estimate all variances==true by default
                 chain_length=1000, output_samples_frequency=10, printout_frequency=100,
                 single_step_analysis=true, pedigree=pedigree, seed=314)
             results = innerjoin(out2["EBV_t1"], phenotypes, on=:ID)
