@@ -281,7 +281,7 @@ mutable struct MME
                    0,0,[],0,0,
                    0,0,zeros(1,1),zeros(1,1),zeros(1,1),zeros(1,1),false,false,
                    [],
-                   R,0,0,R,false,false, #R,0,0,R,scaleR,false,false,
+                   R,0,0,R.val,false,false, #starting value of mme.ROld is a scalar equal to mme.R.val
                    [],
                    0,
                    1,
