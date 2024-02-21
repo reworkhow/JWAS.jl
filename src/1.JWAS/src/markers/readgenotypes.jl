@@ -1,4 +1,6 @@
 """
+DEPRECATED!! Please use get_genotypes()
+
     add_genotypes(mme::MME,M::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
                   header=false,rowID=false,separator=',',
                   center=true,G_is_marker_variance=false,df=4)
@@ -51,11 +53,19 @@ end
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
 #2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
 """
-    get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
-                  separator=',',header=true,rowID=false,
-                  center=true,quality_control=false,
-                  method = "RR-BLUP",Pi = 0.0,estimatePi = true,estimate_scale=false,estimate_variance=true,
-                  G_is_marker_variance = false,df = 4.0)
+get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
+            ## method:
+            method = "BayesC",Pi = 0.0,estimatePi = true, 
+            ## variance:
+            G_is_marker_variance = false, df = 4.0,
+            estimate_variance=true, estimate_scale=false,
+            constraint = false, #for multi-trait only, constraint=true means no genetic covariance among traits
+            ## format:
+            separator=',',header=true,rowID=false,
+            ## quality control:
+            quality_control=true, MAF = 0.01, missing_value = 9.0,
+            ## others:
+            center=true,starting_value=false)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
     * If a text file is provided, the file format should be:
       ```
@@ -82,62 +92,62 @@ end
 * Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
 
 """
-function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Any,2},DataFrames.DataFrame},G=false;
+function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
                        ## method:
-                       method = "BayesC",Pi = 0.0,estimatePi = true, 
+                       method = "BayesC", Pi = 0.0, estimatePi = true, 
                        ## variance:
                        G_is_marker_variance = false, df = 4.0,
-                       estimate_variance=true, estimate_scale=false,
+                       estimate_variance = true, estimate_scale = false,
                        constraint = false, #for multi-trait only, constraint=true means no genetic covariance among traits
                        ## format:
-                       separator=',',header=true,rowID=false,
+                       separator = ',', header = true,
                        ## quality control:
-                       quality_control=true, MAF = 0.01, missing_value = 9.0,
+                       quality_control = true, MAF = 0.01, missing_value = 9.0,
                        ## others:
-                       center=true,starting_value=false)
+                       center = true, starting_value = false)
     #Read the genotype file
-    if typeof(file) <: AbstractString
-        printstyled("The delimiterd in ",split(file,['/','\\'])[end]," is \'",separator,"\'. ",bold=false,color=:green)
-        printstyled("The header (marker IDs) is ",(header ? "provided" : "not provided")," in ",split(file,['/','\\'])[end],".\n",bold=false,color=:green)
+    if typeof(file) <: AbstractString  #string (path to a file)
+        #print info about the file format
+        printstyled("The delimiter in ", split(file, ['/', '\\'])[end], " is \'", separator, "\'. ", bold=false, color=:green)
+        printstyled("The header (marker IDs) is ", (header ? "provided" : "not provided"), " in ", split(file, ['/', '\\'])[end], ".\n", bold=false, color=:green)
         #get marker IDs
         myfile = open(file)
-        row1   = split(readline(myfile),[separator,'\n'],keepempty=false)
-        if header==true
-            markerID=string.(row1[2:end])  #skip header
+        row1   = split(readline(myfile), [separator, '\n'], keepempty=false) #read the first row
+        if header == true
+            markerID = string.(row1[2:end])           #extracts marker IDs from row1
         else
-            markerID=string.(1:length(row1[2:end]))
+            markerID = string.(1:length(row1[2:end])) #generate default marker IDs if no header
         end
         #set type for each column
-        ncol= length(row1)
-        etv = Array{DataType}(undef,ncol)
-        fill!(etv,Float64)
-        etv[1]=String
+        ncol = length(row1)
+        etv  = Array{DataType}(undef, ncol)
+        fill!(etv, Float32)
+        etv[1] = String #individual ID
         close(myfile)
         #read a large genotype file
         data      = CSV.read(file,DataFrame,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
         obsID     = map(string,data[!,1])
-        genotypes = map(Float32,Matrix(data[!,2:end]))
+        genotypes = Matrix{Float32}(data[!,2:end]) #memory usage is doubled here; cannot use readdlm because 1st column is string
+        #clean memory
+        data = nothing
+        GC.gc()
     elseif typeof(file) == DataFrames.DataFrame #Datafarme
         println("The first column in the dataframe should be individual IDs.")
-        println("The data type of markers should be Number.")
+        println("The remaining columns are markers with the data type Number.")
         if header == true
             markerID = names(file)[2:end]
         else
             markerID = string.(1:(size(file,2)-1))
+            printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
         end
         obsID     = map(string,file[!,1])
         genotypes = map(Float32,Matrix(file[!,2:end]))
-    elseif typeof(file) <: Union{Array{Float64,2},Array{Float32,2},Array{Any,2}} #Array
-        if length(header) != (size(file,2)+1)
-            header = ["id"; string.(1:size(file,2))]
-            printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
-        end
-        if length(rowID) != size(file,1)
-            rowID = string.(1:size(file,1))
-            printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
-        end
-        markerID  = string.(header[2:end])
-        obsID     = map(string,rowID)
+    elseif typeof(file) <: Union{Array{Float64,2}, Array{Float32,2}, Array{Int64,2}, Array{Int32,2}, Array{Any,2}} #Array (Matrix)
+        println("The input data is a genotype matrix, without individual IDs.")
+        markerID  = string.(1:size(file,2))
+        printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
+        obsID     = map(string,string.(1:size(file,1)))
+        printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
         genotypes = map(Float32,convert(Matrix,file))
     else
         error("The data type is not supported.")
