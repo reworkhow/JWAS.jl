@@ -51,34 +51,39 @@ end
 #
 ################################################################################
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
-#2)load genotypes from Array or DataFrames (no individual IDs; no marker IDs (header))
+#2)load genotypes from DataFrames (1st column: individual IDs; optional: marker IDs (can be provided as the header))
+#3)load genotypes from Array (User-provided Individual IDs and marker IDs are not allowed, defaulting to 1,2,3...)
 """
-get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
-            ## method:
-            method = "BayesC",Pi = 0.0,estimatePi = true, 
-            ## variance:
-            G_is_marker_variance = false, df = 4.0,
-            estimate_variance=true, estimate_scale=false,
-            constraint = false, #for multi-trait only, constraint=true means no genetic covariance among traits
-            ## format:
-            separator=',',header=true,rowID=false,
-            ## quality control:
-            quality_control=true, MAF = 0.01, missing_value = 9.0,
-            ## others:
-            center=true,starting_value=false)
+    get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
+                  ## method:
+                  method = "BayesC",Pi = 0.0,estimatePi = true, 
+                  ## variance:
+                  G_is_marker_variance = false, df = 4.0,
+                  estimate_variance=true, estimate_scale=false,
+                  constraint = false, #for multi-trait only, constraint=true means no genetic covariance among traits
+                  ## format:
+                  separator=',',header=true,
+                  ## quality control:
+                  quality_control=true, MAF = 0.01, missing_value = 9.0,
+                  ## others:
+                  center=true,starting_value=false)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
-    * If a text file is provided, the file format should be:
-      ```
-      Animal,marker1,marker2,marker3,marker4,marker5
-      S1,1,0,1,1,1
-      D1,2,0,2,2,1
-      O1,1,2,0,1,0
-      O3,0,0,2,1,1
-      ```
-    * If an nxp Matrix of genotypes (Array or DataFrame) is provided, where n is the number of individuals and p is the number of markers,
-        * This matrix needs to be column-wise sorted by marker positions.
-        * rowID is a vector of individual IDs, e.g.,rowID=[\"a1\",\"b2\",\"c1\"]; if it is omitted, IDs will be set to 1:n
-        * header is a header vector such as ["id"; "mrk1"; "mrk2";...;"mrkp"]. If omitted, marker names will be set to 1:p
+* If `a text file` is provided, the file format should be:
+```
+Animal,marker1,marker2,marker3,marker4,marker5
+S1,1,0,1,1,1
+D1,2,0,2,2,1
+O1,1,2,0,1,0
+O3,0,0,2,1,1
+```
+* If `a DataFrame` is provided, where n is the number of individuals and p is the number of markers,
+    * This matrix needs to be column-wise sorted by marker positions.
+    * The first column in the DataFrame should be individual IDs
+    * The marker IDs can be provided as the header of the DataFrame. If omitted, marker IDs will be set to 1,2,3...
+* If `an nxp Matrix` of genotypes (Array) is provided, where n is the number of individuals and p is the number of markers,
+    * This matrix needs to be column-wise sorted by marker positions.
+    * Individual IDs will be set to 1:n; 
+    * Marker IDs will be set to 1:p
 * If `quality_control`=true, defaulting to `true`,
     * Missing genotypes should be denoted as `9`, and will be replaced by column means. Users can also impute missing genotypes before the analysis.
     * Minor allele frequency `MAF` threshold, defaulting to `0.01`, is uesd, and fixed loci are removed.
@@ -143,7 +148,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         obsID     = map(string,file[!,1])
         genotypes = map(Float32,Matrix(file[!,2:end]))
     elseif typeof(file) <: Union{Array{Float64,2}, Array{Float32,2}, Array{Int64,2}, Array{Int32,2}, Array{Any,2}} #Array (Matrix)
-        println("The input data is a genotype matrix, without individual IDs.")
+        println("The input data is a genotype matrix, without individual IDs and marker IDs.")
         markerID  = string.(1:size(file,2))
         printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
         obsID     = map(string,string.(1:size(file,1)))
