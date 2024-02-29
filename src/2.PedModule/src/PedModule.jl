@@ -169,7 +169,7 @@ function HAi(ped::Pedigree)
     ii = Int64[]
     jj = Int64[]
     vv = Float64[]
-    @showprogress "calculating A inverse..." for ind in keys(ped.idMap)
+    for ind in keys(ped.idMap)
         sire = ped.idMap[ind].sire
         dam  = ped.idMap[ind].dam
         sirePos = sire=="missing" ? 0 : ped.idMap[sire].seqID
