@@ -30,7 +30,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
         df_whole[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
         set_covariate(mme,"J")
     end
-    set_random(mme,"ϵ",geno.genetic_variance,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    set_random(mme,"ϵ",geno.genetic_variance.val,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
     #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
     mme.output_X["ϵ"]=mkmat_incidence_factor(mme.output_ID,ped.IDs)[:,1:size(Ai_nn,1)]
 
@@ -73,6 +73,7 @@ end
 # Genotypes
 ############################################################################
 function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory=false)
+    data_type = typeof(geno.genotypes[1,1]) #e.g. Float32
     num_pedn = size(Ai_nn,1)
     #reorder genotypes to get Mg with the same order as Ai_gg
     Z  = mkmat_incidence_factor(ped.IDs[(num_pedn+1):end],geno.obsID)
@@ -125,8 +126,8 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory=false)
          Mout   = Zo*(lhs\(rhs*Mg))
     end
 
-    geno.output_genotypes = Mout
-    geno.genotypes        = Mpheno
+    geno.output_genotypes = data_type.(Mout) #make datatype consistant to avoid error here: BLAS.axpy!(oldAlpha-α[j],x,yCorr)
+    geno.genotypes        = data_type.(Mpheno)
     geno.obsID            = df[!,1]
     geno.nObs             = length(geno.obsID)
     GC.gc()
