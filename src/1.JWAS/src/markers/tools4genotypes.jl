@@ -26,12 +26,12 @@ function center!(X::AbstractArray{T,2}) where T <: Any
 end
 
 function getXpRinvX(X, Rinv)
-    XpRinvX = @showprogress "building prerequisite matrices ..." [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
+    XpRinvX = [((X[:,i].*Rinv)'X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 
 function getXpRinvX(X)
-    XpRinvX = @showprogress "building prerequisite matrices ..." [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
+    XpRinvX = [dot(X[:,i],X[:,i]) for i=1:size(X,2)]
     return XpRinvX
 end
 

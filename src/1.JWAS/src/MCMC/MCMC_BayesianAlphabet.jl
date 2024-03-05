@@ -47,7 +47,7 @@ function MCMC_BayesianAlphabet(mme,df)
         for Mi in mme.M
             #Mi.α  (starting values were set in get_genotypes)
             mGibbs    = GibbsMats(Mi.genotypes,invweights,fast_blocks=mme.MCMCinfo.fast_blocks)
-            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
+            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
             if fast_blocks != false
                 Mi.MArray  = mGibbs.XArray
                 Mi.MRinvArray = mGibbs.XRinvArray

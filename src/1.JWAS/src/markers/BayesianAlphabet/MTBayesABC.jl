@@ -25,7 +25,7 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
     nMarkers = length(xArray)
     ntraits  = length(alphaArray)
 
-    Rinv     = inv(vare)
+    Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
     Ginv     = inv.(varEffects)
 
     β        = zeros(typeof(betaArray[1][1]),ntraits)
@@ -51,7 +51,6 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
             C11    = Ginv11+Rinv[k,k]*xpRinvx[marker]
             C12    = Ginv12+xpRinvx[marker]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
 
-            #f(β_j1 | δ_j1,θ,y)
             invLhs0  = 1/Ginv11
             rhs0     = - Ginv12'β[nok]
             gHat0    = (rhs0*invLhs0)[1,1]

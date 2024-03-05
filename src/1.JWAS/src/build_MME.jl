@@ -281,17 +281,11 @@ function getX(trm::ModelTerm,mme::MME)
        #Get the random effect in interactions
        data=[]
        for i in trm.data
-         factors = getFactor(i)
-         if length(factors) == 1
-           factorstr = factors
-           data      = [data;factorstr]
-         else #>1
-           for factorstr in factors #two ways: animal*age; age*animal
-             if factorstr in trm.names || factorstr == "missing"  #add "animal" ID not "age"
-               data = [data;factorstr]                            #"factorstr in trm.names" is slow when trm.names is large
-             end
-           end
-         end
+        for factorstr in getFactor(i) #two ways:animal*age;age*animal
+          if factorstr in trm.names || factorstr == "missing"  #"animal" ID not "age"
+            data = [data;factorstr]
+          end
+        end
        end
        if length(data) < length(trm.data)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",

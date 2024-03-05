@@ -138,7 +138,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         #clean memory
         data = nothing
         GC.gc()
-        #Note: why we choose to use `genotypes = Matrix(data[!,2:end])`
+        #Note: why we choose to use `genotypes = Matrix(data[!,2:end])` due to limitation of DataFrames.jl
          #- cannot use `genotypes=@view data[!,2:end]` because the view will be copied as a new DataFrame in QC: `genotypes = genotypes[:,select]`
          #- cannot use `select!(genotypes, Not(1))` to simply delete the 1st column of obsID from the DataFrame, because genotypes must be a Matrix used for matrix multiplication (e.g. EBV += Mi.output_genotypes*Mi.α[traiti]).
     elseif typeof(file) == DataFrames.DataFrame #Datafarme
