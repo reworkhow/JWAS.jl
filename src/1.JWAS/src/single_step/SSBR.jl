@@ -5,7 +5,7 @@
 * impute genotypes for non-genotyped individuals
 * add ϵ (imputation errors) and J as variables in data for non-genotyped inds
 """
-function SSBRrun(mme,df_whole,train_index,big_memory=false) 
+function SSBRrun(mme,df_whole,train_index,big_memory=false)
     geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
@@ -16,15 +16,12 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
     #add model terms for SSBR
-
     add_term(mme,"ϵ") #impuatation residual
-
     if mme.MCMCinfo.fitting_J_vector == true
         add_term(mme,"J") #centering parameter
     end
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in df_whole[!,1]] #true/false
-
     data_ϵ    = deepcopy(df_whole[!,1])
     data_ϵ[.!isnongeno].="missing"
     df_whole[!,Symbol("ϵ")]=data_ϵ
@@ -46,7 +43,6 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     end
     delete!(mme.output_X, "J")
     delete!(mme.output_X, "ϵ")
-
 
     if geno.genetic_variance == false
         error("Please input the genetic variance using add_genotypes()")
