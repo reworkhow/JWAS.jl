@@ -15,7 +15,6 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     flush(stdout)
     @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
     println("completed imputing genotypes")
-
     #add model terms for SSBR
     add_term(mme,"ϵ") #impuatation residual
     if mme.MCMCinfo.fitting_J_vector == true
@@ -117,7 +116,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory=false)
             else
                 myrange = (1+(i-1)*markerperchunk):nmarkers
             end
-            Mped_chunk        = lhs\(rhs*view(Mg,:,myrange)) #view
+            Mped_chunk        = lhs\(rhs*Mg[:,myrange]) #view
             Mpheno[:,myrange] = Z*Mped_chunk
             Mout[:,myrange]   = Zo*Mped_chunk
         end
