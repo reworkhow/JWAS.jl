@@ -488,7 +488,7 @@ function output_MCMC_samples(mme,vRes,G0,
 
          if mme.MCMCinfo.output_heritability == true && mme.MCMCinfo.single_step_analysis == false
              #single-trait: a scalar ;  multi-trait: a matrix; mega-trait: a vector
-             if mme.M[1].G.constraint==true
+             if mme.M != 0 && mme.M[1].G.constraint==true
                 mygvar = Diagonal(vec(var(EBVmat,dims=1)))
              else
                 mygvar = cov(EBVmat)
