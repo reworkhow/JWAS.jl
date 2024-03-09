@@ -348,7 +348,7 @@ function runMCMC(mme::MME,df;
     if mme.R.constraint==true
         R_constraint!(mme) #modify mme.R.df and mme.R.scale; scale is a diagonal matrix
     end
-    if mme.M[1].G.constraint==true
+    if mme.M != 0 && mme.M[1].G.constraint==true
         G_constraint!(mme) #modify Mi.G.df and Mi.G.scale; scale is a diagonal matrix
     end
 
@@ -499,7 +499,7 @@ function getMCMCinfo(mme)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
     # @printf("%-30s %20s\n","constraint",MCMCinfo.constraint ? "true" : "false")
     @printf("%-30s %19s\n","constraint on residual variance",mme.R.constraint ? "true" : "false")
-    if length(mme.M)>0
+    if mme.M != 0
         for Mi in mme.M
             geno_name = Mi.name
             @printf("%-30s %5s\n","constraint on marker effect variance for $geno_name",Mi.G.constraint ? "true" : "false")
