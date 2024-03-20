@@ -208,6 +208,7 @@ end
 
 
 function nnmm_print_info_input_to_middle_layer(mme)
+        nThread = Threads.nthreads()
         is_mega_trait = mme.R.constraint==true && mme.M[1].G.constraint==true #is_mega_trait when no residual and marker effect covariances 
         if is_mega_trait
             printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
