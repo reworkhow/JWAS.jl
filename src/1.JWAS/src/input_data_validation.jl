@@ -266,10 +266,20 @@ function set_default_priors_for_variance_components(mme,df)
     is_categorical_or_binary_trait = mme.traits_type==["categorical"] || mme.traits_type==["categorical(binary)"]
     mme.R.val = mme.ROld = is_categorical_or_binary_trait ? 1.0 : vare[1,1]  #residual variance known to be 1.0 in single trait categorical analysis
     mme.R.scale = mme.R.val*(mme.R.df-2)/mme.R.df
+    if is_categorical_or_binary_trait
+        mme.R.estimate_variance = false #for single categorical or binary trait, do not need to sample R because it is fixed to 1.0
+    end
   elseif mme.nModels>1 && isposdef(mme.R.val) == false #multi-trait
     printstyled("Prior information for residual variance is not provided and is generated from the data.\n",bold=false,color=:green)
+    binary_trait_index = findall(x -> x == "categorical(binary)", mme.traits_type)
+    num_binary_trait = length(binary_trait_index)
+    vare[binary_trait_index,binary_trait_index]=I(num_binary_trait) #for multiple binary traits, their vare=I
     mme.R.val = mme.ROld = vare
     mme.R.scale = mme.R.val*(mme.R.df - mme.nModels - 1)
+    if num_binary_trait == mme.nModels # all traits are binary
+        mme.R.constraint = true 
+        mme.R.estimate_variance = false #if all traits are binary, do not need to sample R because it is fixed to I
+    end
   end
   #random effects
   if length(mme.rndTrmVec) != 0
