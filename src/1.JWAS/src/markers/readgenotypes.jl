@@ -134,7 +134,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         #read a large genotype file
         data      = CSV.read(file,DataFrame,types=etv,delim = separator,header=false,skipto=(header==true ? 2 : 1))
         obsID     = map(string,data[!,1])
-        genotypes = map(data_type, Matrix(file[!,2:end]))
+        genotypes = map(data_type, Matrix(data[!,2:end]))
         #clean memory
         #data = nothing
         #GC.gc()
