@@ -1,11 +1,11 @@
 function MTBayesL!(genotypes,ycorr_array,vare)
     MTBayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-            ycorr_array,genotypes.α,genotypes.gammaArray,vare,genotypes.G)
+            ycorr_array,genotypes.α,genotypes.gammaArray,vare,genotypes.G.val)
 end
 
 function MTBayesC0!(genotypes,ycorr_array,vare)
     MTBayesL!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-            ycorr_array,genotypes.α,[1.0],vare,genotypes.G)
+            ycorr_array,genotypes.α,[1.0],vare,genotypes.G.val)
 end
 
 function MTBayesL!(xArray,xRinvArray,xpRinvx,

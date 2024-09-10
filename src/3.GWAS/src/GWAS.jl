@@ -76,7 +76,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     end
 
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
-    mapfile = CSV.read(map_file, DataFrame, header = header, types=Dict(1 => String)) #the 1st column (markerID) must be string
+    mapfile = CSV.read(map_file, DataFrame, header = header, types=Dict(1 => String, 2 => String, 3 => Int64)) #the 1st column (markerID) must be string
     #remove SNPs in mapfile that are not used in Bayesian analysis (e.g., removed in QC)
     snpID    = mme.M[1].markerID
     in_snpID = findall(x -> x ∈ snpID, mapfile[:,1])
@@ -85,8 +85,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
         error("Please check the 1st column of the mapfile (i.e., marker ID)")
     end
     
-    chr     = map(string,mapfile[:,2])
-    pos     = map(Int64,mapfile[:,3])
+    chr     = mapfile[:,2]
+    pos     = mapfile[:,3]
 
     window_size_nSNPs   = Array{Int64,1}()  #save number of markers in ith window for all windows
     window_chr          = Array{String,1}() #1
