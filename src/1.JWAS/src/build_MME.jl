@@ -44,9 +44,6 @@ function build_model(model_equations::AbstractString,
                      R = false; df = 4.0, 
                      estimate_variance=true, estimate_scale=false, 
                      constraint=false, #for multi-trait only, constraint=true means no residual covariance among traits
-                     ## nnmm:
-                     num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
-                     user_σ2_yobs = false, user_σ2_weightsNN = false,
                      ## censored, categorical traits:
                      censored_trait = false, categorical_trait = false)
 
@@ -60,21 +57,6 @@ function build_model(model_equations::AbstractString,
     if estimate_scale != false
       error("estimate scale for residual variance is not supported now.")
     end
-
-    ############################################################################
-    # Bayesian Neural Network
-    ############################################################################
-    if nonlinear_function != false  #NNBayes
-      if latent_traits != false && length(latent_traits) != num_hidden_nodes
-        error("The number of traits included in latent_traits is not $num_hidden_nodes (num_hidden_nodes)")
-      end
-      printstyled("Bayesian Neural Network is used with following information: \n",bold=false,color=:green)
-      #NNBayes: check parameters
-      num_hidden_nodes,is_fully_connected,is_activation_fcn = nnbayes_check_print_parameter(model_equations, num_hidden_nodes, nonlinear_function,latent_traits)
-      #NNBayes: re-write model equations by treating hidden nodes as multiple traits
-      model_equations = nnbayes_model_equation(model_equations,num_hidden_nodes,is_fully_connected)
-    end
-    is_nnbayes_partial = nonlinear_function != false && is_fully_connected==false #1.partial connected NN 2. fully connected NN + non-NN
 
     ############################################################################
     # All model terms (will be added to MME)
@@ -119,7 +101,7 @@ function build_model(model_equations::AbstractString,
             if nModels != 1
               genotypei.G.df = genotypei.G.df + nModels
             end
-            if !is_nnbayes_partial && (genotypei.G.val != false || genotypei.genetic_variance.val != false)
+            if (genotypei.G.val != false || genotypei.genetic_variance.val != false)
               if size(genotypei.G.val,1) != nModels && size(genotypei.genetic_variance.val,1) != nModels
                 error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
               end
@@ -133,7 +115,6 @@ function build_model(model_equations::AbstractString,
   #create mme with genotypes
   filter!(x->x.random_type != "genotypes",modelTerms) #remove "genotypes" from modelTerms
   filter!(x->x[2].random_type != "genotypes",dict)    #remove "genotypes" from dict
-  
 
   #set scale and df for residual variance
   if nModels == 1
@@ -152,20 +133,6 @@ function build_model(model_equations::AbstractString,
                      estimate_variance, estimate_scale, constraint))
   if length(genotypes) != 0
     mme.M = genotypes #add genotypes into mme
-  end
-
-  #NNBayes:
-  if nonlinear_function != false
-    mme.is_fully_connected   = is_fully_connected
-    mme.is_activation_fcn    = is_activation_fcn
-    mme.nonlinear_function   = isa(nonlinear_function, Function) ? nonlinear_function : nnbayes_activation(nonlinear_function)
-    mme.latent_traits        = latent_traits
-    if user_σ2_yobs != false && user_σ2_weightsNN != false
-      mme.σ2_yobs         = user_σ2_yobs      #variance of observed phenotype σ2_yobs is fixed as user_σ2_yobs
-      mme.σ2_weightsNN    = user_σ2_weightsNN #variance of neural network weights between omics and phenotype σ2_weightsNN is fixed as user_σ2_weightsNN
-      mme.fixed_σ2_NN     = true
-      printstyled(" - Variances of phenotype and neural network weights are fixed.\n",bold=false,color=:green)
-    end
   end
 
   #setup traits_type (by default is "continuous")
