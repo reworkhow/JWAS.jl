@@ -172,7 +172,7 @@ function nnmm_runMCMC(mme::MME,df;
     # MCMC
     ############################################################################
     describe(mme)
-    mme.output=MCMC_BayesianAlphabet(mme,df)
+    mme.output=nnmm_MCMC_BayesianAlphabet(mme,df)
 
     ############################################################################
     # Save output to text files

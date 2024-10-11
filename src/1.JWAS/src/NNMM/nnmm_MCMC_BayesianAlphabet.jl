@@ -1,7 +1,7 @@
 ################################################################################
 #MCMC for RR-BLUP, GBLUP, BayesABC, and conventional (no markers) methods
 ################################################################################
-function MCMC_BayesianAlphabet(mme,df)
+function nnmm_MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     chain_length             = mme.MCMCinfo.chain_length
     burnin                   = mme.MCMCinfo.burnin
@@ -15,6 +15,8 @@ function MCMC_BayesianAlphabet(mme,df)
     missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
+    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
+    is_activation_fcn        = mme.is_activation_fcn
     nonlinear_function       = mme.nonlinear_function
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
@@ -93,6 +95,9 @@ function MCMC_BayesianAlphabet(mme,df)
                 Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
             end
         end
+    end
+    if is_nnbayes_partial
+        nnbayes_partial_para_modify3(mme)
     end
 
     #phenotypes corrected for all effects
@@ -195,43 +200,51 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G.val,Mi.nMarkers) : Mi.G.val)
-                    if is_multi_trait
+                    if is_multi_trait && !is_nnbayes_partial
                         if Mi.G.constraint==true
                             megaBayesABC!(Mi,wArray,mme.R.val,locus_effect_variances)
                         else
                             MTBayesABC!(Mi,wArray,mme.R.val,locus_effect_variances,mme.nModels)
                         end
+                    elseif is_nnbayes_partial
+                        BayesABC!(Mi,wArray[i],mme.R.val[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
                     else
                         BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
                     end
                 elseif Mi.method =="RR-BLUP"
-                    if is_multi_trait
+                    if is_multi_trait && !is_nnbayes_partial
                         if Mi.G.constraint==true
                             megaBayesC0!(Mi,wArray,mme.R.val)
                         else
                             MTBayesC0!(Mi,wArray,mme.R.val)
                         end
+                    elseif is_nnbayes_partial
+                        BayesC0!(Mi,wArray[i],mme.R.val[i,i])
                     else
                         BayesC0!(Mi,ycorr,mme.R.val)
                     end
                 elseif Mi.method == "BayesL"
-                    if is_multi_trait
+                    if is_multi_trait && !is_nnbayes_partial
                         #problem with sampleGammaArray
                         if Mi.G.constraint==true
                             megaBayesL!(Mi,wArray,mme.R.val)
                         else
                             MTBayesL!(Mi,wArray,mme.R.val)
                         end
+                    elseif is_nnbayes_partial
+                        BayesC0!(Mi,wArray[i],mme.R.val[i,i])
                     else
                         BayesL!(Mi,ycorr,mme.R.val)
                     end
                 elseif Mi.method == "GBLUP"
-                    if is_multi_trait
+                    if is_multi_trait && !is_nnbayes_partial
                         if Mi.G.constraint==true
                             megaGBLUP!(Mi,wArray,mme.R.val,invweights)
                         else
                             MTGBLUP!(Mi,wArray,ycorr,mme.R.val,invweights)
                         end
+                    elseif is_nnbayes_partial
+                        GBLUP!(Mi,wArray[i],mme.R.val[i,i],invweights)
                     else
                         GBLUP!(Mi,ycorr,mme.R.val,invweights)
                     end
@@ -240,7 +253,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 # Marker Inclusion Probability
                 ########################################################################
                 if Mi.estimatePi == true
-                    if is_multi_trait
+                    if is_multi_trait && !is_nnbayes_partial
                         if Mi.G.constraint==true
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
                         else

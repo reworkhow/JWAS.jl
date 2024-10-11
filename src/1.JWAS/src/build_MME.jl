@@ -96,8 +96,8 @@ function build_model(model_equations::AbstractString,
           genotypei.name = string(term_symbol)
           trait_names=[term.iTrait]
           if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
-            genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
-            genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
+            genotypei.ntraits = nModels
+            genotypei.trait_names = string.(lhsVec)
             if nModels != 1
               genotypei.G.df = genotypei.G.df + nModels
             end

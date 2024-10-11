@@ -53,6 +53,7 @@ include("NNMM/bnn_hmc.jl")
 include("NNMM/nnbayes_check.jl")
 include("NNMM/nnmm_build_MME.jl")
 include("NNMM/nnmm_runMCMC.jl")
+include("NNMM/nnmm_MCMC_BayesianAlphabet.jl")
 
 #input
 include("input_data_validation.jl")
