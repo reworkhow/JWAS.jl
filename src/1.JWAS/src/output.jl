@@ -122,7 +122,7 @@ function output_result(mme,output_folder,
   end
 
   ntraits = length(mme.lhsVec)
-
+  
   if mme.M != 0
       for Mi in mme.M
          ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
@@ -132,26 +132,26 @@ function output_result(mme,output_folder,
          whicheffect = Mi.meanAlpha[traiti]
          whicheffectsd = sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2))
          whichdelta    = Mi.meanDelta[traiti]
-          for traiti in 2:ntraits_geno
-                whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
-                whichmarker    = vcat(whichmarker,Mi.markerID)
-                whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
-                whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
-                whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
-            end
+        for traiti in 2:ntraits_geno
+            whichtrait     = vcat(whichtrait,fill(string(mme.lhsVec[traiti]),length(Mi.markerID)))
+            whichmarker    = vcat(whichmarker,Mi.markerID)
+            whicheffect    = vcat(whicheffect,Mi.meanAlpha[traiti])
+            whicheffectsd  = vcat(whicheffectsd,sqrt.(abs.(Mi.meanAlpha2[traiti] .- Mi.meanAlpha[traiti] .^2)))
+            whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
+        end
 
-          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
-          #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
-          if Mi.estimatePi == true
-              if mme.MCMCinfo.mega_trait
-                  output["pi_"*Mi.name] = DataFrame([whichtrait whichmarker whichpi whichpisd],[:Trait,:Marker_ID,:Estimate,:SD])
-              else
-                  output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
-              end
-          end
-          if Mi.G.estimate_scale == true
-              output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
-          end
+        output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+        #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
+        if Mi.estimatePi == true
+            output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi, Mi.mean_pi2)
+        end
+        if Mi.G.estimate_scale == true
+            output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
+        end
+        if Mi.anno_obj != false
+            annoi = Mi.anno_obj
+            output["annCoef_"*Mi.name] = DataFrame(Annotation=1:length(annoi.annCoef), Estimate=annoi.annCoef, SD=sqrt.(abs.(annoi.annCoefMean2 .- annoi.annCoefMean.^2)))
+        end
       end
   end
 
@@ -619,6 +619,10 @@ function output_posterior_mean_variance(mme,nsamples)
             if Mi.G.estimate_scale == true
                 Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
                 Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
+            end
+            if Mi.anno_obj != false
+                Mi.anno_obj.annCoefMean += (Mi.anno_obj.annCoef - Mi.anno_obj.annCoefMean) / nsamples
+                Mi.anno_obj.annCoefMean2 += (Mi.anno_obj.annCoef .^2 - Mi.anno_obj.annCoefMean2) / nsamples
             end
         end
     end

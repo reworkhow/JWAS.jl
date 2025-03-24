@@ -13,10 +13,15 @@ for i in 1:2
 end
 anno_mat = [ones(nMarker) anno_mat]
 genotypes = get_genotypes(geno_file,separator=',',method="BayesC", quality_control = false, annMat = anno_mat)
+genotypes.anno_obj.annCoef
+genotypes.anno_obj.annCoefMean
+genotypes.anno_obj.annCoefMean2
 
 model_equation  ="y = intercept + genotypes"
 model = build_model(model_equation);
 out=runMCMC(model,phenotypes,chain_length = 5000,seed = 123);
+out["annCoef_genotypes"]
+
 
 results = innerjoin(out["EBV_y"],phenotypes,on=:ID)
 accuracy = cor(results[!,:EBV], results[!,:BV])

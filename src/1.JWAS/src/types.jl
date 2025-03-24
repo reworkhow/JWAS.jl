@@ -309,6 +309,8 @@ end
 mutable struct Annotation
     annMat ## annotation matrix (pxc), c:number of annotation categories
     annCoef # cx1 solution
+    annCoefMean # cx1 mean of solution
+    annCoefMean2 # cx1 mean of solution^2
     varl  # variance of liability
     liability
     μ     # mean of liability: μ = annMat * annCoef
@@ -318,6 +320,6 @@ mutable struct Annotation
     lower_bound # a vector of length nMarkers for the lower_bound of SNP liability
     upper_bound # a vector of length nMarkers for the upper_bound of SNP liability
     Lhs         # unchanged left-hand side to solve annCoef (annMat'annMat)
-    Annotation(annMat, varl, tmin, tmax) = new(annMat, zeros(size(annMat,2)), varl, zeros(size(annMat,1)), zeros(size(annMat,1)), tmin, tmax, [tmin,0,tmax], false, false, annMat'annMat)
+    Annotation(annMat, varl, tmin, tmax) = new(annMat, zeros(size(annMat, 2)), zeros(size(annMat, 2)), zeros(size(annMat, 2)), varl, zeros(size(annMat, 1)), zeros(size(annMat, 1)), tmin, tmax, [tmin, 0, tmax], false, false, annMat'annMat)
 end
     
