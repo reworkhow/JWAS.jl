@@ -66,7 +66,7 @@ function sample_variance(x, n, df, scale, invweights)
 end
 
 #multi-trait i.i.d  #?reduce(hcat,array of array)' may be used to replace loops with matrix multiplication
-function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint)
+function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; binary_trait_index=false)
     if invweights != false
         invweights  = Diagonal(invweights)
     end
@@ -84,11 +84,15 @@ function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint)
         end
     end
     if constraint == false
-        R  = rand(InverseWishart(df + nobs, convert(Array,Symmetric(scale + SSE))))
+        if binary_trait_index==false
+            R  = rand(InverseWishart(df + nobs, convert(Array,Symmetric(scale + SSE))))
+        else
+            R  = sample_from_conditional_inverse_Wishart(df + nobs, convert(Array,Symmetric(inv(scale + SSE))), binary_trait_index)
+        end
     else  #diagonal elements only, from scale-inv-⁠χ2
-        R  = zeros(ntraits,ntraits)
+        R  = Diagonal(zeros(ntraits))
         for traiti = 1:ntraits
-            R[traiti,traiti]= (SSE[traiti,traiti]+df*scale[traiti])/rand(Chisq(nobs+df))
+            R[traiti,traiti]= (SSE[traiti,traiti]+df*scale[traiti,traiti])/rand(Chisq(nobs+df)) 
         end
     end
     return R
@@ -116,13 +120,13 @@ function sampleVCs(mme::MME,sol::Union{Array{Float64,1},Array{Float32,1}})
           end
       end
        q  = mme.modelTermDict[term_array[1]].nLevels
-       G0 = rand(InverseWishart(random_term.df + q, convert(Array,Symmetric(random_term.scale + S))))
+       G0 = rand(InverseWishart(random_term.Gi.df + q, convert(Array,Symmetric(random_term.Gi.scale + S))))
        if mme.MCMCinfo.double_precision == false
            G0 = Float32.(G0)
        end
-       random_term.GiOld = copy(random_term.GiNew)
-       random_term.GiNew = copy(inv(G0))
-       random_term.Gi    = copy(inv(G0))
+       random_term.GiOld.val = copy(random_term.GiNew.val)
+       random_term.GiNew.val = copy(inv(G0))
+       random_term.Gi.val    = copy(inv(G0))
        if random_term.randomType == "A"
            mme.Gi    = random_term.Gi
        end
@@ -131,7 +135,7 @@ end
 ########################################################################
 # Marker Effects Variance
 ########################################################################
-function sample_marker_effect_variance(Mi,constraint=false)
+function sample_marker_effect_variance(Mi)
     if Mi.method == "BayesL"
         invweights = 1 ./ Mi.gammaArray
     elseif Mi.method == "GBLUP"
@@ -142,27 +146,27 @@ function sample_marker_effect_variance(Mi,constraint=false)
     if Mi.ntraits == 1
         if Mi.method in ["BayesC","BayesL","RR-BLUP","GBLUP"]
             nloci = Mi.method == "BayesC" ? sum(Mi.δ[1]) : Mi.nMarkers
-            Mi.G  = sample_variance(Mi.α[1], nloci, Mi.df, Mi.scale, invweights)
+            Mi.G.val  = sample_variance(Mi.α[1], nloci, Mi.G.df, Mi.G.scale, invweights)
             if Mi.method == "BayesL"
-                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G) # MH sampler of gammaArray (Appendix C in paper)
+                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) # MH sampler of gammaArray (Appendix C in paper)
             end
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers
-                Mi.G[j] = sample_variance(Mi.β[1][j],1,Mi.df, Mi.scale)
+                Mi.G.val[j] = sample_variance(Mi.β[1][j],1,Mi.G.df, Mi.G.scale)
             end
         end
     else
         if Mi.method in ["RR-BLUP","BayesC","BayesL","GBLUP"]
             data = (Mi.method == "BayesC" ? Mi.β : Mi.α)
-            Mi.G =sample_variance(data, Mi.nMarkers, Mi.df, Mi.scale, invweights, constraint)
+            Mi.G.val =sample_variance(data, Mi.nMarkers, Mi.G.df, Mi.G.scale, invweights, Mi.G.constraint)
             if Mi.method == "BayesL"
-                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G) #MH sampler of gammaArray (Appendix C in paper)
+                sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) #MH sampler of gammaArray (Appendix C in paper)
             end
         elseif Mi.method == "BayesB" #potential slowdown (scalar multiplication is used instead of matrices)
             marker_effects_matrix = reduce(hcat,Mi.β)'
             for i = 1:Mi.nMarkers
                 data    = marker_effects_matrix[:,i]
-                Mi.G[i] = sample_variance(data, 1, Mi.df, Mi.scale, false, constraint)
+                Mi.G.val[i] = sample_variance(data, 1, Mi.G.df, Mi.G.scale, false, Mi.G.constraint)
             end
         end
     end

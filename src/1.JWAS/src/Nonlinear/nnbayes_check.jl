@@ -135,7 +135,6 @@ end
 # below function is to modify mme from multi-trait model to multiple single trait models
 # coded by Hao
 function nnbayes_mega_trait(mme)
-
     #mega_trait
     if mme.nModels == 1
         error("more than 1 trait is required for MegaLMM analysis.")
@@ -143,12 +142,12 @@ function nnbayes_mega_trait(mme)
     mme.MCMCinfo.constraint = true
 
     ##sample from scale-inv-⁠χ2, not InverseWishart
-    mme.df.residual  = mme.df.residual - mme.nModels
-    mme.scaleR       = diag(mme.scaleR/(mme.df.residual - 1))*(mme.df.residual-2)/mme.df.residual #diag(R_prior_mean)*(ν-2)/ν
+    mme.R.df    = mme.R.df - mme.nModels
+    mme.R.scale = diag(mme.R.scale/(mme.R.df - 1))*(mme.R.df-2)/mme.R.df #diag(R_prior_mean)*(ν-2)/ν
     if mme.M != 0
         for Mi in mme.M
-            Mi.df        = Mi.df - mme.nModels
-            Mi.scale    = diag(Mi.scale/(Mi.df - 1))*(Mi.df-2)/Mi.df
+            Mi.G.df    = Mi.G.df - mme.nModels
+            Mi.G.scale = diag(Mi.G.scale/(Mi.G.df - 1))*(Mi.G.df-2)/Mi.G.df
         end
     end
 
@@ -157,9 +156,9 @@ end
 # below function is to modify essential parameters for partial connected NN
 function nnbayes_partial_para_modify2(mme)
     for Mi in mme.M
-      Mi.scale = Mi.scale[1]
-      Mi.G = Mi.G[1,1]
-      Mi.genetic_variance=Mi.genetic_variance[1,1]
+      Mi.G.scale = Mi.G.scale[1]
+      Mi.G.val = Mi.G.val[1,1]
+      Mi.genetic_variance.val=Mi.genetic_variance.val[1,1]
     end
 end
 
@@ -205,4 +204,16 @@ function nnlmm_initialize_missing(mme,df)
     n_omics          = length(mme.lhsVec)             #number of omics
     full_omics       = n_observed_omics .== n_omics   #indicator for ind with full omics
     mme.incomplete_omics    = vec(.!full_omics)              #indicator for ind with no/partial omics
+end
+
+
+function nnmm_print_info_input_to_middle_layer(mme)
+        nThread = Threads.nthreads()
+        is_mega_trait = mme.R.constraint==true && mme.M[1].G.constraint==true #is_mega_trait when no residual and marker effect covariances 
+        if is_mega_trait
+            printstyled(" - Bayesian Alphabet:                multiple independent single-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+            printstyled(" - Multi-threaded parallelism:       $nThread threads are used to run single-trait models in parallel. \n",bold=false,color=:green)
+        else
+            printstyled(" - Bayesian Alphabet:                multi-trait Bayesian models are used to sample marker effect. \n",bold=false,color=:green)
+        end
 end

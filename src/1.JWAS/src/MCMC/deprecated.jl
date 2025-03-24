@@ -1,7 +1,7 @@
 M   = mme.M[1].genotypes
 X   = M
 XPX = X'X
-lhs = XPX+I*mme.R[1,1]/mme.M[1].G[1,1]
+lhs = XPX+I*mme.R.val[1,1]/mme.M[1].G[1,1]
 Ch = cholesky(lhs)
 iL = inv(Ch.L)
 iLhs = inv(Ch)

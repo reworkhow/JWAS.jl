@@ -1,24 +1,29 @@
-#return column index for each level of variables in incidence matrix X
-#e.g. "A1"=>1,"A2"=>2
-function mkDict(a)
-  aUnique = unique(a)
-  d = Dict()
-  names = Array{Any}(undef,size(aUnique,1))
-  for (i,s) in enumerate(aUnique)
-    names[i] = s
-    d[s] = i
-  end
-  return d,names
+"""
+    mkDict(a::Vector{T}) where T <: Any
+
+    Get column index in the incidence matrix for each level of a factor (categorical variable) 
+    input:  a=["a1","a4","a1","a2"] 
+    output: d=Dict("a2" => 3, "a1" => 1, "a4" => 2), level_names=["a1","a4","a2"]
+    
+    note: enumerate(level_names) gives a list of tuples (index, element), reverse() to reverse (index,element) to (element,index)
+"""
+function mkDict(a::Vector{T}) where T <: Any
+    # Create a vector of unique levels from a
+    level_names = String.(unique(a)) #e.g., ["a1","a2","a1"] -> ["a1","a2"]; apply String() to avoid the String3 type in enumerate()
+    # Create a dictionary mapping each element to its index in level_names
+    d = Dict(map(reverse, enumerate(level_names))) #e.g., Dict("a1"=>1,"a2"=>2), level_names=["a1","a2"]
+    return d, level_names
 end
 
 """
-    build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0)
+    build_model(model_equations::AbstractString,R=false; df::AbstractFloat=4.0, estimate_variance=true)
 
 * Build a model from **model equations** with the residual variance **R**. In Bayesian analysis, **R**
   is the mean for the prior assigned for the residual variance with degree of freedom **df**, defaulting
   to 4.0. If **R** is not provided, a value is calculated from responses (phenotypes).
 * By default, all variabels in model_equations are factors (categorical) and fixed. Set variables
   to be covariates (continuous) or random using functions `set_covariate()` or `set_random()`.
+* The argument `estimate_variance` indicates whether to estimate the residual variance; `estimate_variance=true` is the default.
 
 ```julia
 #single-trait
@@ -34,9 +39,15 @@ R               = [6.72   24.84
 models          = build_model(model_equations,R);
 ```
 """
-function build_model(model_equations::AbstractString, R = false; df = 4.0,
+function build_model(model_equations::AbstractString, 
+                     ## residual variance: 
+                     R = false; df = 4.0, 
+                     estimate_variance=true, estimate_scale=false, 
+                     constraint=false, #for multi-trait only, constraint=true means no residual covariance among traits
+                     ## nnmm:
                      num_hidden_nodes = false, nonlinear_function = false, latent_traits=false, #nonlinear_function(x1,x2) = x1+x2
                      user_σ2_yobs = false, user_σ2_weightsNN = false,
+                     ## censored, categorical traits:
                      censored_trait = false, categorical_trait = false)
 
     if R != false && !isposdef(map(AbstractFloat,R))
@@ -45,6 +56,9 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     if !(typeof(model_equations)<:AbstractString) || model_equations==""
       error("Model equations are wrong.\n
       To find an example, type ?build_model and press enter.\n")
+    end
+    if estimate_scale != false
+      error("estimate scale for residual variance is not supported now.")
     end
 
     ############################################################################
@@ -103,10 +117,10 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
             genotypei.ntraits = is_nnbayes_partial ? 1 : nModels
             genotypei.trait_names = is_nnbayes_partial ? trait_names : string.(lhsVec)
             if nModels != 1
-              genotypei.df = genotypei.df + nModels
+              genotypei.G.df = genotypei.G.df + nModels
             end
-            if !is_nnbayes_partial && (genotypei.G != false || genotypei.genetic_variance != false)
-              if size(genotypei.G,1) != nModels && size(genotypei.genetic_variance,1) != nModels
+            if !is_nnbayes_partial && (genotypei.G.val != false || genotypei.genetic_variance.val != false)
+              if size(genotypei.G.val,1) != nModels && size(genotypei.genetic_variance.val,1) != nModels
                 error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")
               end
             end
@@ -117,11 +131,27 @@ function build_model(model_equations::AbstractString, R = false; df = 4.0,
     end
 
   #create mme with genotypes
-  filter!(x->x.random_type != "genotypes",modelTerms)
-  filter!(x->x[2].random_type != "genotypes",dict)
-  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec,R == false ? R : Float32.(R),Float32(df))
+  filter!(x->x.random_type != "genotypes",modelTerms) #remove "genotypes" from modelTerms
+  filter!(x->x[2].random_type != "genotypes",dict)    #remove "genotypes" from dict
+  
+
+  #set scale and df for residual variance
+  if nModels == 1
+    scale_R = R*(df - 2)/df
+    df_R    = df 
+  else
+    scale_R = R*(df - 1)
+    df_R    = df + nModels
+  end
+  
+  #initialize mme
+  mme = MME(nModels,modelVec,modelTerms,dict,lhsVec, 
+            Variance(R==false ? R : Float32.(R), #val
+                     Float32(df_R),              #df
+                     R==false ? R : scale_R,     #scale
+                     estimate_variance, estimate_scale, constraint))
   if length(genotypes) != 0
-    mme.M = genotypes
+    mme.M = genotypes #add genotypes into mme
   end
 
   #NNBayes:
@@ -211,7 +241,7 @@ function getData(trm::ModelTerm,df::DataFrame,mme::MME) #ModelTerm("1:A*B")
   end
   trm.data = str
   val=convert(Array,val)
-  DataFrames.recode!(val, missing => 0.0)
+  val = coalesce.(val, 0.0) #replace missing with 0.0
   trm.val = ((mme.MCMCinfo == false || mme.MCMCinfo.double_precision) ? Float64.(val) : Float32.(val))
 end
 
@@ -317,9 +347,9 @@ function getMME(mme::MME, df::DataFrame)
     end
 
 
-    y   = DataFrames.recode(df[!,mme.lhsVec[1]], missing => 0.0)
+    y   = coalesce.(df[!,mme.lhsVec[1]], 0.0) #replace missing values with 0
     for i=2:size(mme.lhsVec,1)
-      y   = [y; DataFrames.recode(df[!,mme.lhsVec[i]],missing=>0.0)]
+      y   = [y; coalesce.(df[!,mme.lhsVec[i]], 0.0)]
     end
     ii      = 1:length(y)
     jj      = ones(length(y))
@@ -339,7 +369,8 @@ function getMME(mme::MME, df::DataFrame)
     #such that no imputation of missing phenotypes is required.
     #mixed model equations is obtained below for multi-trait PBLUP
     #with known residual covariance matrix and missing phenotypes.
-      if mme.MCMCinfo.mega_trait == true  #multiple single trait
+      # if mme.MCMCinfo.mega_trait == true  #multiple single trait
+      if mme.R.constraint == true #tj: Hao, please confirm! now we do not have mege_trait option. We only have constraint option for variances
         Ri = Diagonal(repeat(mme.invweights,mme.nModels))
       else  #multi-trait
         Ri = mkRi(mme,df,mme.invweights)
@@ -350,13 +381,13 @@ function getMME(mme::MME, df::DataFrame)
 
     #Random effects parts in MME
     if mme.nModels == 1
-      #random_term.GiNew*mme.R - random_term.GiOld*mme.ROld
+      #random_term.GiNew*mme.R.val - random_term.GiOld*mme.ROld
       for random_term in mme.rndTrmVec #trick
-        random_term.GiOld = zero(random_term.GiOld)
+        random_term.GiOld.val = zero(random_term.GiOld.val)
       end
       addVinv(mme)
       for random_term in mme.rndTrmVec #trick
-        random_term.GiOld = copy(random_term.GiNew)
+        random_term.GiOld.val = copy(random_term.GiNew.val)
       end
     else
       addVinv(mme)

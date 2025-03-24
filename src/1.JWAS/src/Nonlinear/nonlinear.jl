@@ -28,7 +28,7 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
     if mme.is_activation_fcn == true #Neural Network with activation function
         if sum(incomplete_omics) != 0   #at least 1 ind with incomplete omics
             #step 1. sample latent trait (only for individuals with incomplete omics data
-            ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.weights_NN,mme.R,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
+            ylats_new = hmc_one_iteration(10,0.1,ylats_old[incomplete_omics,:],yobs[incomplete_omics],mme.weights_NN,mme.R.val,σ2_yobs,ycorr2[incomplete_omics,:],nonlinear_function)
             #step 2. update ylats with sampled latent traits
             ylats_old[incomplete_omics,:] = ylats_new
             #step 3. for individuals with partial omics data, put back the partial real omics.

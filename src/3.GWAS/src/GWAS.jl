@@ -76,7 +76,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
     end
 
     window_size_bp = map(Int64,parse(Float64,split(window_size)[1])*1_000_000)
-    mapfile = CSV.read(map_file, DataFrame, header = header, types=Dict(1 => String)) #the 1st column (markerID) must be string
+    mapfile = CSV.read(map_file, DataFrame, header = header, types=Dict(1 => String, 2 => String, 3 => Int64)) #the 1st column (markerID) must be string
     #remove SNPs in mapfile that are not used in Bayesian analysis (e.g., removed in QC)
     snpID    = mme.M[1].markerID
     in_snpID = findall(x -> x ∈ snpID, mapfile[:,1])
@@ -85,8 +85,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
         error("Please check the 1st column of the mapfile (i.e., marker ID)")
     end
     
-    chr     = map(string,mapfile[:,2])
-    pos     = map(Int64,mapfile[:,3])
+    chr     = mapfile[:,2]
+    pos     = mapfile[:,3]
 
     window_size_nSNPs   = Array{Int64,1}()  #save number of markers in ith window for all windows
     window_chr          = Array{String,1}() #1
@@ -167,6 +167,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
                   end
                 end
             end
+            writedlm("MCMC_samples_local_genomic_variance"*string(i)*".txt",winVar,',')
             if local_EBV == true
                 df= DataFrame(localEBV)
                 rename!(df,Symbol.("w".*string.(1:nWindows)))
@@ -174,7 +175,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             end
             winVarProps[isnan.(winVarProps)] .= 0.0 #replace NaN caused by situations no markers are included in the model
             WPPA, prop_genvar = vec(mean(winVarProps .> threshold,dims=1)), vec(mean(winVarProps,dims=1))
-            prop_genvar = round.(prop_genvar*100,digits=2)
+            prop_genvar = round.(prop_genvar*100,digits=6)
             winVarmean = vec(mean(winVar,dims=1))
             winVarstd  = vec(std(winVar,dims=1))
 
@@ -226,6 +227,8 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             end
             gcov[isnan.(gcov)] .= 0.0
             gcor[isnan.(gcor)] .= 0.0
+            writedlm("MCMC_samples_local_genomic_covariance"*".txt",gcov,',')
+
             gcovmean,gcovstd = vec(mean(gcov,dims=1)),vec(std(gcov,dims=1))
             gcormean,gcorstd = vec(mean(gcor,dims=1)),vec(std(gcor,dims=1))
             outi = DataFrame(trait  = fill("cor(t1,t2)",length(gcormean)),

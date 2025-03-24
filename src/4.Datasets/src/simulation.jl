@@ -1,5 +1,5 @@
 
-using Random,Statistics,DelimitedFiles,XSim,DataFrames
+using Random,Statistics,DelimitedFiles,XSim,DataFrames,CSV;
 Random.seed!(2);
 
 #set genome information
@@ -70,10 +70,6 @@ pheno=BV+noBV+[randn(300);randn(300);randn(300)];
 df[!,:y1]=pheno[1:300]
 df[!,:y2]=pheno[301:600]
 df[!,:y3]=pheno[601:900]
-
-using CSV
-
-?CSV.write
 
 CSV.write("phenotypes.txt",df)
 
