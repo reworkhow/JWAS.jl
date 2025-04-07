@@ -173,6 +173,7 @@ function runMCMC(mme::MME,df;
                 printout_frequency              = chain_length+1,
                 big_memory                      = false,
                 double_precision                = false,
+                fast_blocks                     = false,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_folder                     = "results",
                 output_samples_for_all_parameters = false,
@@ -250,7 +251,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   seed,double_precision,output_folder,RRM)
+                   seed,double_precision,output_folder,RRM,fast_blocks)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
     #       3)output individual IDs; 4)Priors  5)Prediction equation
@@ -272,6 +273,20 @@ function runMCMC(mme::MME,df;
             SSBRrun(mme,df_whole,train_index,big_memory)
         end
         set_marker_hyperparameters_variances_and_pi(mme)
+    end
+    ############################################################################
+    #fast blocks #now only work for one geno
+    ############################################################################
+    if fast_blocks != false
+        if fast_blocks == true
+            block_size = Int(floor(sqrt(mme.M[1].nObs)))
+        elseif typeof(fast_blocks) <: Number
+            block_size = Int(floor(fast_blocks))
+        end
+        mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
+        mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1]))) #number of outer loop
+        println("BLOCK SIZE: $block_size")
+        flush(stdout)
     end
     ############################################################################
     # Adhoc functions
