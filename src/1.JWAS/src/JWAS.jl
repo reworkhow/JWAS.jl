@@ -47,10 +47,12 @@ include("structure_equation_model/SEM.jl")
 include("RRM/MCMC_BayesianAlphabet_RRM.jl")
 include("RRM/RRM.jl")
 
-#Latent Traits
+#NNMM
+include("NNMM/nnmm_types.jl")
+include("NNMM/nnmm_read_files.jl")
 include("NNMM/nonlinear.jl")
-include("NNMM/bnn_hmc.jl")
-include("NNMM/nnbayes_check.jl")
+include("NNMM/nnmm_hmc.jl")
+include("NNMM/nnmm_check.jl")
 include("NNMM/nnmm_build_MME.jl")
 include("NNMM/nnmm_runMCMC.jl")
 include("NNMM/nnmm_MCMC_BayesianAlphabet.jl")
@@ -65,7 +67,11 @@ export build_model,set_covariate,set_random,add_genotypes,get_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
-export nnmm_build_model,nnmm_runMCMC
+
+#NNMM
+export Layer, Equation,read_genotypes, read_omics, read_phenotypes
+export nnmm_build_model,runNNMM
+
 #Pedmodule
 export get_pedigree,get_info
 #misc
