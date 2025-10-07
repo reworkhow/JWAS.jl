@@ -1,6 +1,6 @@
 # JWAS.jl
 
-[![Build Status](https://travis-ci.com/reworkhow/JWAS.jl.svg?branch=master)](https://travis-ci.org/reworkhow/JWAS.jl)
+[![CI](https://github.com/reworkhow/JWAS.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/reworkhow/JWAS.jl/actions/workflows/CI.yml)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://reworkhow.github.io/JWAS.jl/latest)
 <!---[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://reworkhow.github.io/JWAS.jl/stable)--->
 
