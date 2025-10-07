@@ -21,7 +21,7 @@ for old_folder in ["results", "results1", "results2", "results3", "results4", "r
                    "test_results_temp", "test_results_temp1", "test_results_temp2", "test_results_temp3",
                    "temp1", "temp11", "temp12", "temp13", "temp2",
                    "gwas_test", "gwas_test1", "gwas_test2", "gwas_test3", "gwas_test4",
-                   "missing_test", "mytest", "mytest_deprecated"]
+                   "missing_test", "mytest"]
     if isdir(old_folder)
         rm(old_folder, recursive=true)
         println("  Removed folder: $old_folder")
@@ -325,12 +325,6 @@ println()
                 println("\n→ Running integration/test_BayesianAlphabet.jl")
                 # Note: These tests create their own directories
                 integration_file = joinpath(original_dir, "test", "integration", "test_BayesianAlphabet.jl")
-                include(integration_file)
-            end
-            
-            @testset "Deprecated API Tests" begin
-                println("\n→ Running integration/test_BayesianAlphabet_deprecated.jl")
-                integration_file = joinpath(original_dir, "test", "integration", "test_BayesianAlphabet_deprecated.jl")
                 include(integration_file)
             end
             

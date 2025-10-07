@@ -7,7 +7,6 @@
 test/
 ├── runtests.jl
 ├── test_BayesianAlphabet.jl
-├── test_BayesianAlphabet_deprecated.jl
 ├── test_genotypes.jl
 ├── Unitest.jl
 ├── RRM_test.jl
@@ -32,9 +31,8 @@ test/
 ├── README.md                           📖 Quick guide
 ├── runtests.jl                         ⭐ Main test (63 unit tests)
 │
-├── integration/                        📁 3 integration test files
+├── integration/                        📁 2 integration test files
 │   ├── test_BayesianAlphabet.jl
-│   ├── test_BayesianAlphabet_deprecated.jl
 │   └── test_genotypes.jl
 │
 ├── long/                               📁 3 long-running test files
@@ -91,9 +89,8 @@ test/
 ├── 📄 README.md (1)                  Test folder guide
 ├── 📄 runtests.jl (1)                Main test suite
 │
-├── 📁 integration/ (3 files)         Integration tests
+├── 📁 integration/ (2 files)         Integration tests
 │   ├── test_BayesianAlphabet.jl
-│   ├── test_BayesianAlphabet_deprecated.jl
 │   └── test_genotypes.jl
 │
 ├── 📁 long/ (3 files)                Long-running tests
@@ -109,7 +106,7 @@ test/
     └── github_actions_example.yml    CI template
 ```
 
-**Total: 13 files** (down from 18+)
+**Total: 12 files** (down from 18+)
 
 ---
 
