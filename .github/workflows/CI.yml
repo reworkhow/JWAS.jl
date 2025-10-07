@@ -51,5 +51,17 @@ jobs:
           '
       
       - name: Run unit tests
-        run: julia --project=. test/runtests.jl
+        run: julia --project=. --code-coverage=user test/runtests.jl
+      
+      - name: Process coverage
+        uses: julia-actions/julia-processcoverage@v1
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1'
+        continue-on-error: true
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1'
+        with:
+          files: lcov.info
+        continue-on-error: true
 

@@ -1,6 +1,7 @@
 # JWAS.jl
 
 [![CI](https://github.com/reworkhow/JWAS.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/reworkhow/JWAS.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/reworkhow/JWAS.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/reworkhow/JWAS.jl)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://reworkhow.github.io/JWAS.jl/latest)
 <!---[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://reworkhow.github.io/JWAS.jl/stable)--->
 
