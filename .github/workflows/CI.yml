@@ -56,14 +56,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.version == '1'
         run: |
           export RUN_INTEGRATION_TESTS=true
-          julia --project=. test/runtests.jl
+          timeout 600 julia --project=. test/runtests.jl
         continue-on-error: true
       
       - name: Run long tests
         if: matrix.os == 'ubuntu-latest' && matrix.version == '1'
         run: |
           export RUN_LONG_TESTS=true
-          julia --project=. test/runtests.jl
+          timeout 1800 julia --project=. test/runtests.jl
         continue-on-error: true
       
       - name: Process coverage
