@@ -399,8 +399,14 @@ println("  Test directory: $test_home")
 if CLEANUP_ON_SUCCESS
     println("  Cleaning up test files...")
     if isdir(test_home)
-        rm(test_home, recursive=true)
-        println("  ✓ Test directory cleaned up")
+        try
+            rm(test_home, recursive=true, force=true)
+            println("  ✓ Test directory cleaned up")
+        catch e
+            println("  ⚠ Could not remove test directory (files may be locked)")
+            println("  Directory: $test_home")
+            # Don't fail tests because of cleanup issues
+        end
     else
         println("  ✓ Test directory already cleaned")
     end
