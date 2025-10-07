@@ -21,7 +21,7 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          # - windows-latest  # TODO: Fix Windows-specific test issues
+          - windows-latest
     
     steps:
       - name: Checkout code
