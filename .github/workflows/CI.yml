@@ -40,6 +40,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-${{ matrix.version }}-
       
+      - name: Remove Manifest (let each Julia version resolve)
+        run: rm -f Manifest.toml
+      
       - name: Install dependencies
         run: |
           julia --project=. -e '
