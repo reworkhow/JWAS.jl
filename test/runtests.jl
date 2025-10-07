@@ -324,20 +324,17 @@ println()
             @testset "Bayesian Alphabet Tests" begin
                 println("\n→ Running integration/test_BayesianAlphabet.jl")
                 # Note: These tests create their own directories
-                # Uncomment to run: include(joinpath(original_dir, "integration", "test_BayesianAlphabet.jl"))
-                @info "integration/test_BayesianAlphabet.jl skipped (uncomment to run)"
+                include(joinpath(original_dir, "integration", "test_BayesianAlphabet.jl"))
             end
             
             @testset "Deprecated API Tests" begin
                 println("\n→ Running integration/test_BayesianAlphabet_deprecated.jl")
-                # Uncomment to run: include(joinpath(original_dir, "integration", "test_BayesianAlphabet_deprecated.jl"))
-                @info "integration/test_BayesianAlphabet_deprecated.jl skipped (uncomment to run)"
+                include(joinpath(original_dir, "integration", "test_BayesianAlphabet_deprecated.jl"))
             end
             
             @testset "Genotype Loading Tests" begin
                 println("\n→ Running integration/test_genotypes.jl")
-                # Uncomment to run: include(joinpath(original_dir, "integration", "test_genotypes.jl"))
-                @info "integration/test_genotypes.jl skipped (uncomment to run)"
+                include(joinpath(original_dir, "integration", "test_genotypes.jl"))
             end
             
         end
@@ -358,22 +355,19 @@ println()
             @testset "Random Regression Models" begin
                 println("\n→ Running long/RRM_test.jl")
                 # Note: RRM_test.jl may need HTTP, GSL, Plots, Kronecker packages
-                # Uncomment to run: include(joinpath(original_dir, "long", "RRM_test.jl"))
-                @info "long/RRM_test.jl skipped (requires additional packages: HTTP, GSL, Plots, Kronecker)"
+                include(joinpath(original_dir, "long", "RRM_test.jl"))
             end
             
             @testset "Accuracy Validation" begin
                 println("\n→ Running long/Unitest.jl")
                 # Note: Unitest.jl creates its own directories and may take a long time
-                # Uncomment to run: include(joinpath(original_dir, "long", "Unitest.jl"))
-                @info "long/Unitest.jl skipped (uncomment to run - may take hours)"
+                include(joinpath(original_dir, "long", "Unitest.jl"))
             end
             
             @testset "Single-Step Block Analysis" begin
                 println("\n→ Running long/ssBR-block.jl")
                 # Note: ssBR-block.jl may require specific data files
-                # Uncomment to run: include(joinpath(original_dir, "long", "ssBR-block.jl"))
-                @info "long/ssBR-block.jl skipped (uncomment to run)"
+                include(joinpath(original_dir, "long", "ssBR-block.jl"))
             end
             
         end
