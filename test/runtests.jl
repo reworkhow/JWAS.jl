@@ -324,17 +324,20 @@ println()
             @testset "Bayesian Alphabet Tests" begin
                 println("\n→ Running integration/test_BayesianAlphabet.jl")
                 # Note: These tests create their own directories
-                include(joinpath(original_dir, "integration", "test_BayesianAlphabet.jl"))
+                integration_file = joinpath(original_dir, "test", "integration", "test_BayesianAlphabet.jl")
+                include(integration_file)
             end
             
             @testset "Deprecated API Tests" begin
                 println("\n→ Running integration/test_BayesianAlphabet_deprecated.jl")
-                include(joinpath(original_dir, "integration", "test_BayesianAlphabet_deprecated.jl"))
+                integration_file = joinpath(original_dir, "test", "integration", "test_BayesianAlphabet_deprecated.jl")
+                include(integration_file)
             end
             
             @testset "Genotype Loading Tests" begin
                 println("\n→ Running integration/test_genotypes.jl")
-                include(joinpath(original_dir, "integration", "test_genotypes.jl"))
+                integration_file = joinpath(original_dir, "test", "integration", "test_genotypes.jl")
+                include(integration_file)
             end
             
         end
@@ -355,19 +358,22 @@ println()
             @testset "Random Regression Models" begin
                 println("\n→ Running long/RRM_test.jl")
                 # Note: RRM_test.jl may need HTTP, GSL, Plots, Kronecker packages
-                include(joinpath(original_dir, "long", "RRM_test.jl"))
+                long_file = joinpath(original_dir, "test", "long", "RRM_test.jl")
+                include(long_file)
             end
             
             @testset "Accuracy Validation" begin
                 println("\n→ Running long/Unitest.jl")
                 # Note: Unitest.jl creates its own directories and may take a long time
-                include(joinpath(original_dir, "long", "Unitest.jl"))
+                long_file = joinpath(original_dir, "test", "long", "Unitest.jl")
+                include(long_file)
             end
             
             @testset "Single-Step Block Analysis" begin
                 println("\n→ Running long/ssBR-block.jl")
                 # Note: ssBR-block.jl may require specific data files
-                include(joinpath(original_dir, "long", "ssBR-block.jl"))
+                long_file = joinpath(original_dir, "test", "long", "ssBR-block.jl")
+                include(long_file)
             end
             
         end
