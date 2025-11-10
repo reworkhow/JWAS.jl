@@ -1,6 +1,6 @@
 mutable struct Layer
     layer_name::String  
-    data_path::String
+    data_path
     separator
     header
     data
@@ -9,14 +9,15 @@ mutable struct Layer
     missing_value
     center   
     function Layer(;layer_name, 
-                    data_path,
-                    separator=",",
+                    data_path::Union{String, Vector{String}},
+                    separator=',',
                     header=true, 
-                    data=false,
+                    data=[],
                     quality_control=true,
                     MAF=0.01,
                     missing_value=9.0,
                     center=true)
+
         new(layer_name, 
             data_path, 
             separator, 
@@ -96,9 +97,10 @@ mutable struct Omics
     obsID::Array{AbstractString,1}  #row ID for (imputed) genotyped and phenotyped inds (finally)
     featureID # = omicsID
     nObs::Int64                     #length of obsID
-    nFeatures::Int64
+    nFeatures::Int64 #number of omics only
+    nMarkers::Int64 #to avoid error for functions using Mi.nMarkers
     centered::Bool
-    data::Union{Array{Float64,2},Array{Float32,2}}
+    data #:: Union{Missing, AbstractMatrix{T}} where {T<:Union{Missing, AbstractFloat}}
     ntraits           #number of traits included in the model
   
     genetic_variance  #genetic variance, type: Variance struct
@@ -130,17 +132,22 @@ mutable struct Omics
     meanScaleVara2
   
     output_genotypes #output genotypes
-  
     isGRM
-    Omics(obsID,featureID,nObs,nFeatures,centered,data) = 
+
+    aligned_omics_w_phenotype
+    aligned_obsID_w_phenotype
+    aligned_nObs_w_phenotype
+    
+    Omics(obsID,featureID,nObs,nFeatures,data) = 
         new(false,false,
-            obsID,featureID,nObs,nFeatures,centered,data,false,
+            obsID,featureID,nObs,nFeatures,nFeatures,false,data,false,
             Variance(false,false,false,true,false,false),Variance(false,false,false,true,false,false), 
             false,true,
             false,false,false,false,false,false,
             false,false,false,false,
             false,false,false,false,false,false,false,false,false,
-            false,false)
+            false,false,
+            false,false,false)
 end
 
 mutable struct Phenotypes
@@ -158,56 +165,91 @@ end
 mutable struct Equation
     from_layer_name::String 
     to_layer_name::String
-    equation::String       
+    equation::String
+    omics_name
+    phenotype_name
     covariate
     random
     activation_function
     partial_connect_structure
+    starting_value
     ## method:
     method
     Pi
     estimatePi
-    ## variance:
+    ## genetic variance:
     G
     G_is_marker_variance
-    df
-    estimate_variance
-    estimate_scale
-    constraint
+    df_G
+    estimate_variance_G
+    estimate_scale_G
+    constraint_G
+    ## residual variance:
+    R
+    df_R
+    estimate_variance_R
+    estimate_scale_R
+    constraint_R
     #below function is used for genotypes data
     function Equation(;from_layer_name, 
                       to_layer_name, 
                       equation,
+                      omics_name=false,
+                      phenotype_name=false,
                       covariate=false,
                       random=false,
                       activation_function="linear",
                       partial_connect_structure=false,
+                      starting_value=false,
+                      #
                       method="BayesC", 
                       Pi=0.0,
                       estimatePi=true,
+                      #
                       G=false,
                       G_is_marker_variance=false,
-                      df = 4.0,
-                      estimate_variance=true,
-                      estimate_scale=false,
-                      constraint=true)
+                      df_G = 4.0,
+                      estimate_variance_G=true,
+                      estimate_scale_G=false,
+                      constraint_G=true,
+                      #
+                      R=false,
+                      df_R=4.0,
+                      estimate_variance_R=true,
+                      estimate_scale_R=false,
+                      constraint_R=true)
+        
+        if omics_name == false && phenotype_name == false
+            error("omics_name or phenotype_name must be provided.")
+        end
         
         new(from_layer_name::String, 
             to_layer_name::String,
             equation::String,       
+            omics_name,
+            phenotype_name,
             covariate,
             random,
             activation_function,
             partial_connect_structure,
+            starting_value,
+            #
             method,
             Pi,
             estimatePi,
+            #
             G,
             G_is_marker_variance,
-            df,
-            estimate_variance,
-            estimate_scale,
-            constraint)    
+            df_G,
+            estimate_variance_G,
+            estimate_scale_G,
+            constraint_G,
+            #
+            R,
+            df_R,
+            estimate_variance_R,
+            estimate_scale_R,
+            constraint_R)    
     end
 end
 

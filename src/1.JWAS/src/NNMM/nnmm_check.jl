@@ -179,26 +179,41 @@ end
 
 
 #below function is to initialize missing omics with yobs
-function nnlmm_initialize_missing(mme,df)
+function nnlmm_initialize_missing_with_mean(mme,df)
     #define mme.yobs here because ungenotyped inds has been removed from df
     mme.yobs = df[!,mme.yobs_name]  # mme.yobs = DataFrames.recode(df[!,mme.yobs_name], missing => 0.0)  #e.g., mme.lhsVec=[:y1,:y2]
-    if mme.latent_traits != false  #NN-LMM-Omics
+    # if mme.latent_traits != false  #NN-LMM-Omics
       #save omics data missing pattern
       mme.missingPattern = .!ismissing.(Matrix(df[!,mme.lhsVec]))
       #replace missing data with values in yobs
       for i in mme.lhsVec      #for each omics feature
+        all_missing_omics_i = all(ismissing.(df[!,i])) #whether all omics i are missing
+        if !all_missing_omics_i #not all omics i are missing
+            mean_omics_i = mean(filter(isfinite,skipmissing(df[!,i]))) #mean of non-missing omics i
+        else #all omics i are missing, change col type from Missing to union of Missing and Float64
+            df[!,i] = convert(Vector{Union{Missing,Float64}}, df[!,i])
+        end
         for j in 1:size(df,1)  #for each observation
           if ismissing(df[j,i])
-            df[j,i]=mme.yobs[j]
+            if !all_missing_omics_i
+                df[j,i]=mean_omics_i
+            else #all omics i are missing
+                #if yobs[j] is missing, remove the row from df
+                if ismissing(mme.yobs[j])
+                    error("this individual has no omics data and no phenotype data: $(df[j,:ID]), please remove this individual.")
+                else
+                    df[j,i]=mme.yobs[j]
+                end
+            end
           end
         end
       end
-    else  #NN-Bayes with hidden nodes (G3 paper)
-      #all omics should be missing, the missingPattern should be all 0
-      #but we already set y1,...,y5 as yobs, so we have to build missingPattern
-      # byhand.
-      mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
-    end
+    # else  #NN-Bayes with hidden nodes (G3 paper)
+    #   #all omics should be missing, the missingPattern should be all 0
+    #   #but we already set y1,...,y5 as yobs, so we have to build missingPattern
+    #   # byhand.
+    #   mme.missingPattern = .!ismissing.(Array{Missing}(missing, size(df[!,mme.lhsVec])))
+    # end
     # add indicators for individuals with full omics data, so their omics won't be sampled
     n_observed_omics = sum(mme.missingPattern,dims=2) #number of observed omics for each ind
     n_omics          = length(mme.lhsVec)             #number of omics

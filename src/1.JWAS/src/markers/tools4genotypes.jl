@@ -127,6 +127,55 @@ function align_genotypes(mme::MME,output_heritability=false,single_step_analysis
     end
 end
 
+#compared to the above align_genotypes() function:
+#Mi.genotypes -> Mi.data
+#remove: Align genotypes with phenotypes; it should be used in each iteration of MCMC because omics is updated at each iteration
+function align_omics(mme::MME,output_heritability=false,single_step_analysis=false)
+    if single_step_analysis==false
+        if mme.output_ID != 0
+            for Mi in mme.M
+                omicsID=Mi.featureID
+                Mi_genotypes = Matrix(Mi.data[!,omicsID]) #only select the omics columns (i.e., covariates/random effect terms are not included)
+                if mme.output_ID != Mi.obsID
+                    Zo  = map(Float32,mkmat_incidence_factor(mme.output_ID,Mi.obsID))
+                    Mi.output_genotypes =  Zo*Mi_genotypes
+                else
+                    Mi.output_genotypes =  Mi_genotypes #reference, not copy
+                end
+                if Mi.isGRM #relationship matrix is provided
+                    Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+                    Mi.output_genotypes = Mi.output_genotypes*Z'
+                end
+            end
+        end
+    end
+end
+
+
+#need to align after omics is updated at each iteration 
+#full omics is used for 1->2 (including testing inds without yobs)
+#partial omics is used for 2->3 (only for training inds with yobs)
+function align_transformed_omics_with_phenotypes(mme::MME,nonlinear_function)
+        #***************************************************************************
+        #Align genotypes with phenotypes
+        #Change mme.M.genotypes to phenotyped individuals to accommodate
+        #individuals with repeated records or individuals without records
+        #
+        #**********CENTERING?*******************************************************
+        if mme.obsID != mme.M[1].obsID
+            for Mi in mme.M
+                Z  = map(Float32,mkmat_incidence_factor(mme.obsID,Mi.obsID))
+                omicsID=Mi.featureID
+                Mi_omics = Matrix(Mi.data[!,omicsID]) #only select the omics columns (i.e., covariates/random effect terms are not included)
+                Mi.aligned_omics_w_phenotype = Z*Mi_omics
+                Mi.aligned_omics_w_phenotype = nonlinear_function.(Mi.aligned_omics_w_phenotype)
+                Mi.aligned_obsID_w_phenotype = mme.obsID
+                Mi.aligned_nObs_w_phenotype = length(mme.obsID)
+            end
+        end
+end
+
+
 """
 mkmat_incidence_factor(yID::Vector, uID::Vector)
     create an incidence matrix Z to reorder uID to yID by yID = Z*uID.
@@ -229,4 +278,8 @@ end
 
 function genetic2marker(M::Genotypes,π::Float64)
     M.G.val = M.genetic_variance.val/((1-π)*M.sum2pq)
+end
+
+function genetic2marker(M::Omics,π::Float64)
+    M.G.val = M.genetic_variance.val/((1-π)*M.nFeatures)
 end

@@ -310,7 +310,8 @@ function make_dataframes(df,mme)
     #                since the omics data can help better estimate marker effect
     #***************************************************************************
     if mme.nonlinear_function != false && mme.latent_traits != false
-        lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
+        printstyled("Make dataframes for NNMM omics \n",bold=false,color=:green)
+        lhsVec = [Symbol(mme.yobs_name) ; mme.lhsVec]  # [:y, :gene1, :gene2]
     else
         lhsVec = mme.lhsVec #reference, not copy
     end
@@ -448,7 +449,11 @@ function init_mixed_model_equations(mme,df,starting_value)
     ############################################################################
     if mme.M != 0
         for Mi in mme.M
-            nsol = Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs
+            if typeof(Mi) == Genotypes
+                nsol = Mi.method != "GBLUP" ? Mi.nMarkers : Mi.nObs
+            elseif typeof(Mi) == Omics
+                nsol = Mi.method != "GBLUP" ? Mi.nFeatures : Mi.nObs #nFeatures is the number of omics features
+            end
             if Mi.α == false
                 Mi.α = zeros((mme.MCMCinfo.double_precision ? Float64 : Float32),nsol*Mi.ntraits)
             else

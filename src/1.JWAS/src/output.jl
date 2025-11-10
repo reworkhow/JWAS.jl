@@ -503,11 +503,13 @@ function output_MCMC_samples(mme,vRes,G0,
          end
     end
     if mme.nonlinear_function != false #NNBayes
-        EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
+        # EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
+        # do not include intercepts in EBVmat
         if mme.is_activation_fcn == false  #user-defined nonlinear function
             BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
         else  #activation function
-            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
+            # BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
+            BV_NN = mme.nonlinear_function.(EBVmat)*mme.weights_NN #do not include intercepts
             writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
         end
         writedlm(outfile["EBV_NonLinear"],BV_NN',',')

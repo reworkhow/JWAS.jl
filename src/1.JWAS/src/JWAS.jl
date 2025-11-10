@@ -23,6 +23,16 @@ include("iterative_solver/solver.jl")
 #Markov chain Monte Carlo
 include("MCMC/MCMC_BayesianAlphabet.jl")
 
+#NNMM
+include("NNMM/nnmm_types.jl")
+include("NNMM/nnmm_read_files.jl")
+include("NNMM/nonlinear.jl")
+include("NNMM/nnmm_hmc.jl")
+include("NNMM/nnmm_check.jl")
+include("NNMM/nnmm_build_MME.jl")
+include("NNMM/nnmm_runMCMC.jl")
+include("NNMM/nnmm_MCMC_BayesianAlphabet.jl")
+
 #Genomic Markers
 include("markers/tools4genotypes.jl")
 include("markers/readgenotypes.jl")
@@ -47,15 +57,7 @@ include("structure_equation_model/SEM.jl")
 include("RRM/MCMC_BayesianAlphabet_RRM.jl")
 include("RRM/RRM.jl")
 
-#NNMM
-include("NNMM/nnmm_types.jl")
-include("NNMM/nnmm_read_files.jl")
-include("NNMM/nonlinear.jl")
-include("NNMM/nnmm_hmc.jl")
-include("NNMM/nnmm_check.jl")
-include("NNMM/nnmm_build_MME.jl")
-include("NNMM/nnmm_runMCMC.jl")
-include("NNMM/nnmm_MCMC_BayesianAlphabet.jl")
+
 
 #input
 include("input_data_validation.jl")
@@ -67,9 +69,10 @@ export build_model,set_covariate,set_random,add_genotypes,get_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
+export mkmat_incidence_factor
 
 #NNMM
-export Layer, Equation,read_genotypes, read_omics, read_phenotypes
+export Layer, Equation, Omics, Phenotypes, read_genotypes, read_omics, read_phenotypes
 export nnmm_build_model,runNNMM
 
 #Pedmodule

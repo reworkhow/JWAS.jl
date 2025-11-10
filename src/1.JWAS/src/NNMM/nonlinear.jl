@@ -48,45 +48,14 @@ function sample_latent_traits(yobs,mme,ycorr,nonlinear_function)
         mhRatio          = exp.(llh_candidate - llh_current)
         updateus         = rand(nobs) .< mhRatio
         ylats_new        = candidates.*updateus + ylats_old.*(.!updateus)
+
+        #step 2. update ylats with sampled latent traits
+        ylats_old[incomplete_omics,:] = ylats_new
+        #step 3. for individuals with partial omics data, put back the partial real omics.
+        ylats_old[mme.missingPattern] .= ylats_old2[mme.missingPattern]
     end
 
-    #sample neural network weights between hidden and output layer
-    ############################################################################
-    #remove testing individuals
-    # testing individuals will be included in Bayesian Alphabet, but they should
-    # be removed when we sample weights between hidden and output layer
-    ############################################################################
-    # the yobs for testing ind is missing, e.g., [0.1,0.2,missing]
-    trainingInd      = .!ismissing.(yobs)
-    yobs_train       = yobs[trainingInd]
-    ylats_old_train  = ylats_old[trainingInd,:]
-    nTrain           = sum(trainingInd)
-    nOmics           = size(ylats_old_train,2)
 
-    if mme.is_activation_fcn == true #Neural Network with activation function
-        #RR-BLUP: omics~yobs
-        g_z       = nonlinear_function.(ylats_old_train)
-        yobs_corr = yobs_train .- mme.weights_NN[1] - g_z*mme.weights_NN[2:end] #y corrected for all
-        #sample mean of phenotype
-        # μ1~N( sum(y-g(Z)*w1)/n , σ2_e/n )
-        yobs_corr = yobs_corr .+ mme.weights_NN[1]
-        μ1 = sum(yobs_corr)/nTrain + randn()*sqrt(σ2_yobs/nTrain)
-        mme.weights_NN[1] = μ1
-        yobs_corr = yobs_corr .- mme.weights_NN[1]
-
-        #sample omics effects
-        # w1~N( lhs^-1 * rhs, lhs^-1 σ2_e  )
-        for j in 1:nOmics
-            x=g_z[:,j]
-            rhs=dot(x,yobs_corr)+dot(x,x)*mme.weights_NN[j+1] #the first element is μ1
-            lhs=dot(x,x)+σ2_yobs/mme.σ2_weightsNN
-            invLhs=1/lhs
-            meanj=invLhs*rhs
-            oldAlpha = mme.weights_NN[j+1]
-            mme.weights_NN[j+1]=meanj+randn()*sqrt(invLhs*σ2_yobs)
-            yobs_corr=yobs_corr+(oldAlpha-mme.weights_NN[j+1])*x
-        end
-    end
 
     #update ylats
     mme.ySparse = vec(ylats_old)
