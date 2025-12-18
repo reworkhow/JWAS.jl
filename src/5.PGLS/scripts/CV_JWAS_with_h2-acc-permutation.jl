@@ -1,3 +1,9 @@
+###
+# Initial code of JWAS BayesC phylogenetically aware linear regression but without the PGLS VCV
+###
+
+
+
 using JWAS, DataFrames, CSV, Statistics, Random, ROC, Plots, HypothesisTests, Printf
 
 # ----------------------------- Config -----------------------------------------
