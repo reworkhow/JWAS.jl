@@ -55,6 +55,7 @@ Depth = 3
 Pages = [
   "manual/getstarted.md",
   "manual/workflow.md",
+  "manual/block_bayesc.md",
   "manual/public.md",
   "manual/internals.md",
 ]

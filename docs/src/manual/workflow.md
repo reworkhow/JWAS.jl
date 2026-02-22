@@ -278,6 +278,8 @@ On line 2, a multi-trait BayesC analysis is performed with `model` and `phenotyp
 MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis
 are saved every `output_samples_frequency` iterations to files.
 
+For large marker panels, `runMCMC(...; fast_blocks=...)` enables the block BayesC path. See [Block BayesC](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
+
 ---
 Several steps above can be skipped if no related information is available, e.g., step 4 is skipped if all effects are classed as factors. Several detailed examples are available in the examples section. Here is the link to documentation for all [Public functions](@ref).
 

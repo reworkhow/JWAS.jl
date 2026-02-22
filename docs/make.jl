@@ -16,6 +16,7 @@ makedocs(
         "Manual" => Any[
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",
+            "Block BayesC" => "manual/block_bayesc.md",
             "Public" => "manual/public.md",
             "Internals" => "manual/internals.md"
             ],
