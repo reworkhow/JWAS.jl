@@ -305,15 +305,7 @@ end
 #return a dataframe of all observations;
 #missing values are used for some individuals of interest for which data is not available.
 function make_dataframes(df,mme)
-    #***************************************************************************
-    #NN-Bayes Omics: individuals with all omics data but no yobs should be kept
-    #                since the omics data can help better estimate marker effect
-    #***************************************************************************
-    if mme.nonlinear_function != false && mme.latent_traits != false
-        lhsVec = [mme.yobs_name ; mme.lhsVec]  # [:y, :gene1, :gene2]
-    else
-        lhsVec = mme.lhsVec #reference, not copy
-    end
+    lhsVec = mme.lhsVec #reference, not copy
     #***************************************************************************
     #Whole Data (training + individuals of interest)
     #***************************************************************************

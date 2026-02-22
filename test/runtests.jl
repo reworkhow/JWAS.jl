@@ -100,6 +100,12 @@ println()
                 @test :x1 in model.covVec
                 @test :x2 ∉ model.covVec
             end
+
+            @testset "NNMM keywords removed" begin
+                @test_throws MethodError build_model("y = intercept + x1", 1.0; nonlinear_function="tanh")
+                @test_throws MethodError build_model("y = intercept + x1", 1.0; num_hidden_nodes=3)
+                @test_throws MethodError build_model("y = intercept + x1", 1.0; latent_traits=["z1"])
+            end
         end
         
         # ====================================================================
@@ -440,4 +446,3 @@ Edit CLEANUP_ON_SUCCESS = false in this file
 - ✓ Fast feedback for development
 - ✓ Comprehensive testing for releases
 """
-

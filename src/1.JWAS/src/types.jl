@@ -265,18 +265,6 @@ mutable struct MME
 
     causal_structure
 
-    nonlinear_function #user-provide function, "tanh"
-    weights_NN
-    σ2_yobs
-    is_fully_connected
-    is_activation_fcn  #Neural Network with activation function (not user-defined function)
-    latent_traits #["z1","z2"], for intermediate omics data,
-    yobs          #for single observed trait, and mme.ySparse is for latent traits
-    yobs_name
-    σ2_weightsNN
-    fixed_σ2_NN
-    incomplete_omics
-
     traits_type   #by default all traits are continuous
     thresholds    #thresholds for categorial&binary traits. Dictionary: 1=>[-Inf,0,Inf], where 1 means the 1st trait
 
@@ -296,7 +284,6 @@ mutable struct MME
                    0,
                    false,false,false,
                    false,
-                   false,false,1.0,false,false,false,false,false,1.0/sqrt(nModels),false,false,
                    repeat(["continuous"],nModels),Dict())
     end
 end

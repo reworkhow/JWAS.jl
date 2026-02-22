@@ -6,7 +6,6 @@ using SparseArrays
 using LinearAlgebra
 using ProgressMeter
 using .PedModule
-using ForwardDiff
 
 import StatsBase: describe #a new describe is exported
 
@@ -46,11 +45,6 @@ include("structure_equation_model/SEM.jl")
 #Random Regression Model
 include("RRM/MCMC_BayesianAlphabet_RRM.jl")
 include("RRM/RRM.jl")
-
-#Latent Traits
-include("Nonlinear/nonlinear.jl")
-include("Nonlinear/bnn_hmc.jl")
-include("Nonlinear/nnbayes_check.jl")
 
 #input
 include("input_data_validation.jl")
@@ -156,8 +150,7 @@ function runMCMC(mme::MME,df;
                 pedigree                        = false, #parameters for single-step analysis
                 fitting_J_vector                = true,  #parameters for single-step analysis
                 causal_structure                = false,
-                # mega_trait                      = mme.nonlinear_function == false ? false : true, #NNBayes -> default mega_trait=true
-                missing_phenotypes              = mme.nonlinear_function == false ? true : false, #NN-MM -> missing hidden nodes will be sampled
+                missing_phenotypes              = true,
                 # constraint                      = false,
                 RRM                             = false, #  RRM -> false or a matrix (Phi: orthogonalized time covariates)
                 #Genomic Prediction
@@ -183,43 +176,6 @@ function runMCMC(mme::MME,df;
                 categorical_trait               = false,  #this has been moved to build_model()
                 censored_trait                  = false)  #this has been moved to build_model()
 
-    ############################################################################
-    # Neural Network
-    ############################################################################
-    is_nnbayes_partial = (mme.nonlinear_function != false && mme.is_fully_connected==false)
-    if mme.nonlinear_function != false #modify data to add phenotypes for hidden nodes
-        mme.yobs_name=Symbol(mme.lhsVec[1]) #e.g., lhsVec=[:y1,:y2,:y3], a number label has been added to original trait name in nnbayes_model_equation(),
-        yobs = df[!,Symbol(string(mme.yobs_name)[1:(end-1)])]  # e.g., change :y1 -> :y
-        for i in mme.lhsVec  #e.g., lhsVec=[:y1,:y2,:y3]
-            df[!,i]= yobs
-        end
-        ######################################################################
-        #mme.lhsVec and mme.M[1].trait_names default to empirical trait name
-        #with prefix 1, 2... , e.g., height1, height2...
-        #if data for latent traits are included in the dataset, column names
-        #will be used as shown below.e.g.,
-        #mme.latent_traits=["gene1","gene2"],  mme.lhsVec=[:gene1,:gene2] where
-        #"gene1" and "gene2" are columns in the dataset.
-        ######################################################################
-        if mme.latent_traits != false
-            #change lhsVec to omics gene name
-            mme.lhsVec = Symbol.(mme.latent_traits) # [:gene1, :gene2, ...]
-            #rename genotype names
-            mme.M[1].trait_names=mme.latent_traits
-            #change model terms for partial-connected NN
-            if is_nnbayes_partial
-                for i in 1:mme.nModels
-                    mme.M[i].trait_names=[mme.latent_traits[i]]
-                end
-            end
-        end
-        mme.R.constraint=true
-        for Mi in mme.M
-            Mi.G.constraint=true
-        end
-        nnmm_print_info_input_to_middle_layer(mme)
-    end
-    ############################################################################
     #for deprecated JWAS fucntions
     ############################################################################
     if mme.M != 0
@@ -292,10 +248,6 @@ function runMCMC(mme::MME,df;
     ############################################################################
     errors_args(mme)       #check errors in function arguments
     df=check_pedigree_genotypes_phenotypes(mme,df,pedigree)
-    if mme.nonlinear_function != false #NN-LMM
-        #initiliza missing omics data  (after check_pedigree_genotypes_phenotypes() because non-genotyped inds are removed)
-        nnlmm_initialize_missing(mme,df)
-    end
     prediction_setup(mme)  #set prediction equation, defaulting to genetic values
     check_outputID(mme)    #check individual of interest for prediction
     df_whole,train_index = make_dataframes(df,mme)
@@ -367,10 +319,6 @@ function runMCMC(mme::MME,df;
         G_constraint!(mme) #modify Mi.G.df and Mi.G.scale; scale is a diagonal matrix
     end
 
-    # NNBayes: modify parameters for partial connected NN
-    if is_nnbayes_partial
-        nnbayes_partial_para_modify2(mme)
-    end
     ############################################################################
     #Make incidence matrices and genotype covariates for training observations
     #and individuals of interest
@@ -500,7 +448,6 @@ end
 * (internal function) Print out MCMC information.
 """
 function getMCMCinfo(mme)
-    is_nnbayes_partial = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.MCMCinfo == false
         printstyled("MCMC information is not available\n\n",bold=true)
         return
@@ -561,7 +508,7 @@ function getMCMCinfo(mme)
             @printf("%-30s %20s\n","Method",Mi.method)
             for Mi in mme.M
                 if Mi.genetic_variance.val != false
-                    if (mme.nModels == 1 || is_nnbayes_partial) && mme.MCMCinfo.RRM == false
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","genetic variances (genomic):",Mi.genetic_variance.val)
                     else
                         @printf("%-30s\n","genetic variances (genomic):")
@@ -570,7 +517,7 @@ function getMCMCinfo(mme)
                     end
                 end
                 if !(Mi.method in ["GBLUP"])
-                    if (mme.nModels == 1 || is_nnbayes_partial) && mme.MCMCinfo.RRM == false
+                    if mme.nModels == 1 && mme.MCMCinfo.RRM == false
                         @printf("%-30s %20.3f\n","marker effect variances:",Mi.G.val)
                     else
                         @printf("%-30s\n","marker effect variances:")

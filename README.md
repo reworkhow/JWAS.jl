@@ -48,11 +48,9 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 * Censored Trait Analysis
 * Joint Analysis of Continuous, Categorical, and Censored Traits
 * Multi-class Bayesian Analysis
-* Neural Networks (NN-MM)
 * Cross Validation
 * Genome Wide Association Study
 * Integrating Phenotypic Causal Networks in GWAS
 * single trait and multiple trait GBLUP by providing the relationship matrix directly
 * Description of Mixed Effects Model
 * Quality Control of Genotypes
-

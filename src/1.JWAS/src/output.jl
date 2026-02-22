@@ -155,10 +155,6 @@ function output_result(mme,output_folder,
   if mme.output_ID != 0 && mme.MCMCinfo.outputEBV == true
       output_file = output_folder*"/MCMC_samples"
       EBVkeys = ["EBV"*"_"*string(mme.lhsVec[traiti]) for traiti in 1:ntraits]
-      if mme.nonlinear_function != false  #NNBayes
-          push!(EBVkeys, "EBV_NonLinear")
-          EBVkeys=[EBVkeys[end]]  #only keep "EBV_NonLinear" (remove EBV_gene1, EBV_gene2,...)
-      end
       for EBVkey in EBVkeys
           EBVsamplesfile = output_file*"_"*EBVkey*".txt"
           EBVsamples,IDs = readdlm(EBVsamplesfile,',',header=true)
@@ -183,15 +179,6 @@ function output_result(mme,output_folder,
               samplevar     = vec(std(samples,dims=1))
               output[i] = DataFrame([vec(names) samplemean samplevar],[:Covariance,:Estimate,:SD])
           end
-      end
-      if mme.nonlinear_function != false && mme.is_activation_fcn == true  #Neural Network with activation function
-          myvar         = "neural_networks_bias_and_weights"
-          samplesfile   = output_file*"_"*myvar*".txt"
-          samples       = readdlm(samplesfile,',',header=false)
-          names         = ["bias";"weight".*string.(1:(size(samples,2)-1))]
-          samplemean    = vec(mean(samples,dims=1))
-          samplevar     = vec(std(samples,dims=1))
-          output[myvar] = DataFrame([vec(names) samplemean samplevar],[:weights,:Estimate,:SD])
       end
   end
   return output
@@ -270,17 +257,9 @@ function getEBV(mme,traiti)
             EBV += EBV_term
         end
     end
-    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0
-        for i in 1:length(mme.M) #for Mi in mme.M
-            Mi=mme.M[i]
-            if !is_partial_connect  #non-NNBayes_partial
-                EBV += Mi.output_genotypes*Mi.α[traiti]
-            else  #NNBayes_partial
-                if i==traiti
-                    EBV = Mi.output_genotypes*mme.M[i].α[1]
-                end
-            end
+        for Mi in mme.M
+            EBV += Mi.output_genotypes*Mi.α[traiti]
         end
     end
     return EBV
@@ -342,12 +321,6 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
               push!(outvar,"heritability")
           else
               printstyled("heritability is not computed for Random Regression Model. \n",bold=false,color=:green)
-          end
-      end
-      if mme.nonlinear_function != false  #NNBayes
-          push!(outvar,"EBV_NonLinear")
-          if mme.is_activation_fcn == true #Neural Network with activation function
-              push!(outvar,"neural_networks_bias_and_weights")
           end
       end
   end
@@ -418,9 +391,6 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
               writedlm(outfile["heritability"],transubstrarr(map(string,mme.lhsVec)),',')
           end
       end
-      if mme.nonlinear_function != false #NNBayes
-          writedlm(outfile["EBV_NonLinear"],transubstrarr(mme.output_ID),',')
-      end
   end
 
   return outfile
@@ -449,7 +419,6 @@ function output_MCMC_samples(mme,vRes,G0,
     if mme.pedTrmVec != 0
         writedlm(outfile["polygenic_effects_variance"],vec(G0)',',')
     end
-    is_partial_connect = mme.nonlinear_function != false && mme.is_fully_connected==false
     if mme.M != 0 && outfile != false
       for Mi in mme.M
          ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
@@ -458,7 +427,7 @@ function output_MCMC_samples(mme,vRes,G0,
             writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
          end
           
-         if Mi.G.val != false && mme.nonlinear_function == false #do not save marker effect variances in NNMM to save space
+         if Mi.G.val != false
               if mme.nModels == 1
                   writedlm(outfile["marker_effects_variances"*"_"*Mi.name],Mi.G.val',',')
               else
@@ -481,8 +450,7 @@ function output_MCMC_samples(mme,vRes,G0,
          writedlm(outfile["EBV_"*string(mme.lhsVec[1])],myEBV',',')
          for traiti in 2:ntraits
              myEBV = getEBV(mme,traiti) #actually BV
-             trait_name = is_partial_connect ? mme.M[traiti].trait_names[1] : string(mme.lhsVec[traiti])
-             writedlm(outfile["EBV_"*trait_name],myEBV',',')
+             writedlm(outfile["EBV_"*string(mme.lhsVec[traiti])],myEBV',',')
              EBVmat = [EBVmat myEBV]
          end
 
@@ -501,16 +469,6 @@ function output_MCMC_samples(mme,vRes,G0,
              end
              writedlm(outfile["genetic_variance"],genetic_variance,',')
          end
-    end
-    if mme.nonlinear_function != false #NNBayes
-        EBVmat = EBVmat .+ mme.sol' #mme.sol here only contains intercepts
-        if mme.is_activation_fcn == false  #user-defined nonlinear function
-            BV_NN = mme.nonlinear_function.(Tuple([view(EBVmat,:,i) for i in 1:size(EBVmat,2)])...)
-        else  #activation function
-            BV_NN = [ones(size(EBVmat,1)) mme.nonlinear_function.(EBVmat)]*mme.weights_NN
-            writedlm(outfile["neural_networks_bias_and_weights"],mme.weights_NN',',')
-        end
-        writedlm(outfile["EBV_NonLinear"],BV_NN',',')
     end
     #categorical/binary/censored traits
     if !isempty(intersect(mme.traits_type, ["categorical","categorical(binary)","censored"]))

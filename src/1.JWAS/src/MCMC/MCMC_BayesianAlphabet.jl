@@ -15,9 +15,6 @@ function MCMC_BayesianAlphabet(mme,df)
     missing_phenotypes       = mme.MCMCinfo.missing_phenotypes
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
-    is_nnbayes_partial       = mme.nonlinear_function != false && mme.is_fully_connected==false
-    is_activation_fcn        = mme.is_activation_fcn
-    nonlinear_function       = mme.nonlinear_function
     fast_blocks              = mme.MCMCinfo.fast_blocks
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
@@ -102,10 +99,6 @@ function MCMC_BayesianAlphabet(mme,df)
             end
         end
     end
-    if is_nnbayes_partial
-        nnbayes_partial_para_modify3(mme)
-    end
-
     #phenotypes corrected for all effects
     ycorr = vec(Matrix(mme.ySparse)-mme.X*mme.sol)
     if mme.M != 0
@@ -151,10 +144,6 @@ function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     # MCMC (starting values for sol (zeros);  mme.RNew; G0 are used)
     ############################################################################
-    # # Initialize mme for hmc before Gibbs
-    if nonlinear_function != false
-        mme.weights_NN    = vcat(mean(mme.ySparse),zeros(mme.nModels))
-    end
     if mme.pedTrmVec!=0
         polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
     end
@@ -206,7 +195,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.method in ["BayesC","BayesB","BayesA"]
                     locus_effect_variances = (Mi.method == "BayesC" ? fill(Mi.G.val,Mi.nMarkers) : Mi.G.val)
-                    if is_multi_trait && !is_nnbayes_partial
+                    if is_multi_trait
                         if Mi.G.constraint==true
                             megaBayesABC!(Mi,wArray,mme.R.val,locus_effect_variances)
                         else
@@ -216,8 +205,6 @@ function MCMC_BayesianAlphabet(mme,df)
                                 MTBayesABC_block!(Mi,wArray,mme.R.val,locus_effect_variances)
                             end
                         end
-                    elseif is_nnbayes_partial
-                        BayesABC!(Mi,wArray[i],mme.R.val[i,i],locus_effect_variances) #this can be parallelized (conflict with others)
                     else
                         if fast_blocks == false
                             BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
@@ -226,39 +213,33 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     end
                 elseif Mi.method =="RR-BLUP"
-                    if is_multi_trait && !is_nnbayes_partial
+                    if is_multi_trait
                         if Mi.G.constraint==true
                             megaBayesC0!(Mi,wArray,mme.R.val)
                         else
                             MTBayesC0!(Mi,wArray,mme.R.val)
                         end
-                    elseif is_nnbayes_partial
-                        BayesC0!(Mi,wArray[i],mme.R.val[i,i])
                     else
                         BayesC0!(Mi,ycorr,mme.R.val)
                     end
                 elseif Mi.method == "BayesL"
-                    if is_multi_trait && !is_nnbayes_partial
+                    if is_multi_trait
                         #problem with sampleGammaArray
                         if Mi.G.constraint==true
                             megaBayesL!(Mi,wArray,mme.R.val)
                         else
                             MTBayesL!(Mi,wArray,mme.R.val)
                         end
-                    elseif is_nnbayes_partial
-                        BayesC0!(Mi,wArray[i],mme.R.val[i,i])
                     else
                         BayesL!(Mi,ycorr,mme.R.val)
                     end
                 elseif Mi.method == "GBLUP"
-                    if is_multi_trait && !is_nnbayes_partial
+                    if is_multi_trait
                         if Mi.G.constraint==true
                             megaGBLUP!(Mi,wArray,mme.R.val,invweights)
                         else
                             MTGBLUP!(Mi,wArray,ycorr,mme.R.val,invweights)
                         end
-                    elseif is_nnbayes_partial
-                        GBLUP!(Mi,wArray[i],mme.R.val[i,i],invweights)
                     else
                         GBLUP!(Mi,ycorr,mme.R.val,invweights)
                     end
@@ -267,7 +248,7 @@ function MCMC_BayesianAlphabet(mme,df)
                 # Marker Inclusion Probability
                 ########################################################################
                 if Mi.estimatePi == true
-                    if is_multi_trait && !is_nnbayes_partial
+                    if is_multi_trait
                         if Mi.G.constraint==true
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
                         else
@@ -336,12 +317,6 @@ function MCMC_BayesianAlphabet(mme,df)
         ########################################################################
         if is_multi_trait && causal_structure != false
             sample4λ,sample4λ_vec = get_Λ(Y,mme.R.val,ycorr,Λy,mme.ySparse,causal_structure) #no missing phenotypes
-        end
-        ########################################################################
-        # 5. Latent Traits (NNBayes)
-        ########################################################################
-        if nonlinear_function != false #to update ycorr!
-            sample_latent_traits(mme.yobs,mme,ycorr,nonlinear_function)
         end
         ########################################################################
         # 5. Update priors using posteriors (empirical) LATER
