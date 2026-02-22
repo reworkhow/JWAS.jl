@@ -339,7 +339,13 @@ println()
                 integration_file = joinpath(original_dir, "test", "integration", "test_genotypes.jl")
                 include(integration_file)
             end
-            
+
+            @testset "Simulated Omics Data Tests" begin
+                println("\n→ Running integration/test_simulated_omics.jl")
+                integration_file = joinpath(original_dir, "test", "integration", "test_simulated_omics.jl")
+                include(integration_file)
+            end
+
         end
     else
         @info "Skipping integration tests (set RUN_INTEGRATION_TESTS=true to run)"
