@@ -2,6 +2,7 @@ using Test
 using JWAS
 using DataFrames
 using CSV
+using DelimitedFiles
 using JWAS.Datasets
 
 @testset "Memory guardrails: estimator and policy" begin
@@ -84,33 +85,42 @@ end
     phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
     genofile  = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
     phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
+    mktempdir() do tmpdir
+        cd(tmpdir) do
+            @testset "runMCMC throws early in :error mode when guard threshold is tiny" begin
+                global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+                model = build_model("y1 = intercept + geno", 1.0)
+                @test_throws ErrorException runMCMC(model, phenotypes,
+                                                    chain_length=10,
+                                                    burnin=0,
+                                                    output_samples_frequency=10,
+                                                    output_folder="guardrail_error_mode",
+                                                    seed=123,
+                                                    memory_guard=:error,
+                                                    memory_guard_ratio=1e-12)
+            end
 
-    @testset "runMCMC throws early in :error mode when guard threshold is tiny" begin
-        global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
-        model = build_model("y1 = intercept + geno", 1.0)
-        @test_throws ErrorException runMCMC(model, phenotypes,
-                                            chain_length=10,
-                                            burnin=0,
-                                            output_samples_frequency=10,
-                                            output_folder="guardrail_error_mode",
-                                            seed=123,
-                                            memory_guard=:error,
-                                            memory_guard_ratio=1e-12)
-        isdir("guardrail_error_mode") && rm("guardrail_error_mode", recursive=true)
-    end
+            @testset "runMCMC proceeds in :off mode with same threshold" begin
+                global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+                original_genotype_ids = copy(geno.obsID)
+                model = build_model("y1 = intercept + geno", 1.0)
+                output = runMCMC(model, phenotypes,
+                                 chain_length=10,
+                                 burnin=0,
+                                 output_samples_frequency=10,
+                                 output_folder="guardrail_off_mode",
+                                 seed=123,
+                                 memory_guard=:off,
+                                 memory_guard_ratio=1e-12)
+                @test haskey(output, "location parameters")
+                ids_from_file = vec(string.(readdlm(joinpath("guardrail_off_mode", "IDs_for_individuals_with_genotypes.txt"))))
+                @test ids_from_file == original_genotype_ids
+            end
 
-    @testset "runMCMC proceeds in :off mode with same threshold" begin
-        global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
-        model = build_model("y1 = intercept + geno", 1.0)
-        output = runMCMC(model, phenotypes,
-                         chain_length=10,
-                         burnin=0,
-                         output_samples_frequency=10,
-                         output_folder="guardrail_off_mode",
-                         seed=123,
-                         memory_guard=:off,
-                         memory_guard_ratio=1e-12)
-        @test haskey(output, "location parameters")
-        isdir("guardrail_off_mode") && rm("guardrail_off_mode", recursive=true)
+            @test isfile(joinpath("guardrail_off_mode", "IDs_for_individuals_with_genotypes.txt"))
+            @test isfile(joinpath("guardrail_off_mode", "IDs_for_individuals_with_phenotypes.txt"))
+            @test !isfile("IDs_for_individuals_with_genotypes.txt")
+            @test !isfile("IDs_for_individuals_with_phenotypes.txt")
+        end
     end
 end

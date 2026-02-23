@@ -344,6 +344,8 @@ function runMCMC(mme::MME,df;
     df=make_incidence_matrices(mme,df_whole,train_index)
     #align genotypes with 1) phenotypes IDs; 2) output IDs.
     if mme.M != false
+        genotypes_id_file = joinpath(output_folder,"IDs_for_individuals_with_genotypes.txt")
+        writedlm(genotypes_id_file,mme.M[1].obsID)
         align_genotypes(mme,output_heritability,single_step_analysis)
     end
     # initiate Mixed Model Equations and check starting values

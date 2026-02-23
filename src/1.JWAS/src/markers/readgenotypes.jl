@@ -239,7 +239,6 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
 
-    writedlm("IDs_for_individuals_with_genotypes.txt",genotypes.obsID)
     println("Genotype informatin:")
     println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))
 
