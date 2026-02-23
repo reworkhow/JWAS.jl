@@ -147,13 +147,19 @@ JWAS rescales outer iterations to approximately `m = floor(L/b)`, so the main to
 
 - `O((L/b) * (NP + P b^2)) = O(LP(N/b + b))`
 
-### BayesR3 (paper-reported scaling)
+### BayesR3 (block strategy and paper fit)
 
-BayesR3 reports empirical runtime scaling where per-SNP time is proportional to `(N+b)/b`, while standard BayesR scales proportional to `N`.
-Using chain length `L`, this corresponds to:
+BayesR3 uses the same blocked-update strategy family (block RHS, in-block updates using a block Gram matrix, then a block-exit residual update), but it is a BayesR mixture model rather than BayesC. This changes constants (more mixture-state work per marker), not the core block linear-algebra pattern.
 
-- BayesR3: `O(LP(N+b)/b) = O(LP(N/b + 1))` (empirical scaling form)
-- Standard BayesR: `O(LPN)`
+**Operation-count view (dense blocked implementation):**
+
+- BayesR3 runs a *nominal* number of inner cycles `n` per block, and the paper recommends `n` be equal to the (nominal) block size `b`.
+- With `n = b`, the leading operation-count terms match the same block strategy family as JWAS: total work scales like `O(LP(N/b + b))`.
+
+**Paper runtime fit (Fig. 5):**
+
+- The BayesR3 paper reports an empirical timing model where processing time per SNP is proportional to `(N + b)/b = N/b + 1`.
+- This is a fit to measured runtime for their implementation/hardware and is not a formal asymptotic operation-count derivation. It effectively treats the in-block work (the `+b`-type term) as a small constant relative to the `N/b` term in that regime.
 
 ### Practical differences in complexity interpretation
 
@@ -169,19 +175,19 @@ Then:
 - `B = ceil(P/b) = ceil(2,000,000/447) = 4,475` blocks
 - Standard BayesC total scaling: `O(LPN) = O(L * 2,000,000 * 200,000)`
 - JWAS block BayesC main scaling: `O(LP(N/b + b)) = O(L * 2,000,000 * (200,000/447 + 447))`
-- BayesR3 reported scaling form: `O(LP(N/b + 1)) = O(L * 2,000,000 * (200,000/447 + 1))`
+- BayesR3 paper timing fit: runtime per SNP `∝ (N + b)/b`, so total runtime `∝ L * 2,000,000 * (200,000/447 + 1)`
 
-So the per-`LP` coefficient is:
+So the per-`LP` coefficients are:
 
 - Standard BayesC: `200,000`
-- JWAS block BayesC: `~894.4`
-- BayesR3 scaling form: `~448.4`
+- JWAS block BayesC operation-count: `~894.4` (from `N/b + b`)
+- BayesR3 paper fit: `~448.4` (from `N/b + 1`)
 
-This implies (asymptotic operation-count scaling, ignoring constants/language/runtime effects):
+This implies:
 
 - JWAS block vs standard: `~224x` lower
-- BayesR3 scaling form vs standard: `~446x` lower
-- JWAS block vs BayesR3 scaling form: `~2.0x` higher
+- BayesR3 paper fit vs standard: `~446x` lower
+- The apparent `~2.0x` gap between `~894` and `~448` is not an apples-to-apples complexity comparison: it is the difference between an operation-count model (`N/b + b`) and an empirical runtime fit (`N/b + 1`).
 
 ## Example: Speed/Memory Tradeoff
 
