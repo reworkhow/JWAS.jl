@@ -94,6 +94,9 @@ export dataset
             printout_frequency              = chain_length+1,
             big_memory                      = false,
             double_precision                = false,
+            fast_blocks                     = false,
+            memory_guard                    = :error,
+            memory_guard_ratio              = 0.80,
             ##MCMC samples (defaut to marker effects and hyperparametes (variance components))
             output_folder                     = "results",
             output_samples_for_all_parameters = false,
@@ -135,6 +138,8 @@ export dataset
     defaulting to `false`.
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
   * If `big_memory`=true, defaulting to `false`, a machine with  lots of memory is assumed which may speed up the analysis.
+  * `memory_guard` controls the marker-memory precheck before MCMC (`:error`, `:warn`, `:off`; default `:error`).
+  * `memory_guard_ratio` sets the allowed fraction of `Sys.total_memory()` for the precheck (default `0.80`).
 """
 function runMCMC(mme::MME,df;
                 #Data
@@ -343,6 +348,14 @@ function runMCMC(mme::MME,df;
     end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
+    # Memory guardrail for marker allocations:
+    # - Runs after genotype alignment and MME initialization so nObs/nMarkers/weights
+    #   reflect the actual training analysis.
+    # - Estimates marker-path memory per genotype category (X, weighted copies, and
+    #   block matrices when fast_blocks is used).
+    # - Compares estimate to memory_guard_ratio * Sys.total_memory() and applies
+    #   policy from memory_guard (:error => stop, :warn => continue with warning,
+    #   :off => skip check).
     if mme.M != 0
         guard_mode = (memory_guard isa Symbol) ? memory_guard : Symbol(memory_guard)
         bytes_per_value = (double_precision == true ? 8 : 4)

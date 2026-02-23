@@ -64,6 +64,7 @@ function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
         error("element_bytes must be a positive integer.")
     end
 
+    # Use wider integers so large N*P products do not overflow on 64-bit Int.
     nObs128        = Int128(nObs)
     nMarkers128    = Int128(nMarkers)
     bytes_per_val  = Int128(element_bytes)
@@ -83,6 +84,7 @@ function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
             block_start = starts[i]
             block_end   = (i == nblocks) ? nMarkers : (starts[i+1]-1)
             block_size  = max(0,block_end-block_start+1)
+            # XpRinvX stores per-block Gram matrices, so memory scales with sum(s_i^2).
             block_sq_sum += Int128(block_size)*Int128(block_size)
         end
     end
@@ -142,6 +144,7 @@ function check_marker_memory_guard!(; mode::Symbol=:error,
         return :skipped
     end
 
+    # Guard compares estimated marker memory against a configurable RAM fraction.
     threshold = Int128(floor(Float64(total_memory_bytes)*Float64(ratio)))
     estimated = Int128(estimated_bytes)
     if estimated <= threshold
