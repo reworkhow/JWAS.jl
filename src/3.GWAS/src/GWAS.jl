@@ -1,5 +1,3 @@
-include("GWAS_deprecated.jl")
-
 """
     GWAS(marker_effects_file;header=true)
 
