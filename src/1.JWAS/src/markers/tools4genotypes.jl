@@ -45,6 +45,123 @@ function get_column_blocks_ref(X,fast_blocks=false)
     return xArray
 end
 
+"""
+    estimate_marker_memory(nObs, nMarkers;
+                           element_bytes,
+                           has_nonunit_weights=false,
+                           block_starts=false)
+
+Estimate major marker-path memory components in bytes.
+"""
+function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
+                                element_bytes::Integer,
+                                has_nonunit_weights::Bool=false,
+                                block_starts=false)
+    if nObs < 0 || nMarkers < 0
+        error("nObs and nMarkers must be non-negative.")
+    end
+    if element_bytes <= 0
+        error("element_bytes must be a positive integer.")
+    end
+
+    nObs128        = Int128(nObs)
+    nMarkers128    = Int128(nMarkers)
+    bytes_per_val  = Int128(element_bytes)
+
+    nvals_x        = nObs128*nMarkers128
+    bytes_X        = nvals_x*bytes_per_val
+    bytes_xpRinvx  = nMarkers128*bytes_per_val
+    bytes_xRinv    = has_nonunit_weights ? bytes_X : Int128(0)
+
+    is_block_mode  = block_starts != false
+    bytes_XRinv    = is_block_mode ? bytes_X : Int128(0)
+    block_sq_sum   = Int128(0)
+    if is_block_mode
+        starts = collect(Int,block_starts)
+        nblocks = length(starts)
+        for i in 1:nblocks
+            block_start = starts[i]
+            block_end   = (i == nblocks) ? nMarkers : (starts[i+1]-1)
+            block_size  = max(0,block_end-block_start+1)
+            block_sq_sum += Int128(block_size)*Int128(block_size)
+        end
+    end
+    bytes_XpRinvX  = block_sq_sum*bytes_per_val
+    bytes_total    = bytes_X + bytes_xRinv + bytes_XRinv + bytes_XpRinvX + bytes_xpRinvx
+
+    return (
+        bytes_X = bytes_X,
+        bytes_xRinvArray = bytes_xRinv,
+        bytes_XRinvArray = bytes_XRinv,
+        bytes_XpRinvX = bytes_XpRinvX,
+        bytes_xpRinvx = bytes_xpRinvx,
+        bytes_total = bytes_total
+    )
+end
+
+"""
+    format_bytes_human(bytes)
+
+Format byte counts into a compact human-readable string.
+"""
+function format_bytes_human(bytes::Integer)
+    if bytes < 0
+        error("bytes must be non-negative.")
+    end
+    units = ("B","KiB","MiB","GiB","TiB","PiB","EiB")
+    value = Float64(bytes)
+    unit_index = 1
+    while value >= 1024 && unit_index < length(units)
+        value /= 1024
+        unit_index += 1
+    end
+    return @sprintf("%.2f %s",value,units[unit_index])
+end
+
+"""
+    check_marker_memory_guard!(; mode, ratio, estimated_bytes, total_memory_bytes, context_string)
+
+Apply guard policy for estimated marker memory usage.
+"""
+function check_marker_memory_guard!(; mode::Symbol=:error,
+                                     ratio::Real=0.8,
+                                     estimated_bytes::Integer,
+                                     total_memory_bytes::Integer,
+                                     context_string::AbstractString="")
+    if !(mode in (:error,:warn,:off))
+        error("memory_guard must be one of :error, :warn, or :off.")
+    end
+    if !(0 < ratio <= 1)
+        error("memory_guard_ratio must satisfy 0 < memory_guard_ratio <= 1.")
+    end
+    if estimated_bytes < 0 || total_memory_bytes <= 0
+        error("estimated_bytes must be >= 0 and total_memory_bytes must be > 0.")
+    end
+
+    if mode == :off
+        return :skipped
+    end
+
+    threshold = Int128(floor(Float64(total_memory_bytes)*Float64(ratio)))
+    estimated = Int128(estimated_bytes)
+    if estimated <= threshold
+        return :ok
+    end
+
+    msg = "Estimated marker memory usage exceeds configured guard threshold.\n"*
+          "context: $(context_string)\n"*
+          "estimated: $(format_bytes_human(estimated))\n"*
+          "threshold ($(ratio*100)% of RAM): $(format_bytes_human(threshold))\n"*
+          "system RAM: $(format_bytes_human(total_memory_bytes))\n"*
+          "Set memory_guard=:warn or :off to override, or reduce model/data size."
+
+    if mode == :warn
+        @warn msg
+        return :warned
+    end
+    error(msg)
+end
+
 mutable struct GibbsMats
     X::Union{Array{Float64,2},Array{Float32,2}}
     nrows::Int64

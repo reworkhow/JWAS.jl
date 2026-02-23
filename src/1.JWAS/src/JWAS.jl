@@ -164,6 +164,8 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 fast_blocks                     = false,
+                memory_guard                    = :error,
+                memory_guard_ratio::Float64     = 0.80,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_folder                     = "results",
                 output_samples_for_all_parameters = false,
@@ -341,6 +343,34 @@ function runMCMC(mme::MME,df;
     end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
+    if mme.M != 0
+        guard_mode = (memory_guard isa Symbol) ? memory_guard : Symbol(memory_guard)
+        bytes_per_value = (double_precision == true ? 8 : 4)
+        has_nonunit_weights = any(mme.invweights .!= one(eltype(mme.invweights)))
+        total_memory_bytes = Sys.total_memory()
+
+        for Mi in mme.M
+            est = estimate_marker_memory(Mi.nObs,Mi.nMarkers;
+                                         element_bytes=bytes_per_value,
+                                         has_nonunit_weights=has_nonunit_weights,
+                                         block_starts=mme.MCMCinfo.fast_blocks)
+            geno_name = (Mi.name == false ? "geno" : string(Mi.name))
+            context_str =
+                "geno=$geno_name, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=$(double_precision ? "Float64" : "Float32"), "*
+                "X=$(format_bytes_human(est.bytes_X)), "*
+                "xRinvArray=$(format_bytes_human(est.bytes_xRinvArray)), "*
+                "XRinvArray=$(format_bytes_human(est.bytes_XRinvArray)), "*
+                "XpRinvX=$(format_bytes_human(est.bytes_XpRinvX)), "*
+                "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
+
+            check_marker_memory_guard!(;
+                                       mode=guard_mode,
+                                       ratio=memory_guard_ratio,
+                                       estimated_bytes=est.bytes_total,
+                                       total_memory_bytes=total_memory_bytes,
+                                       context_string=context_str)
+        end
+    end
     ############################################################################
     # MCMC
     ############################################################################
