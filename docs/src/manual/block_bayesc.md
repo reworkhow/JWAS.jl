@@ -1,6 +1,7 @@
 # Block BayesC (`fast_blocks`)
 
 This page explains how JWAS implements block updates for BayesC marker sampling and how the block path changes speed and memory usage.
+The block BayesC implementation uses a strategy similar to the blocked update scheme described in the BayesR3 paper.
 
 ## When This Path Is Used
 
@@ -14,8 +15,11 @@ out = runMCMC(model, phenotypes; fast_blocks=64)
 
 - If `fast_blocks=true`, JWAS chooses `block_size = floor(sqrt(nObs))`.
 - In single-trait BayesA/B/C, JWAS calls `BayesABC_block!`.
-- In multi-trait BayesA/B/C, JWAS calls `MTBayesABC_block!`.
+- In multi-trait BayesA/B/C with unconstrained marker covariance (`Mi.G.constraint == false`), JWAS calls `MTBayesABC_block!`.
+- If `Mi.G.constraint == true`, JWAS uses `megaBayesABC!` (non-block path).
+- In current multi-trait block mode, the update is sampler-I style (trait-wise `δ` updates from `BigPi[d0]`/`BigPi[d1]`) rather than the non-block sampler-I/II dispatcher.
 - Current implementation note in source: this option is intended for one genotype category.
+- In current implementation, numeric `fast_blocks` should satisfy `block_size < nMarkers` (chain-length scaling indexes the second block start).
 
 ## Single-Trait BayesC Without Blocks
 
@@ -83,7 +87,7 @@ JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely fol
 | Marker state sampling | Multi-class mixture state | Binary include/exclude state | Not numerically identical to BayesR |
 | Inner-repeat schedule | Uses nominal block size as fixed repeat count across blocks | `nreps = current block_size` | Last short block may receive fewer inner repeats |
 | Outer-loop scheduling | Described as a fixed block sweep schedule | JWAS also rescales outer `chain_length` by block size | Compare effective updates, not just outer iterations |
-| Scope | BayesR algorithm | JWAS block path currently wired to BayesA/B/C marker samplers | Strategy reused in a different Bayesian alphabet member |
+| Scope | BayesR algorithm | JWAS block path is wired to BayesA/B/C marker samplers, with multi-trait block updates implemented in sampler-I style | Strategy reused in a different Bayesian alphabet member |
 
 #### Scheduling detail (explicit)
 
