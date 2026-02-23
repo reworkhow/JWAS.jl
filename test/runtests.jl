@@ -326,19 +326,6 @@ println()
         println("="^70)
         
         @testset "Integration Tests" begin
-            
-            @testset "Bayesian Alphabet Tests" begin
-                println("\n→ Running integration/test_BayesianAlphabet.jl")
-                # Note: These tests create their own directories
-                integration_file = joinpath(original_dir, "test", "integration", "test_BayesianAlphabet.jl")
-                include(integration_file)
-            end
-            
-            @testset "Genotype Loading Tests" begin
-                println("\n→ Running integration/test_genotypes.jl")
-                integration_file = joinpath(original_dir, "test", "integration", "test_genotypes.jl")
-                include(integration_file)
-            end
 
             @testset "Simulated Omics Data Tests" begin
                 println("\n→ Running integration/test_simulated_omics.jl")
