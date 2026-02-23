@@ -109,7 +109,7 @@ println()
         # Test 2: Genotype Loading
         # ====================================================================
         @testset "Genotype Loading" begin
-            genofile = Datasets.dataset("genotypes.txt", dataset_name="example")
+            genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
             
             @testset "Load from file with header" begin
                 geno = get_genotypes(genofile, 1.0, separator=',', header=true, 
@@ -146,7 +146,7 @@ println()
         # Test 3: Pedigree Module
         # ====================================================================
         @testset "Pedigree Module" begin
-            pedfile = Datasets.dataset("pedigree.txt", dataset_name="example")
+            pedfile = Datasets.dataset("pedigree.txt", dataset_name="demo_7animals")
             
             @testset "Load pedigree" begin
                 ped = get_pedigree(pedfile, separator=",", header=true)
@@ -170,8 +170,8 @@ println()
         # Test 4: MCMC Functionality (Short runs)
         # ====================================================================
         @testset "MCMC Functionality" begin
-            phenofile = Datasets.dataset("phenotypes.txt", dataset_name="example")
-            genofile = Datasets.dataset("genotypes.txt", dataset_name="example")
+            phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
+            genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
             phenotypes = CSV.read(phenofile, DataFrame, delim=',', 
                                  missingstrings=["NA"])
             
@@ -237,9 +237,9 @@ println()
         # Test 5: GWAS Module
         # ====================================================================
         @testset "GWAS Module" begin
-            phenofile = Datasets.dataset("phenotypes.txt", dataset_name="example")
-            genofile = Datasets.dataset("genotypes.txt", dataset_name="example")
-            mapfile = Datasets.dataset("map.txt", dataset_name="example")
+            phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
+            genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
+            mapfile = Datasets.dataset("map.txt", dataset_name="demo_7animals")
             phenotypes = CSV.read(phenofile, DataFrame, delim=',', 
                                  missingstrings=["NA"])
             
@@ -278,7 +278,7 @@ println()
             end
             
             @testset "Missing phenotype handling" begin
-                phenofile = Datasets.dataset("phenotypes.txt", dataset_name="example")
+                phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
                 phenotypes = CSV.read(phenofile, DataFrame, delim=',',
                                      missingstrings=["NA"])
                 
@@ -297,7 +297,7 @@ println()
         # Test 7: Data Types and Precision
         # ====================================================================
         @testset "Data Types" begin
-            genofile = Datasets.dataset("genotypes.txt", dataset_name="example")
+            genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
             
             @testset "Single precision (default)" begin
                 geno = get_genotypes(genofile, 1.0, separator=',',

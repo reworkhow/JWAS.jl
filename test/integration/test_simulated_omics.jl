@@ -13,7 +13,7 @@ using Test, CSV, DataFrames, JWAS, JWAS.Datasets, Statistics, Random
 # DATA LOADING
 # ============================================================================
 
-phenofile = Datasets.dataset("phenotypes_sim.txt", dataset_name="simulated_omics")
+phenofile = Datasets.dataset("phenotypes.txt", dataset_name="simulated_omics")
 genofile  = Datasets.dataset("genotypes_1000snps.txt", dataset_name="simulated_omics")
 pedfile   = Datasets.dataset("pedigree.txt", dataset_name="simulated_omics")
 
