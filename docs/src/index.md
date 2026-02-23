@@ -56,6 +56,7 @@ Pages = [
   "manual/getstarted.md",
   "manual/workflow.md",
   "manual/block_bayesc.md",
+  "manual/memory_usage.md",
   "manual/public.md",
   "manual/internals.md",
 ]

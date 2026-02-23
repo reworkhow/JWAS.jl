@@ -294,21 +294,31 @@ function runMCMC(mme::MME,df;
         end
     end
     # Double Precision
+    # Only convert when needed to avoid unnecessary full-size allocations.
+    tofloat64_if_needed = x -> begin
+        if x isa AbstractArray
+            return (eltype(x) == Float64) ? x : map(Float64, x)
+        elseif x isa Float64
+            return x
+        else
+            return map(Float64, x)
+        end
+    end
     if double_precision == true
         if mme.M != 0
             for Mi in mme.M
-                Mi.genotypes = map(Float64,Mi.genotypes)
-                Mi.G.val         = map(Float64,Mi.G.val)
-                Mi.α         = map(Float64,Mi.α)
+                Mi.genotypes = tofloat64_if_needed(Mi.genotypes)
+                Mi.G.val     = tofloat64_if_needed(Mi.G.val)
+                Mi.α         = tofloat64_if_needed(Mi.α)
             end
         end
         for random_term in mme.rndTrmVec
-            random_term.Vinv  = map(Float64,random_term.Vinv)
-            random_term.GiOld.val = map(Float64,random_term.GiOld.val)
-            random_term.GiNew.val = map(Float64,random_term.GiNew.val)
-            random_term.Gi.val    = map(Float64,random_term.Gi.val)
+            random_term.Vinv      = tofloat64_if_needed(random_term.Vinv)
+            random_term.GiOld.val = tofloat64_if_needed(random_term.GiOld.val)
+            random_term.GiNew.val = tofloat64_if_needed(random_term.GiNew.val)
+            random_term.Gi.val    = tofloat64_if_needed(random_term.Gi.val)
         end
-        mme.Gi = map(Float64,mme.Gi)
+        mme.Gi = tofloat64_if_needed(mme.Gi)
     end
 
     #constraint on covariance matrix

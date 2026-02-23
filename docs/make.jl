@@ -17,6 +17,7 @@ makedocs(
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",
             "Block BayesC" => "manual/block_bayesc.md",
+            "Memory Usage" => "manual/memory_usage.md",
             "Public" => "manual/public.md",
             "Internals" => "manual/internals.md"
             ],
