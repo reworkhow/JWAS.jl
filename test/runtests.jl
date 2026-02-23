@@ -52,12 +52,9 @@ println()
 
 # Configuration flags from environment variables
 RUN_INTEGRATION_TESTS = get(ENV, "RUN_INTEGRATION_TESTS", "false") == "true"
-RUN_LONG_TESTS = get(ENV, "RUN_LONG_TESTS", "false") == "true"
-
 println("Test Configuration:")
 println("  Unit Tests:        Always run ✓")
 println("  Integration Tests: $(RUN_INTEGRATION_TESTS ? "Enabled ✓" : "Disabled (set RUN_INTEGRATION_TESTS=true)")")
-println("  Long Tests:        $(RUN_LONG_TESTS ? "Enabled ✓" : "Disabled (set RUN_LONG_TESTS=true)")")
 println("="^70)
 println()
 
@@ -338,42 +335,6 @@ println()
         @info "Skipping integration tests (set RUN_INTEGRATION_TESTS=true to run)"
     end
     
-    # ========================================================================
-    # LONG-RUNNING TESTS (Conditional - very slow tests)
-    # ========================================================================
-    if RUN_LONG_TESTS
-        println("\n" * "="^70)
-        println("Running Long Tests...")
-        println("="^70)
-        
-        @testset "Long Running Tests" begin
-            
-            @testset "Random Regression Models" begin
-                println("\n→ Running long/RRM_test.jl")
-                # Note: RRM_test.jl may need HTTP, GSL, Plots, Kronecker packages
-                long_file = joinpath(original_dir, "test", "long", "RRM_test.jl")
-                include(long_file)
-            end
-            
-            @testset "Accuracy Validation" begin
-                println("\n→ Running long/Unitest.jl")
-                # Note: Unitest.jl creates its own directories and may take a long time
-                long_file = joinpath(original_dir, "test", "long", "Unitest.jl")
-                include(long_file)
-            end
-            
-            @testset "Single-Step Block Analysis" begin
-                println("\n→ Running long/ssBR-block.jl")
-                # Note: ssBR-block.jl may require specific data files
-                long_file = joinpath(original_dir, "test", "long", "ssBR-block.jl")
-                include(long_file)
-            end
-            
-        end
-    else
-        @info "Skipping long tests (set RUN_LONG_TESTS=true to run)"
-    end
-    
 end  # End of main testset
 
 # ============================================================================
@@ -420,13 +381,10 @@ println()
 # How to Run This Test Suite:
 
 ## Quick unit tests only (default - ~40 seconds):
-julia --project=. test/test_comprehensive.jl
+julia --project=. test/runtests.jl
 
-## With integration tests (~minutes to hours):
-RUN_INTEGRATION_TESTS=true julia --project=. test/test_comprehensive.jl
-
-## Everything including long tests:
-RUN_INTEGRATION_TESTS=true RUN_LONG_TESTS=true julia --project=. test/test_comprehensive.jl
+## With integration tests (~minutes):
+RUN_INTEGRATION_TESTS=true julia --project=. test/runtests.jl
 
 ## Keep test files for debugging:
 Edit CLEANUP_ON_SUCCESS = false in this file
