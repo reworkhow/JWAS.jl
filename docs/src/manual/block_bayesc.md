@@ -59,6 +59,43 @@ In the current JWAS code:
 
 This keeps effective marker-update work on a similar scale while moving much of the per-marker work from `nObs`-length operations to `block_size`-length operations.
 
+### Detailed Comparison with BayesR3
+
+Reference paper: BayesR3 (Communications Biology, 2022), DOI: `10.1038/s42003-022-03624-1`.
+
+JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely follows the same blocked Gibbs pattern.
+
+#### Step-by-step correspondence
+
+| BayesR3 paper step | JWAS block BayesC implementation | Status |
+| --- | --- | --- |
+| Partition markers into blocks | `fast_blocks` builds marker blocks | Same strategy |
+| Build per-block RHS \(r_b = V_b'We\) | `XpRinvycorr = XRinvArray[i]*yCorr` | Same strategy |
+| Within-block marker update uses current block RHS | BayesC per-marker `rhs/lhs/gHat` from `XpRinvycorr` | Same strategy |
+| In-block RHS correction via block Gram column | `BLAS.axpy!(..., view(XpRinvX[i],:,j), XpRinvycorr)` | Same strategy |
+| Update residual once on block exit | `yCorr += X_b*(α_old_block-α_new_block)` | Same strategy |
+
+#### What is different
+
+| Topic | BayesR3 paper | JWAS block BayesC | Practical implication |
+| --- | --- | --- | --- |
+| Marker prior model | BayesR mixture (multiple non-zero normal components plus zero component) | BayesC spike-slab style inclusion (`δ∈{0,1}` for this path) | Same acceleration idea, different posterior model |
+| Marker state sampling | Multi-class mixture state | Binary include/exclude state | Not numerically identical to BayesR |
+| Inner-repeat schedule | Uses nominal block size as fixed repeat count across blocks | `nreps = current block_size` | Last short block may receive fewer inner repeats |
+| Outer-loop scheduling | Described as a fixed block sweep schedule | JWAS also rescales outer `chain_length` by block size | Compare effective updates, not just outer iterations |
+| Scope | BayesR algorithm | JWAS block path currently wired to BayesA/B/C marker samplers | Strategy reused in a different Bayesian alphabet member |
+
+#### Scheduling detail (explicit)
+
+JWAS sets `nreps` equal to the current block size.
+
+- Full blocks: `nreps` equals the nominal block size.
+- Final short block: `nreps` is smaller than full blocks.
+
+In the BayesR3 description, `nreps` is treated as fixed by the nominal block size for all blocks, including the final short block.
+
+This difference changes the number of within-block Gibbs sweeps for short blocks, but not the core residual/RHS block-update identity.
+
 ## Algorithm Comparison
 
 | Aspect | Standard BayesC (`BayesABC!`) | Block BayesC (`BayesABC_block!`) | Practical effect |
@@ -98,4 +135,3 @@ Interpretation:
 1. Start with `fast_blocks=true` for large marker sets and enough RAM.
 2. If memory is tight, set a smaller numeric block size (e.g., `32` or `64`) and benchmark.
 3. If speed gain is small, try a few block sizes and choose based on wall time + memory headroom.
-
