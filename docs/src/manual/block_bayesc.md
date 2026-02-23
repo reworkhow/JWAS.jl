@@ -3,6 +3,8 @@
 This page explains how JWAS implements block updates for BayesC marker sampling and how the block path changes speed and memory usage.
 The block BayesC implementation uses a strategy similar to the blocked update scheme described in the BayesR3 paper.
 
+BayesR3 paper (Methods): https://www.nature.com/articles/s42003-022-03624-1
+
 ## When This Path Is Used
 
 Block updates are enabled with:
@@ -110,6 +112,76 @@ This difference changes the number of within-block Gibbs sweeps for short blocks
 | Extra precompute | Minimal | `X_b'R^{-1}` and `X_b'R^{-1}X_b` for all blocks | More startup work |
 | Extra memory | Minimal | Stores block matrices | Higher memory footprint |
 | Chain behavior in current implementation | Direct `chain_length` | Inner repeats + outer chain scaling | Compare runs by effective updates, not only outer iterations |
+
+## Computational Complexity
+
+Use the notation:
+
+- `N`: number of records (`nObs`)
+- `P`: number of markers (`nMarkers`)
+- `b`: nominal block size
+- `B = ceil(P/b)`: number of blocks
+- `L`: standard (non-block) chain length
+
+### Standard BayesC (non-block)
+
+- Per MCMC iteration: `O(PN)` (marker-wise dot products and residual updates over `N` records)
+- Total over `L` iterations: `O(LPN)`
+
+### JWAS block BayesC (current implementation)
+
+Let block sizes be `s_i` with `sum_i s_i = P`.
+
+Per outer iteration:
+
+- Block RHS construction across all blocks: `O(NP)`
+- In-block updates: `O(sum_i s_i^3)` (because `nreps = s_i` and in-block RHS updates are length-`s_i`)
+- Residual updates on block exit across all blocks: `O(NP)`
+
+So per outer iteration:
+
+- `O(NP + sum_i s_i^3)`
+- With near-uniform blocks (`s_i ≈ b`): `O(NP + P b^2)`
+
+JWAS rescales outer iterations to approximately `m = floor(L/b)`, so the main total cost is:
+
+- `O((L/b) * (NP + P b^2)) = O(LP(N/b + b))`
+
+### BayesR3 (paper-reported scaling)
+
+BayesR3 reports empirical runtime scaling where per-SNP time is proportional to `(N+b)/b`, while standard BayesR scales proportional to `N`.
+Using chain length `L`, this corresponds to:
+
+- BayesR3: `O(LP(N+b)/b) = O(LP(N/b + 1))` (empirical scaling form)
+- Standard BayesR: `O(LPN)`
+
+### Practical differences in complexity interpretation
+
+- JWAS and BayesR3 share the same blocked-update strategy family, but are not identical in constants/scheduling details.
+- JWAS uses `nreps = current block_size` for each block (including the final short block).
+- BayesR3 describes using the nominal block repeat count for all blocks, including the final short block.
+
+### Numerical example (`N=200,000`, `P=2,000,000`)
+
+Assume `fast_blocks=true`, so JWAS uses `b = floor(sqrt(N)) = 447`.
+Then:
+
+- `B = ceil(P/b) = ceil(2,000,000/447) = 4,475` blocks
+- Standard BayesC total scaling: `O(LPN) = O(L * 2,000,000 * 200,000)`
+- JWAS block BayesC main scaling: `O(LP(N/b + b)) = O(L * 2,000,000 * (200,000/447 + 447))`
+- BayesR3 reported scaling form: `O(LP(N/b + 1)) = O(L * 2,000,000 * (200,000/447 + 1))`
+
+So the per-`LP` coefficient is:
+
+- Standard BayesC: `200,000`
+- JWAS block BayesC: `~894.4`
+- BayesR3 scaling form: `~448.4`
+
+This implies (asymptotic operation-count scaling, ignoring constants/language/runtime effects):
+
+- JWAS block vs standard: `~224x` lower
+- BayesR3 scaling form vs standard: `~446x` lower
+- JWAS block vs BayesR3 scaling form: `~2.0x` higher
 
 ## Example: Speed/Memory Tradeoff
 
