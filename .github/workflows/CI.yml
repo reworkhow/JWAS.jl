@@ -76,5 +76,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.version == '1'
         with:
           files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
 
