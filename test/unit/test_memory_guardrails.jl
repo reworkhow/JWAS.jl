@@ -36,9 +36,24 @@ using JWAS.Datasets
                                           element_bytes=4,
                                           has_nonunit_weights=false,
                                           block_starts=[1, 6, 11, 16])
-        @test est.bytes_XRinvArray == 10 * 20 * 4
+        @test est.bytes_XRinvArray == 0
         # block sizes are 5,5,5,5 => sum(s_i^2) = 100
         @test est.bytes_XpRinvX == 100 * 4
+    end
+
+    @testset "GibbsMats block setup does not persist XRinvArray" begin
+        X = Float32[
+            1 2 3 4;
+            2 3 4 5;
+            3 4 5 6;
+            4 5 6 7;
+            5 6 7 8;
+            6 7 8 9
+        ]
+        Rinv = Float32[1, 2, 3, 4, 5, 6]
+        g = JWAS.GibbsMats(X, Rinv; fast_blocks=[1, 3])
+        @test g.XRinvArray == false
+        @test length(g.XpRinvX) == 2
     end
 
     @testset "check_marker_memory_guard! modes" begin

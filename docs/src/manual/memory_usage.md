@@ -40,15 +40,15 @@ Interpretation: non-block memory is dominated by one copy of `X` (unit weights) 
 Block mode keeps all non-block structures and adds:
 
 - `XArray`: block views of `X` (metadata only)
-- `XRinvArray`: per-block dense matrices `X_b' * Diagonal(Rinv)`; total elements `N*P`
 - `XpRinvX`: per-block Gram matrices; total elements `sum_i s_i^2` (approximately `P*b` for near-uniform blocks)
+- a temporary block RHS workspace of length up to block size (reused, not `N*P` scale)
 
 Approximate totals:
 
 - Unit weights:  
-`Mem_block_unit ~= t * (2*N*P + sum_i s_i^2 + P) + O(P*t)`
+`Mem_block_unit ~= t * (N*P + sum_i s_i^2 + P) + O(P*t)`
 - Non-unit weights:  
-`Mem_block_nonunit ~= t * (3*N*P + sum_i s_i^2 + P) + O(P*t)`
+`Mem_block_nonunit ~= t * (2*N*P + sum_i s_i^2 + P) + O(P*t)`
 
 ## Worked Example (`N=500,000`, `P=2,000,000`)
 
@@ -84,7 +84,6 @@ Component sizes:
 | ------------------------------------ | ------------------------- | ---------------------- | ------------------------ |
 | `X`                                  | `N*P = 1,000,000,000,000` | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`)   |
 | `xRinvArray` (only non-unit weights) | `N*P`                     | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`)   |
-| `XRinvArray` (block mode)            | `N*P`                     | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`)   |
 | `XpRinvX` (block mode)               | `sum_i s_i^2`             | `5.66 GB` (`5.27 GiB`) | `11.31 GB` (`10.53 GiB`) |
 | `xpRinvx`                            | `P`                       | `8.0 MB` (`7.63 MiB`)  | `16.0 MB` (`15.26 MiB`)  |
 
@@ -96,13 +95,13 @@ Approximate totals (dominated by `N*P` terms):
 | --------------------------- | ----------- | ----------- |
 | Non-block, unit weights     | `~4.00 TB`  | `~8.00 TB`  |
 | Non-block, non-unit weights | `~8.00 TB`  | `~16.00 TB` |
-| Block, unit weights         | `~8.01 TB`  | `~16.01 TB` |
-| Block, non-unit weights     | `~12.01 TB` | `~24.01 TB` |
+| Block, unit weights         | `~4.01 TB`  | `~8.01 TB`  |
+| Block, non-unit weights     | `~8.01 TB`  | `~16.01 TB` |
 
 
 ## Practical Takeaways
 
 1. At very large `N` and `P`, dense in-memory genotype matrices dominate memory in both non-block and block modes.
 2. Non-block mode is memory-cheapest when weights are unit (`xRinvArray` aliases `xArray`).
-3. Block mode adds one extra `N x P`-scale matrix (`XRinvArray`) plus a smaller `XpRinvX` term.
+3. Current block mode does not persist `XRinvArray`; extra memory is mainly `XpRinvX` (plus small reusable block workspaces).
 4. For datasets like `N=500k, P=2M`, dense storage is multi-terabyte and typically requires a different data representation strategy.

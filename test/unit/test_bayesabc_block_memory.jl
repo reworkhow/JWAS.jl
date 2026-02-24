@@ -8,14 +8,13 @@ function make_block_inputs(nobs::Int,nmarkers::Int,block_size::Int)
     Rinv = ones(Float64,nobs)
     starts = collect(1:block_size:nmarkers)
     XArray = [view(X,:,s:min(s+block_size-1,nmarkers)) for s in starts]
-    XRinvArray = [Xb' * Diagonal(Rinv) for Xb in XArray]
-    XpRinvX = [XRinvArray[i] * XArray[i] for i in eachindex(XArray)]
+    XpRinvX = [Xb' * Xb for Xb in XArray]
     xpRinvx = [dot(view(X,:,j),view(X,:,j)) for j in 1:nmarkers]
     yCorr = randn(Float64,nobs)
     α = randn(Float64,nmarkers)
     β = copy(α)
     δ = ones(Float64,nmarkers)
-    return (XArray,XRinvArray,xpRinvx,X,XpRinvX,yCorr,α,β,δ,1.0,fill(1.0,nmarkers),0.95)
+    return (XArray,xpRinvx,X,XpRinvX,yCorr,α,β,δ,1.0,fill(1.0,nmarkers),0.95,Rinv)
 end
 
 function measure_block_alloc(nobs::Int,nmarkers::Int,block_size::Int)

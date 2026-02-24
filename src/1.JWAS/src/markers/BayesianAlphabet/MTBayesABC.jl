@@ -183,19 +183,19 @@ function MTBayesABC_samplerII!(xArray,
 end
 
 #block
-function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances)
-    MTBayesABC_block!(genotypes.MArray,genotypes.MRinvArray,genotypes.mpRinvm,
+function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])))
+    MTBayesABC_block!(genotypes.MArray,genotypes.mpRinvm,
                 genotypes.genotypes,genotypes.MpRinvM,
                 ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                locus_effect_variances,genotypes.π)
+                locus_effect_variances,genotypes.π,Rinv)
 end
 
-function MTBayesABC_block!(XArray,XRinvArray,xpRinvx,
+function MTBayesABC_block!(XArray,xpRinvx,
                      X, XpRinvX,
                      wArray,
                      betaArray,deltaArray,alphaArray,
                      vare,varEffects,
-                     BigPi)
+                     BigPi,Rinvw)
     nMarkers = length(xpRinvx)
     ntraits  = length(alphaArray)
 
@@ -212,10 +212,16 @@ function MTBayesABC_block!(XArray,XRinvArray,xpRinvx,
     XpRinvX       = XpRinvX
     nblocks       = length(XpRinvX)
     start_pos     = 0
+    unit_weights  = is_unit_weights(Rinvw)
+    max_block_size = maximum(size(XpRinvX[i],1) for i in 1:nblocks)
+    rhs_cache = [zeros(eltype(wArray[trait]),max_block_size) for trait = 1:ntraits]
     for i in 1:nblocks
-        XpRinvycorr = [XRinvArray[i]*wArray[trait] for trait = 1:ntraits]
-        oldalphaArray = deepcopy(alphaArray)
         block_size  = size(XpRinvX[i],1)
+        XpRinvycorr = [view(rhs_cache[trait],1:block_size) for trait = 1:ntraits]
+        for trait = 1:ntraits
+            block_rhs!(XpRinvycorr[trait],XArray[i],wArray[trait],Rinvw,unit_weights)
+        end
+        oldalphaArray = deepcopy(alphaArray)
         nreps       = block_size #user-defined nreps=block_size, outer_niter =niter/block_size
         for reps = 1:nreps
             for j = 1:block_size #additional code to save all sampled αs is needed

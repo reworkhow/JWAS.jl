@@ -44,8 +44,11 @@ In the block version (`BayesABC_block!`), markers are partitioned into blocks.
 For each block `b`, JWAS builds:
 
 - `X_b` (block genotype matrix)
-- `X_b'R^{-1}` (`XRinvArray`)
 - `X_b'R^{-1}X_b` (`XpRinvX`, block Gram matrix)
+
+`X_b'R^{-1}` is not persisted as a block matrix. Instead, JWAS computes
+`X_b'R^{-1}yCorr` on demand into a reusable block workspace vector each outer
+iteration.
 
 ### Update flow inside each MCMC outer iteration
 
@@ -77,7 +80,7 @@ JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely fol
 | BayesR3 paper step | JWAS block BayesC implementation | Status |
 | --- | --- | --- |
 | Partition markers into blocks | `fast_blocks` builds marker blocks | Same strategy |
-| Build per-block RHS \(r_b = V_b'We\) | `XpRinvycorr = XRinvArray[i]*yCorr` | Same strategy |
+| Build per-block RHS \(r_b = V_b'We\) | `block_rhs!(XpRinvycorr, XArray[i], yCorr, Rinv, unit_weights)` | Same strategy |
 | Within-block marker update uses current block RHS | BayesC per-marker `rhs/lhs/gHat` from `XpRinvycorr` | Same strategy |
 | In-block RHS correction via block Gram column | `BLAS.axpy!(..., view(XpRinvX[i],:,j), XpRinvycorr)` | Same strategy |
 | Update residual once on block exit | `yCorr += X_b*(α_old_block-α_new_block)` | Same strategy |
@@ -110,8 +113,8 @@ This difference changes the number of within-block Gibbs sweeps for short blocks
 | Update unit | One marker at a time | One block, then markers inside block | Better cache locality in block path |
 | `yCorr` updates | Every marker | Once per block | Fewer full-length vector updates |
 | Main per-marker linear algebra size | `nObs` | `block_size` (inside block cache) | Lower per-marker arithmetic cost |
-| Extra precompute | Minimal | `X_b'R^{-1}` and `X_b'R^{-1}X_b` for all blocks | More startup work |
-| Extra memory | Minimal | Stores block matrices | Higher memory footprint |
+| Extra precompute | Minimal | `X_b'R^{-1}X_b` for all blocks (RHS computed on demand) | More startup work |
+| Extra memory | Minimal | Stores block Gram matrices (`XpRinvX`) and block workspaces | Higher memory than non-block, lower than older persisted-`XRinvArray` design |
 | Chain behavior in current implementation | Direct `chain_length` | Inner repeats + outer chain scaling | Compare runs by effective updates, not only outer iterations |
 
 ## Computational Complexity
@@ -204,13 +207,12 @@ Approximate memory (Float32):
 | Item | Approx size |
 | --- | --- |
 | Genotype matrix `X` (`nObs x nMarkers`) | `~953.7 MiB` |
-| Extra `XRinvArray` in block mode | `~953.7 MiB` |
 | Extra `XpRinvX` in block mode | `~13.4 MiB` |
 
 Interpretation:
 
 - Block mode can be much faster for large `nObs`, because heavy per-marker operations are shifted to block-level cached operations.
-- Block mode uses more memory, mainly from `XRinvArray`.
+- Block mode uses more memory than non-block mode, mainly from `XpRinvX` (plus small block workspaces).
 - Practical speedup is typically below theoretical arithmetic speedup due to random branching, allocation overhead, and BLAS/runtime effects.
 
 ## Practical Guidance

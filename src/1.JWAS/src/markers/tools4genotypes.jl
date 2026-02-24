@@ -35,6 +35,48 @@ function getXpRinvX(X)
     return XpRinvX
 end
 
+"""
+    is_unit_weights(Rinv)
+
+Return `true` if all residual weights are exactly one.
+"""
+function is_unit_weights(Rinv::AbstractVector)
+    oneval = one(eltype(Rinv))
+    @inbounds for i in eachindex(Rinv)
+        if Rinv[i] != oneval
+            return false
+        end
+    end
+    return true
+end
+
+"""
+    block_rhs!(rhs, Xblock, y, Rinv, unit_weights)
+
+Compute block RHS `Xblock' * Diagonal(Rinv) * y` in-place without storing
+`Xblock' * Diagonal(Rinv)` as a persistent matrix.
+"""
+function block_rhs!(rhs::AbstractVector,
+                    Xblock::AbstractMatrix,
+                    y::AbstractVector,
+                    Rinv::AbstractVector,
+                    unit_weights::Bool)
+    if unit_weights
+        mul!(rhs,transpose(Xblock),y)
+        return rhs
+    end
+
+    @inbounds for j in 1:size(Xblock,2)
+        xj = view(Xblock,:,j)
+        acc = zero(eltype(rhs))
+        @simd for i in eachindex(y)
+            acc += xj[i]*Rinv[i]*y[i]
+        end
+        rhs[j] = acc
+    end
+    return rhs
+end
+
 function get_column_blocks_ref(X,fast_blocks=false)
     xArray = Array{typeof(X)}(undef,length(fast_blocks))
     @showprogress "building prerequisite matrices ..." for i in 1:length(fast_blocks)
@@ -75,7 +117,8 @@ function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
     bytes_xRinv    = has_nonunit_weights ? bytes_X : Int128(0)
 
     is_block_mode  = block_starts != false
-    bytes_XRinv    = is_block_mode ? bytes_X : Int128(0)
+    # XRinvArray is no longer persisted in block mode; block RHS is computed on demand.
+    bytes_XRinv    = Int128(0)
     block_sq_sum   = Int128(0)
     if is_block_mode
         starts = collect(Int,block_starts)
@@ -179,8 +222,9 @@ mutable struct GibbsMats
         #single-locus, adjusting y, approach
         nrows,ncols = size(X)
         xArray      = get_column_ref(X)
-        xpRinvx     = getXpRinvX(X,Rinv)
-        if Rinv == ones(length(Rinv))
+        unit_weights = is_unit_weights(Rinv)
+        xpRinvx     = unit_weights ? getXpRinvX(X) : getXpRinvX(X,Rinv)
+        if unit_weights
             xRinvArray = xArray  #avoid using extra memory for xRinvArray
         else
             xRinvArray = [x.*Rinv for x in xArray]
@@ -188,8 +232,13 @@ mutable struct GibbsMats
         #block, adjusting rhs and/or y, approach
         if fast_blocks != false
             XArray = get_column_blocks_ref(X,fast_blocks)
-            XRinvArray = @showprogress "building prerequisite matrices ..." [X'Diagonal(Rinv) for X in XArray]
-            XpRinvX = @showprogress "building prerequisite matrices ..." [XRinvArray[i]*XArray[i] for i in 1:length(XArray)]
+            XRinvArray = false # Save memory by not persisting X'Rinv; block RHS is computed on demand.
+            if unit_weights
+                XpRinvX = @showprogress "building prerequisite matrices ..." [Xblock' * Xblock for Xblock in XArray]
+            else
+                Rdiag = Diagonal(Rinv)
+                XpRinvX = @showprogress "building prerequisite matrices ..." [Xblock' * Rdiag * Xblock for Xblock in XArray]
+            end
         else
             XArray = XRinvArray = XpRinvX = false
         end

@@ -53,18 +53,18 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
 end
 
 
-function BayesABC_block!(genotypes,ycorr,vare,locus_effect_variances)
-    BayesABC_block!(genotypes.MArray,genotypes.MRinvArray,genotypes.mpRinvm,
+function BayesABC_block!(genotypes,ycorr,vare,locus_effect_variances,Rinv=ones(eltype(ycorr),length(ycorr)))
+    BayesABC_block!(genotypes.MArray,genotypes.mpRinvm,
               genotypes.genotypes,genotypes.MpRinvM,
               ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
-              locus_effect_variances,genotypes.π)
+              locus_effect_variances,genotypes.π,Rinv)
 end
 
-function BayesABC_block!(XArray,XRinvArray,xpRinvx,
+function BayesABC_block!(XArray,xpRinvx,
                    X, XpRinvX,
                    yCorr,
                    α,β,δ,
-                   vare,varEffects,π)
+                   vare,varEffects,π,Rinv)
 
     logPi         = log(π)
     logPiComp     = log(1-π)
@@ -78,13 +78,16 @@ function BayesABC_block!(XArray,XRinvArray,xpRinvx,
     start_pos     = 0
     max_block_size = maximum(size(XpRinvX[i],1) for i in 1:nblocks)
     αold_block = Vector{eltype(α)}(undef,max_block_size)
+    rhs_block = Vector{eltype(yCorr)}(undef,max_block_size)
+    unit_weights = is_unit_weights(Rinv)
     for i in 1:nblocks
-        XpRinvycorr = XRinvArray[i]*yCorr
         block_size  = size(XpRinvX[i],1)
         block_start = start_pos + 1
         block_end   = start_pos + block_size
         block_range = block_start:block_end
         copyto!(view(αold_block,1:block_size),view(α,block_range))
+        XpRinvycorr = view(rhs_block,1:block_size)
+        block_rhs!(XpRinvycorr,XArray[i],yCorr,Rinv,unit_weights)
         nreps       = block_size #user-defined nreps=block_size, outer_niter =niter/block_size
         for reps = 1:nreps
             for j=1:block_size #additional code to save all sampled αs is needed
