@@ -112,6 +112,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_misc_coverage.jl"))
         end
 
+        @testset "Advanced Coverage (multi-trait methods, constraints, missing)" begin
+            include(joinpath(@__DIR__, "unit", "test_advanced_coverage.jl"))
+        end
+
         # ====================================================================
         # Test 1: Model Building
         # ====================================================================
