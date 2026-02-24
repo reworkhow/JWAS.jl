@@ -18,6 +18,7 @@ makedocs(
             "Workflow" => "manual/workflow.md",
             "Block BayesC" => "manual/block_bayesc.md",
             "Memory Usage" => "manual/memory_usage.md",
+            "Streaming Genotype Walkthrough" => "manual/streaming_genotype_walkthrough.md",
             "Public" => "manual/public.md",
             "Internals" => "manual/internals.md"
             ],

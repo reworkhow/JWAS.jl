@@ -59,6 +59,7 @@ Pages = [
   "manual/memory_usage.md",
   "manual/large_genotype_data_streaming.md",
   "manual/streaming_genotype_backend.md",
+  "manual/streaming_genotype_walkthrough.md",
   "manual/public.md",
   "manual/internals.md",
 ]
