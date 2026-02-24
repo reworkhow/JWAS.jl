@@ -58,6 +58,7 @@ Pages = [
   "manual/block_bayesc.md",
   "manual/memory_usage.md",
   "manual/large_genotype_data_streaming.md",
+  "manual/streaming_genotype_backend.md",
   "manual/public.md",
   "manual/internals.md",
 ]
