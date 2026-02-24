@@ -24,6 +24,7 @@ include("MCMC/MCMC_BayesianAlphabet.jl")
 
 #Genomic Markers
 include("markers/tools4genotypes.jl")
+include("markers/streaming_genotypes.jl")
 include("markers/readgenotypes.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
 include("markers/BayesianAlphabet/BayesC0L.jl")
@@ -52,7 +53,7 @@ include("input_data_validation.jl")
 #output
 include("output.jl")
 
-export build_model,set_covariate,set_random,add_genotypes,get_genotypes
+export build_model,set_covariate,set_random,add_genotypes,get_genotypes,prepare_streaming_genotypes
 export outputMCMCsamples,outputEBV,getEBV
 export solve,runMCMC
 export showMME,describe
@@ -314,7 +315,9 @@ function runMCMC(mme::MME,df;
     if double_precision == true
         if mme.M != 0
             for Mi in mme.M
-                Mi.genotypes = tofloat64_if_needed(Mi.genotypes)
+                if Mi.storage_mode == :dense
+                    Mi.genotypes = tofloat64_if_needed(Mi.genotypes)
+                end
                 Mi.G.val     = tofloat64_if_needed(Mi.G.val)
                 Mi.α         = tofloat64_if_needed(Mi.α)
             end
@@ -346,10 +349,34 @@ function runMCMC(mme::MME,df;
     if mme.M != false
         genotypes_id_file = joinpath(output_folder,"IDs_for_individuals_with_genotypes.txt")
         writedlm(genotypes_id_file,mme.M[1].obsID)
-        align_genotypes(mme,output_heritability,single_step_analysis)
+        has_streaming_genotypes = any(Mi.storage_mode == :stream for Mi in mme.M)
+        if has_streaming_genotypes
+            if length(mme.M) != 1
+                error("storage=:stream MVP supports one genotype category only.")
+            end
+            Mi = mme.M[1]
+            if length(unique(mme.obsID)) != length(mme.obsID)
+                error("storage=:stream MVP requires one phenotype record per individual (no repeated IDs).")
+            end
+            if mme.obsID != Mi.obsID
+                error("storage=:stream MVP requires exact genotype/phenotype ID match and order. Please reorder phenotypes to match genotype IDs.")
+            end
+            printstyled("storage=:stream is enabled; genotype alignment is skipped and original ID order is used.\n",bold=false,color=:green)
+        else
+            align_genotypes(mme,output_heritability,single_step_analysis)
+        end
     end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
+    if mme.M != 0
+        for Mi in mme.M
+            if Mi.storage_mode == :stream
+                if any(mme.invweights .!= one(eltype(mme.invweights)))
+                    error("storage=:stream MVP supports unit residual weights only.")
+                end
+            end
+        end
+    end
     # Memory guardrail for marker allocations:
     # - Runs after genotype alignment and MME initialization so nObs/nMarkers/weights
     #   reflect the actual training analysis.
@@ -368,15 +395,25 @@ function runMCMC(mme::MME,df;
             est = estimate_marker_memory(Mi.nObs,Mi.nMarkers;
                                          element_bytes=bytes_per_value,
                                          has_nonunit_weights=has_nonunit_weights,
-                                         block_starts=mme.MCMCinfo.fast_blocks)
+                                         block_starts=mme.MCMCinfo.fast_blocks,
+                                         storage_mode=Mi.storage_mode)
             geno_name = (Mi.name == false ? "geno" : string(Mi.name))
-            context_str =
-                "geno=$geno_name, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=$(double_precision ? "Float64" : "Float32"), "*
-                "X=$(format_bytes_human(est.bytes_X)), "*
-                "xRinvArray=$(format_bytes_human(est.bytes_xRinvArray)), "*
-                "XRinvArray=$(format_bytes_human(est.bytes_XRinvArray)), "*
-                "XpRinvX=$(format_bytes_human(est.bytes_XpRinvX)), "*
-                "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
+            if Mi.storage_mode == :stream
+                context_str =
+                    "geno=$geno_name, storage=:stream, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=Float32, "*
+                    "decode_buffer=$(format_bytes_human(est.bytes_decode_buffer)), "*
+                    "packed_row_buffer=$(format_bytes_human(est.bytes_packed_row_buffer)), "*
+                    "marker_means=$(format_bytes_human(est.bytes_marker_means)), "*
+                    "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
+            else
+                context_str =
+                    "geno=$geno_name, storage=:dense, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=$(double_precision ? "Float64" : "Float32"), "*
+                    "X=$(format_bytes_human(est.bytes_X)), "*
+                    "xRinvArray=$(format_bytes_human(est.bytes_xRinvArray)), "*
+                    "XRinvArray=$(format_bytes_human(est.bytes_XRinvArray)), "*
+                    "XpRinvX=$(format_bytes_human(est.bytes_XpRinvX)), "*
+                    "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
+            end
 
             check_marker_memory_guard!(;
                                        mode=guard_mode,

@@ -221,6 +221,18 @@ genotypes  = get_genotypes("genotypes.txt",G,method="BayesC",separator=",",heade
 ---
 On line 1, the genomic information is read on line 1 with the genotype file.  and variance `G` (a 3x3 matrix). In Bayesian analysis, the `G` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G` is not provided, a value is calculated from responses (phenotypes).
 
+Dense loading shown above is the default and primary workflow (`storage=:dense`).
+
+For very large marker panels, an optional streaming backend is available:
+
+```julia
+prefix = prepare_streaming_genotypes(\"genotypes.txt\",separator=',',header=true)
+genotypes = get_genotypes(prefix,G,method=\"BayesC\",storage=:stream) #G is optional
+```
+
+Streaming mode is currently an MVP path (single-trait BayesC, `fast_blocks=false`,
+unit residual weights, `double_precision=false`, exact genotype/phenotype ID order).
+
 
 ## Step 3: Build Model Equations
 

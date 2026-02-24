@@ -41,6 +41,24 @@ using JWAS.Datasets
         @test est.bytes_XpRinvX == 100 * 4
     end
 
+    @testset "estimate_marker_memory streaming mode is O(N+P)" begin
+        est_dense = JWAS.estimate_marker_memory(100, 200;
+                                                element_bytes=4,
+                                                has_nonunit_weights=false,
+                                                block_starts=false,
+                                                storage_mode=:dense)
+        est_stream = JWAS.estimate_marker_memory(100, 200;
+                                                 element_bytes=4,
+                                                 has_nonunit_weights=false,
+                                                 block_starts=false,
+                                                 storage_mode=:stream)
+        @test est_stream.bytes_X == 0
+        @test est_stream.bytes_decode_buffer == 100 * 4
+        @test est_stream.bytes_marker_means == 200 * 4
+        @test est_stream.bytes_xpRinvx == 200 * 4
+        @test est_stream.bytes_total < est_dense.bytes_total
+    end
+
     @testset "GibbsMats block setup does not persist XRinvArray" begin
         X = Float32[
             1 2 3 4;

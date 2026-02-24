@@ -10,6 +10,42 @@ original BayesC path (`fast_blocks=false`), with focus on very large datasets su
 - Objective: understand memory and speed constraints, and compare storage approaches.
 - This page does not change BayesC posterior equations; it compares data representation and runtime behavior.
 
+## Current JWAS Status
+
+- Dense loading remains the default and primary path:
+  - `get_genotypes(...; storage=:dense)` (default)
+  - Existing dense workflows are unchanged.
+- Streaming loading is additive and opt-in:
+  - `get_genotypes(...; storage=:stream)`
+  - Status: experimental MVP for large-data BayesC.
+
+### Streaming MVP workflow
+
+```julia
+# 1) one-time conversion to packed backend
+prefix = prepare_streaming_genotypes(\"genotypes.csv\";
+                                     separator=',',
+                                     header=true,
+                                     quality_control=true,
+                                     center=true)
+
+# 2) load packed backend (no dense N x P matrix in memory)
+geno = get_genotypes(prefix, 1.0;
+                     method=\"BayesC\",
+                     storage=:stream)
+```
+
+### Streaming MVP constraints
+
+- single-trait only
+- method = `BayesC` only
+- `fast_blocks=false` only
+- unit residual weights only
+- `double_precision=false` only
+- complete genomic data only (no single-step)
+- exact genotype/phenotype ID match and order required
+- `outputEBV`/`output_heritability` are disabled in MVP streaming mode
+
 ## Notation
 
 - `N`: number of records (`nObs`)

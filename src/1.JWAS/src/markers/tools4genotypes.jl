@@ -91,14 +91,16 @@ end
     estimate_marker_memory(nObs, nMarkers;
                            element_bytes,
                            has_nonunit_weights=false,
-                           block_starts=false)
+                           block_starts=false,
+                           storage_mode=:dense)
 
 Estimate major marker-path memory components in bytes.
 """
 function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
                                 element_bytes::Integer,
                                 has_nonunit_weights::Bool=false,
-                                block_starts=false)
+                                block_starts=false,
+                                storage_mode::Symbol=:dense)
     if nObs < 0 || nMarkers < 0
         error("nObs and nMarkers must be non-negative.")
     end
@@ -106,33 +108,54 @@ function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
         error("element_bytes must be a positive integer.")
     end
 
+    if !(storage_mode in (:dense,:stream))
+        error("storage_mode must be :dense or :stream.")
+    end
+
     # Use wider integers so large N*P products do not overflow on 64-bit Int.
     nObs128        = Int128(nObs)
     nMarkers128    = Int128(nMarkers)
     bytes_per_val  = Int128(element_bytes)
 
-    nvals_x        = nObs128*nMarkers128
-    bytes_X        = nvals_x*bytes_per_val
-    bytes_xpRinvx  = nMarkers128*bytes_per_val
-    bytes_xRinv    = has_nonunit_weights ? bytes_X : Int128(0)
+    bytes_X = Int128(0)
+    bytes_xRinv = Int128(0)
+    bytes_XRinv = Int128(0)
+    bytes_XpRinvX = Int128(0)
+    bytes_xpRinvx = Int128(0)
+    bytes_decode_buffer = Int128(0)
+    bytes_packed_row_buffer = Int128(0)
+    bytes_marker_means = Int128(0)
 
-    is_block_mode  = block_starts != false
-    # XRinvArray is no longer persisted in block mode; block RHS is computed on demand.
-    bytes_XRinv    = Int128(0)
-    block_sq_sum   = Int128(0)
-    if is_block_mode
-        starts = collect(Int,block_starts)
-        nblocks = length(starts)
-        for i in 1:nblocks
-            block_start = starts[i]
-            block_end   = (i == nblocks) ? nMarkers : (starts[i+1]-1)
-            block_size  = max(0,block_end-block_start+1)
-            # XpRinvX stores per-block Gram matrices, so memory scales with sum(s_i^2).
-            block_sq_sum += Int128(block_size)*Int128(block_size)
+    if storage_mode == :dense
+        nvals_x        = nObs128*nMarkers128
+        bytes_X        = nvals_x*bytes_per_val
+        bytes_xpRinvx  = nMarkers128*bytes_per_val
+        bytes_xRinv    = has_nonunit_weights ? bytes_X : Int128(0)
+
+        is_block_mode  = block_starts != false
+        # XRinvArray is no longer persisted in block mode; block RHS is computed on demand.
+        block_sq_sum   = Int128(0)
+        if is_block_mode
+            starts = collect(Int,block_starts)
+            nblocks = length(starts)
+            for i in 1:nblocks
+                block_start = starts[i]
+                block_end   = (i == nblocks) ? nMarkers : (starts[i+1]-1)
+                block_size  = max(0,block_end-block_start+1)
+                # XpRinvX stores per-block Gram matrices, so memory scales with sum(s_i^2).
+                block_sq_sum += Int128(block_size)*Int128(block_size)
+            end
         end
+        bytes_XpRinvX  = block_sq_sum*bytes_per_val
+    else
+        # Streaming MVP holds only O(N+P) marker working memory.
+        bytes_decode_buffer = nObs128*bytes_per_val
+        bytes_packed_row_buffer = Int128(cld(nObs,4))
+        bytes_marker_means = nMarkers128*bytes_per_val
+        bytes_xpRinvx = nMarkers128*bytes_per_val
     end
-    bytes_XpRinvX  = block_sq_sum*bytes_per_val
-    bytes_total    = bytes_X + bytes_xRinv + bytes_XRinv + bytes_XpRinvX + bytes_xpRinvx
+    bytes_total    = bytes_X + bytes_xRinv + bytes_XRinv + bytes_XpRinvX + bytes_xpRinvx +
+                     bytes_decode_buffer + bytes_packed_row_buffer + bytes_marker_means
 
     return (
         bytes_X = bytes_X,
@@ -140,6 +163,9 @@ function estimate_marker_memory(nObs::Integer,nMarkers::Integer;
         bytes_XRinvArray = bytes_XRinv,
         bytes_XpRinvX = bytes_XpRinvX,
         bytes_xpRinvx = bytes_xpRinvx,
+        bytes_decode_buffer = bytes_decode_buffer,
+        bytes_packed_row_buffer = bytes_packed_row_buffer,
+        bytes_marker_means = bytes_marker_means,
         bytes_total = bytes_total
     )
 end

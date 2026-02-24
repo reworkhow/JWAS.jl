@@ -42,6 +42,37 @@ function errors_args(mme)
                     error("SSGBLUP is not available")
                 end
             end
+            if Mi.storage_mode == :stream
+                if Mi.method != "BayesC"
+                    error("storage=:stream MVP supports BayesC only.")
+                end
+                if mme.nModels != 1
+                    error("storage=:stream MVP supports single-trait analysis only.")
+                end
+                if mme.MCMCinfo.fast_blocks != false
+                    error("storage=:stream MVP does not support fast_blocks.")
+                end
+                if mme.MCMCinfo.double_precision == true
+                    error("storage=:stream MVP supports Float32 only (double_precision=false).")
+                end
+                if mme.MCMCinfo.single_step_analysis == true
+                    error("storage=:stream MVP does not support single_step_analysis.")
+                end
+                if mme.MCMCinfo.RRM != false
+                    error("storage=:stream MVP does not support random regression model (RRM).")
+                end
+                if Mi.isGRM == true
+                    error("storage=:stream MVP does not support GRM/GBLUP inputs.")
+                end
+                if mme.MCMCinfo.outputEBV == true
+                    printstyled("outputEBV is disabled for storage=:stream (MVP limitation).\n",bold=false,color=:red)
+                    mme.MCMCinfo.outputEBV = false
+                end
+                if mme.MCMCinfo.output_heritability == true
+                    printstyled("output_heritability is disabled for storage=:stream in MVP.\n",bold=false,color=:red)
+                    mme.MCMCinfo.output_heritability = false
+                end
+            end
             if mme.nModels > 1 && Mi.π != 0.0
                 if round(sum(values(Mi.π)),digits=2)!=1.0
                   error("Summation of probabilities of Pi is not equal to one.")
@@ -54,6 +85,12 @@ function errors_args(mme)
     end
     if mme.MCMCinfo.single_step_analysis == true && mme.M == 0
         error("Genomic information is required for single-step analysis.")
+    end
+    if mme.M != 0
+        n_stream = count(Mi->Mi.storage_mode == :stream,mme.M)
+        if n_stream > 0 && length(mme.M) != 1
+            error("storage=:stream MVP supports one genotype category only.")
+        end
     end
     if mme.causal_structure != false && mme.nModels == 1
         error("Causal strutures are only allowed in multi-trait analysis")

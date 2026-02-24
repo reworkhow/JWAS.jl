@@ -146,6 +146,8 @@ mutable struct Genotypes
   meanScaleVara2
 
   output_genotypes #output genotypes
+  storage_mode::Symbol # :dense (default) or :stream
+  stream_backend  # backend object for storage_mode=:stream
 
   isGRM  #whether genotypes or relationship matirx is provided
 
@@ -156,7 +158,7 @@ mutable struct Genotypes
                                          false,false,false,false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,a9)
+                                         false,:dense,false,a9)
 end
 
 # mutable struct DF

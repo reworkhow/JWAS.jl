@@ -43,12 +43,18 @@ function MCMC_BayesianAlphabet(mme,df)
     if mme.M != 0
         for Mi in mme.M
             #Mi.α  (starting values were set in get_genotypes)
-            mGibbs    = GibbsMats(Mi.genotypes,invweights,fast_blocks=mme.MCMCinfo.fast_blocks)
-            Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
-            if fast_blocks != false
-                Mi.MArray  = mGibbs.XArray
-                Mi.MRinvArray = mGibbs.XRinvArray
-                Mi.MpRinvM = mGibbs.XpRinvX
+            if Mi.storage_mode == :stream
+                Mi.mArray,Mi.mRinvArray = false,false
+                Mi.mpRinvm = Mi.stream_backend.xpRinvx
+                Mi.MArray = Mi.MRinvArray = Mi.MpRinvM = false
+            else
+                mGibbs    = GibbsMats(Mi.genotypes,invweights,fast_blocks=mme.MCMCinfo.fast_blocks)
+                Mi.mArray,Mi.mRinvArray,Mi.mpRinvm  = mGibbs.xArray,mGibbs.xRinvArray,mGibbs.xpRinvx
+                if fast_blocks != false
+                    Mi.MArray  = mGibbs.XArray
+                    Mi.MRinvArray = mGibbs.XRinvArray
+                    Mi.MpRinvM = mGibbs.XpRinvX
+                end
             end
 
             if Mi.method=="BayesB" #α=β.*δ
@@ -105,8 +111,14 @@ function MCMC_BayesianAlphabet(mme,df)
         for Mi in mme.M
             for traiti in 1:Mi.ntraits
                 if Mi.α[traiti] != zero(Mi.α[traiti])
-                    ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs] = ycorr[(traiti-1)*Mi.nObs+1 : traiti*Mi.nObs]
-                                                                 - Mi.genotypes*Mi.α[traiti]
+                    trait_range = (traiti-1)*Mi.nObs+1 : traiti*Mi.nObs
+                    if Mi.storage_mode == :stream
+                        tmp = Vector{eltype(ycorr)}(undef, Mi.nObs)
+                        streaming_mul_alpha!(tmp,Mi.stream_backend,Mi.α[traiti])
+                        view(ycorr,trait_range) .-= tmp
+                    else
+                        ycorr[trait_range] = ycorr[trait_range] - Mi.genotypes*Mi.α[traiti]
+                    end
                 end
             end
         end
@@ -207,7 +219,11 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     else
                         if fast_blocks == false
-                            BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                            if Mi.storage_mode == :stream
+                                BayesABC_streaming!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                            else
+                                BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
+                            end
                         else
                             BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances,invweights)
                         end

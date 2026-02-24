@@ -76,6 +76,14 @@ println()
             include(joinpath(@__DIR__, "unit", "test_bayesabc_block_memory.jl"))
         end
 
+        @testset "Streaming Genotype Codec" begin
+            include(joinpath(@__DIR__, "unit", "test_streaming_codec.jl"))
+        end
+
+        @testset "Streaming Constraints" begin
+            include(joinpath(@__DIR__, "unit", "test_streaming_constraints.jl"))
+        end
+
         @testset "set_random (Random Effects)" begin
             include(joinpath(@__DIR__, "unit", "test_set_random.jl"))
         end

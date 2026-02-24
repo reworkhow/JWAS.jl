@@ -66,7 +66,8 @@ end
                   ## quality control:
                   quality_control=true, MAF = 0.01, missing_value = 9.0,
                   ## others:
-                  center=true,starting_value=false)
+                  center=true,starting_value=false,
+                  storage=:dense)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
 * If `a text file` is provided, the file format should be:
 ```
@@ -95,6 +96,8 @@ O3,0,0,2,1,1
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
+* `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
+  `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
@@ -109,7 +112,59 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        ## quality control:
                        quality_control = true, MAF = 0.01, missing_value = 9.0,
                        ## others:
-                       center = true, starting_value = false)
+                       center = true, starting_value = false,
+                       storage::Symbol = :dense)
+    if !(storage in (:dense,:stream))
+        error("storage must be :dense or :stream.")
+    end
+
+    if storage == :stream
+        if !(typeof(file) <: AbstractString)
+            error("storage=:stream requires a file path or prefix produced by prepare_streaming_genotypes.")
+        end
+        if method == "GBLUP"
+            error("storage=:stream MVP does not support GBLUP.")
+        end
+        if double_precision == true
+            error("storage=:stream MVP supports Float32 only (double_precision=false).")
+        end
+
+        backend = load_streaming_backend(file)
+        if center != backend.centered
+            printstyled("The argument center=$center is ignored for storage=:stream. Backend metadata centered=$(backend.centered) is used.\n",
+                        bold=false,color=:green)
+        end
+
+        obsID_stream = map(x->(x::AbstractString),backend.obsID)
+        markerID_stream = map(x->(x::AbstractString),backend.markerID)
+        allele_freq_stream = reshape(copy(backend.allele_freq),1,:)
+        genotypes = Genotypes(obsID_stream,markerID_stream,backend.nObs,backend.nMarkers,
+                              allele_freq_stream,backend.sum2pq,backend.centered,
+                              zeros(Float32,backend.nObs,0),false)
+        genotypes.storage_mode = :stream
+        genotypes.stream_backend = backend
+
+        genotypes.G                = Variance(G_is_marker_variance ? G : false, df,false,estimate_variance,estimate_scale,constraint)
+        genotypes.genetic_variance = Variance(G_is_marker_variance ? false : G, df,false,estimate_variance,estimate_scale,constraint)
+        genotypes.method     = method
+        genotypes.estimatePi = estimatePi
+        genotypes.π          = Pi
+
+        println("Genotype informatin:")
+        println("#markers: ",backend.nMarkers,"; #individuals: ",backend.nObs," (storage=:stream)")
+
+        if starting_value != false
+            printstyled("Starting values are provided for marker efffects. The order of starting values should be\n",
+            "markers for each traits (all markers for trait 1 then all markers for trait 2...)\n",bold=false,color=:green)
+            nsol = backend.nMarkers
+            if length(starting_value)%nsol != 0
+                error("length of starting values is wrong.")
+            end
+            genotypes.α = starting_value
+        end
+        return genotypes
+    end
+
     #Define data precision
     data_type = double_precision ? Float64 : Float32 #works for both genotypes and GRM
     #Read the genotype file
