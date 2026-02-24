@@ -279,6 +279,7 @@ MCMC samples for marker effects, location parameters specified on line 1, and al
 are saved every `output_samples_frequency` iterations to files.
 
 For large marker panels, `runMCMC(...; fast_blocks=...)` enables the block BayesC path. See [Block BayesC](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
+For standard original BayesC (`fast_blocks=false`) at very large `N` and `P`, see [Handling Large Genotype Data Without Loading the Full Matrix into Memory](large_genotype_data_streaming.md) for memory/speed tradeoffs across storage approaches.
 
 ---
 Several steps above can be skipped if no related information is available, e.g., step 4 is skipped if all effects are classed as factors. Several detailed examples are available in the examples section. Here is the link to documentation for all [Public functions](@ref).

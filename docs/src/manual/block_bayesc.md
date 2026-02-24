@@ -193,6 +193,95 @@ This implies:
 - BayesR3 paper fit vs standard: `~446x` lower
 - The apparent `~2.0x` gap between `~894` and `~448` is not an apples-to-apples complexity comparison: it is the difference between an operation-count model (`N/b + b`) and an empirical runtime fit (`N/b + 1`).
 
+## Detailed Resource Model (Current `fast_blocks` Path)
+
+Use:
+
+- `N`: records
+- `P`: markers
+- `b`: nominal block size
+- `s_i`: size of block `i`, `sum_i s_i = P`
+- `t`: bytes per floating-point value (`4` for `Float32`, `8` for `Float64`)
+
+### Memory formulas
+
+Current block implementation (after removing persistent `XRinvArray`) stores:
+
+- dense `X`: `N*P` values
+- block Gram matrices `XpRinvX`: `sum_i s_i^2` values
+- marker summary `xpRinvx`: `P` values
+- optional `xRinvArray` extra `N*P` only for non-unit weights in the non-block marker path
+- small reusable block workspaces (`O(b)`) for RHS and local deltas
+
+Approximate totals:
+
+- Unit weights:
+  - `Mem_block_unit ~= t * (N*P + sum_i s_i^2 + P) + O(b*t)`
+- Non-unit weights:
+  - `Mem_block_nonunit ~= t * (2*N*P + sum_i s_i^2 + P) + O(b*t)`
+
+### Runtime working set
+
+Per block update, active high-volume buffers are:
+
+- `X_b` view (`N x s_i`; no data copy)
+- `XpRinvX[i]` (`s_i x s_i`)
+- block RHS workspace (`s_i`)
+- `yCorr` (`N`)
+
+So peak additional block-local workspace is roughly:
+
+- `O(s_i^2 + s_i + N)` values
+
+### I/O and precompute considerations
+
+For in-memory dense `X`, no out-of-core read is required during MCMC sweeps.
+The expensive setup term is building `XpRinvX`:
+
+- precompute cost scales with approximately `O(N * sum_i s_i^2)` (`~O(NPb)` under near-uniform blocks)
+
+This setup can dominate startup time for very large `N,P`, even when per-iteration sampling is fast.
+
+## Worked Large-Scale Example (`N=500,000`, `P=2,000,000`)
+
+Assume `fast_blocks=true`, so `b=floor(sqrt(N))=707`.
+
+- `B = ceil(P/b) = 2,829`
+- `sum_i s_i^2 = 1,413,937,788`
+
+Memory-relevant terms:
+
+| Term | Float32 | Float64 |
+| --- | ---: | ---: |
+| `X` | `~4.00 TB` (`3.64 TiB`) | `~8.00 TB` (`7.28 TiB`) |
+| `XpRinvX` | `~5.66 GB` (`5.27 GiB`) | `~11.31 GB` (`10.53 GiB`) |
+| `xpRinvx` | `~8.0 MB` | `~16.0 MB` |
+
+So for unit weights, block mode remains dominated by `X`, with `XpRinvX` as the main incremental memory term.
+
+## What To Watch Closely
+
+1. `block_size` choice:
+   - too small: less speedup (`N/b` term remains large)
+   - too large: `XpRinvX` memory and precompute cost rise (`~P*b` memory and `~NPb` setup trend)
+2. Effective chain length:
+   - current implementation rescales outer iterations and uses inner repeats (`nreps = block_size`)
+   - compare runs by effective updates, not only outer-iteration count
+3. Final short block behavior:
+   - last block uses smaller `nreps` (equal to its own size), so sweep symmetry differs slightly
+4. Multi-trait block path specifics:
+   - current path is sampler-I style for unconstrained covariance mode
+   - extra temporaries (e.g., trait-wise old-alpha handling) can become noticeable at larger trait counts
+5. Numerical reproducibility:
+   - mathematically equivalent refactors (e.g., in-place BLAS updates) can change floating-point roundoff
+   - expect tiny non-bitwise differences, especially in `Float32`
+6. Weighting mode:
+   - block `XRinvArray` is no longer persisted
+   - separate non-unit weighted non-block `xRinvArray` materialization remains a distinct issue
+7. Scope constraints:
+   - current source notes this fast block option is intended for one genotype category
+   - numeric `fast_blocks` should keep `block_size < nMarkers`
+
 ## Example: Speed/Memory Tradeoff
 
 Assume:
