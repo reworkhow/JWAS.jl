@@ -61,19 +61,23 @@ Assume `fast_blocks=true`, so `b=floor(sqrt(N))=707`.
 
 This is the base/original sampler memory footprint without block matrices.
 
-| Component | Elements | Float32 | Float64 |
-| --- | ---: | ---: | ---: |
-| `X` | `N*P = 1,000,000,000,000` | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`) |
-| `xRinvArray` (unit weights) | alias of `xArray` (no data copy) | `0` | `0` |
-| `xRinvArray` (non-unit weights) | `N*P` | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`) |
-| `xpRinvx` | `P` | `8.0 MB` (`7.63 MiB`) | `16.0 MB` (`15.26 MiB`) |
+
+| Component                       | Elements                         | Float32                | Float64                 |
+| ------------------------------- | -------------------------------- | ---------------------- | ----------------------- |
+| `X`                             | `N*P = 1,000,000,000,000`        | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`)  |
+| `xRinvArray` (unit weights)     | alias of `xArray` (no data copy) | `0`                    | `0`                     |
+| `xRinvArray` (non-unit weights) | `N*P`                            | `4.00 TB` (`3.64 TiB`) | `8.00 TB` (`7.28 TiB`)  |
+| `xpRinvx`                       | `P`                              | `8.0 MB` (`7.63 MiB`)  | `16.0 MB` (`15.26 MiB`) |
+
 
 Non-block totals:
 
-| Non-block case | Float32 | Float64 |
-| --- | ---: | ---: |
-| Unit weights | `~4.00 TB` | `~8.00 TB` |
+
+| Non-block case   | Float32    | Float64     |
+| ---------------- | ---------- | ----------- |
+| Unit weights     | `~4.00 TB` | `~8.00 TB`  |
 | Non-unit weights | `~8.00 TB` | `~16.00 TB` |
+
 
 ### Extra objects introduced by block mode (`fast_blocks != false`)
 
@@ -91,12 +95,12 @@ Component sizes:
 Approximate totals (dominated by `N*P` terms):
 
 
-| Mode                        | Float32     | Float64     |
-| --------------------------- | ----------- | ----------- |
-| Non-block, unit weights     | `~4.00 TB`  | `~8.00 TB`  |
-| Non-block, non-unit weights | `~8.00 TB`  | `~16.00 TB` |
-| Block, unit weights         | `~4.01 TB`  | `~8.01 TB`  |
-| Block, non-unit weights     | `~8.01 TB`  | `~16.01 TB` |
+| Mode                        | Float32    | Float64     |
+| --------------------------- | ---------- | ----------- |
+| Non-block, unit weights     | `~4.00 TB` | `~8.00 TB`  |
+| Non-block, non-unit weights | `~8.00 TB` | `~16.00 TB` |
+| Block, unit weights         | `~4.01 TB` | `~8.01 TB`  |
+| Block, non-unit weights     | `~8.01 TB` | `~16.01 TB` |
 
 
 ## Practical Takeaways
@@ -105,3 +109,4 @@ Approximate totals (dominated by `N*P` terms):
 2. Non-block mode is memory-cheapest when weights are unit (`xRinvArray` aliases `xArray`).
 3. Current block mode does not persist `XRinvArray`; extra memory is mainly `XpRinvX` (plus small reusable block workspaces).
 4. For datasets like `N=500k, P=2M`, dense storage is multi-terabyte and typically requires a different data representation strategy.
+
