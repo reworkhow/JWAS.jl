@@ -71,6 +71,30 @@ println()
         @testset "Memory Guardrails" begin
             include(joinpath(@__DIR__, "unit", "test_memory_guardrails.jl"))
         end
+
+        @testset "BayesABC Block Memory" begin
+            include(joinpath(@__DIR__, "unit", "test_bayesabc_block_memory.jl"))
+        end
+
+        @testset "set_random (Random Effects)" begin
+            include(joinpath(@__DIR__, "unit", "test_set_random.jl"))
+        end
+
+        @testset "Solvers (Jacobi, Gauss-Seidel, Gibbs)" begin
+            include(joinpath(@__DIR__, "unit", "test_solver.jl"))
+        end
+
+        @testset "Output and EBV" begin
+            include(joinpath(@__DIR__, "unit", "test_output_ebv.jl"))
+        end
+
+        @testset "Pedigree Algorithms" begin
+            include(joinpath(@__DIR__, "unit", "test_pedigree_algorithms.jl"))
+        end
+
+        @testset "Input Validation" begin
+            include(joinpath(@__DIR__, "unit", "test_input_validation.jl"))
+        end
         
         # ====================================================================
         # Test 1: Model Building

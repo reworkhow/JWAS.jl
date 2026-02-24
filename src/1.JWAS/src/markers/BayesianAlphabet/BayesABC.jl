@@ -76,10 +76,15 @@ function BayesABC_block!(XArray,XRinvArray,xpRinvx,
     XpRinvX       = XpRinvX
     nblocks       = length(XpRinvX)
     start_pos     = 0
+    max_block_size = maximum(size(XpRinvX[i],1) for i in 1:nblocks)
+    αold_block = Vector{eltype(α)}(undef,max_block_size)
     for i in 1:nblocks
         XpRinvycorr = XRinvArray[i]*yCorr
-        αold        = copy(α)
         block_size  = size(XpRinvX[i],1)
+        block_start = start_pos + 1
+        block_end   = start_pos + block_size
+        block_range = block_start:block_end
+        copyto!(view(αold_block,1:block_size),view(α,block_range))
         nreps       = block_size #user-defined nreps=block_size, outer_niter =niter/block_size
         for reps = 1:nreps
             for j=1:block_size #additional code to save all sampled αs is needed
@@ -108,7 +113,11 @@ function BayesABC_block!(XArray,XRinvArray,xpRinvx,
             end
         end
 
-        yCorr[:]  = yCorr + XArray[i]*(αold-α)[(start_pos+1):(start_pos+block_size)] #?subset at first is better
+        @views begin
+            αold_view = view(αold_block,1:block_size)
+            αold_view .-= α[block_range]
+            mul!(yCorr,XArray[i],αold_view,1.0,1.0)
+        end
         start_pos += block_size
     end
 end
