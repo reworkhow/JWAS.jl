@@ -95,7 +95,23 @@ println()
         @testset "Input Validation" begin
             include(joinpath(@__DIR__, "unit", "test_input_validation.jl"))
         end
-        
+
+        @testset "Multi-trait MCMC" begin
+            include(joinpath(@__DIR__, "unit", "test_multitrait_mcmc.jl"))
+        end
+
+        @testset "BayesB/BayesA/BayesL/GBLUP Methods" begin
+            include(joinpath(@__DIR__, "unit", "test_bayesb_methods.jl"))
+        end
+
+        @testset "GWAS Window Analysis" begin
+            include(joinpath(@__DIR__, "unit", "test_gwas_windows.jl"))
+        end
+
+        @testset "Misc Coverage (describe, priors, datasets)" begin
+            include(joinpath(@__DIR__, "unit", "test_misc_coverage.jl"))
+        end
+
         # ====================================================================
         # Test 1: Model Building
         # ====================================================================
