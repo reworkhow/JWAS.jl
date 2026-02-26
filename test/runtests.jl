@@ -84,6 +84,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_streaming_constraints.jl"))
         end
 
+        @testset "Streaming Prepare (Low Memory)" begin
+            include(joinpath(@__DIR__, "unit", "test_streaming_prepare_lowmem.jl"))
+        end
+
         @testset "set_random (Random Effects)" begin
             include(joinpath(@__DIR__, "unit", "test_set_random.jl"))
         end

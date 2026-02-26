@@ -3,6 +3,19 @@
 This folder contains reproducible benchmark scripts for large-data streaming
 BayesC performance and memory studies.
 
+## Conversion Benchmark Notes
+
+`prepare_streaming_genotypes(...)` is a one-time out-of-core conversion stage.
+It does not load dense `N x P` into RAM, but it uses temporary disk during
+row-major spool + transpose.
+
+Observed (`N=10,000`, `P=5,000`, `/usr/bin/time -l`):
+
+- conversion wall time: `~11.8s`
+- conversion max RSS: `~1.14 GB`
+- final packed payload (`.jgb2`): `~12.5 MB`
+- temporary spool during conversion: `~12.5 MB`
+
 ## Streaming Large Benchmark
 
 Script:

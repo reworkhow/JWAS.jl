@@ -86,101 +86,185 @@ function _resolve_streaming_prefix(path::AbstractString)
     end
 end
 
-"""
-    prepare_streaming_genotypes(file::AbstractString;
-                                output_prefix=nothing,
-                                separator=',',
-                                header=true,
-                                missing_value=9.0,
-                                quality_control=true,
-                                MAF=0.01,
-                                center=true)
+@inline function _parse_genotype_token(token::AbstractString, missing_value32::Float32, missing_value::Real)
+    token_stripped = strip(token)
+    if isempty(token_stripped)
+        error("Empty genotype value is not supported in storage=:stream MVP.")
+    end
 
-Convert a dense text genotype file to a marker-major 2-bit packed backend.
-"""
-function prepare_streaming_genotypes(file::AbstractString;
-                                     output_prefix=nothing,
-                                     separator=',',
-                                     header=true,
-                                     missing_value=9.0,
-                                     quality_control=true,
-                                     MAF=0.01,
-                                     center=true)
-    output_prefix = output_prefix === nothing ? splitext(file)[1] * "_stream" : string(output_prefix)
-    prefix_abs = abspath(output_prefix)
-    data_path = prefix_abs * ".jgb2"
-    meta_path = prefix_abs * ".meta"
-    obs_path = prefix_abs * ".obsid.txt"
-    marker_path = prefix_abs * ".markerid.txt"
-    mean_path = prefix_abs * ".mean.f32"
-    xp_path = prefix_abs * ".xpRinvx.f32"
-    afreq_path = prefix_abs * ".afreq.f32"
+    parsed = tryparse(Float32, token_stripped)
+    if parsed === nothing
+        error("Non-numeric genotype value '$token_stripped' is not supported in storage=:stream MVP.")
+    end
+    value = parsed::Float32
 
-    myfile = open(file)
-    row1 = split(readline(myfile), [separator, '\n'], keepempty=false)
-    close(myfile)
+    if value == missing_value32
+        return (value, true)
+    end
+    if value == 0.0f0 || value == 1.0f0 || value == 2.0f0
+        return (value, false)
+    end
+    error("Only 0/1/2 genotypes (and missing_value=$missing_value) are supported in storage=:stream MVP.")
+end
 
-    marker_id_all = header ? string.(row1[2:end]) : string.(1:length(row1[2:end]))
+function _read_first_line(path::AbstractString)
+    open(path, "r") do io
+        if eof(io)
+            error("Genotype data is empty.")
+        end
+        return readline(io)
+    end
+end
 
-    ncol = length(row1)
-    etv = Array{DataType}(undef, ncol)
-    fill!(etv, Float32)
-    etv[1] = String
-    data = CSV.read(file, DataFrame, types=etv, delim=separator, header=false, skipto=(header ? 2 : 1))
+function _header_marker_ids(file::AbstractString, separator, header::Bool)
+    first_line = _read_first_line(file)
+    fields = collect(eachsplit(chomp(first_line), separator; keepempty=true))
+    if length(fields) < 2
+        error("Genotype file must contain an ID column and at least one marker column.")
+    end
+    nmarkers = length(fields) - 1
+    marker_ids = header ? map(x -> String(x), fields[2:end]) : string.(1:nmarkers)
+    return marker_ids, nmarkers
+end
 
-    obsID = map(string, data[!, 1])
-    X = map(Float32, Matrix(data[!, 2:end]))
-    nObs, nMarkersAll = size(X)
+function _df_available_bytes(path::AbstractString)
+    parent = isdir(path) ? path : dirname(path)
+    if isempty(parent)
+        parent = "."
+    end
+    out = read(`df -kP $parent`, String)
+    lines = split(chomp(out), '\n')
+    if length(lines) < 2
+        error("Unable to read free-space information for path '$parent'.")
+    end
+    fields = split(strip(lines[end]))
+    if length(fields) < 4
+        error("Unable to parse free-space information for path '$parent'.")
+    end
+    available_kb = parse(Int128, fields[4])
+    filesystem = fields[1]
+    return available_kb * Int128(1024), filesystem
+end
 
-    if nObs == 0 || nMarkersAll == 0
+function _check_streaming_disk_guard!(output_dir::AbstractString,
+                                      temp_dir::AbstractString,
+                                      required_output_bytes::Int128,
+                                      required_temp_bytes::Int128,
+                                      disk_guard_ratio::Float64)
+    if !(0.0 <= disk_guard_ratio <= 1.0)
+        error("disk_guard_ratio must be between 0.0 and 1.0.")
+    end
+
+    # Skip guard when ratio is exactly 1.0 and requirements are tiny, but keep deterministic behavior.
+    avail_out, fs_out = _df_available_bytes(output_dir)
+    avail_tmp, fs_tmp = _df_available_bytes(temp_dir)
+
+    if fs_out == fs_tmp
+        required_total = required_output_bytes + required_temp_bytes
+        threshold = floor(Int128, avail_out * disk_guard_ratio)
+        if required_total > threshold
+            error("Insufficient disk for streaming conversion (same filesystem).\n" *
+                  "required (output + temp): $(required_total) bytes\n" *
+                  "available: $(avail_out) bytes\n" *
+                  "threshold via disk_guard_ratio=$(disk_guard_ratio): $(threshold) bytes\n" *
+                  "Try a larger filesystem via tmpdir, reduce data size, or lower disk_guard_ratio.")
+        end
+        return nothing
+    end
+
+    threshold_out = floor(Int128, avail_out * disk_guard_ratio)
+    threshold_tmp = floor(Int128, avail_tmp * disk_guard_ratio)
+    if required_output_bytes > threshold_out || required_temp_bytes > threshold_tmp
+        error("Insufficient disk for streaming conversion (separate filesystems).\n" *
+              "required output: $(required_output_bytes) bytes; available output: $(avail_out) bytes; threshold: $(threshold_out) bytes\n" *
+              "required temp: $(required_temp_bytes) bytes; available temp: $(avail_tmp) bytes; threshold: $(threshold_tmp) bytes\n" *
+              "Try a larger tmpdir/output path, reduce data size, or lower disk_guard_ratio.")
+    end
+    return nothing
+end
+
+function _scan_streaming_stats!(file::AbstractString,
+                                separator,
+                                header::Bool,
+                                nmarkers::Int,
+                                marker_ids::Vector{String},
+                                missing_value::Real,
+                                quality_control::Bool,
+                                maf::Real,
+                                center::Bool,
+                                obsid_stage_path::AbstractString)
+    missing_value32 = Float32(missing_value)
+    maf32 = Float32(maf)
+
+    nonmissing_counts = zeros(Int64, nmarkers)
+    missing_counts = zeros(Int64, nmarkers)
+    sums = zeros(Float32, nmarkers)
+    sumsq = zeros(Float32, nmarkers)
+    keep = trues(nmarkers)
+    marker_means = zeros(Float32, nmarkers)
+    allele_freq = zeros(Float32, nmarkers)
+    xp_all = zeros(Float32, nmarkers)
+
+    nobs = 0
+    open(obsid_stage_path, "w") do obs_io
+        open(file, "r") do io
+            if header
+                if eof(io)
+                    error("Genotype data is empty.")
+                end
+                readline(io) # skip header line
+            end
+
+            for line in eachline(io)
+                nobs += 1
+                token_iter = eachsplit(chomp(line), separator; keepempty=true)
+                first_state = iterate(token_iter)
+                first_state === nothing && error("Encountered an empty genotype row.")
+                obs_token, state = first_state
+                println(obs_io, obs_token)
+
+                j = 0
+                while true
+                    next_state = iterate(token_iter, state)
+                    next_state === nothing && break
+                    token, state = next_state
+                    j += 1
+                    if j > nmarkers
+                        error("Row $nobs has more marker columns than expected ($nmarkers).")
+                    end
+                    value, is_missing = _parse_genotype_token(token, missing_value32, missing_value)
+                    if is_missing
+                        missing_counts[j] += 1
+                    else
+                        nonmissing_counts[j] += 1
+                        sums[j] += value
+                        sumsq[j] += value * value
+                    end
+                end
+                if j != nmarkers
+                    error("Row $nobs has $j marker columns but expected $nmarkers.")
+                end
+            end
+        end
+    end
+
+    if nobs == 0
         error("Genotype data is empty.")
     end
 
-    missing_value32 = Float32(missing_value)
-    maf32 = Float32(MAF)
-    keep = trues(nMarkersAll)
-    marker_means = Vector{Float32}(undef, nMarkersAll)
-    allele_freq = Vector{Float32}(undef, nMarkersAll)
-    xpRinvx_all = Vector{Float32}(undef, nMarkersAll)
-    missing_masks = Vector{BitVector}(undef, nMarkersAll)
-
-    @showprogress "preparing packed genotypes ..." for j in 1:nMarkersAll
-        col = view(X, :, j)
-        miss = BitVector(undef, nObs)
-        n_nonmissing = 0
-        sum_nonmissing = 0.0f0
-
-        @inbounds for i in 1:nObs
-            v = col[i]
-            is_missing = (v == missing_value32)
-            miss[i] = is_missing
-            if !is_missing
-                if !(v == 0.0f0 || v == 1.0f0 || v == 2.0f0)
-                    error("Only 0/1/2 genotypes (and missing_value=$missing_value) are supported in storage=:stream MVP.")
-                end
-                n_nonmissing += 1
-                sum_nonmissing += v
-            end
+    @showprogress "preparing packed genotypes ..." for j in 1:nmarkers
+        nn = nonmissing_counts[j]
+        if nn == 0
+            marker_name = marker_ids[j]
+            error("Marker $(marker_name) has only missing values.")
         end
 
-        if n_nonmissing == 0
-            error("Marker $(marker_id_all[j]) has only missing values.")
-        end
-
-        μ = sum_nonmissing / n_nonmissing
+        μ = sums[j] / nn
         marker_means[j] = μ
         allele_freq[j] = μ / 2.0f0
-        missing_masks[j] = miss
-
-        ss_centered = 0.0f0
-        ss_raw = 0.0f0
-        @inbounds for i in 1:nObs
-            v = miss[i] ? μ : col[i]
-            d = v - μ
-            ss_centered += d * d
-            ss_raw += v * v
-        end
-        xpRinvx_all[j] = center ? ss_centered : ss_raw
+        ss_centered = sumsq[j] - μ * sums[j]
+        ss_raw = sumsq[j] + missing_counts[j] * (μ * μ)
+        xp_all[j] = center ? ss_centered : ss_raw
 
         if quality_control
             maf_ok = (maf32 < allele_freq[j] < (1.0f0 - maf32))
@@ -189,61 +273,319 @@ function prepare_streaming_genotypes(file::AbstractString;
         end
     end
 
-    selected = quality_control ? findall(keep) : collect(1:nMarkersAll)
+    selected = quality_control ? findall(keep) : collect(1:nmarkers)
     if isempty(selected)
         error("No markers remain after streaming genotype quality control.")
     end
 
-    markerID = marker_id_all[selected]
+    marker_kept = marker_ids[selected]
     means_kept = marker_means[selected]
     afreq_kept = allele_freq[selected]
-    xp_kept = xpRinvx_all[selected]
-    nMarkers = length(selected)
-    stride_bytes = cld(nObs, 4)
+    xp_kept = xp_all[selected]
     sum2pq = Float64(sum(2.0f0 .* afreq_kept .* (1.0f0 .- afreq_kept)))
 
-    if quality_control
-        printstyled("$(nMarkersAll - nMarkers) loci which are fixed or have minor allele frequency < $MAF are removed.\n", bold=true)
-    end
+    return (
+        nObs = nobs,
+        nMarkersAll = nmarkers,
+        selected = selected,
+        markerID = marker_kept,
+        means = means_kept,
+        afreq = afreq_kept,
+        xp = xp_kept,
+        sum2pq = sum2pq
+    )
+end
 
-    packed_row = zeros(UInt8, stride_bytes)
-    open(data_path, "w") do io
-        @showprogress "writing packed genotypes ..." for idx in 1:nMarkers
-            j = selected[idx]
-            miss = missing_masks[j]
-            col = view(X, :, j)
-            fill!(packed_row, 0x00)
+function _write_row_major_spool!(file::AbstractString,
+                                 separator,
+                                 header::Bool,
+                                 nmarkers_all::Int,
+                                 selected_map::Vector{Int32},
+                                 nmarkers_kept::Int,
+                                 nobs::Int,
+                                 missing_value::Real,
+                                 rowmajor_path::AbstractString)
+    missing_value32 = Float32(missing_value)
+    row_stride = cld(nmarkers_kept, 4)
+    packed_row = zeros(UInt8, row_stride)
+    rows_seen = 0
 
-            @inbounds for i in 1:nObs
-                code = miss[i] ? UInt8(3) : UInt8(round(Int, col[i]))
-                byte_idx = ((i - 1) >>> 2) + 1
-                shift = ((i - 1) & 0x03) << 1
-                packed_row[byte_idx] |= code << shift
+    open(rowmajor_path, "w") do out_io
+        open(file, "r") do io
+            if header
+                if eof(io)
+                    error("Genotype data is empty.")
+                end
+                readline(io) # skip header line
             end
-            write(io, packed_row)
+
+            prog = Progress(nobs; desc="writing packed genotypes ...")
+            for line in eachline(io)
+                rows_seen += 1
+                next!(prog)
+                fill!(packed_row, 0x00)
+
+                token_iter = eachsplit(chomp(line), separator; keepempty=true)
+                first_state = iterate(token_iter)
+                first_state === nothing && error("Encountered an empty genotype row.")
+                _, state = first_state # skip ID token
+
+                j = 0
+                while true
+                    next_state = iterate(token_iter, state)
+                    next_state === nothing && break
+                    token, state = next_state
+                    j += 1
+                    if j > nmarkers_all
+                        error("Row $rows_seen has more marker columns than expected ($nmarkers_all).")
+                    end
+
+                    pos = selected_map[j]
+                    if pos > 0
+                        value, is_missing = _parse_genotype_token(token, missing_value32, missing_value)
+                        code = is_missing ? UInt8(3) : UInt8(round(Int, value))
+                        byte_idx = ((pos - 1) >>> 2) + 1
+                        shift = ((pos - 1) & 0x03) << 1
+                        packed_row[byte_idx] |= code << shift
+                    end
+                end
+                if j != nmarkers_all
+                    error("Row $rows_seen has $j marker columns but expected $nmarkers_all.")
+                end
+                write(out_io, packed_row)
+            end
+            finish!(prog)
         end
     end
 
-    _write_string_lines(obs_path, obsID)
-    _write_string_lines(marker_path, markerID)
-    _write_f32_vector(mean_path, means_kept)
-    _write_f32_vector(xp_path, xp_kept)
-    _write_f32_vector(afreq_path, afreq_kept)
+    if rows_seen != nobs
+        error("Number of rows changed between conversion passes ($rows_seen vs expected $nobs).")
+    end
+    return row_stride
+end
 
-    _write_streaming_manifest(meta_path, [
-        "version" => "1",
-        "data_path" => data_path,
-        "obs_path" => obs_path,
-        "marker_path" => marker_path,
-        "mean_path" => mean_path,
-        "xp_path" => xp_path,
-        "afreq_path" => afreq_path,
-        "nObs" => string(nObs),
-        "nMarkers" => string(nMarkers),
-        "stride_bytes" => string(stride_bytes),
-        "centered" => string(center ? 1 : 0),
-        "sum2pq" => string(sum2pq)
-    ])
+function _transpose_row_major_to_marker_major!(rowmajor_path::AbstractString,
+                                               markermajor_path::AbstractString,
+                                               nobs::Int,
+                                               nmarkers::Int)
+    row_stride = cld(nmarkers, 4)
+    marker_stride = cld(nobs, 4)
+    total_bytes = Int64(nmarkers) * Int64(marker_stride)
+    row_tile_target_bytes = 32 * 1024 * 1024
+    marker_tile = 4096
+
+    row_tile = max(4, Int(floor(row_tile_target_bytes / max(row_stride, 1))))
+    row_tile = min(row_tile, 4096)
+    row_tile -= row_tile % 4
+    row_tile = max(row_tile, 4)
+    max_row_tile_bytes = row_tile * row_stride
+    max_row_tile_packed_bytes = cld(row_tile, 4)
+
+    raw_rows = Vector{UInt8}(undef, max_row_tile_bytes)
+    tile_packed = Matrix{UInt8}(undef, marker_tile, max_row_tile_packed_bytes)
+    src_byte_idx = Vector{Int}(undef, marker_tile)
+    src_shift = Vector{UInt8}(undef, marker_tile)
+
+    open(markermajor_path, "w+") do out_io
+        seek(out_io, total_bytes - 1)
+        write(out_io, UInt8(0))
+        flush(out_io)
+        seekstart(out_io)
+        open(rowmajor_path, "r") do in_io
+            @showprogress "transposing packed genotypes ..." for row_start in 1:row_tile:nobs
+                rows_this_tile = min(row_tile, nobs - row_start + 1)
+                row_bytes_this_tile = rows_this_tile * row_stride
+                read!(in_io, view(raw_rows, 1:row_bytes_this_tile))
+
+                packed_row_bytes_this_tile = cld(rows_this_tile, 4)
+                byte_start = ((row_start - 1) >>> 2) + 1
+
+                for marker_start in 1:marker_tile:nmarkers
+                    markers_this_tile = min(marker_tile, nmarkers - marker_start + 1)
+                    fill!(view(tile_packed, 1:markers_this_tile, 1:packed_row_bytes_this_tile), 0x00)
+
+                    @inbounds for mj in 1:markers_this_tile
+                        g = marker_start + mj - 1
+                        src_byte_idx[mj] = ((g - 1) >>> 2) + 1
+                        src_shift[mj] = UInt8(((g - 1) & 0x03) << 1)
+                    end
+
+                    @inbounds for r in 1:rows_this_tile
+                        row_offset = (r - 1) * row_stride
+                        packed_byte = ((r - 1) >>> 2) + 1
+                        packed_shift = UInt8(((r - 1) & 0x03) << 1)
+                        for mj in 1:markers_this_tile
+                            code = (raw_rows[row_offset + src_byte_idx[mj]] >> src_shift[mj]) & 0x03
+                            tile_packed[mj, packed_byte] |= code << packed_shift
+                        end
+                    end
+
+                    @inbounds for mj in 1:markers_this_tile
+                        g = marker_start + mj - 1
+                        dest_start = (g - 1) * marker_stride + byte_start
+                        seek(out_io, dest_start - 1)
+                        write(out_io, view(tile_packed, mj, 1:packed_row_bytes_this_tile))
+                    end
+                end
+            end
+        end
+    end
+    return marker_stride
+end
+
+function _safe_rm(path::AbstractString)
+    if isfile(path)
+        rm(path; force=true)
+    end
+    return nothing
+end
+
+"""
+    prepare_streaming_genotypes(file::AbstractString;
+                                output_prefix=nothing,
+                                separator=',',
+                                header=true,
+                                missing_value=9.0,
+                                quality_control=true,
+                                MAF=0.01,
+                                center=true,
+                                tmpdir=nothing,
+                                cleanup_temp=true,
+                                disk_guard_ratio=0.9)
+
+Convert a dense text genotype file to a marker-major 2-bit packed backend.
+
+Conversion is out-of-core and disk-backed:
+- `tmpdir`: optional location for temporary conversion files.
+- `cleanup_temp`: remove temporary files after successful conversion.
+- `disk_guard_ratio`: fail fast when estimated required bytes exceed
+  `disk_guard_ratio * available_bytes`.
+"""
+function prepare_streaming_genotypes(file::AbstractString;
+                                     output_prefix=nothing,
+                                     separator=',',
+                                     header=true,
+                                     missing_value=9.0,
+                                     quality_control=true,
+                                     MAF=0.01,
+                                     center=true,
+                                     tmpdir=nothing,
+                                     cleanup_temp=true,
+                                     disk_guard_ratio=0.9)
+    output_prefix = output_prefix === nothing ? splitext(file)[1] * "_stream" : string(output_prefix)
+    prefix_abs = abspath(output_prefix)
+    output_dir = dirname(prefix_abs)
+    mkpath(output_dir)
+
+    data_path = prefix_abs * ".jgb2"
+    meta_path = prefix_abs * ".meta"
+    obs_path = prefix_abs * ".obsid.txt"
+    marker_path = prefix_abs * ".markerid.txt"
+    mean_path = prefix_abs * ".mean.f32"
+    xp_path = prefix_abs * ".xpRinvx.f32"
+    afreq_path = prefix_abs * ".afreq.f32"
+    temp_root = tmpdir === nothing ? output_dir : abspath(string(tmpdir))
+    mkpath(temp_root)
+    stage_dir = mktempdir(temp_root)
+    stage_obs_path = joinpath(stage_dir, "obsid.stage.txt")
+    stage_rowmajor_path = joinpath(stage_dir, "rowmajor.stage.jgb2")
+
+    nonce = string(getpid(), "_", string(time_ns()))
+    data_tmp = data_path * ".tmp." * nonce
+    meta_tmp = meta_path * ".tmp." * nonce
+    obs_tmp = obs_path * ".tmp." * nonce
+    marker_tmp = marker_path * ".tmp." * nonce
+    mean_tmp = mean_path * ".tmp." * nonce
+    xp_tmp = xp_path * ".tmp." * nonce
+    afreq_tmp = afreq_path * ".tmp." * nonce
+
+    marker_ids_all, nmarkers_all = _header_marker_ids(file, separator, header)
+
+    published = false
+    try
+        # Stage A: scan file, collect per-marker stats, and stream obs IDs.
+        stats = _scan_streaming_stats!(file, separator, header, nmarkers_all, marker_ids_all,
+                                       missing_value, quality_control, MAF, center,
+                                       stage_obs_path)
+        nObs = stats.nObs
+        selected = stats.selected
+        markerID = stats.markerID
+        means_kept = stats.means
+        afreq_kept = stats.afreq
+        xp_kept = stats.xp
+        sum2pq = stats.sum2pq
+        nMarkers = length(selected)
+        stride_bytes = cld(nObs, 4)
+
+        if quality_control
+            printstyled("$(nmarkers_all - nMarkers) loci which are fixed or have minor allele frequency < $MAF are removed.\n", bold=true)
+        end
+
+        marker_text_bytes = sum(length(id) + 1 for id in markerID)
+        obs_text_bytes = filesize(stage_obs_path)
+        sidecar_bytes = Int128(marker_text_bytes + obs_text_bytes + 256) + Int128(12) * Int128(nMarkers)
+        required_output_bytes = Int128(nMarkers) * Int128(stride_bytes) + sidecar_bytes
+        required_temp_bytes = Int128(nObs) * Int128(cld(nMarkers, 4))
+        _check_streaming_disk_guard!(output_dir, stage_dir, required_output_bytes, required_temp_bytes, disk_guard_ratio)
+
+        selected_map = zeros(Int32, nmarkers_all)
+        @inbounds for (k, j) in enumerate(selected)
+            selected_map[j] = Int32(k)
+        end
+
+        # Stage B: second pass writes row-major packed spool for retained markers.
+        _write_row_major_spool!(file, separator, header, nmarkers_all, selected_map, nMarkers, nObs,
+                                missing_value, stage_rowmajor_path)
+
+        # Stage C: out-of-core transpose from row-major spool to marker-major backend payload.
+        _transpose_row_major_to_marker_major!(stage_rowmajor_path, data_tmp, nObs, nMarkers)
+
+        # Stage D: write sidecar files and atomically publish all outputs.
+        cp(stage_obs_path, obs_tmp; force=true)
+        _write_string_lines(marker_tmp, markerID)
+        _write_f32_vector(mean_tmp, means_kept)
+        _write_f32_vector(xp_tmp, xp_kept)
+        _write_f32_vector(afreq_tmp, afreq_kept)
+
+        _write_streaming_manifest(meta_tmp, [
+            "version" => "1",
+            "data_path" => data_path,
+            "obs_path" => obs_path,
+            "marker_path" => marker_path,
+            "mean_path" => mean_path,
+            "xp_path" => xp_path,
+            "afreq_path" => afreq_path,
+            "nObs" => string(nObs),
+            "nMarkers" => string(nMarkers),
+            "stride_bytes" => string(stride_bytes),
+            "centered" => string(center ? 1 : 0),
+            "sum2pq" => string(sum2pq)
+        ])
+
+        mv(data_tmp, data_path; force=true)
+        mv(meta_tmp, meta_path; force=true)
+        mv(obs_tmp, obs_path; force=true)
+        mv(marker_tmp, marker_path; force=true)
+        mv(mean_tmp, mean_path; force=true)
+        mv(xp_tmp, xp_path; force=true)
+        mv(afreq_tmp, afreq_path; force=true)
+        published = true
+    finally
+        if !published
+            _safe_rm(data_tmp)
+            _safe_rm(meta_tmp)
+            _safe_rm(obs_tmp)
+            _safe_rm(marker_tmp)
+            _safe_rm(mean_tmp)
+            _safe_rm(xp_tmp)
+            _safe_rm(afreq_tmp)
+        end
+        if cleanup_temp
+            if isdir(stage_dir)
+                rm(stage_dir; recursive=true, force=true)
+            end
+        end
+    end
 
     printstyled("Streaming genotype files are created with prefix $(prefix_abs).\n", bold=false, color=:green)
     return prefix_abs

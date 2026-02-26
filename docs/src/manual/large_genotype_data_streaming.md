@@ -18,6 +18,9 @@ original BayesC path (`fast_blocks=false`), with focus on very large datasets su
 - Streaming loading is additive and opt-in:
   - `get_genotypes(...; storage=:stream)`
   - Status: experimental MVP for large-data BayesC.
+- Streaming conversion is out-of-core:
+  - `prepare_streaming_genotypes(...)` no longer materializes dense `N x P` in RAM.
+  - Conversion uses temporary disk plus final packed output (set `tmpdir` for placement).
 
 ### Streaming MVP workflow
 
@@ -27,7 +30,10 @@ prefix = prepare_streaming_genotypes(\"genotypes.csv\";
                                      separator=',',
                                      header=true,
                                      quality_control=true,
-                                     center=true)
+                                     center=true,
+                                     tmpdir=nothing,
+                                     cleanup_temp=true,
+                                     disk_guard_ratio=0.9)
 
 # 2) load packed backend (no dense N x P matrix in memory)
 geno = get_genotypes(prefix, 1.0;

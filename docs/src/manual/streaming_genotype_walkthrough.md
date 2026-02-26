@@ -34,11 +34,17 @@ This step reads the text file and writes a packed backend. It runs once, before 
 
 **What it does:**
 
-1. **Read and process** the text file. The current implementation loads the full genotype matrix into memory during this step, so `prepare_streaming_genotypes` must run on a machine with enough RAM to hold the data. The memory savings apply to the MCMC phase, not to the conversion step.
+1. **Scan and process** the text file in streaming passes. The converter does not materialize a dense `N x P` matrix in RAM; memory is bounded by per-marker statistics plus tile buffers.
 2. **Quality control**: replace missing with column means; drop fixed loci and markers below the MAF threshold.
 3. **Center** each marker column (optional).
 4. **Precompute** per-marker x′x (for unit-weight BayesC).
-5. **Pack** genotypes into 2-bit codes (0→00, 1→01, 2→10, missing→11) and write marker-major to disk.
+5. **Pack and transpose out-of-core**:
+   - write a temporary row-major packed spool
+   - transpose to final marker-major packed backend (`.jgb2`)
+   - publish sidecar files atomically
+
+Conversion is now primarily **disk-intensive** rather than **RAM-intensive**.
+Use `tmpdir` to place temporary spool files on a filesystem with enough free space.
 
 **Output files:**
 

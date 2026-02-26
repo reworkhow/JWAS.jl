@@ -39,6 +39,9 @@ prefix = prepare_streaming_genotypes(
     quality_control = true,
     MAF = 0.01,
     center = true,
+    tmpdir = nothing,          # optional temp workspace for conversion spool
+    cleanup_temp = true,       # remove temporary conversion files after success
+    disk_guard_ratio = 0.9,    # fail fast if required bytes exceed ratio * free bytes
 )
 ```
 
@@ -51,6 +54,12 @@ Output artifacts with the chosen `prefix`:
 - `prefix.mean.f32`: per-marker means
 - `prefix.xpRinvx.f32`: per-marker `x'x` for unit-weight BayesC path
 - `prefix.afreq.f32`: per-marker allele frequencies
+
+Conversion notes:
+
+- The converter runs out-of-core and does **not** allocate dense `N x P` RAM.
+- It performs a staged write path with a temporary row-major packed spool, then a transpose to marker-major.
+- Temporary disk can approach one extra packed payload during conversion. For very large `N, P`, place `tmpdir` on a high-capacity filesystem.
 
 ### `get_genotypes(...; storage=:stream)`
 
@@ -151,6 +160,26 @@ Interpretation:
 - Streaming reduced run-time memory significantly in this benchmark.
 - Conversion has one-time cost and memory use.
 - Absolute times are hardware- and IO-dependent.
+
+### 2b) Conversion-phase benchmark (`N=10,000`, `P=5,000`)
+
+Measured with `/usr/bin/time -l`:
+
+| Step | Real Time | Max RSS |
+| --- | ---: | ---: |
+| `prepare_streaming_genotypes` | `~11.8s` | `~1.14 GB` |
+
+Backend sizes:
+
+| Artifact | Size |
+| --- | ---: |
+| packed payload (`.jgb2`) | `~12.5 MB` |
+| temporary row-major spool (during conversion) | `~12.5 MB` |
+
+Interpretation:
+
+- Converter RAM stays bounded for this size and no dense matrix is materialized.
+- Conversion needs temporary disk in addition to final payload.
 
 ### 3) Target-scale feasibility estimator (`N=500,000`, `P=2,000,000`)
 
