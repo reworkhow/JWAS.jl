@@ -16,6 +16,7 @@ makedocs(
         "Manual" => Any[
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",
+            "SEM (Beginner to Advanced)" => "manual/sem.md",
             "Block BayesC" => "manual/block_bayesc.md",
             "Memory Usage" => "manual/memory_usage.md",
             "Streaming Genotype Walkthrough" => "manual/streaming_genotype_walkthrough.md",
