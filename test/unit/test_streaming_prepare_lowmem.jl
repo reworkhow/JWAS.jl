@@ -110,6 +110,56 @@ end
                 @test err !== nothing
                 @test occursin("Insufficient disk", sprint(showerror, err))
             end
+
+            @testset "auto mode selects dense vs lowmem by threshold" begin
+                tmproot = joinpath(tmpdir, "stream_auto_mode")
+                mkpath(tmproot)
+                before = Set(readdir(tmproot))
+
+                dense_prefix = JWAS.prepare_streaming_genotypes("geno.csv";
+                                                                output_prefix="auto_dense_stream",
+                                                                separator=',',
+                                                                header=true,
+                                                                quality_control=false,
+                                                                center=true,
+                                                                tmpdir=tmproot,
+                                                                cleanup_temp=false,
+                                                                conversion_mode=:auto,
+                                                                auto_dense_max_bytes=10_000)
+                after_dense = Set(readdir(tmproot))
+                @test after_dense == before
+
+                lowmem_prefix = JWAS.prepare_streaming_genotypes("geno.csv";
+                                                                 output_prefix="auto_lowmem_stream",
+                                                                 separator=',',
+                                                                 header=true,
+                                                                 quality_control=false,
+                                                                 center=true,
+                                                                 tmpdir=tmproot,
+                                                                 cleanup_temp=false,
+                                                                 conversion_mode=:auto,
+                                                                 auto_dense_max_bytes=1)
+                after_lowmem = Set(readdir(tmproot))
+                @test !isempty(setdiff(after_lowmem, before))
+
+                dense_stream = get_genotypes(dense_prefix, 1.0;
+                                             method="BayesC",
+                                             storage=:stream)
+                lowmem_stream = get_genotypes(lowmem_prefix, 1.0;
+                                              method="BayesC",
+                                              storage=:stream)
+                @test dense_stream.markerID == lowmem_stream.markerID
+                @test dense_stream.nObs == lowmem_stream.nObs
+                @test dense_stream.nMarkers == lowmem_stream.nMarkers
+
+                dense_buf = zeros(Float32, dense_stream.nObs)
+                lowmem_buf = zeros(Float32, lowmem_stream.nObs)
+                for j in 1:dense_stream.nMarkers
+                    JWAS.decode_marker!(dense_buf, dense_stream.stream_backend, j)
+                    JWAS.decode_marker!(lowmem_buf, lowmem_stream.stream_backend, j)
+                    @test dense_buf ≈ lowmem_buf atol=1e-5
+                end
+            end
         end
     end
 end

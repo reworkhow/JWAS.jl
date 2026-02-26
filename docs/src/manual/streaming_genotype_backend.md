@@ -39,6 +39,8 @@ prefix = prepare_streaming_genotypes(
     quality_control = true,
     MAF = 0.01,
     center = true,
+    conversion_mode = :lowmem,   # :lowmem | :dense | :auto
+    auto_dense_max_bytes = 2^30, # used only when conversion_mode=:auto
     tmpdir = nothing,          # optional temp workspace for conversion spool
     cleanup_temp = true,       # remove temporary conversion files after success
     disk_guard_ratio = 0.9,    # fail fast if required bytes exceed ratio * free bytes
@@ -57,9 +59,33 @@ Output artifacts with the chosen `prefix`:
 
 Conversion notes:
 
-- The converter runs out-of-core and does **not** allocate dense `N x P` RAM.
-- It performs a staged write path with a temporary row-major packed spool, then a transpose to marker-major.
-- Temporary disk can approach one extra packed payload during conversion. For very large `N, P`, place `tmpdir` on a high-capacity filesystem.
+- `conversion_mode=:lowmem` keeps conversion out-of-core (default).
+- `conversion_mode=:dense` uses an in-memory dense conversion path (faster for small files, not RAM-safe for large files).
+- `conversion_mode=:auto` chooses `:dense` when estimated dense bytes (`N*P*4`) fit under `auto_dense_max_bytes`; otherwise uses `:lowmem`.
+- In low-memory mode, conversion performs a staged write path with temporary row-major spool + transpose.
+- Temporary disk can approach one extra packed payload in low-memory mode; for very large `N, P`, place `tmpdir` on a high-capacity filesystem.
+
+### How to use `conversion_mode`
+
+Use one of these patterns:
+
+```julia
+# 1) Large files (safest): always low-memory conversion
+prefix = prepare_streaming_genotypes("genotypes.csv";
+                                     conversion_mode=:lowmem,
+                                     tmpdir="/scratch/jwas_tmp")
+
+# 2) Small files (fast path): force dense in-memory conversion
+prefix = prepare_streaming_genotypes("genotypes.csv";
+                                     conversion_mode=:dense)
+
+# 3) Hybrid default: auto-select dense for small jobs, lowmem otherwise
+prefix = prepare_streaming_genotypes("genotypes.csv";
+                                     conversion_mode=:auto,
+                                     auto_dense_max_bytes=2^30) # 1 GiB threshold
+```
+
+Practical rule: start with `conversion_mode=:auto`; use `:lowmem` explicitly for very large jobs or constrained RAM environments.
 
 ### `get_genotypes(...; storage=:stream)`
 

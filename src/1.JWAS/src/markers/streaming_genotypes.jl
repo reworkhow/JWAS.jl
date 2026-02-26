@@ -440,40 +440,212 @@ function _safe_rm(path::AbstractString)
     return nothing
 end
 
-"""
-    prepare_streaming_genotypes(file::AbstractString;
-                                output_prefix=nothing,
-                                separator=',',
-                                header=true,
-                                missing_value=9.0,
-                                quality_control=true,
-                                MAF=0.01,
-                                center=true,
-                                tmpdir=nothing,
-                                cleanup_temp=true,
-                                disk_guard_ratio=0.9)
+function _count_genotype_rows(file::AbstractString, header::Bool)
+    nobs = 0
+    open(file, "r") do io
+        if header
+            if eof(io)
+                error("Genotype data is empty.")
+            end
+            readline(io)
+        end
+        for _ in eachline(io)
+            nobs += 1
+        end
+    end
+    if nobs == 0
+        error("Genotype data is empty.")
+    end
+    return nobs
+end
 
-Convert a dense text genotype file to a marker-major 2-bit packed backend.
+function _normalize_conversion_mode(conversion_mode)
+    mode = conversion_mode isa Symbol ? conversion_mode : Symbol(conversion_mode)
+    if mode in (:auto, :dense, :lowmem)
+        return mode
+    end
+    error("conversion_mode must be one of :auto, :dense, :lowmem.")
+end
 
-Conversion is out-of-core and disk-backed:
-- `tmpdir`: optional location for temporary conversion files.
-- `cleanup_temp`: remove temporary files after successful conversion.
-- `disk_guard_ratio`: fail fast when estimated required bytes exceed
-  `disk_guard_ratio * available_bytes`.
-"""
-function prepare_streaming_genotypes(file::AbstractString;
-                                     output_prefix=nothing,
-                                     separator=',',
-                                     header=true,
-                                     missing_value=9.0,
-                                     quality_control=true,
-                                     MAF=0.01,
-                                     center=true,
-                                     tmpdir=nothing,
-                                     cleanup_temp=true,
-                                     disk_guard_ratio=0.9)
-    output_prefix = output_prefix === nothing ? splitext(file)[1] * "_stream" : string(output_prefix)
-    prefix_abs = abspath(output_prefix)
+function _choose_conversion_mode(requested_mode::Symbol,
+                                 nobs::Int,
+                                 nmarkers::Int,
+                                 auto_dense_max_bytes::Int128)
+    if requested_mode != :auto
+        return requested_mode
+    end
+    dense_bytes = Int128(nobs) * Int128(nmarkers) * Int128(sizeof(Float32))
+    return dense_bytes <= auto_dense_max_bytes ? :dense : :lowmem
+end
+
+function _prepare_streaming_genotypes_dense!(file::AbstractString,
+                                             prefix_abs::AbstractString;
+                                             separator,
+                                             header::Bool,
+                                             missing_value::Real,
+                                             quality_control::Bool,
+                                             MAF::Real,
+                                             center::Bool,
+                                             disk_guard_ratio::Float64,
+                                             marker_ids_all::Vector{String},
+                                             nmarkers_all::Int)
+    output_dir = dirname(prefix_abs)
+    mkpath(output_dir)
+
+    data_path = prefix_abs * ".jgb2"
+    meta_path = prefix_abs * ".meta"
+    obs_path = prefix_abs * ".obsid.txt"
+    marker_path = prefix_abs * ".markerid.txt"
+    mean_path = prefix_abs * ".mean.f32"
+    xp_path = prefix_abs * ".xpRinvx.f32"
+    afreq_path = prefix_abs * ".afreq.f32"
+
+    ncol = nmarkers_all + 1
+    etv = Array{DataType}(undef, ncol)
+    fill!(etv, Float32)
+    etv[1] = String
+    data = CSV.read(file, DataFrame, types=etv, delim=separator, header=false, skipto=(header ? 2 : 1))
+
+    obsID = map(string, data[!, 1])
+    X = map(Float32, Matrix(data[!, 2:end]))
+    nObs, nMarkersAll = size(X)
+    if nObs == 0 || nMarkersAll == 0
+        error("Genotype data is empty.")
+    end
+    if nMarkersAll != nmarkers_all
+        error("Genotype marker count changed while reading file.")
+    end
+
+    missing_value32 = Float32(missing_value)
+    maf32 = Float32(MAF)
+    keep = trues(nMarkersAll)
+    marker_means = Vector{Float32}(undef, nMarkersAll)
+    allele_freq = Vector{Float32}(undef, nMarkersAll)
+    xpRinvx_all = Vector{Float32}(undef, nMarkersAll)
+    missing_masks = Vector{BitVector}(undef, nMarkersAll)
+
+    @showprogress "preparing packed genotypes (dense) ..." for j in 1:nMarkersAll
+        col = view(X, :, j)
+        miss = BitVector(undef, nObs)
+        n_nonmissing = 0
+        sum_nonmissing = 0.0f0
+
+        @inbounds for i in 1:nObs
+            v = col[i]
+            is_missing = (v == missing_value32)
+            miss[i] = is_missing
+            if !is_missing
+                if !(v == 0.0f0 || v == 1.0f0 || v == 2.0f0)
+                    error("Only 0/1/2 genotypes (and missing_value=$missing_value) are supported in storage=:stream MVP.")
+                end
+                n_nonmissing += 1
+                sum_nonmissing += v
+            end
+        end
+
+        if n_nonmissing == 0
+            error("Marker $(marker_ids_all[j]) has only missing values.")
+        end
+
+        μ = sum_nonmissing / n_nonmissing
+        marker_means[j] = μ
+        allele_freq[j] = μ / 2.0f0
+        missing_masks[j] = miss
+
+        ss_centered = 0.0f0
+        ss_raw = 0.0f0
+        @inbounds for i in 1:nObs
+            v = miss[i] ? μ : col[i]
+            d = v - μ
+            ss_centered += d * d
+            ss_raw += v * v
+        end
+        xpRinvx_all[j] = center ? ss_centered : ss_raw
+
+        if quality_control
+            maf_ok = (maf32 < allele_freq[j] < (1.0f0 - maf32))
+            var_ok = (ss_centered != 0.0f0)
+            keep[j] = maf_ok && var_ok
+        end
+    end
+
+    selected = quality_control ? findall(keep) : collect(1:nMarkersAll)
+    if isempty(selected)
+        error("No markers remain after streaming genotype quality control.")
+    end
+
+    markerID = marker_ids_all[selected]
+    means_kept = marker_means[selected]
+    afreq_kept = allele_freq[selected]
+    xp_kept = xpRinvx_all[selected]
+    nMarkers = length(selected)
+    stride_bytes = cld(nObs, 4)
+    sum2pq = Float64(sum(2.0f0 .* afreq_kept .* (1.0f0 .- afreq_kept)))
+
+    if quality_control
+        printstyled("$(nMarkersAll - nMarkers) loci which are fixed or have minor allele frequency < $MAF are removed.\n", bold=true)
+    end
+
+    marker_text_bytes = sum(length(id) + 1 for id in markerID)
+    obs_text_bytes = sum(length(id) + 1 for id in obsID)
+    sidecar_bytes = Int128(marker_text_bytes + obs_text_bytes + 256) + Int128(12) * Int128(nMarkers)
+    required_output_bytes = Int128(nMarkers) * Int128(stride_bytes) + sidecar_bytes
+    _check_streaming_disk_guard!(output_dir, output_dir, required_output_bytes, Int128(0), disk_guard_ratio)
+
+    packed_row = zeros(UInt8, stride_bytes)
+    open(data_path, "w") do io
+        @showprogress "writing packed genotypes (dense) ..." for idx in 1:nMarkers
+            j = selected[idx]
+            miss = missing_masks[j]
+            col = view(X, :, j)
+            fill!(packed_row, 0x00)
+
+            @inbounds for i in 1:nObs
+                code = miss[i] ? UInt8(3) : UInt8(round(Int, col[i]))
+                byte_idx = ((i - 1) >>> 2) + 1
+                shift = ((i - 1) & 0x03) << 1
+                packed_row[byte_idx] |= code << shift
+            end
+            write(io, packed_row)
+        end
+    end
+
+    _write_string_lines(obs_path, obsID)
+    _write_string_lines(marker_path, markerID)
+    _write_f32_vector(mean_path, means_kept)
+    _write_f32_vector(xp_path, xp_kept)
+    _write_f32_vector(afreq_path, afreq_kept)
+
+    _write_streaming_manifest(meta_path, [
+        "version" => "1",
+        "data_path" => data_path,
+        "obs_path" => obs_path,
+        "marker_path" => marker_path,
+        "mean_path" => mean_path,
+        "xp_path" => xp_path,
+        "afreq_path" => afreq_path,
+        "nObs" => string(nObs),
+        "nMarkers" => string(nMarkers),
+        "stride_bytes" => string(stride_bytes),
+        "centered" => string(center ? 1 : 0),
+        "sum2pq" => string(sum2pq)
+    ])
+    return nothing
+end
+
+function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
+                                              prefix_abs::AbstractString;
+                                              separator,
+                                              header::Bool,
+                                              missing_value::Real,
+                                              quality_control::Bool,
+                                              MAF::Real,
+                                              center::Bool,
+                                              tmpdir,
+                                              cleanup_temp::Bool,
+                                              disk_guard_ratio::Float64,
+                                              marker_ids_all::Vector{String},
+                                              nmarkers_all::Int)
     output_dir = dirname(prefix_abs)
     mkpath(output_dir)
 
@@ -498,8 +670,6 @@ function prepare_streaming_genotypes(file::AbstractString;
     mean_tmp = mean_path * ".tmp." * nonce
     xp_tmp = xp_path * ".tmp." * nonce
     afreq_tmp = afreq_path * ".tmp." * nonce
-
-    marker_ids_all, nmarkers_all = _header_marker_ids(file, separator, header)
 
     published = false
     try
@@ -585,6 +755,92 @@ function prepare_streaming_genotypes(file::AbstractString;
                 rm(stage_dir; recursive=true, force=true)
             end
         end
+    end
+    return nothing
+end
+
+"""
+    prepare_streaming_genotypes(file::AbstractString;
+                                output_prefix=nothing,
+                                separator=',',
+                                header=true,
+                                missing_value=9.0,
+                                quality_control=true,
+                                MAF=0.01,
+                                center=true,
+                                conversion_mode=:lowmem,
+                                auto_dense_max_bytes=2^30,
+                                tmpdir=nothing,
+                                cleanup_temp=true,
+                                disk_guard_ratio=0.9)
+
+Convert a dense text genotype file to a marker-major 2-bit packed backend.
+
+Conversion backend selection:
+- `conversion_mode=:lowmem` uses out-of-core staged conversion (disk-backed).
+- `conversion_mode=:dense` uses in-memory conversion.
+- `conversion_mode=:auto` chooses between the two based on `auto_dense_max_bytes`.
+
+Low-memory conversion options:
+- `tmpdir`: optional location for temporary conversion files.
+- `cleanup_temp`: remove temporary files after successful conversion.
+- `disk_guard_ratio`: fail fast when estimated required bytes exceed
+  `disk_guard_ratio * available_bytes`.
+"""
+function prepare_streaming_genotypes(file::AbstractString;
+                                     output_prefix=nothing,
+                                     separator=',',
+                                     header=true,
+                                     missing_value=9.0,
+                                     quality_control=true,
+                                     MAF=0.01,
+                                     center=true,
+                                     conversion_mode=:lowmem,
+                                     auto_dense_max_bytes=2^30,
+                                     tmpdir=nothing,
+                                     cleanup_temp=true,
+                                     disk_guard_ratio=0.9)
+    output_prefix = output_prefix === nothing ? splitext(file)[1] * "_stream" : string(output_prefix)
+    prefix_abs = abspath(output_prefix)
+
+    marker_ids_all, nmarkers_all = _header_marker_ids(file, separator, header)
+    if auto_dense_max_bytes < 0
+        error("auto_dense_max_bytes must be non-negative.")
+    end
+    requested_mode = _normalize_conversion_mode(conversion_mode)
+    nobs_for_decision = requested_mode == :auto ? _count_genotype_rows(file, header) : 0
+    selected_mode = _choose_conversion_mode(requested_mode, nobs_for_decision, nmarkers_all, Int128(auto_dense_max_bytes))
+
+    if requested_mode == :auto
+        dense_bytes_est = Int128(nobs_for_decision) * Int128(nmarkers_all) * Int128(sizeof(Float32))
+        printstyled("Auto conversion mode selected :$selected_mode (estimated dense bytes=$dense_bytes_est, auto_dense_max_bytes=$(Int128(auto_dense_max_bytes))).\n",
+                    bold=false, color=:light_black)
+    end
+
+    if selected_mode == :dense
+        _prepare_streaming_genotypes_dense!(file, prefix_abs;
+                                            separator=separator,
+                                            header=header,
+                                            missing_value=missing_value,
+                                            quality_control=quality_control,
+                                            MAF=MAF,
+                                            center=center,
+                                            disk_guard_ratio=disk_guard_ratio,
+                                            marker_ids_all=marker_ids_all,
+                                            nmarkers_all=nmarkers_all)
+    else
+        _prepare_streaming_genotypes_lowmem!(file, prefix_abs;
+                                             separator=separator,
+                                             header=header,
+                                             missing_value=missing_value,
+                                             quality_control=quality_control,
+                                             MAF=MAF,
+                                             center=center,
+                                             tmpdir=tmpdir,
+                                             cleanup_temp=cleanup_temp,
+                                             disk_guard_ratio=disk_guard_ratio,
+                                             marker_ids_all=marker_ids_all,
+                                             nmarkers_all=nmarkers_all)
     end
 
     printstyled("Streaming genotype files are created with prefix $(prefix_abs).\n", bold=false, color=:green)
