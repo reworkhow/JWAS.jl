@@ -128,6 +128,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_advanced_coverage.jl"))
         end
 
+        @testset "SEM regression (issue #162)" begin
+            include(joinpath(@__DIR__, "unit", "test_sem_issue162.jl"))
+        end
+
         # ====================================================================
         # Test 1: Model Building
         # ====================================================================

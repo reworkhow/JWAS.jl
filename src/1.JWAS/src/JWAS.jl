@@ -296,7 +296,8 @@ function runMCMC(mme::MME,df;
     mme.causal_structure = causal_structure
     if causal_structure != false
         #no missing phenotypes and residual covariance for identifiability
-        mme.MCMCinfo.missing_phenotypes, mme.MCMCinfo.constraint = false, true
+        mme.MCMCinfo.missing_phenotypes = false
+        mme.R.constraint = true
         if !istril(causal_structure)
             error("The causal structue needs to be a lower triangular matrix.")
         end
