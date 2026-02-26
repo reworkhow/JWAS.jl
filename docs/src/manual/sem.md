@@ -181,7 +181,11 @@ These steps currently rely on consistent genotype-term naming in output marker-e
 
 ## Troubleshooting
 
-### `The causal structue needs to be a lower triangular matrix.`
+### Lower-triangular matrix error
+
+Runtime message:
+
+`The causal structue needs to be a lower triangular matrix.`
 
 Cause:
 - `causal_structure` includes non-zero entries above the diagonal.
