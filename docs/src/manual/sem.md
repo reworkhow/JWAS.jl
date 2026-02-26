@@ -133,3 +133,85 @@ my_structure = [0.0 0.0 0.0
 | Residual covariance | constrained in SEM path |
 | Marker methods | SEM post-processing expects marker-effect sample outputs for genotype terms |
 | Naming dependency | output filenames include the genotype term name from model equations |
+
+## Deep Technical Notes
+
+### Core Objects and Notation
+
+In the SEM implementation:
+
+- `Y` is the sparse design built from observed trait values under the selected causal pattern.
+- `Λ` (Lambda) is the structural coefficient matrix used to map direct and recursive relationships.
+- `Λy` is the transformed phenotype vector under current SEM coefficients.
+
+Key implementation entry points:
+
+- `src/1.JWAS/src/structure_equation_model/SEM.jl`
+- `SEM_setup`, `get_sparse_Y_FRM`, `get_Λ`, `tranform_lambda`
+
+### Where SEM Is Invoked in MCMC
+
+At runtime:
+
+1. `runMCMC` stores `causal_structure` and applies SEM constraints.
+2. `MCMC_BayesianAlphabet` calls `SEM_setup(...)` before sampling.
+3. Each iteration, `get_Λ(...)` samples structural coefficients and updates `Λy`/corrected residual vector.
+4. Saved SEM coefficient samples are written to `structure_coefficient_MCMC_samples.txt`.
+
+Key call sites:
+
+- `src/1.JWAS/src/JWAS.jl`
+- `src/1.JWAS/src/MCMC/MCMC_BayesianAlphabet.jl`
+
+### Post-MCMC Marker-Effect Pipeline
+
+After MCMC completion (SEM enabled):
+
+1. `generate_indirect_marker_effect_sample(...)` builds per-sample indirect marker effects.
+2. `generate_overall_marker_effect_sample(...)` combines direct and indirect effects.
+3. `generate_marker_effect(..., effect_type)` writes posterior summaries for direct/indirect/overall effects.
+
+These steps currently rely on consistent genotype-term naming in output marker-effect sample files.
+
+### Current Assumptions and Caveats
+
+- The SEM path assumes no missing-phenotype imputation during SEM sampling.
+- Lower-triangular causal structure is required for identifiability/order.
+- File-based post-processing is name-sensitive and depends on generated marker-effect filenames.
+
+## Troubleshooting
+
+### `The causal structue needs to be a lower triangular matrix.`
+
+Cause:
+- `causal_structure` includes non-zero entries above the diagonal.
+
+Fix:
+- enforce lower-triangular form; keep only allowed directed edges where column affects row.
+
+### SEM requested in single-trait model
+
+Cause:
+- SEM is enabled with only one trait.
+
+Fix:
+- use SEM only in multi-trait runs.
+
+### Missing indirect/overall SEM output files
+
+Cause:
+- genotype term name in model equations does not match expected marker-effect file naming.
+
+Fix:
+- keep genotype term naming consistent (for example, `genotypes` in both model equation and output expectations).
+
+### Historical regression (issue #162)
+
+`runMCMC(...; causal_structure=...)` previously failed from an internal field mismatch.
+This path is covered by unit regression test `test/unit/test_sem_issue162.jl`.
+
+## Related Pages
+
+- [Workflow](workflow.md)
+- [Public API](public.md)
+- [Block BayesC](block_bayesc.md)
