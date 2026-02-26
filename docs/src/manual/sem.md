@@ -1,4 +1,4 @@
-# SEM: Beginner to Advanced
+# structural equation model (SEM)
 
 This page is a single, layered guide to structural equation model (SEM) usage in JWAS.
 It is organized from practical setup to exact reference behavior to implementation-level notes.
