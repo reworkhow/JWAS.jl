@@ -82,3 +82,110 @@ julia --project benchmarks/streaming_large_benchmark.jl \
 - `--sample-markers-per-sweep=K`: `0` means full marker sweep; `K>0` means sampled subset per sweep with projection.
 - `--rss-sample-interval-sec`: RSS sampling interval.
 - `--csv-out`: CSV output path.
+
+## Cluster BayesC Benchmarks (Fast-Block vs Non-Block)
+
+This folder also includes Slurm-oriented scripts used for the benchmark page:
+
+- `benchmarks/jwas_full_benchmark.jl`
+- `benchmarks/jwas_full_benchmark.sbatch`
+- `benchmarks/jwas_full_benchmark_v2.jl`
+- `benchmarks/jwas_full_benchmark_v2.sbatch`
+- `benchmarks/jwas_nonblock_benchmark.jl`
+- `benchmarks/jwas_nonblock_benchmark.sbatch`
+
+### What each script does
+
+- `jwas_full_benchmark.*`: initial fast-block benchmark run.
+- `jwas_full_benchmark_v2.*`: fast-block benchmark with warmup + replicates (recommended).
+- `jwas_nonblock_benchmark.*`: standard BayesC (`fast_blocks=false`) benchmark with warmup + replicates.
+
+### Before submitting
+
+These `.sbatch` files are templates from a real cluster run and contain cluster-specific paths.
+Update the following in each `.sbatch` file:
+
+- partition/account (`#SBATCH -p`, `#SBATCH -A`)
+- output/error paths (`#SBATCH -o`, `#SBATCH -e`)
+- Julia module line (if your cluster differs)
+- `--project=...` path in the final `julia` command
+- benchmark script path in the final `julia` command
+- output text path env var (`BENCH_TXT`)
+
+### Example usage
+
+From repository root:
+
+```bash
+# 1) Fast-block (recommended replicated run)
+sbatch benchmarks/jwas_full_benchmark_v2.sbatch
+
+# 2) Non-block benchmark
+sbatch benchmarks/jwas_nonblock_benchmark.sbatch
+```
+
+Monitor:
+
+```bash
+squeue -u $USER
+tail -f /path/to/slurm_output.out
+```
+
+Find final estimate:
+
+```bash
+rg "SUMMARY_EST|EXTRAPOLATED|RESULTS_WRITTEN" /path/to/slurm_output.out
+cat /path/to/benchmark_results.txt
+```
+
+### Runtime controls
+
+These benchmarks are controlled via environment variables in the `.sbatch` files:
+
+- `BENCH_N`: number of individuals
+- `BENCH_P_LIST`: calibration marker counts (comma-separated)
+- `BENCH_L_LIST`: calibration chain lengths (comma-separated)
+- `BENCH_REPS`: replicate count (in v2/non-block scripts)
+- `WARMUP_N`, `WARMUP_P`, `WARMUP_L`: warmup size
+- `TARGET_P`, `TARGET_L`: extrapolation target
+
+If you change target scale, keep calibration sizes feasible for your node memory and wall-time limits.
+
+### Farm preset (tested on 2026-02-26)
+
+The settings below were used for the published `Benchmark` doc page and can be used as a known-good starting point on `farm`.
+
+Common Slurm settings:
+
+- partition: `low`
+- account: `publicgrp`
+- nodes/tasks: `--nodes=1 --ntasks=1`
+- CPU/memory: `--cpus-per-task=64 --mem=220G`
+- Julia module: `julia/1.12.1`
+- project path: `/home/qtlcheng/Github/JWAS.jl`
+
+Fast-block (replicated, recommended):
+
+- script: `benchmarks/jwas_full_benchmark_v2.sbatch`
+- walltime: `04:00:00`
+- env:
+  - `BENCH_N=50000`
+  - `BENCH_P_LIST=100000,200000`
+  - `BENCH_L_LIST=223,446`
+  - `BENCH_REPS=2`
+  - `WARMUP_N=2000`, `WARMUP_P=5000`, `WARMUP_L=50`
+  - `TARGET_P=2000000`, `TARGET_L=2000`
+- completed benchmark job: `30951323` (node `cpu-10-63`)
+
+Non-block (standard BayesC):
+
+- script: `benchmarks/jwas_nonblock_benchmark.sbatch`
+- walltime: `06:00:00`
+- env:
+  - `BENCH_N=50000`
+  - `BENCH_P_LIST=100000,200000`
+  - `BENCH_L_LIST=2,4`
+  - `BENCH_REPS=2`
+  - `WARMUP_N=2000`, `WARMUP_P=2000`, `WARMUP_L=5`
+  - `TARGET_P=2000000`, `TARGET_L=2000`
+- completed benchmark job: `30951596` (node `cpu-6-91`)
