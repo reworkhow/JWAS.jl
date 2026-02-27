@@ -18,6 +18,7 @@ makedocs(
             "Workflow" => "manual/workflow.md",
             "Structural Equation Model (SEM)" => "manual/sem.md",
             "Block BayesC" => "manual/block_bayesc.md",
+            "Benchmark" => "manual/benchmark.md",
             "Memory Usage" => "manual/memory_usage.md",
             "Streaming Genotype Walkthrough" => "manual/streaming_genotype_walkthrough.md",
             "Public" => "manual/public.md",

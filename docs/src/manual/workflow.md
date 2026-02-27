@@ -291,6 +291,7 @@ MCMC samples for marker effects, location parameters specified on line 1, and al
 are saved every `output_samples_frequency` iterations to files.
 
 For large marker panels, `runMCMC(...; fast_blocks=...)` enables the block BayesC path. See [Block BayesC](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
+For a real cluster benchmark comparing `fast_blocks=true` vs `fast_blocks=false` at target scale (`N=50,000`, `P=2,000,000`, `chain_length=2000`), see [Benchmark](benchmark.md).
 For standard original BayesC (`fast_blocks=false`) at very large `N` and `P`, see [Handling Large Genotype Data Without Loading the Full Matrix into Memory](large_genotype_data_streaming.md) for memory/speed tradeoffs across storage approaches.
 For feature-level details of the opt-in streaming backend (`storage=:stream`), including API and benchmarks, see [Streaming Genotype Backend (BayesC MVP)](streaming_genotype_backend.md).
 For complete SEM usage, reference behavior, and implementation notes, see [SEM: Beginner to Advanced](sem.md).

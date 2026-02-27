@@ -3,6 +3,7 @@
 This page explains how JWAS implements block updates for BayesC marker sampling and how the block path changes speed and memory usage.
 The block BayesC implementation uses a strategy similar to the blocked update scheme described in the BayesR3 paper.
 For detailed non-block vs block memory accounting, see [Memory Usage](memory_usage.md).
+For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `chain_length=2000`, see [Benchmark](benchmark.md).
 
 BayesR3 paper (Methods): https://www.nature.com/articles/s42003-022-03624-1
 
