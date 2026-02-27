@@ -132,6 +132,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_sem_issue162.jl"))
         end
 
+        @testset "SEM Comprehensive Tests" begin
+            include(joinpath(@__DIR__, "unit", "test_sem_comprehensive.jl"))
+        end
+
         # ====================================================================
         # Test 1: Model Building
         # ====================================================================
