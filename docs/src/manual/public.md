@@ -21,7 +21,6 @@ set_random
 runMCMC
 outputEBV
 outputMCMCsamples
-showMME
 solve
 ```
 
