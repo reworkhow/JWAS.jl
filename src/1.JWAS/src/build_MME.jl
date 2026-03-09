@@ -256,7 +256,7 @@ function getX(trm::ModelTerm,mme::MME)
        end
        if length(data) < length(trm.data)
          error("For trait ",trm.iTrait," some levels for ",trm.trmStr," in the phenotypic file are not found in levels for random effects ",
-         trm.trmStr,". ","This may happen if missing values are not considered in missingstrings.")
+         trm.trmStr,". ","This may happen if missing values are not considered in missingstring.")
        elseif length(data) > length(trm.data)
          error("Same level names are found for the two terms in the interaction.")
        end

@@ -3,7 +3,7 @@ using Test, JWAS, DataFrames, CSV, JWAS.Datasets
 
 @testset "set_random with i.i.d. effects" begin
     phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
-    phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstrings=["NA"])
+    phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
 
     @testset "Single-trait i.i.d. random effect" begin
         model = build_model("y1 = intercept + x1", 1.0)
@@ -50,7 +50,7 @@ end
 
     @testset "Pedigree-based MCMC runs" begin
         phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
-        phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstrings=["NA"])
+        phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
 
         model = build_model("y1 = intercept + ID", 1.0)
         set_random(model, "ID", ped, 1.6)

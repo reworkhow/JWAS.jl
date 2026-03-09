@@ -106,7 +106,7 @@ function MCMC_BayesianAlphabet_RRM(mme,df;
         polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
     end
 
-    @showprogress "running MCMC for" for iter=1:nIter
+    @showprogress desc="running MCMC for" for iter=1:nIter
         ########################################################################
         # 1.1. Non-Marker Location Parameters
         ########################################################################

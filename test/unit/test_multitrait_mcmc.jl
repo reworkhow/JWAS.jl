@@ -4,7 +4,7 @@ using Test, JWAS, DataFrames, CSV, JWAS.Datasets
 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
 pedfile = Datasets.dataset("pedigree.txt", dataset_name="demo_7animals")
-phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstrings=["NA"])
+phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
 
 R = [1.0 0.5; 0.5 1.0]
 

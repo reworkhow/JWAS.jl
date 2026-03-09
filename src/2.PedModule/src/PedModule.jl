@@ -8,7 +8,7 @@ export get_pedigree
 export get_info
 
 """
-    get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstrings=["0"])
+    get_pedigree(pedfile::AbstractString;header=false,separator=',',missingstring=["0"])
 * Get pedigree informtion from a pedigree file with **header** (defaulting to `false`)
   , **separator** (defaulting to `,`) and missing values (defaulting to ["0"])
 * Pedigree file format:
@@ -19,11 +19,17 @@ c,a,b
 d,a,c
 ```
 """
-function get_pedigree(pedfile::Union{AbstractString,DataFrames.DataFrame};header=false,separator=',',missingstrings=["0"])
+function get_pedigree(pedfile::Union{AbstractString,DataFrames.DataFrame};header=false,separator=',',missingstring=["0"], kwargs...)
+    if :missingstrings in keys(kwargs)
+        error("keyword `missingstrings` is deprecated; use `missingstring` instead.")
+    end
+    if !isempty(kwargs)
+        error("Unsupported keyword argument(s): $(join(string.(collect(keys(kwargs))), ", ")).")
+    end
     if typeof(pedfile) <: AbstractString
         printstyled("The delimiter in ",split(pedfile,['/','\\'])[end]," is \'",separator,"\'.\n",bold=false,color=:green)
         df  = CSV.read(pedfile,DataFrame,types=[String,String,String],
-                        delim=separator,header=header,missingstrings=missingstrings)
+                        delim=separator,header=header,missingstring=missingstring)
     elseif typeof(pedfile) == DataFrames.DataFrame
         df  = pedfile
     else
@@ -36,10 +42,10 @@ function get_pedigree(pedfile::Union{AbstractString,DataFrames.DataFrame};header
                      Dict{Int64, Float64}(),
                      Set(),Set(),Set(),Set(),Array{String,1}())
     fillMap!(ped,df)
-    @showprogress "coding pedigree... " for id in keys(ped.idMap)
+    @showprogress desc="coding pedigree... " for id in keys(ped.idMap)
      code!(ped,id)
     end
-    @showprogress "calculating inbreeding... " for id in keys(ped.idMap)
+    @showprogress desc="calculating inbreeding... " for id in keys(ped.idMap)
       calcInbreeding!(ped,id)
     end
 

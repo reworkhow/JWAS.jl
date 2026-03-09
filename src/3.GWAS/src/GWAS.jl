@@ -150,7 +150,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
                 nind     = size(X,1)
                 localEBV = zeros(nind,nWindows)
             end
-            @showprogress "running GWAS..." for i=1:nsamples
+            @showprogress desc="running GWAS..." for i=1:nsamples
                 α = output[i,:]
                 genVar = var(X*α)
                 for winj = 1:length(window_column_start)
@@ -210,7 +210,7 @@ function GWAS(mme,map_file,marker_effects_file::AbstractString...;
             gcor              = zeros(nsamples,nWindows)
             #window_mrk_start ID and window_mrk_end ID are not provided now
             X = (typeof(mme) <: Array ? mme : mme.M[1].output_genotypes)
-            @showprogress "calculating genomic correlation..." for i=1:nsamples
+            @showprogress desc="calculating genomic correlation..." for i=1:nsamples
                 α1 = output1[i,:]
                 α2 = output2[i,:]
                 for winj = 1:length(window_column_start)

@@ -17,7 +17,7 @@ phenofile = Datasets.dataset("phenotypes.txt", dataset_name="simulated_omics")
 genofile  = Datasets.dataset("genotypes_1000snps.txt", dataset_name="simulated_omics")
 pedfile   = Datasets.dataset("pedigree.txt", dataset_name="simulated_omics")
 
-phenotypes = CSV.read(phenofile, DataFrame, delim=',', header=true, missingstrings=["NA"])
+phenotypes = CSV.read(phenofile, DataFrame, delim=',', header=true, missingstring=["NA"])
 pedigree   = get_pedigree(pedfile, separator=",", header=true)
 
 # Convert group and litter to string for categorical treatment

@@ -88,6 +88,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_streaming_prepare_lowmem.jl"))
         end
 
+        @testset "Annotated BayesC" begin
+            include(joinpath(@__DIR__, "unit", "test_annotated_bayesc.jl"))
+        end
+
         @testset "set_random (Random Effects)" begin
             include(joinpath(@__DIR__, "unit", "test_set_random.jl"))
         end
@@ -239,8 +243,8 @@ println()
         @testset "MCMC Functionality" begin
             phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
             genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
-            phenotypes = CSV.read(phenofile, DataFrame, delim=',', 
-                                 missingstrings=["NA"])
+                phenotypes = CSV.read(phenofile, DataFrame, delim=',',
+                                 missingstring=["NA"])
             
             @testset "Single-trait BayesC" begin
                 global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
@@ -307,8 +311,8 @@ println()
             phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
             genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
             mapfile = Datasets.dataset("map.txt", dataset_name="demo_7animals")
-            phenotypes = CSV.read(phenofile, DataFrame, delim=',', 
-                                 missingstrings=["NA"])
+                phenotypes = CSV.read(phenofile, DataFrame, delim=',',
+                                 missingstring=["NA"])
             
             @testset "Model frequency calculation" begin
                 global geno = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
@@ -346,8 +350,8 @@ println()
             
             @testset "Missing phenotype handling" begin
                 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
-                phenotypes = CSV.read(phenofile, DataFrame, delim=',',
-                                     missingstrings=["NA"])
+                    phenotypes = CSV.read(phenofile, DataFrame, delim=',',
+                                     missingstring=["NA"])
                 
                 # Should handle missing values without error
                 model = build_model("y1 = intercept", 1.0)
