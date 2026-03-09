@@ -59,4 +59,19 @@ pedfile = Datasets.dataset("pedigree.txt", dataset_name="demo_7animals")
         @test ped2.idMap["c"].sire == "a"
         @test ped2.idMap["c"].dam == "b"
     end
+
+    @testset "missingstring keyword compatibility" begin
+        ped3 = @test_logs min_level=Base.CoreLogging.Warn get_pedigree(pedfile, separator=",", header=true, missingstring=["0"])
+        @test length(ped3.idMap) == length(ped.idMap)
+
+        err = nothing
+        try
+            get_pedigree(pedfile, separator=",", header=true, missingstrings=["0"])
+        catch e
+            err = e
+        end
+        @test err isa ErrorException
+        @test occursin("deprecated", sprint(showerror, err))
+        @test occursin("missingstring", sprint(showerror, err))
+    end
 end

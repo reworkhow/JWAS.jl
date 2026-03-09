@@ -179,7 +179,7 @@ The `JWAS` package is loaded, as well as the `CSV` and `DataFrame` packages for 
 
 #### Read Phenotypic Data
 ```julia
-phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true,,missingstrings=["NA"])
+phenotypes = CSV.read("phenotypes.txt",DataFrame,delim = ',',header=true,missingstring=["NA"])
 first(phenotypes)
 ```
 
@@ -222,6 +222,11 @@ genotypes  = get_genotypes("genotypes.txt",G,method="BayesC",separator=",",heade
 On line 1, the genomic information is read on line 1 with the genotype file.  and variance `G` (a 3x3 matrix). In Bayesian analysis, the `G` is the mean for the prior assigned for the genomic variance with degree of freedom `df`, defaulting to 4.0. If `G` is not provided, a value is calculated from responses (phenotypes).
 
 Dense loading shown above is the default and primary workflow (`storage=:dense`).
+
+If you want marker annotations to change BayesC prior inclusion probabilities, pass
+`annotations=...` to `get_genotypes`. JWAS automatically prepends an intercept column after
+marker filtering. See [Annotated BayesC](annotated_bayesc.md) for the method description,
+requirements, and dense / `fast_blocks` / streaming examples.
 
 For very large marker panels, an optional streaming backend is available:
 

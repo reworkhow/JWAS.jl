@@ -150,6 +150,7 @@ mutable struct Genotypes
   stream_backend  # backend object for storage_mode=:stream
 
   isGRM  #whether genotypes or relationship matirx is provided
+  annotations
 
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
@@ -158,7 +159,39 @@ mutable struct Genotypes
                                          false,false,false,false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,:dense,false,a9)
+                                         false,:dense,false,a9,false)
+end
+
+mutable struct MarkerAnnotations
+    design_matrix
+    coefficients
+    mean_coefficients
+    mean_coefficients2
+    variance
+    liability
+    mu
+    thresholds
+    lower_bound
+    upper_bound
+    lhs
+
+    function MarkerAnnotations(design_matrix::AbstractMatrix; variance::Real=1.0)
+        matrix = Matrix{Float64}(design_matrix)
+        nrows, ncols = size(matrix)
+        coeffs = zeros(Float64, ncols)
+        thresholds = [-Inf, 0.0, Inf]
+        new(matrix,
+            coeffs,
+            zeros(Float64, ncols),
+            zeros(Float64, ncols),
+            Float64(variance),
+            zeros(Float64, nrows),
+            zeros(Float64, nrows),
+            thresholds,
+            fill(-Inf, nrows),
+            fill(Inf, nrows),
+            matrix' * matrix)
+    end
 end
 
 # mutable struct DF

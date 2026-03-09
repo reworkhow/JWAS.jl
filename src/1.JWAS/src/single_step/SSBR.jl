@@ -111,7 +111,7 @@ function impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df,big_memory=false)
         else
             nchunks = div(nmarkers,markerperchunk)+1
         end
-        @showprogress "imputing genotypes for non-genotyped individuals" for i=1:nchunks
+        @showprogress desc="imputing genotypes for non-genotyped individuals" for i=1:nchunks
             if i != nchunks
                 myrange = (1+(i-1)*markerperchunk):(i*markerperchunk)
             else

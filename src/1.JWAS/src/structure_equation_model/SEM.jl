@@ -322,7 +322,7 @@ function generate_marker_effect(pheno_vec, output_folder,causal_structure, effec
     trait_vec              = string.(pheno_vec)       # transform the symbol to string
 
     # read the marker effects file as the sample
-    sample_file            = CSV.read(output_folder*"/marker_effects_genotypes.txt",DataFrame,delim = ',',header=true,missingstrings=["NA"])
+    sample_file            = CSV.read(output_folder*"/marker_effects_genotypes.txt",DataFrame,delim = ',',header=true,missingstring=["NA"])
 
     #pick first two columns of sample file, since other effects file share the same column
     Trait_name_vec = sample_file[:,:Trait]

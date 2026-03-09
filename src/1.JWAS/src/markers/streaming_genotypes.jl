@@ -10,6 +10,7 @@ mutable struct Packed2BitBackend
     io::IOStream
     nObs::Int
     nMarkers::Int
+    nMarkersAll::Int
     stride_bytes::Int
     centered::Bool
     marker_means::Vector{Float32}
@@ -18,6 +19,8 @@ mutable struct Packed2BitBackend
     sum2pq::Float64
     obsID::Vector{String}
     markerID::Vector{String}
+    selected_marker_indices::Vector{Int}
+    has_raw_marker_mapping::Bool
     packed_buffer::Vector{UInt8}
 end
 
@@ -37,6 +40,21 @@ end
 
 function _read_f32_vector(path::AbstractString, n::Int)
     vals = Vector{Float32}(undef, n)
+    open(path, "r") do io
+        read!(io, vals)
+    end
+    return vals
+end
+
+function _write_i32_vector(path::AbstractString, values::AbstractVector{<:Integer})
+    open(path, "w") do io
+        write(io, Int32.(values))
+    end
+    return nothing
+end
+
+function _read_i32_vector(path::AbstractString, n::Int)
+    vals = Vector{Int32}(undef, n)
     open(path, "r") do io
         read!(io, vals)
     end
@@ -252,7 +270,7 @@ function _scan_streaming_stats!(file::AbstractString,
         error("Genotype data is empty.")
     end
 
-    @showprogress "preparing packed genotypes ..." for j in 1:nmarkers
+    @showprogress desc="preparing packed genotypes ..." for j in 1:nmarkers
         nn = nonmissing_counts[j]
         if nn == 0
             marker_name = marker_ids[j]
@@ -392,7 +410,7 @@ function _transpose_row_major_to_marker_major!(rowmajor_path::AbstractString,
         flush(out_io)
         seekstart(out_io)
         open(rowmajor_path, "r") do in_io
-            @showprogress "transposing packed genotypes ..." for row_start in 1:row_tile:nobs
+            @showprogress desc="transposing packed genotypes ..." for row_start in 1:row_tile:nobs
                 rows_this_tile = min(row_tile, nobs - row_start + 1)
                 row_bytes_this_tile = rows_this_tile * row_stride
                 read!(in_io, view(raw_rows, 1:row_bytes_this_tile))
@@ -496,6 +514,7 @@ function _prepare_streaming_genotypes_dense!(file::AbstractString,
     meta_path = prefix_abs * ".meta"
     obs_path = prefix_abs * ".obsid.txt"
     marker_path = prefix_abs * ".markerid.txt"
+    selected_path = prefix_abs * ".selected.i32"
     mean_path = prefix_abs * ".mean.f32"
     xp_path = prefix_abs * ".xpRinvx.f32"
     afreq_path = prefix_abs * ".afreq.f32"
@@ -524,7 +543,7 @@ function _prepare_streaming_genotypes_dense!(file::AbstractString,
     xpRinvx_all = Vector{Float32}(undef, nMarkersAll)
     missing_masks = Vector{BitVector}(undef, nMarkersAll)
 
-    @showprogress "preparing packed genotypes (dense) ..." for j in 1:nMarkersAll
+    @showprogress desc="preparing packed genotypes (dense) ..." for j in 1:nMarkersAll
         col = view(X, :, j)
         miss = BitVector(undef, nObs)
         n_nonmissing = 0
@@ -594,7 +613,7 @@ function _prepare_streaming_genotypes_dense!(file::AbstractString,
 
     packed_row = zeros(UInt8, stride_bytes)
     open(data_path, "w") do io
-        @showprogress "writing packed genotypes (dense) ..." for idx in 1:nMarkers
+        @showprogress desc="writing packed genotypes (dense) ..." for idx in 1:nMarkers
             j = selected[idx]
             miss = missing_masks[j]
             col = view(X, :, j)
@@ -612,6 +631,7 @@ function _prepare_streaming_genotypes_dense!(file::AbstractString,
 
     _write_string_lines(obs_path, obsID)
     _write_string_lines(marker_path, markerID)
+    _write_i32_vector(selected_path, selected)
     _write_f32_vector(mean_path, means_kept)
     _write_f32_vector(xp_path, xp_kept)
     _write_f32_vector(afreq_path, afreq_kept)
@@ -621,11 +641,13 @@ function _prepare_streaming_genotypes_dense!(file::AbstractString,
         "data_path" => data_path,
         "obs_path" => obs_path,
         "marker_path" => marker_path,
+        "selected_path" => selected_path,
         "mean_path" => mean_path,
         "xp_path" => xp_path,
         "afreq_path" => afreq_path,
         "nObs" => string(nObs),
         "nMarkers" => string(nMarkers),
+        "nMarkersAll" => string(nMarkersAll),
         "stride_bytes" => string(stride_bytes),
         "centered" => string(center ? 1 : 0),
         "sum2pq" => string(sum2pq)
@@ -653,6 +675,7 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
     meta_path = prefix_abs * ".meta"
     obs_path = prefix_abs * ".obsid.txt"
     marker_path = prefix_abs * ".markerid.txt"
+    selected_path = prefix_abs * ".selected.i32"
     mean_path = prefix_abs * ".mean.f32"
     xp_path = prefix_abs * ".xpRinvx.f32"
     afreq_path = prefix_abs * ".afreq.f32"
@@ -667,6 +690,7 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
     meta_tmp = meta_path * ".tmp." * nonce
     obs_tmp = obs_path * ".tmp." * nonce
     marker_tmp = marker_path * ".tmp." * nonce
+    selected_tmp = selected_path * ".tmp." * nonce
     mean_tmp = mean_path * ".tmp." * nonce
     xp_tmp = xp_path * ".tmp." * nonce
     afreq_tmp = afreq_path * ".tmp." * nonce
@@ -713,6 +737,7 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
         # Stage D: write sidecar files and atomically publish all outputs.
         cp(stage_obs_path, obs_tmp; force=true)
         _write_string_lines(marker_tmp, markerID)
+        _write_i32_vector(selected_tmp, selected)
         _write_f32_vector(mean_tmp, means_kept)
         _write_f32_vector(xp_tmp, xp_kept)
         _write_f32_vector(afreq_tmp, afreq_kept)
@@ -722,11 +747,13 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
             "data_path" => data_path,
             "obs_path" => obs_path,
             "marker_path" => marker_path,
+            "selected_path" => selected_path,
             "mean_path" => mean_path,
             "xp_path" => xp_path,
             "afreq_path" => afreq_path,
             "nObs" => string(nObs),
             "nMarkers" => string(nMarkers),
+            "nMarkersAll" => string(nmarkers_all),
             "stride_bytes" => string(stride_bytes),
             "centered" => string(center ? 1 : 0),
             "sum2pq" => string(sum2pq)
@@ -736,6 +763,7 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
         mv(meta_tmp, meta_path; force=true)
         mv(obs_tmp, obs_path; force=true)
         mv(marker_tmp, marker_path; force=true)
+        mv(selected_tmp, selected_path; force=true)
         mv(mean_tmp, mean_path; force=true)
         mv(xp_tmp, xp_path; force=true)
         mv(afreq_tmp, afreq_path; force=true)
@@ -746,6 +774,7 @@ function _prepare_streaming_genotypes_lowmem!(file::AbstractString,
             _safe_rm(meta_tmp)
             _safe_rm(obs_tmp)
             _safe_rm(marker_tmp)
+            _safe_rm(selected_tmp)
             _safe_rm(mean_tmp)
             _safe_rm(xp_tmp)
             _safe_rm(afreq_tmp)
@@ -869,9 +898,20 @@ function load_streaming_backend(path::AbstractString)
     data_path = meta["data_path"]
     obs_path = meta["obs_path"]
     marker_path = meta["marker_path"]
+    selected_path = get(meta, "selected_path", "")
     mean_path = meta["mean_path"]
     xp_path = meta["xp_path"]
     afreq_path = meta["afreq_path"]
+    has_nMarkersAll = haskey(meta, "nMarkersAll")
+    has_selected_path = !isempty(selected_path)
+    if has_nMarkersAll != has_selected_path
+        error("Streaming backend metadata is inconsistent. Rebuild the backend with prepare_streaming_genotypes.")
+    end
+    if has_selected_path && !isfile(selected_path)
+        error("Streaming backend selected-marker metadata is missing. Rebuild the backend with prepare_streaming_genotypes.")
+    end
+    has_raw_marker_mapping = has_nMarkersAll && has_selected_path
+    nMarkersAll = has_nMarkersAll ? parse(Int, meta["nMarkersAll"]) : nMarkers
 
     expected_bytes = Int64(nMarkers) * Int64(stride_bytes)
     if filesize(data_path) != expected_bytes
@@ -883,12 +923,23 @@ function load_streaming_backend(path::AbstractString)
     allele_freq = _read_f32_vector(afreq_path, nMarkers)
     obsID = _read_string_lines(obs_path)
     markerID = _read_string_lines(marker_path)
+    selected_marker_indices = if has_raw_marker_mapping
+        Int.(_read_i32_vector(selected_path, nMarkers))
+    else
+        collect(1:nMarkers)
+    end
 
     if length(obsID) != nObs
         error("Number of IDs in $obs_path does not match nObs in manifest.")
     end
     if length(markerID) != nMarkers
         error("Number of markers in $marker_path does not match nMarkers in manifest.")
+    end
+    if length(selected_marker_indices) != nMarkers
+        error("Number of selected raw-marker indices does not match nMarkers in manifest.")
+    end
+    if any(j -> j < 1 || j > nMarkersAll, selected_marker_indices)
+        error("Selected raw-marker indices are out of bounds for the recorded raw marker count.")
     end
 
     io = open(data_path, "r")
@@ -898,6 +949,7 @@ function load_streaming_backend(path::AbstractString)
         io,
         nObs,
         nMarkers,
+        nMarkersAll,
         stride_bytes,
         centered,
         marker_means,
@@ -906,6 +958,8 @@ function load_streaming_backend(path::AbstractString)
         sum2pq,
         obsID,
         markerID,
+        selected_marker_indices,
+        has_raw_marker_mapping,
         zeros(UInt8, stride_bytes)
     )
 

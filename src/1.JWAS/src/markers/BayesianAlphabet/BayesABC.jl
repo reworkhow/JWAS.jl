@@ -13,6 +13,14 @@ function BayesABC!(genotypes,ycorr,vare,locus_effect_variances)
               locus_effect_variances,genotypes.π)
 end
 
+@inline function bayesabc_pi_vector(π, nMarkers::Integer)
+    if π isa AbstractVector
+        length(π) == nMarkers || error("BayesABC pi vector length $(length(π)) must match the number of markers ($nMarkers).")
+        return π
+    end
+    return fill(π, nMarkers)
+end
+
 @inline function bayesabc_update_marker!(x,
                                          yCorr,
                                          α,β,δ,
@@ -54,20 +62,20 @@ function BayesABC!(xArray,xRinvArray,xpRinvx,
                    α,β,δ,
                    vare,varEffects,π)
 
-    logPi         = log(π)
-    logPiComp     = log(1-π)
-    logDelta0     = logPi
+    nMarkers      = length(α)
+    pi_vec        = bayesabc_pi_vector(π, nMarkers)
+    logPi         = log.(pi_vec)
+    logPiComp     = log.(1 .- pi_vec)
     invVarRes     = 1/vare
     invVarEffects = 1 ./  varEffects
     logVarEffects = log.(varEffects)
-    nMarkers      = length(α)
 
     for j=1:nMarkers
         x, xRinv = xArray[j], xRinvArray[j]
         bayesabc_update_marker!(x,yCorr,α,β,δ,j,
                                 dot(xRinv,yCorr),xpRinvx[j],
                                 invVarRes,invVarEffects[j],logVarEffects[j],varEffects[j],
-                                logDelta0,logPiComp)
+                                logPi[j],logPiComp[j])
     end
 end
 
@@ -81,13 +89,13 @@ function BayesABC_streaming!(backend,xpRinvx,
                              yCorr,
                              α,β,δ,
                              vare,varEffects,π)
-    logPi         = log(π)
-    logPiComp     = log(1-π)
-    logDelta0     = logPi
+    nMarkers      = length(α)
+    pi_vec        = bayesabc_pi_vector(π, nMarkers)
+    logPi         = log.(pi_vec)
+    logPiComp     = log.(1 .- pi_vec)
     invVarRes     = 1/vare
     invVarEffects = 1 ./ varEffects
     logVarEffects = log.(varEffects)
-    nMarkers      = length(α)
     marker_buffer = Vector{eltype(yCorr)}(undef, backend.nObs)
 
     for j in 1:nMarkers
@@ -95,7 +103,7 @@ function BayesABC_streaming!(backend,xpRinvx,
         bayesabc_update_marker!(marker_buffer,yCorr,α,β,δ,j,
                                 dot(marker_buffer,yCorr),xpRinvx[j],
                                 invVarRes,invVarEffects[j],logVarEffects[j],varEffects[j],
-                                logDelta0,logPiComp)
+                                logPi[j],logPiComp[j])
     end
 end
 
@@ -113,13 +121,13 @@ function BayesABC_block!(XArray,xpRinvx,
                    α,β,δ,
                    vare,varEffects,π,Rinv)
 
-    logPi         = log(π)
-    logPiComp     = log(1-π)
-    logDelta0     = logPi
+    nMarkers      = length(α)
+    pi_vec        = bayesabc_pi_vector(π, nMarkers)
+    logPi         = log.(pi_vec)
+    logPiComp     = log.(1 .- pi_vec)
     invVarRes     = 1/vare
     invVarEffects = 1 ./  varEffects
     logVarEffects = log.(varEffects)
-    nMarkers      = length(α)
     XpRinvX       = XpRinvX
     nblocks       = length(XpRinvX)
     start_pos     = 0
@@ -143,8 +151,8 @@ function BayesABC_block!(XArray,xpRinvx,
                 lhs        = xpRinvx[locus_j]*invVarRes + invVarEffects[locus_j]
                 invLhs     = 1/lhs
                 gHat       = rhs*invLhs
-                logDelta1  = -0.5*(log(lhs) + logVarEffects[locus_j] - gHat*rhs) + logPiComp
-                probDelta1 = 1/(1+ exp(logDelta0 - logDelta1))
+                logDelta1  = -0.5*(log(lhs) + logVarEffects[locus_j] - gHat*rhs) + logPiComp[locus_j]
+                probDelta1 = 1/(1+ exp(logPi[locus_j] - logDelta1))
                 oldAlpha   = α[locus_j]
 
                 if rand() < probDelta1

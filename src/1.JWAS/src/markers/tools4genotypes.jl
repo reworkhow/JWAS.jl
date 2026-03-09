@@ -79,7 +79,7 @@ end
 
 function get_column_blocks_ref(X,fast_blocks=false)
     xArray = Array{typeof(X)}(undef,length(fast_blocks))
-    @showprogress "building prerequisite matrices ..." for i in 1:length(fast_blocks)
+    @showprogress desc="building prerequisite matrices ..." for i in 1:length(fast_blocks)
         pos_start = fast_blocks[i]
         pos_end   = (i != length(fast_blocks)) ? (fast_blocks[i+1]-1) : size(X,2)
         xArray[i] = view(X,:,pos_start:pos_end)
@@ -260,10 +260,10 @@ mutable struct GibbsMats
             XArray = get_column_blocks_ref(X,fast_blocks)
             XRinvArray = false # Save memory by not persisting X'Rinv; block RHS is computed on demand.
             if unit_weights
-                XpRinvX = @showprogress "building prerequisite matrices ..." [Xblock' * Xblock for Xblock in XArray]
+                XpRinvX = @showprogress desc="building prerequisite matrices ..." [Xblock' * Xblock for Xblock in XArray]
             else
                 Rdiag = Diagonal(Rinv)
-                XpRinvX = @showprogress "building prerequisite matrices ..." [Xblock' * Rdiag * Xblock for Xblock in XArray]
+                XpRinvX = @showprogress desc="building prerequisite matrices ..." [Xblock' * Rdiag * Xblock for Xblock in XArray]
             end
         else
             XArray = XRinvArray = XpRinvX = false
@@ -403,6 +403,9 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 Mi.G.scale = Mi.G.val*(Mi.G.df-Mi.ntraits-1)/Mi.G.df
             else
                 Mi.G.scale = Mi.G.val*(Mi.G.df-Mi.ntraits-1)
+            end
+            if mme.nModels == 1 && Mi.method in ["BayesA","BayesB","BayesC"] && !(Mi.π isa AbstractVector)
+                Mi.π = fill(Float64(Mi.π), Mi.nMarkers)
             end
         end
     end

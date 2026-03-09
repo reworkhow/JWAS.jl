@@ -143,10 +143,20 @@ function output_result(mme,output_folder,
           output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
-              output["pi_"*Mi.name] = dict2dataframe(Mi.mean_pi,Mi.mean_pi2)
+              output["pi_"*Mi.name] = pi2dataframe(Mi, Mi.mean_pi, Mi.mean_pi2)
           end
           if Mi.G.estimate_scale == true
               output["ScaleEffectVar"*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanScaleVara,Mi.meanScaleVara2)
+          end
+          if Mi.annotations !== false
+              ann = Mi.annotations
+              annotation_names = ["Intercept"; ["Annotation_$i" for i in 1:(size(ann.design_matrix, 2)-1)]]
+              annotation_sd = sqrt.(abs.(ann.mean_coefficients2 .- ann.mean_coefficients .^ 2))
+              output["annotation coefficients "*Mi.name] = DataFrame(
+                  Annotation=annotation_names,
+                  Estimate=ann.mean_coefficients,
+                  SD=annotation_sd,
+              )
           end
       end
   end
@@ -223,6 +233,19 @@ function dict2dataframe(mean_pi,mean_pi2)
     mean_pi2 = (typeof(mean_pi2) <: Union{Number,Missing}) ? mean_pi2 : collect(values(mean_pi2))
     stdpi    = sqrt.(abs.(mean_pi2 .- mean_pi .^2))
     DataFrame([names mean_pi stdpi],[:π,:Estimate,:SD])
+end
+
+function collapse_pi_for_output(Mi, pi_value)
+    if Mi.annotations === false && Mi.ntraits == 1 && pi_value isa AbstractVector
+        return pi_value[1]
+    end
+    return pi_value
+end
+
+function pi2dataframe(Mi, mean_pi, mean_pi2)
+    mean_pi_out = collapse_pi_for_output(Mi, mean_pi)
+    mean_pi2_out = collapse_pi_for_output(Mi, mean_pi2)
+    return dict2dataframe(mean_pi_out, mean_pi2_out)
 end
 
 """
@@ -438,8 +461,9 @@ function output_MCMC_samples(mme,vRes,G0,
                   end
               end
           end
-          writedlm(outfile["pi"*"_"*Mi.name],Mi.π,',')
-          if !(typeof(Mi.π) <: Number) #add a blank line
+          pi_output = collapse_pi_for_output(Mi, Mi.π)
+          writedlm(outfile["pi"*"_"*Mi.name],pi_output,',')
+          if !(typeof(pi_output) <: Number) #add a blank line
               println(outfile["pi"*"_"*Mi.name])
           end
       end
@@ -548,6 +572,11 @@ function output_posterior_mean_variance(mme,nsamples)
             if Mi.G.estimate_scale == true
                 Mi.meanScaleVara += (Mi.G.scale - Mi.meanScaleVara)/nsamples
                 Mi.meanScaleVara2 += (Mi.G.scale .^2 - Mi.meanScaleVara2)/nsamples
+            end
+            if Mi.annotations !== false
+                ann = Mi.annotations
+                ann.mean_coefficients += (ann.coefficients - ann.mean_coefficients) / nsamples
+                ann.mean_coefficients2 += (ann.coefficients .^ 2 - ann.mean_coefficients2) / nsamples
             end
         end
     end

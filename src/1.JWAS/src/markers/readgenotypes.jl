@@ -53,6 +53,57 @@ end
 #1)load genotypes from a text file (1st column: individual IDs; 1st row: marker IDs (optional))
 #2)load genotypes from DataFrames (1st column: individual IDs; optional: marker IDs (can be provided as the header))
 #3)load genotypes from Array (User-provided Individual IDs and marker IDs are not allowed, defaulting to 1,2,3...)
+function validate_annotations_input(annotations, nmarkers::Integer, method)
+    if annotations === false
+        return false
+    end
+    if method != "BayesC"
+        error("annotations are only supported with method=\"BayesC\".")
+    end
+    if !(annotations isa AbstractMatrix{<:Real})
+        error("annotations must be a numeric matrix with one row per marker.")
+    end
+    if size(annotations, 1) != nmarkers
+        error("annotations rows ($(size(annotations, 1))) must match the number of raw markers ($nmarkers).")
+    end
+    return Matrix{Float64}(annotations)
+end
+
+function validate_annotation_design(annotations::AbstractMatrix)
+    ncols = size(annotations, 2)
+    if ncols == 0
+        return nothing
+    end
+
+    constant_cols = findall(j -> length(unique(view(annotations, :, j))) == 1, 1:ncols)
+    if !isempty(constant_cols)
+        error("annotations contain constant column(s) $(collect(constant_cols)). Remove constant columns because JWAS automatically adds an intercept.")
+    end
+
+    design_matrix = hcat(ones(Float64, size(annotations, 1)), annotations)
+    if rank(design_matrix) != size(design_matrix, 2)
+        error("annotations are collinear after adding the intercept. Remove duplicate or perfectly collinear annotation columns.")
+    end
+    return nothing
+end
+
+function build_marker_annotations(annotations)
+    if annotations === false
+        return false
+    end
+    validate_annotation_design(annotations)
+    design_matrix = hcat(ones(Float64, size(annotations, 1)), annotations)
+    return MarkerAnnotations(design_matrix)
+end
+
+function normalize_annotation_estimatePi(annotation_matrix, estimatePi)
+    if annotation_matrix !== false && estimatePi == false
+        @warn "estimatePi=false is ignored when annotations are provided; Annotated BayesC requires estimatePi=true."
+        return true
+    end
+    return estimatePi
+end
+
 """
     get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
                   ## method:
@@ -67,6 +118,7 @@ end
                   quality_control=true, MAF = 0.01, missing_value = 9.0,
                   ## others:
                   center=true,starting_value=false,
+                  annotations=false,
                   storage=:dense)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
 * If `a text file` is provided, the file format should be:
@@ -96,6 +148,7 @@ O3,0,0,2,1,1
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
+* `annotations` enables AnnotatedBayesC. Supply a numeric matrix with one row per raw marker; JWAS prepends an intercept column internally after marker QC/filtering.
 * `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
   `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
@@ -113,6 +166,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        quality_control = true, MAF = 0.01, missing_value = 9.0,
                        ## others:
                        center = true, starting_value = false,
+                       annotations = false,
                        storage::Symbol = :dense)
     if !(storage in (:dense,:stream))
         error("storage must be :dense or :stream.")
@@ -130,6 +184,14 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         end
 
         backend = load_streaming_backend(file)
+        if annotations !== false && !backend.has_raw_marker_mapping
+            error("Annotated storage=:stream requires a backend prepared with the current prepare_streaming_genotypes; rebuild the backend to include raw-marker mapping metadata.")
+        end
+        annotation_matrix = validate_annotations_input(annotations, backend.nMarkersAll, method)
+        if annotation_matrix !== false
+            annotation_matrix = annotation_matrix[backend.selected_marker_indices, :]
+        end
+        estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi)
         if center != backend.centered
             printstyled("The argument center=$center is ignored for storage=:stream. Backend metadata centered=$(backend.centered) is used.\n",
                         bold=false,color=:green)
@@ -149,6 +211,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes.method     = method
         genotypes.estimatePi = estimatePi
         genotypes.π          = Pi
+        genotypes.annotations = build_marker_annotations(annotation_matrix)
 
         println("Genotype informatin:")
         println("#markers: ",backend.nMarkers,"; #individuals: ",backend.nObs," (storage=:stream)")
@@ -217,6 +280,8 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     else
         error("The data type is not supported.")
     end
+    annotation_matrix = validate_annotations_input(annotations, length(markerID), method)
+    estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi)
 
     isGRM = false
     if method == "GBLUP" #fix and check some parameters in GBLUP
@@ -261,6 +326,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
          genotypes = genotypes[:,select]
          p         = p[:,select]
          markerID  = markerID[select]
+         if annotation_matrix !== false
+             annotation_matrix = annotation_matrix[select, :]
+         end
          printstyled("$(sum(1 .- select)) loci which are fixed or have minor allele frequency < $MAF are removed.\n",bold=true)
     end
     nObs,nMarkers = size(genotypes)       #number of individuals and molecular markers
@@ -293,6 +361,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = Pi
+    genotypes.annotations = build_marker_annotations(annotation_matrix)
 
     println("Genotype informatin:")
     println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))

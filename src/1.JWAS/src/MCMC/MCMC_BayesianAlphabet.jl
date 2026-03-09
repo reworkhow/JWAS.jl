@@ -1,6 +1,86 @@
 ################################################################################
 #MCMC for RR-BLUP, GBLUP, BayesABC, and conventional (no markers) methods
 ################################################################################
+function has_marker_annotations(Mi)
+    return Mi.annotations !== false
+end
+
+function initialize_annotation_indicators!(Mi)
+    if !has_marker_annotations(Mi) || Mi.nMarkers <= 1
+        return nothing
+    end
+    exclude_prob = Mi.π isa AbstractVector ? Float64(Mi.π[1]) : Float64(Mi.π)
+    exclude_prob = clamp(exclude_prob, 0.0, 1.0)
+    delta = Mi.δ[1]
+    included = one(eltype(delta))
+    excluded = zero(eltype(delta))
+    minority_count = clamp(round(Int, 0.1 * Mi.nMarkers), 1, Mi.nMarkers - 1)
+
+    if exclude_prob == 0.0
+        @info "Annotated BayesC initialization: starting pi=0.0 is degenerate; using 10% excluded markers."
+        fill!(delta, included)
+        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= excluded
+        return nothing
+    elseif exclude_prob == 1.0
+        @info "Annotated BayesC initialization: starting pi=1.0 is degenerate; using 10% included markers."
+        fill!(delta, excluded)
+        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= included
+        return nothing
+    end
+
+    for j in eachindex(delta)
+        delta[j] = rand() < exclude_prob ? excluded : included
+    end
+
+    if all(iszero, delta)
+        @info "Annotated BayesC initialization: sampled all markers as excluded; reinitializing with 10% included markers."
+        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= included
+    elseif all(isone, delta)
+        @info "Annotated BayesC initialization: sampled all markers as included; reinitializing with 10% excluded markers."
+        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= excluded
+    end
+    return nothing
+end
+
+function update_annotation_bounds!(Mi)
+    ann = Mi.annotations
+    ann.lower_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 1]
+    ann.upper_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 2]
+    return nothing
+end
+
+function sample_annotation_liabilities!(Mi)
+    if !has_marker_annotations(Mi)
+        return nothing
+    end
+    ann = Mi.annotations
+    update_annotation_bounds!(Mi)
+    for i in 1:Mi.nMarkers
+        lower = ann.lower_bound[i]
+        upper = ann.upper_bound[i]
+        if lower == upper
+            ann.liability[i] = lower
+        else
+            ann.liability[i] = rand(truncated(Normal(ann.mu[i], sqrt(ann.variance)), lower, upper))
+        end
+    end
+    return nothing
+end
+
+function update_annotation_priors!(Mi)
+    if !has_marker_annotations(Mi)
+        return nothing
+    end
+    ann = Mi.annotations
+    sample_annotation_liabilities!(Mi)
+    rhs = ann.design_matrix' * ann.liability
+    Gibbs(ann.lhs, ann.coefficients, rhs, ann.variance)
+    ann.mu .= ann.design_matrix * ann.coefficients
+    dist = Normal(0, sqrt(ann.variance))
+    Mi.π .= clamp.(1 .- cdf.(dist, ann.mu), eps(Float64), 1 - eps(Float64))
+    return nothing
+end
+
 function MCMC_BayesianAlphabet(mme,df)
     ############################################################################
     chain_length             = mme.MCMCinfo.chain_length
@@ -16,6 +96,9 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     fast_blocks              = mme.MCMCinfo.fast_blocks
+    if is_multi_trait && mme.M != 0 && any(has_marker_annotations(Mi) for Mi in mme.M)
+        error("annotations are currently supported only for single-trait BayesC.")
+    end
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
     ############################################################################
@@ -101,7 +184,16 @@ function MCMC_BayesianAlphabet(mme,df)
                     #if methods == "BayesCC"  labels,BigPi,BigPiMean=setPi(Pi)
                 end
             else
-                Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
+                if Mi.π isa AbstractVector
+                    Mi.mean_pi = zeros(eltype(Mi.π), length(Mi.π))
+                    Mi.mean_pi2 = zeros(eltype(Mi.π), length(Mi.π))
+                else
+                    Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
+                end
+            end
+            if !is_multi_trait && has_marker_annotations(Mi)
+                initialize_annotation_indicators!(Mi)
+                update_annotation_priors!(Mi)
             end
         end
     end
@@ -159,7 +251,7 @@ function MCMC_BayesianAlphabet(mme,df)
     if mme.pedTrmVec!=0
         polygenic_pos = findfirst(i -> i.randomType=="A", mme.rndTrmVec)
     end
-    @showprogress "running MCMC ..." for iter=1:chain_length
+    @showprogress desc="running MCMC ..." for iter=1:chain_length
         ########################################################################
         # 0. Categorical and censored traits
         ########################################################################
@@ -271,7 +363,16 @@ function MCMC_BayesianAlphabet(mme,df)
                             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
                         end
                     else
-                        Mi.π = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
+                        if has_marker_annotations(Mi)
+                            update_annotation_priors!(Mi)
+                        else
+                            pi_sample = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
+                            if Mi.π isa AbstractVector
+                                Mi.π .= pi_sample
+                            else
+                                Mi.π = pi_sample
+                            end
+                        end
                     end
                 end
                 ########################################################################
