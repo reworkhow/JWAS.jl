@@ -26,3 +26,25 @@ include(joinpath(@__DIR__, "..", "..", "benchmarks", "bayesr_parity_common.jl"))
     @test nrow(pi_summary) == 4
     @test nrow(marker_effects) == 3
 end
+
+@testset "BayesR parity dataset export" begin
+    outdir = mktempdir()
+    dataset = build_bayesr_parity_dataset(seed=2026, n_obs=12, n_markers=8)
+    write_parity_dataset(outdir;
+                         ids=dataset.ids,
+                         marker_ids=dataset.marker_ids,
+                         X=dataset.X,
+                         y=dataset.y,
+                         gamma=[0.0, 0.01, 0.1, 1.0],
+                         start_pi=[0.95, 0.03, 0.015, 0.005],
+                         estimate_pi=false,
+                         chain_length=40,
+                         burnin=10,
+                         start_h2=0.5,
+                         start_sigma_sq=0.8,
+                         start_vare=1.2,
+                         seed=2026)
+    @test isfile(joinpath(outdir, "genotypes.csv"))
+    @test isfile(joinpath(outdir, "phenotypes.csv"))
+    @test isfile(joinpath(outdir, "config.csv"))
+end

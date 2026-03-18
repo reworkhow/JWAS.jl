@@ -3,12 +3,96 @@ using DataFrames
 using Random
 using Statistics
 
-function write_jwas_parity_summary(output, outdir; sigma_sq)
+function build_bayesr_parity_dataset(; seed=2026, n_obs=40, n_markers=12)
+    Random.seed!(seed)
+
+    ids = ["id_$(i)" for i in 1:n_obs]
+    marker_ids = ["m$(j)" for j in 1:n_markers]
+
+    X = Matrix{Float64}(undef, n_obs, n_markers)
+    allele_freq = rand(n_markers) .* 0.3 .+ 0.1
+    for j in 1:n_markers
+        p = allele_freq[j]
+        for i in 1:n_obs
+            X[i, j] = (rand() < p) + (rand() < p)
+        end
+    end
+
+    beta_true = zeros(Float64, n_markers)
+    for (idx, effect) in zip(1:min(3, n_markers), (0.8, -0.5, 0.3))
+        beta_true[idx] = effect
+    end
+    mu_true = 1.0
+    y = mu_true .+ X * beta_true .+ randn(n_obs)
+
+    return (
+        ids=ids,
+        marker_ids=marker_ids,
+        X=X,
+        y=y,
+        allele_freq=allele_freq,
+        beta_true=beta_true,
+        mu_true=mu_true,
+    )
+end
+
+function write_parity_dataset(outdir;
+                              ids,
+                              marker_ids,
+                              X,
+                              y,
+                              gamma,
+                              start_pi,
+                              estimate_pi,
+                              chain_length,
+                              burnin,
+                              start_h2,
+                              start_sigma_sq,
+                              start_vare,
+                              seed)
+    mkpath(outdir)
+
+    geno_df = DataFrame(ID=ids)
+    for (j, marker_id) in enumerate(marker_ids)
+        geno_df[!, marker_id] = X[:, j]
+    end
+    CSV.write(joinpath(outdir, "genotypes.csv"), geno_df)
+
+    pheno_df = DataFrame(ID=ids, y1=y)
+    CSV.write(joinpath(outdir, "phenotypes.csv"), pheno_df)
+
+    config_df = DataFrame(
+        key=[
+            "seed",
+            "chain_length",
+            "burnin",
+            "estimate_pi",
+            "start_h2",
+            "start_sigma_sq",
+            "start_vare",
+            "gamma",
+            "start_pi",
+        ],
+        value=[
+            string(seed),
+            string(chain_length),
+            string(burnin),
+            string(estimate_pi),
+            string(start_h2),
+            string(start_sigma_sq),
+            string(start_vare),
+            join(string.(gamma), ","),
+            join(string.(start_pi), ","),
+        ],
+    )
+    CSV.write(joinpath(outdir, "config.csv"), config_df)
+end
+
+function write_jwas_parity_summary(output, outdir; sigma_sq, pi_values=nothing)
     mkpath(outdir)
 
     marker_effects = output["marker effects geno"]
     residual_variance = output["residual variance"]
-    pi_summary = output["pi_geno"]
 
     scalar_metrics = DataFrame(
         metric=["sigmaSq", "residual_variance", "mean_nonzero_frequency"],
@@ -20,10 +104,20 @@ function write_jwas_parity_summary(output, outdir; sigma_sq)
     )
     CSV.write(joinpath(outdir, "scalar_metrics.csv"), scalar_metrics)
 
-    pi_out = DataFrame(
-        class=string.(pi_summary[!, :π]),
-        estimate=pi_summary[!, :Estimate],
-    )
+    if haskey(output, "pi_geno")
+        pi_summary = output["pi_geno"]
+        pi_out = DataFrame(
+            class=string.(pi_summary[!, :π]),
+            estimate=pi_summary[!, :Estimate],
+        )
+    elseif pi_values !== nothing
+        pi_out = DataFrame(
+            class=["class$(i)" for i in eachindex(pi_values)],
+            estimate=Float64.(pi_values),
+        )
+    else
+        error("write_jwas_parity_summary requires either output[\"pi_geno\"] or pi_values.")
+    end
     CSV.write(joinpath(outdir, "pi.csv"), pi_out)
 
     marker_out = DataFrame(
