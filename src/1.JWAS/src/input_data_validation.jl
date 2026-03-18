@@ -17,7 +17,7 @@ function errors_args(mme)
 
     if mme.M != 0
         for Mi in mme.M
-            if !(Mi.method in ["BayesL","BayesC","BayesB","BayesA","RR-BLUP","GBLUP"])
+            if !(Mi.method in ["BayesL","BayesC","BayesB","BayesA","BayesR","RR-BLUP","GBLUP"])
                 error(Mi.method," is not available in JWAS. Please read the documentation.")
             end
 
@@ -40,6 +40,19 @@ function errors_args(mme)
                 end
                 if mme.MCMCinfo.single_step_analysis == true
                     error("SSGBLUP is not available")
+                end
+            end
+            if Mi.method == "BayesR"
+                mme.nModels == 1 || error("BayesR v1 supports single-trait analysis only.")
+                Mi.storage_mode == :dense || error("BayesR v1 supports storage=:dense only.")
+                mme.MCMCinfo.fast_blocks == false || error("BayesR v1 does not support fast_blocks.")
+                mme.MCMCinfo.RRM == false || error("BayesR v1 does not support random regression model (RRM).")
+                Mi.annotations === false || error("BayesR v1 does not support annotations.")
+                if Mi.π != 0.0
+                    Mi.π isa AbstractVector || error("BayesR Pi must be a length 4 vector or 0.0 for defaults.")
+                    length(Mi.π) == 4 || error("BayesR Pi must have length 4.")
+                    all(x -> x >= 0, Mi.π) || error("BayesR Pi entries must be nonnegative.")
+                    isapprox(sum(Mi.π), 1.0; atol=1e-8) || error("BayesR Pi must sum to 1.")
                 end
             end
             if Mi.storage_mode == :stream
