@@ -114,3 +114,13 @@ end
     @test "sigmaSq" in report.scalar_report.metric
     @test report.marker_correlation > 0.99
 end
+
+@testset "BayesR fixed-pi trace comparator" begin
+    jwas_trace = DataFrame(iter=1:3, sigmaSq=[1.0, 1.1, 1.2], ssq=[0.4, 0.5, 0.6], nnz=[1, 2, 2], vare=[0.9, 0.8, 0.7])
+    ref_trace = DataFrame(iter=1:3, sigmaSq=[1.0, 1.0, 1.3], ssq=[0.4, 0.55, 0.6], nnz=[1, 2, 3], vare=[0.9, 0.85, 0.7])
+
+    report = compare_trace_metrics(jwas_trace, ref_trace)
+
+    @test "sigmaSq_abs_diff" in names(report)
+    @test nrow(report) == 3
+end

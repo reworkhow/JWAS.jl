@@ -259,3 +259,24 @@ function compare_parity_summaries(jwas_scalars, ref_scalars, jwas_pi, ref_pi, jw
         marker_correlation=marker_correlation,
     )
 end
+
+function compare_trace_metrics(jwas_trace, ref_trace)
+    merged = innerjoin(
+        rename(jwas_trace,
+               :sigmaSq => :jwas_sigmaSq,
+               :ssq => :jwas_ssq,
+               :nnz => :jwas_nnz,
+               :vare => :jwas_vare),
+        rename(ref_trace,
+               :sigmaSq => :ref_sigmaSq,
+               :ssq => :ref_ssq,
+               :nnz => :ref_nnz,
+               :vare => :ref_vare),
+        on=:iter,
+    )
+    merged.sigmaSq_abs_diff = abs.(merged.jwas_sigmaSq .- merged.ref_sigmaSq)
+    merged.ssq_abs_diff = abs.(merged.jwas_ssq .- merged.ref_ssq)
+    merged.nnz_abs_diff = abs.(merged.jwas_nnz .- merged.ref_nnz)
+    merged.vare_abs_diff = abs.(merged.jwas_vare .- merged.ref_vare)
+    return merged
+end
