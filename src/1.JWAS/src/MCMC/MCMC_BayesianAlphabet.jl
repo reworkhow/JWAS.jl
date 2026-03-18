@@ -320,6 +320,8 @@ function MCMC_BayesianAlphabet(mme,df)
                             BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances,invweights)
                         end
                     end
+                elseif Mi.method == "BayesR"
+                    BayesR!(Mi, ycorr, mme.R.val)
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait
                         if Mi.G.constraint==true

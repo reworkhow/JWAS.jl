@@ -1,4 +1,4 @@
-using Test, JWAS, DataFrames, CSV, JWAS.Datasets
+using Test, JWAS, DataFrames, CSV, JWAS.Datasets, LinearAlgebra
 
 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
@@ -65,4 +65,22 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         @test occursin("BayesR", sprint(showerror, err))
         isdir("test_bayesr_fastblocks") && rm("test_bayesr_fastblocks", recursive=true)
     end
+end
+
+@testset "BayesR dense sampler" begin
+    x1 = Float64[0, 1, 2, 1]
+    x2 = Float64[2, 1, 0, 1]
+    xArray = [x1, x2]
+    xRinvArray = [x1, x2]
+    xpRinvx = Float64[dot(x1, x1), dot(x2, x2)]
+    yCorr = Float64[0.8, -0.1, 0.3, 0.5]
+    α = zeros(Float64, 2)
+    δ = ones(Int, 2)
+    π = Float64[0.95, 0.03, 0.015, 0.005]
+    gamma = Float64[0.0, 0.01, 0.1, 1.0]
+
+    JWAS.BayesR!(xArray, xRinvArray, xpRinvx, yCorr, α, δ, 1.0, 0.2, π, gamma)
+
+    @test all(1 .<= δ .<= 4)
+    @test length(α) == 2
 end
