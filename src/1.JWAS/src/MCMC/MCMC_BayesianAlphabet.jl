@@ -5,6 +5,18 @@ function has_marker_annotations(Mi)
     return Mi.annotations !== false
 end
 
+function initialize_bayesr_indicators!(Mi)
+    delta = Mi.δ[1]
+    pi_vec = Float64.(Mi.π)
+    for j in eachindex(delta)
+        delta[j] = rand(Categorical(pi_vec))
+    end
+    if all(==(1), delta)
+        delta[rand(1:Mi.nMarkers)] = 2
+    end
+    return nothing
+end
+
 function initialize_annotation_indicators!(Mi)
     if !has_marker_annotations(Mi) || Mi.nMarkers <= 1
         return nothing
@@ -191,6 +203,17 @@ function MCMC_BayesianAlphabet(mme,df)
                     Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
                 end
             end
+            if Mi.method == "BayesR"
+                Mi.δ = [ones(Int, Mi.nMarkers) for traiti = 1:Mi.ntraits]
+                Mi.meanDelta = [zeros(Float64, Mi.nMarkers) for traiti = 1:Mi.ntraits]
+                initialize_bayesr_indicators!(Mi)
+                if mme.MCMCinfo.printout_model_info == true
+                    class_counts = [count(==(k), Mi.δ[1]) for k in 1:length(Mi.π)]
+                    printstyled("BayesR gamma: $(Float64.(BAYESR_GAMMA))\n", bold=false, color=:green)
+                    printstyled("BayesR starting pi: $(Float64.(Mi.π))\n", bold=false, color=:green)
+                    printstyled("BayesR initial class counts: $(class_counts)\n", bold=false, color=:green)
+                end
+            end
             if !is_multi_trait && has_marker_annotations(Mi)
                 initialize_annotation_indicators!(Mi)
                 update_annotation_priors!(Mi)
@@ -367,6 +390,8 @@ function MCMC_BayesianAlphabet(mme,df)
                     else
                         if has_marker_annotations(Mi)
                             update_annotation_priors!(Mi)
+                        elseif Mi.method == "BayesR"
+                            Mi.π .= samplePi(Mi.δ[1], length(Mi.π))
                         else
                             pi_sample = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
                             if Mi.π isa AbstractVector

@@ -150,6 +150,15 @@ function sample_marker_effect_variance(Mi)
             if Mi.method == "BayesL"
                 sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) # MH sampler of gammaArray (Appendix C in paper)
             end
+        elseif Mi.method == "BayesR"
+            gamma = Float64[0.0, 0.01, 0.1, 1.0]
+            delta = Int.(Mi.δ[1])
+            nonzero = findall(>(1), delta)
+            scaled_effects = eltype(Mi.α[1])[]
+            for idx in nonzero
+                push!(scaled_effects, Mi.α[1][idx] / sqrt(gamma[delta[idx]]))
+            end
+            Mi.G.val = sample_variance(scaled_effects, length(nonzero), Mi.G.df, Mi.G.scale)
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers
                 Mi.G.val[j] = sample_variance(Mi.β[1][j],1,Mi.G.df, Mi.G.scale)

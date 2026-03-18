@@ -371,6 +371,9 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                 Pi[ones(ntraits)]=1.0
                 Mi.π = Pi
             end
+            if Mi.method == "BayesR" && Mi.π == 0.0
+                Mi.π = Float64[0.95, 0.03, 0.015, 0.005]
+            end
             #(2) marker effect variances
             if Mi.G.val == false
                 if Mi.method!="GBLUP"
@@ -389,8 +392,13 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
                       if !isposdef(Mi.G.val) #positive scalar (>0)
                         error("Marker effects variance is negative!")
                       end
-                      println("The prior for marker effects variance is calculated from the genetic variance and π.")
-                      print("The mean of the prior for the marker effects variance is: ")
+                      if Mi.method == "BayesR"
+                        println("The prior for the BayesR shared marker variance is calculated from the genetic variance and π.")
+                        print("The mean of the prior for the shared marker variance is: ")
+                      else
+                        println("The prior for marker effects variance is calculated from the genetic variance and π.")
+                        print("The mean of the prior for the marker effects variance is: ")
+                      end
                       print(round.(Mi.G.val,digits=6))
                     end
                     print("\n\n\n")
@@ -427,4 +435,13 @@ end
 
 function genetic2marker(M::Genotypes,π::Float64)
     M.G.val = M.genetic_variance.val/((1-π)*M.sum2pq)
+end
+
+function genetic2marker(M::Genotypes, π::AbstractVector{<:Real})
+    M.method == "BayesR" || error("Vector-valued Pi is supported here only for BayesR.")
+    gamma = Float64[0.0, 0.01, 0.1, 1.0]
+    length(π) == length(gamma) || error("BayesR Pi must have length 4.")
+    denom = M.sum2pq * sum(gamma .* π)
+    denom > 0 || error("BayesR implied variance denominator must be positive.")
+    M.G.val = M.genetic_variance.val / denom
 end

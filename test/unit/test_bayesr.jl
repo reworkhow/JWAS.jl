@@ -21,12 +21,13 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
                                     Pi=Float64[0.95, 0.05, 0.0],
                                     estimatePi=true)
         model = build_model("y1 = intercept + geno", 1.0)
+        outdir = tempname()
         err = try
             runMCMC(model, phenotypes,
                     chain_length=10,
                     burnin=0,
                     output_samples_frequency=5,
-                    output_folder="test_bayesr_bad_pi",
+                    output_folder=outdir,
                     seed=123,
                     printout_model_info=false,
                     outputEBV=false,
@@ -37,7 +38,7 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         end
         @test err isa ErrorException
         @test occursin("length 4", sprint(showerror, err))
-        isdir("test_bayesr_bad_pi") && rm("test_bayesr_bad_pi", recursive=true)
+        isdir(outdir) && rm(outdir, recursive=true)
     end
 
     @testset "BayesR rejects fast_blocks" begin
@@ -46,12 +47,13 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
                                     Pi=Float64[0.95, 0.03, 0.015, 0.005],
                                     estimatePi=true)
         model = build_model("y1 = intercept + geno", 1.0)
+        outdir = tempname()
         err = try
             runMCMC(model, phenotypes,
                     chain_length=10,
                     burnin=0,
                     output_samples_frequency=5,
-                    output_folder="test_bayesr_fastblocks",
+                    output_folder=outdir,
                     seed=123,
                     printout_model_info=false,
                     outputEBV=false,
@@ -63,7 +65,7 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         end
         @test err isa ErrorException
         @test occursin("BayesR", sprint(showerror, err))
-        isdir("test_bayesr_fastblocks") && rm("test_bayesr_fastblocks", recursive=true)
+        isdir(outdir) && rm(outdir, recursive=true)
     end
 end
 
@@ -83,4 +85,67 @@ end
 
     @test all(1 .<= δ .<= 4)
     @test length(α) == 2
+end
+
+@testset "BayesR single-trait run" begin
+    global geno = get_genotypes(genofile, 1.0, separator=',',
+                                method="BayesR",
+                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                estimatePi=false,
+                                estimate_variance=true)
+    model = build_model("y1 = intercept + geno", 1.0)
+    outdir = tempname()
+
+    outpath, io = mktemp()
+    close(io)
+    output_ref = Ref{Any}()
+    open(outpath, "w") do outio
+        redirect_stdout(outio) do
+            output_ref[] = runMCMC(model, phenotypes,
+                                   chain_length=20,
+                                   burnin=5,
+                                   output_samples_frequency=5,
+                                   output_folder=outdir,
+                                   seed=123,
+                                   printout_model_info=true,
+                                   outputEBV=false,
+                                   output_heritability=false,
+                                   fast_blocks=false)
+        end
+    end
+    printed = read(outpath, String)
+    rm(outpath, force=true)
+    output = output_ref[]
+
+    @test occursin("BayesR", printed)
+    @test occursin("starting pi", lowercase(printed))
+    @test haskey(output, "marker effects geno")
+    @test haskey(output, "location parameters")
+    isdir(outdir) && rm(outdir, recursive=true)
+end
+
+@testset "BayesR estimatePi output" begin
+    global geno = get_genotypes(genofile, 1.0, separator=',',
+                                method="BayesR",
+                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                estimatePi=true,
+                                estimate_variance=true)
+    model = build_model("y1 = intercept + geno", 1.0)
+    outdir = tempname()
+    output = runMCMC(model, phenotypes,
+                     chain_length=30,
+                     burnin=5,
+                     output_samples_frequency=5,
+                     output_folder=outdir,
+                     seed=321,
+                     printout_model_info=false,
+                     outputEBV=false,
+                     output_heritability=false,
+                     fast_blocks=false)
+
+    @test haskey(output, "pi_geno")
+    @test nrow(output["pi_geno"]) == 4
+    @test isapprox(sum(output["pi_geno"][!, :Estimate]), 1.0; atol=1e-6)
+    @test all(0.0 .<= output["marker effects geno"][!, :Model_Frequency] .<= 1.0)
+    isdir(outdir) && rm(outdir, recursive=true)
 end
