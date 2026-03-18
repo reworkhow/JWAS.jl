@@ -182,11 +182,26 @@ function read_parity_summary(outdir)
 end
 
 function write_parity_trace(path, trace_df)
+    mkpath(dirname(path))
     CSV.write(path, trace_df)
 end
 
 function read_parity_trace(path)
     CSV.read(path, DataFrame)
+end
+
+function read_parity_initial_state(datadir)
+    initial_state_df = CSV.read(joinpath(datadir, "initial_state.csv"), DataFrame)
+    initial_scalars_df = CSV.read(joinpath(datadir, "initial_scalars.csv"), DataFrame)
+    scalar_map = Dict(String(row.key) => parse(Float64, string(row.value)) for row in eachrow(initial_scalars_df))
+    return (
+        marker_id=String.(initial_state_df.marker_id),
+        beta0=Float64.(initial_state_df.beta0),
+        delta0=Int.(initial_state_df.delta0),
+        mu0=scalar_map["mu0"],
+        sigmaSq0=scalar_map["sigmaSq0"],
+        vare0=scalar_map["vare0"],
+    )
 end
 
 function compare_scalar_metrics(jwas_scalars, ref_scalars; atol_map=Dict{String, Float64}(), rtol_map=Dict{String, Float64}())
