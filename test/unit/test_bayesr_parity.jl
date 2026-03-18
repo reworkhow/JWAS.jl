@@ -48,3 +48,17 @@ end
     @test isfile(joinpath(outdir, "phenotypes.csv"))
     @test isfile(joinpath(outdir, "config.csv"))
 end
+
+@testset "BayesR parity comparator" begin
+    ref_scalars = DataFrame(metric=["sigmaSq", "residual_variance"], value=[0.8, 1.2])
+    jwas_scalars = DataFrame(metric=["sigmaSq", "residual_variance"], value=[0.82, 1.19])
+    ref_pi = DataFrame(class=["class1", "class2", "class3", "class4"], estimate=[0.94, 0.03, 0.02, 0.01])
+    jwas_pi = DataFrame(class=["class1", "class2", "class3", "class4"], estimate=[0.93, 0.04, 0.02, 0.01])
+    ref_markers = DataFrame(marker_id=["m1", "m2"], estimate=[0.5, -0.4], model_frequency=[1.0, 0.6])
+    jwas_markers = DataFrame(marker_id=["m1", "m2"], estimate=[0.48, -0.39], model_frequency=[0.95, 0.58])
+
+    report = compare_parity_summaries(jwas_scalars, ref_scalars, jwas_pi, ref_pi, jwas_markers, ref_markers)
+
+    @test "sigmaSq" in report.scalar_report.metric
+    @test report.marker_correlation > 0.99
+end

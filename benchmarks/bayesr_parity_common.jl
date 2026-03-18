@@ -171,3 +171,23 @@ function compare_marker_effects(jwas_markers, ref_markers; top_k=10)
     sort!(merged, :abs_diff, rev=true)
     return first(merged, min(top_k, nrow(merged)))
 end
+
+function compare_parity_summaries(jwas_scalars, ref_scalars, jwas_pi, ref_pi, jwas_markers, ref_markers)
+    scalar_report = compare_scalar_metrics(jwas_scalars, ref_scalars)
+    pi_report = compare_pi(jwas_pi, ref_pi)
+    marker_report = innerjoin(
+        rename(jwas_markers, :estimate => :jwas_estimate, :model_frequency => :jwas_model_frequency),
+        rename(ref_markers, :estimate => :ref_estimate, :model_frequency => :ref_model_frequency),
+        on=:marker_id,
+    )
+    marker_report.abs_diff = abs.(marker_report.jwas_estimate .- marker_report.ref_estimate)
+    marker_report.model_frequency_abs_diff = abs.(marker_report.jwas_model_frequency .- marker_report.ref_model_frequency)
+    marker_correlation = cor(marker_report.jwas_estimate, marker_report.ref_estimate)
+
+    return (
+        scalar_report=scalar_report,
+        pi_report=pi_report,
+        marker_report=marker_report,
+        marker_correlation=marker_correlation,
+    )
+end
