@@ -3,6 +3,27 @@ using DataFrames
 using Random
 using Statistics
 
+function normalize_pi_class_labels(labels)
+    normalized = String[]
+    for label in labels
+        label_str = string(label)
+        parsed = tryparse(Int, label_str)
+        if parsed === nothing
+            parsed_float = tryparse(Float64, label_str)
+            if parsed_float !== nothing && isfinite(parsed_float) && isinteger(parsed_float)
+                push!(normalized, "class$(Int(round(parsed_float)))")
+            elseif startswith(label_str, "class")
+                push!(normalized, label_str)
+            else
+                push!(normalized, label_str)
+            end
+        else
+            push!(normalized, "class$(parsed)")
+        end
+    end
+    return normalized
+end
+
 function build_bayesr_parity_dataset(; seed=2026, n_obs=40, n_markers=12)
     Random.seed!(seed)
 
@@ -36,6 +57,16 @@ function build_bayesr_parity_dataset(; seed=2026, n_obs=40, n_markers=12)
     )
 end
 
+function build_bayesr_parity_initial_state(y, n_markers)
+    mu0 = mean(y)
+    return (
+        beta0=zeros(Float64, n_markers),
+        delta0=ones(Int, n_markers),
+        mu0=mu0,
+        ycorr0=Float64.(y .- mu0),
+    )
+end
+
 function write_parity_dataset(outdir;
                               ids,
                               marker_ids,
@@ -49,7 +80,8 @@ function write_parity_dataset(outdir;
                               start_h2,
                               start_sigma_sq,
                               start_vare,
-                              seed)
+                              seed,
+                              initial_state=build_bayesr_parity_initial_state(y, length(marker_ids)))
     mkpath(outdir)
 
     geno_df = DataFrame(ID=ids)
@@ -86,6 +118,19 @@ function write_parity_dataset(outdir;
         ],
     )
     CSV.write(joinpath(outdir, "config.csv"), config_df)
+
+    initial_state_df = DataFrame(
+        marker_id=marker_ids,
+        beta0=Float64.(initial_state.beta0),
+        delta0=Int.(initial_state.delta0),
+    )
+    CSV.write(joinpath(outdir, "initial_state.csv"), initial_state_df)
+
+    initial_scalars_df = DataFrame(
+        key=["mu0", "sigmaSq0", "vare0"],
+        value=[string(initial_state.mu0), string(start_sigma_sq), string(start_vare)],
+    )
+    CSV.write(joinpath(outdir, "initial_scalars.csv"), initial_scalars_df)
 end
 
 function write_jwas_parity_summary(output, outdir; sigma_sq, pi_values=nothing)
@@ -107,7 +152,7 @@ function write_jwas_parity_summary(output, outdir; sigma_sq, pi_values=nothing)
     if haskey(output, "pi_geno")
         pi_summary = output["pi_geno"]
         pi_out = DataFrame(
-            class=string.(pi_summary[!, :π]),
+            class=normalize_pi_class_labels(pi_summary[!, :π]),
             estimate=pi_summary[!, :Estimate],
         )
     elseif pi_values !== nothing
@@ -134,6 +179,14 @@ function read_parity_summary(outdir)
         pi = CSV.read(joinpath(outdir, "pi.csv"), DataFrame),
         marker_effects = CSV.read(joinpath(outdir, "marker_effects.csv"), DataFrame),
     )
+end
+
+function write_parity_trace(path, trace_df)
+    CSV.write(path, trace_df)
+end
+
+function read_parity_trace(path)
+    CSV.read(path, DataFrame)
 end
 
 function compare_scalar_metrics(jwas_scalars, ref_scalars; atol_map=Dict{String, Float64}(), rtol_map=Dict{String, Float64}())
