@@ -56,6 +56,8 @@ Pages = [
   "manual/getstarted.md",
   "manual/workflow.md",
   "manual/block_bayesc.md",
+  "manual/benchmark.md",
+  "manual/prototype_to_production_benchmarking.md",
   "manual/memory_usage.md",
   "manual/large_genotype_data_streaming.md",
   "manual/streaming_genotype_backend.md",
