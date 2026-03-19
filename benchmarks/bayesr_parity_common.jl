@@ -346,3 +346,19 @@ function compare_trace_metrics(jwas_trace, ref_trace)
     merged.vare_abs_diff = abs.(merged.jwas_vare .- merged.ref_vare)
     return merged
 end
+
+function summarize_multiseed_parity(runs::DataFrame)
+    metric_names = String[]
+    mean_values = Float64[]
+    max_values = Float64[]
+
+    for metric in ("sigma_rel_diff", "vare_rel_diff", "nonzero_abs_diff", "max_pi_abs_diff")
+        metric ∈ names(runs) || continue
+        values = Float64.(runs[!, metric])
+        push!(metric_names, metric)
+        push!(mean_values, mean(values))
+        push!(max_values, maximum(values))
+    end
+
+    return DataFrame(metric=metric_names, mean_value=mean_values, max_value=max_values)
+end

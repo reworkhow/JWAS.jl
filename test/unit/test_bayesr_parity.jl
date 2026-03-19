@@ -141,3 +141,19 @@ end
     )
     @test "rhs_abs_diff" in names(marker_cmp)
 end
+
+@testset "BayesR multiseed parity summary helper" begin
+    runs = DataFrame(
+        seed=[2026, 2030],
+        sigma_rel_diff=[0.03, 0.01],
+        vare_rel_diff=[0.012, 0.008],
+        nonzero_abs_diff=[0.0015, 0.0030],
+        max_pi_abs_diff=[0.014, 0.016],
+    )
+
+    summary = summarize_multiseed_parity(runs)
+
+    @test "sigma_rel_diff" in summary.metric
+    @test summary[summary.metric .== "sigma_rel_diff", :mean_value][1] ≈ 0.02
+    @test summary[summary.metric .== "max_pi_abs_diff", :max_value][1] ≈ 0.016
+end
