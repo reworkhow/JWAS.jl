@@ -18,6 +18,27 @@ phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
 phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
 
+function bayesr_run_error(model, phenotypes; kwargs...)
+    outdir = tempname()
+    err = try
+        runMCMC(model, phenotypes;
+                chain_length=10,
+                burnin=0,
+                output_samples_frequency=5,
+                output_folder=outdir,
+                seed=123,
+                printout_model_info=false,
+                outputEBV=false,
+                output_heritability=false,
+                kwargs...)
+        nothing
+    catch exc
+        exc
+    end
+    isdir(outdir) && rm(outdir, recursive=true)
+    return err
+end
+
 @testset "BayesR validation" begin
     @testset "single-trait dense BayesR genotype loads" begin
         global geno = get_genotypes(genofile, 1.0, separator=',',
@@ -35,51 +56,98 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
                                     Pi=Float64[0.95, 0.05, 0.0],
                                     estimatePi=true)
         model = build_model("y1 = intercept + geno", 1.0)
-        outdir = tempname()
-        err = try
-            runMCMC(model, phenotypes,
-                    chain_length=10,
-                    burnin=0,
-                    output_samples_frequency=5,
-                    output_folder=outdir,
-                    seed=123,
-                    printout_model_info=false,
-                    outputEBV=false,
-                    output_heritability=false)
-            nothing
-        catch exc
-            exc
-        end
+        err = bayesr_run_error(model, phenotypes)
         @test err isa ErrorException
         @test occursin("length 4", sprint(showerror, err))
-        isdir(outdir) && rm(outdir, recursive=true)
     end
 
-    @testset "BayesR rejects fast_blocks" begin
+    @testset "BayesR fast_blocks gets past validation" begin
         global geno = get_genotypes(genofile, 1.0, separator=',',
                                     method="BayesR",
                                     Pi=Float64[0.95, 0.03, 0.015, 0.005],
                                     estimatePi=true)
         model = build_model("y1 = intercept + geno", 1.0)
-        outdir = tempname()
-        err = try
-            runMCMC(model, phenotypes,
-                    chain_length=10,
-                    burnin=0,
-                    output_samples_frequency=5,
-                    output_folder=outdir,
-                    seed=123,
-                    printout_model_info=false,
-                    outputEBV=false,
-                    output_heritability=false,
-                    fast_blocks=true)
-            nothing
-        catch exc
-            exc
+        err = bayesr_run_error(model, phenotypes; fast_blocks=true)
+        @test !(err isa ErrorException &&
+                occursin("BayesR v1 does not support fast_blocks", sprint(showerror, err)))
+    end
+
+    @testset "BayesR still rejects stream, multi-trait, annotations, and RRM" begin
+        @testset "stream is rejected" begin
+            mktempdir() do tmpdir
+                cd(tmpdir) do
+                    open("geno.csv", "w") do io
+                        println(io, "ID,m1,m2,m3")
+                        println(io, "a1,0,1,2")
+                        println(io, "a2,1,0,1")
+                        println(io, "a3,2,1,0")
+                        println(io, "a4,0,2,1")
+                    end
+                    prefix = JWAS.prepare_streaming_genotypes("geno.csv";
+                                                              separator=',',
+                                                              header=true,
+                                                              quality_control=false,
+                                                              center=true)
+                    local stream_pheno = DataFrame(ID=["a1", "a2", "a3", "a4"],
+                                                   y1=Float32[1.0, -0.2, 0.5, -0.8])
+                    global geno = get_genotypes(prefix, 1.0;
+                                                method="BayesR",
+                                                storage=:stream,
+                                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                                estimatePi=true)
+                    model = build_model("y1 = intercept + geno", 1.0)
+                    err = bayesr_run_error(model, stream_pheno; memory_guard=:off)
+                    @test err isa ErrorException
+                    @test occursin("storage=:dense", sprint(showerror, err))
+                end
+            end
         end
-        @test err isa ErrorException
-        @test occursin("BayesR", sprint(showerror, err))
-        isdir(outdir) && rm(outdir, recursive=true)
+
+        @testset "multi-trait is rejected" begin
+            phenotypes_mt = DataFrame(ID=copy(phenotypes.ID),
+                                      y1=copy(phenotypes.y1),
+                                      y2=coalesce.(phenotypes.y1, 0.0))
+            global geno = get_genotypes(genofile,
+                                        [1.0 0.0; 0.0 1.0],
+                                        separator=',',
+                                        method="BayesR",
+                                        Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                        estimatePi=true)
+            model = build_model("y1 = intercept + geno\ny2 = intercept + geno",
+                                [1.0 0.0; 0.0 1.0])
+            err = bayesr_run_error(model, phenotypes_mt)
+            @test err isa ErrorException
+            @test occursin("single-trait", sprint(showerror, err))
+        end
+
+        @testset "annotations are rejected" begin
+            annotations = rand(Float64, 5, 1)
+            err = try
+                get_genotypes(genofile, 1.0,
+                              separator=',',
+                              method="BayesR",
+                              Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                              estimatePi=true,
+                              annotations=annotations,
+                              quality_control=false)
+                nothing
+            catch exc
+                exc
+            end
+            @test err isa ErrorException
+            @test occursin("annotations", sprint(showerror, err))
+        end
+
+        @testset "RRM is rejected" begin
+            global geno = get_genotypes(genofile, 1.0, separator=',',
+                                        method="BayesR",
+                                        Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                        estimatePi=true)
+            model = build_model("y1 = intercept + geno", 1.0)
+            err = bayesr_run_error(model, phenotypes; RRM=ones(Float64, 1, 1))
+            @test err isa ErrorException
+            @test occursin("RRM", sprint(showerror, err))
+        end
     end
 end
 

@@ -45,7 +45,6 @@ function errors_args(mme)
             if Mi.method == "BayesR"
                 mme.nModels == 1 || error("BayesR v1 supports single-trait analysis only.")
                 Mi.storage_mode == :dense || error("BayesR v1 supports storage=:dense only.")
-                mme.MCMCinfo.fast_blocks == false || error("BayesR v1 does not support fast_blocks.")
                 mme.MCMCinfo.RRM == false || error("BayesR v1 does not support random regression model (RRM).")
                 Mi.annotations === false || error("BayesR v1 does not support annotations.")
                 if Mi.π != 0.0
