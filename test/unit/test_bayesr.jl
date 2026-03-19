@@ -17,6 +17,8 @@ end
 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
 phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
+const BAYESR_BLOCK_DISPATCH_COUNTER = Ref(0)
+const BAYESR_BLOCK_DISPATCH_INSTALLED = Ref(false)
 
 function bayesr_run_error(model, phenotypes; kwargs...)
     outdir = tempname()
@@ -37,6 +39,18 @@ function bayesr_run_error(model, phenotypes; kwargs...)
     end
     isdir(outdir) && rm(outdir, recursive=true)
     return err
+end
+
+function install_bayesr_block_dispatch_probe(genotype_type)
+    if BAYESR_BLOCK_DISPATCH_INSTALLED[]
+        return nothing
+    end
+    @eval function JWAS.BayesR_block!(genotypes::$genotype_type, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)))
+        Main.BAYESR_BLOCK_DISPATCH_COUNTER[] += 1
+        return invoke(JWAS.BayesR_block!, Tuple{Any, Any, Any, Any}, genotypes, ycorr, vare, Rinv)
+    end
+    BAYESR_BLOCK_DISPATCH_INSTALLED[] = true
+    return nothing
 end
 
 @testset "BayesR validation" begin
@@ -169,6 +183,30 @@ end
     @test length(α) == 2
 end
 
+@testset "BayesR block sampler" begin
+    X = Float64[
+        0 2
+        1 1
+        2 0
+        1 1
+    ]
+    XArray = [X]
+    xpRinvx = Float64[dot(view(X, :, 1), view(X, :, 1)),
+                       dot(view(X, :, 2), view(X, :, 2))]
+    XpRinvX = [Matrix(X' * X)]
+    yCorr = Float64[0.8, -0.1, 0.3, 0.5]
+    α = zeros(Float64, 2)
+    δ = ones(Int, 2)
+    π = Float64[0.95, 0.03, 0.015, 0.005]
+    gamma = Float64[0.0, 0.01, 0.1, 1.0]
+
+    JWAS.BayesR_block!(XArray, xpRinvx, X, XpRinvX,
+                       yCorr, α, δ, 1.0, 0.2, π, gamma, ones(Float64, length(yCorr)))
+
+    @test all(1 .<= δ .<= 4)
+    @test length(α) == 2
+end
+
 @testset "BayesR variance sufficient statistics" begin
     α = Float64[0.0, 0.4, -0.3, 0.1, 0.0]
     δ = Int[1, 2, 4, 3, 1]
@@ -260,5 +298,31 @@ end
     @test nrow(output["pi_geno"]) == 4
     @test isapprox(sum(output["pi_geno"][!, :Estimate]), 1.0; atol=1e-6)
     @test all(0.0 .<= output["marker effects geno"][!, :Model_Frequency] .<= 1.0)
+    isdir(outdir) && rm(outdir, recursive=true)
+end
+
+@testset "BayesR fast_blocks dispatch" begin
+    global geno = get_genotypes(genofile, 1.0, separator=',',
+                                method="BayesR",
+                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                estimatePi=false,
+                                estimate_variance=true)
+    install_bayesr_block_dispatch_probe(typeof(geno))
+    BAYESR_BLOCK_DISPATCH_COUNTER[] = 0
+    model = build_model("y1 = intercept + geno", 1.0)
+    outdir = tempname()
+
+    _ = runMCMC(model, phenotypes,
+                chain_length=20,
+                burnin=5,
+                output_samples_frequency=5,
+                output_folder=outdir,
+                seed=777,
+                printout_model_info=false,
+                outputEBV=false,
+                output_heritability=false,
+                fast_blocks=true)
+
+    @test BAYESR_BLOCK_DISPATCH_COUNTER[] > 0
     isdir(outdir) && rm(outdir, recursive=true)
 end
