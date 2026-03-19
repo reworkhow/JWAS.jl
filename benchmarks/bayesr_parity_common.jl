@@ -1,5 +1,6 @@
 using CSV
 using DataFrames
+using Distributions
 using Random
 using Statistics
 
@@ -202,6 +203,71 @@ function read_parity_initial_state(datadir)
         sigmaSq0=scalar_map["sigmaSq0"],
         vare0=scalar_map["vare0"],
     )
+end
+
+function build_bayesr_replay_draws(n_markers; seed=20260318)
+    rng = MersenneTwister(seed)
+    kinds = String["mu_normal"]
+    indices = Int[1]
+    values = Float64[randn(rng)]
+
+    for marker_idx in 1:n_markers
+        push!(kinds, "marker_class_uniform")
+        push!(indices, marker_idx)
+        push!(values, rand(rng))
+    end
+
+    for marker_idx in 1:n_markers
+        push!(kinds, "marker_beta_normal")
+        push!(indices, marker_idx)
+        push!(values, randn(rng))
+    end
+
+    append!(kinds, ["sigma_chisq", "vare_chisq"])
+    append!(indices, [1, 1])
+    append!(values, rand(rng, Chisq(1), 2))
+
+    return DataFrame(kind=kinds, index=indices, value=values)
+end
+
+function write_bayesr_replay_draws(path, draws_df)
+    mkpath(dirname(path))
+    CSV.write(path, draws_df)
+end
+
+function read_bayesr_replay_draws(path)
+    CSV.read(path, DataFrame)
+end
+
+function compare_replay_marker_tables(jwas_markers, ref_markers)
+    merged = innerjoin(
+        rename(jwas_markers, [name => Symbol("jwas_", name) for name in names(jwas_markers) if name != "marker_id"]),
+        rename(ref_markers, [name => Symbol("ref_", name) for name in names(ref_markers) if name != "marker_id"]),
+        on=:marker_id,
+    )
+
+    for name in names(jwas_markers)
+        if name == "marker_id" || !(name in names(ref_markers))
+            continue
+        end
+        jwas_name = Symbol("jwas_", name)
+        ref_name = Symbol("ref_", name)
+        if eltype(merged[!, jwas_name]) <: Number && eltype(merged[!, ref_name]) <: Number
+            merged[!, Symbol(name * "_abs_diff")] = abs.(merged[!, jwas_name] .- merged[!, ref_name])
+        end
+    end
+
+    return merged
+end
+
+function compare_replay_scalar_tables(jwas_scalars, ref_scalars)
+    merged = innerjoin(
+        rename(jwas_scalars, :value => :jwas_value),
+        rename(ref_scalars, :value => :ref_value),
+        on=:field,
+    )
+    merged.abs_diff = abs.(merged.jwas_value .- merged.ref_value)
+    return merged
 end
 
 function compare_scalar_metrics(jwas_scalars, ref_scalars; atol_map=Dict{String, Float64}(), rtol_map=Dict{String, Float64}())

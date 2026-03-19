@@ -124,3 +124,20 @@ end
     @test "sigmaSq_abs_diff" in names(report)
     @test nrow(report) == 3
 end
+
+@testset "BayesR replay draw export and comparison schema" begin
+    outdir = mktempdir()
+    draws = build_bayesr_replay_draws(5; seed=20260318)
+    write_bayesr_replay_draws(joinpath(outdir, "replay_draws_iteration1.csv"), draws)
+    loaded = read_bayesr_replay_draws(joinpath(outdir, "replay_draws_iteration1.csv"))
+
+    @test names(loaded) == ["kind", "index", "value"]
+    @test count(==("marker_class_uniform"), loaded.kind) == 5
+    @test count(==("marker_beta_normal"), loaded.kind) == 5
+
+    marker_cmp = compare_replay_marker_tables(
+        DataFrame(marker_id=["m1"], rhs=[1.0], chosen_class=[2], new_alpha=[0.3]),
+        DataFrame(marker_id=["m1"], rhs=[1.1], chosen_class=[2], new_alpha=[0.35]),
+    )
+    @test "rhs_abs_diff" in names(marker_cmp)
+end
