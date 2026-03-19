@@ -157,3 +157,56 @@ end
     @test summary[summary.metric .== "sigma_rel_diff", :mean_value][1] ≈ 0.02
     @test summary[summary.metric .== "max_pi_abs_diff", :max_value][1] ≈ 0.016
 end
+
+@testset "BayesR fixed-hyperparameter summary helper" begin
+    outdir = mktempdir()
+    fake_output = Dict(
+        "marker effects geno" => DataFrame(Trait=fill("y1", 2),
+                                           Marker_ID=["m1", "m2"],
+                                           Estimate=[0.25, -0.15],
+                                           SD=zeros(2),
+                                           Model_Frequency=[0.8, 0.3]),
+        "residual variance" => DataFrame(Covariance=["y1_y1"], Estimate=[0.9], SD=[0.0])
+    )
+
+    write_jwas_parity_summary(fake_output, outdir;
+                              sigma_sq=0.75,
+                              pi_values=[0.95, 0.03, 0.015, 0.005],
+                              fixed_hyperparameters=true)
+
+    scalar_metrics = CSV.read(joinpath(outdir, "scalar_metrics.csv"), DataFrame)
+    @test !("sigmaSq" in scalar_metrics.metric)
+    @test "residual_variance" in scalar_metrics.metric
+    @test "mean_nonzero_frequency" in scalar_metrics.metric
+end
+
+@testset "BayesR runtime metadata helper" begin
+    runtime_df = bayesr_runtime_report(
+        dense_seconds=9.5,
+        block_seconds=1.5,
+        requested_burnin=700,
+        dense_burnin=700,
+        block_burnin=100,
+        dense_block_size=1,
+        block_block_size=7,
+    )
+
+    @test names(runtime_df) == ["run", "seconds", "requested_burnin", "effective_burnin", "block_size", "speedup_vs_dense"]
+    @test runtime_df[runtime_df.run .== "fast_blocks", :effective_burnin][1] == 100
+    @test runtime_df[runtime_df.run .== "fast_blocks", :block_size][1] == 7
+end
+
+@testset "BayesR within-method multiseed summary helper" begin
+    runs = DataFrame(
+        seed=[2026, 2027, 2028],
+        residual_variance=[0.91, 0.88, 0.89],
+        mean_nonzero_frequency=[0.52, 0.56, 0.54],
+        marker_abs_mean=[0.031, 0.028, 0.030],
+    )
+
+    summary = summarize_within_method_multiseed(runs)
+
+    @test "residual_variance" in summary.metric
+    @test summary[summary.metric .== "mean_nonzero_frequency", :mean_value][1] ≈ mean(runs.mean_nonzero_frequency)
+    @test summary[summary.metric .== "marker_abs_mean", :max_value][1] ≈ maximum(runs.marker_abs_mean)
+end

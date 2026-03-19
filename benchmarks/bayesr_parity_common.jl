@@ -134,20 +134,24 @@ function write_parity_dataset(outdir;
     CSV.write(joinpath(outdir, "initial_scalars.csv"), initial_scalars_df)
 end
 
-function write_jwas_parity_summary(output, outdir; sigma_sq, pi_values=nothing)
+function write_jwas_parity_summary(output, outdir; sigma_sq, pi_values=nothing, fixed_hyperparameters=false)
     mkpath(outdir)
 
     marker_effects = output["marker effects geno"]
     residual_variance = output["residual variance"]
 
-    scalar_metrics = DataFrame(
-        metric=["sigmaSq", "residual_variance", "mean_nonzero_frequency"],
-        value=[
-            sigma_sq,
-            residual_variance[1, :Estimate],
-            mean(marker_effects[!, :Model_Frequency]),
-        ],
-    )
+    metric_names = String[]
+    metric_values = Float64[]
+    if !fixed_hyperparameters
+        push!(metric_names, "sigmaSq")
+        push!(metric_values, Float64(sigma_sq))
+    end
+    push!(metric_names, "residual_variance")
+    push!(metric_values, Float64(residual_variance[1, :Estimate]))
+    push!(metric_names, "mean_nonzero_frequency")
+    push!(metric_values, Float64(mean(marker_effects[!, :Model_Frequency])))
+
+    scalar_metrics = DataFrame(metric=metric_names, value=metric_values)
     CSV.write(joinpath(outdir, "scalar_metrics.csv"), scalar_metrics)
 
     if haskey(output, "pi_geno")
@@ -361,4 +365,38 @@ function summarize_multiseed_parity(runs::DataFrame)
     end
 
     return DataFrame(metric=metric_names, mean_value=mean_values, max_value=max_values)
+end
+
+function summarize_within_method_multiseed(runs::DataFrame)
+    metric_names = String[]
+    mean_values = Float64[]
+    max_values = Float64[]
+
+    for name in names(runs)
+        name == "seed" && continue
+        values = Float64.(runs[!, name])
+        push!(metric_names, String(name))
+        push!(mean_values, mean(values))
+        push!(max_values, maximum(values))
+    end
+
+    return DataFrame(metric=metric_names, mean_value=mean_values, max_value=max_values)
+end
+
+function bayesr_runtime_report(; dense_seconds,
+                               block_seconds,
+                               requested_burnin,
+                               dense_burnin,
+                               block_burnin,
+                               dense_block_size,
+                               block_block_size)
+    runtime_df = DataFrame(
+        run=["dense", "fast_blocks"],
+        seconds=[dense_seconds, block_seconds],
+        requested_burnin=[requested_burnin, requested_burnin],
+        effective_burnin=[dense_burnin, block_burnin],
+        block_size=[dense_block_size, block_block_size],
+    )
+    runtime_df.speedup_vs_dense = [1.0, dense_seconds / max(block_seconds, eps(Float64))]
+    return runtime_df
 end
