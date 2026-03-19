@@ -1,4 +1,18 @@
-using Test, JWAS, DataFrames, CSV, JWAS.Datasets, LinearAlgebra
+using Test, JWAS, DataFrames, CSV, JWAS.Datasets, LinearAlgebra, Random, Distributions
+
+Base.@kwdef mutable struct DummyVarianceState
+    df::Float64
+    scale::Float64
+    val::Float64 = 0.0
+end
+
+Base.@kwdef mutable struct DummyBayesRState
+    method::String = "BayesR"
+    ntraits::Int = 1
+    α::Vector{Vector{Float64}}
+    δ::Vector{Vector{Int}}
+    G::DummyVarianceState
+end
 
 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
@@ -85,6 +99,36 @@ end
 
     @test all(1 .<= δ .<= 4)
     @test length(α) == 2
+end
+
+@testset "BayesR variance sufficient statistics" begin
+    α = Float64[0.0, 0.4, -0.3, 0.1, 0.0]
+    δ = Int[1, 2, 4, 3, 1]
+    gamma = Float64[0.0, 0.01, 0.1, 1.0]
+
+    ssq, nnz = JWAS.bayesr_sigma_sufficient_statistics(α, δ, gamma)
+
+    expected_ssq = α[2]^2 / gamma[2] + α[3]^2 / gamma[4] + α[4]^2 / gamma[3]
+    @test ssq ≈ expected_ssq
+    @test nnz == 3
+end
+
+@testset "BayesR variance update matches direct ssq formula" begin
+    geno = DummyBayesRState(
+        α=[Float64[0.0, 0.4, -0.3, 0.1, 0.0]],
+        δ=[Int[1, 2, 4, 3, 1]],
+        G=DummyVarianceState(df=4.0, scale=0.2),
+    )
+    gamma = Float64[0.0, 0.01, 0.1, 1.0]
+
+    ssq, nnz = JWAS.bayesr_sigma_sufficient_statistics(geno.α[1], geno.δ[1], gamma)
+    Random.seed!(1234)
+    expected = (ssq + geno.G.df * geno.G.scale) / rand(Chisq(nnz + geno.G.df))
+
+    Random.seed!(1234)
+    JWAS.sample_marker_effect_variance(geno)
+
+    @test geno.G.val ≈ expected
 end
 
 @testset "BayesR single-trait run" begin
