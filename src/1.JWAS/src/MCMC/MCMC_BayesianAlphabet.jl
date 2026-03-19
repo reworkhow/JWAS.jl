@@ -191,6 +191,16 @@ function MCMC_BayesianAlphabet(mme,df)
                     Mi.mean_pi,Mi.mean_pi2 = 0.0,0.0      #inclusion probability
                 end
             end
+            if Mi.method == "BayesR"
+                Mi.δ = [ones(Int, Mi.nMarkers) for traiti = 1:Mi.ntraits]
+                Mi.meanDelta = [zeros(Float64, Mi.nMarkers) for traiti = 1:Mi.ntraits]
+                if mme.MCMCinfo.printout_model_info == true
+                    printstyled("BayesR gamma: $(Float64.(BAYESR_GAMMA))\n", bold=false, color=:green)
+                    printstyled("BayesR starting pi: $(Float64.(Mi.π))\n", bold=false, color=:green)
+                    expected_counts = round.(Mi.nMarkers .* Float64.(Mi.π), digits=2)
+                    printstyled("BayesR expected class counts: $(expected_counts)\n", bold=false, color=:green)
+                end
+            end
             if !is_multi_trait && has_marker_annotations(Mi)
                 initialize_annotation_indicators!(Mi)
                 update_annotation_priors!(Mi)
@@ -320,6 +330,8 @@ function MCMC_BayesianAlphabet(mme,df)
                             BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances,invweights)
                         end
                     end
+                elseif Mi.method == "BayesR"
+                    BayesR!(Mi, ycorr, mme.R.val)
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait
                         if Mi.G.constraint==true
@@ -365,6 +377,8 @@ function MCMC_BayesianAlphabet(mme,df)
                     else
                         if has_marker_annotations(Mi)
                             update_annotation_priors!(Mi)
+                        elseif Mi.method == "BayesR"
+                            Mi.π .= samplePi(Mi.δ[1], length(Mi.π))
                         else
                             pi_sample = samplePi(sum(Mi.δ[1]), Mi.nMarkers)
                             if Mi.π isa AbstractVector

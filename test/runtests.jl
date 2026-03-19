@@ -120,6 +120,14 @@ println()
             include(joinpath(@__DIR__, "unit", "test_bayesb_methods.jl"))
         end
 
+        @testset "BayesR" begin
+            include(joinpath(@__DIR__, "unit", "test_bayesr.jl"))
+        end
+
+        @testset "BayesR parity helpers" begin
+            include(joinpath(@__DIR__, "unit", "test_bayesr_parity.jl"))
+        end
+
         @testset "GWAS Window Analysis" begin
             include(joinpath(@__DIR__, "unit", "test_gwas_windows.jl"))
         end

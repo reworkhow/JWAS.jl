@@ -65,6 +65,19 @@ function sample_variance(x, n, df, scale, invweights)
     sample_variance(x.* (invweights!=false ? sqrt.(invweights) : 1.0),n,df,scale)
 end
 
+function bayesr_sigma_sufficient_statistics(alpha, delta, gamma)
+    ssq = zero(eltype(alpha))
+    nnz = 0
+    for j in eachindex(alpha, delta)
+        dj = Int(delta[j])
+        if dj > 1
+            ssq += alpha[j]^2 / gamma[dj]
+            nnz += 1
+        end
+    end
+    return ssq, nnz
+end
+
 #multi-trait i.i.d  #?reduce(hcat,array of array)' may be used to replace loops with matrix multiplication
 function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; binary_trait_index=false)
     if invweights != false
@@ -150,6 +163,9 @@ function sample_marker_effect_variance(Mi)
             if Mi.method == "BayesL"
                 sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) # MH sampler of gammaArray (Appendix C in paper)
             end
+        elseif Mi.method == "BayesR"
+            ssq, nnz = bayesr_sigma_sufficient_statistics(Mi.α[1], Mi.δ[1], BAYESR_GAMMA)
+            Mi.G.val = (ssq + Mi.G.df * Mi.G.scale) / rand(Chisq(nnz + Mi.G.df))
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers
                 Mi.G.val[j] = sample_variance(Mi.β[1][j],1,Mi.G.df, Mi.G.scale)

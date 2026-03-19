@@ -236,7 +236,7 @@ function dict2dataframe(mean_pi,mean_pi2)
 end
 
 function collapse_pi_for_output(Mi, pi_value)
-    if Mi.annotations === false && Mi.ntraits == 1 && pi_value isa AbstractVector
+    if Mi.method != "BayesR" && Mi.annotations === false && Mi.ntraits == 1 && pi_value isa AbstractVector
         return pi_value[1]
     end
     return pi_value
@@ -552,7 +552,11 @@ function output_posterior_mean_variance(mme,nsamples)
             for trait in 1:Mi.ntraits
                 Mi.meanAlpha[trait] += (Mi.α[trait] - Mi.meanAlpha[trait])/nsamples
                 Mi.meanAlpha2[trait]+= (Mi.α[trait].^2 - Mi.meanAlpha2[trait])/nsamples
-                Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
+                if Mi.method == "BayesR"
+                    Mi.meanDelta[trait] += (Float64.(Mi.δ[trait] .> 1) - Mi.meanDelta[trait]) / nsamples
+                else
+                    Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
+                end
             end
             if Mi.estimatePi == true
                 if Mi.ntraits == 1 || mme.M[1].G.constraint==true #may need to change for multiple M

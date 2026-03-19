@@ -8,6 +8,14 @@ function samplePi(nEffects::Number, nTotal::Number)
     return rand(Beta(nTotal-nEffects+1, nEffects+1))
 end
 
+function samplePi(delta::AbstractVector{<:Integer}, nclasses::Integer)
+    class_counts = zeros(Float64, nclasses)
+    for klass in delta
+        class_counts[klass] += 1.0
+    end
+    return rand(Dirichlet(class_counts .+ 1.0))
+end
+
 #multi-trait
 function samplePi(deltaArray::Union{Array{Array{Float64,1},1},Array{Array{Float32,1},1}},BigPi)
   temp = deltaArray[1]

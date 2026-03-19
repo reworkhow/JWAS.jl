@@ -9,6 +9,8 @@ using .PedModule
 
 import StatsBase: describe #a new describe is exported
 
+const BAYESR_GAMMA = Float64[0.0, 0.01, 0.1, 1.0]
+
 #Models
 include("types.jl")
 include("build_MME.jl")
@@ -27,6 +29,7 @@ include("markers/tools4genotypes.jl")
 include("markers/streaming_genotypes.jl")
 include("markers/readgenotypes.jl")
 include("markers/BayesianAlphabet/BayesABC.jl")
+include("markers/BayesianAlphabet/BayesR.jl")
 include("markers/BayesianAlphabet/BayesC0L.jl")
 include("markers/BayesianAlphabet/GBLUP.jl")
 include("markers/BayesianAlphabet/MTBayesABC.jl")
@@ -627,7 +630,7 @@ function getMCMCinfo(mme)
                             pi_summary = @sprintf("%.3f / %.3f / %.3f", pi_min, pi_mean, pi_max)
                             @printf("%-30s %20s\n","π_j (min/mean/max)",pi_summary)
                         else
-                            pi_display = (Mi.annotations === false && Mi.π isa AbstractVector) ? Mi.π[1] : Mi.π
+                            pi_display = (Mi.method != "BayesR" && Mi.annotations === false && Mi.π isa AbstractVector) ? Mi.π[1] : Mi.π
                             @printf("%-30s %20s\n","π",pi_display)
                         end
                     else
