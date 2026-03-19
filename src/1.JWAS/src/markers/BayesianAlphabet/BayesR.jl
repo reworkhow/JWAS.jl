@@ -1,5 +1,3 @@
-const BAYESR_GAMMA = Float64[0.0, 0.01, 0.1, 1.0]
-
 @inline function bayesr_logsumexp(log_probs)
     max_log = maximum(log_probs)
     return max_log + log(sum(exp.(log_probs .- max_log)))

@@ -164,8 +164,7 @@ function sample_marker_effect_variance(Mi)
                 sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) # MH sampler of gammaArray (Appendix C in paper)
             end
         elseif Mi.method == "BayesR"
-            gamma = Float64[0.0, 0.01, 0.1, 1.0]
-            ssq, nnz = bayesr_sigma_sufficient_statistics(Mi.α[1], Mi.δ[1], gamma)
+            ssq, nnz = bayesr_sigma_sufficient_statistics(Mi.α[1], Mi.δ[1], BAYESR_GAMMA)
             Mi.G.val = (ssq + Mi.G.df * Mi.G.scale) / rand(Chisq(nnz + Mi.G.df))
         elseif Mi.method == "BayesB"
             for j=1:Mi.nMarkers

@@ -5,18 +5,6 @@ function has_marker_annotations(Mi)
     return Mi.annotations !== false
 end
 
-function initialize_bayesr_indicators!(Mi)
-    delta = Mi.δ[1]
-    pi_vec = Float64.(Mi.π)
-    for j in eachindex(delta)
-        delta[j] = rand(Categorical(pi_vec))
-    end
-    if all(==(1), delta)
-        delta[rand(1:Mi.nMarkers)] = 2
-    end
-    return nothing
-end
-
 function initialize_annotation_indicators!(Mi)
     if !has_marker_annotations(Mi) || Mi.nMarkers <= 1
         return nothing
@@ -206,12 +194,11 @@ function MCMC_BayesianAlphabet(mme,df)
             if Mi.method == "BayesR"
                 Mi.δ = [ones(Int, Mi.nMarkers) for traiti = 1:Mi.ntraits]
                 Mi.meanDelta = [zeros(Float64, Mi.nMarkers) for traiti = 1:Mi.ntraits]
-                initialize_bayesr_indicators!(Mi)
                 if mme.MCMCinfo.printout_model_info == true
-                    class_counts = [count(==(k), Mi.δ[1]) for k in 1:length(Mi.π)]
                     printstyled("BayesR gamma: $(Float64.(BAYESR_GAMMA))\n", bold=false, color=:green)
                     printstyled("BayesR starting pi: $(Float64.(Mi.π))\n", bold=false, color=:green)
-                    printstyled("BayesR initial class counts: $(class_counts)\n", bold=false, color=:green)
+                    expected_counts = round.(Mi.nMarkers .* Float64.(Mi.π), digits=2)
+                    printstyled("BayesR expected class counts: $(expected_counts)\n", bold=false, color=:green)
                 end
             end
             if !is_multi_trait && has_marker_annotations(Mi)

@@ -439,9 +439,8 @@ end
 
 function genetic2marker(M::Genotypes, π::AbstractVector{<:Real})
     M.method == "BayesR" || error("Vector-valued Pi is supported here only for BayesR.")
-    gamma = Float64[0.0, 0.01, 0.1, 1.0]
-    length(π) == length(gamma) || error("BayesR Pi must have length 4.")
-    denom = M.sum2pq * sum(gamma .* π)
+    length(π) == length(BAYESR_GAMMA) || error("BayesR Pi must have length 4.")
+    denom = M.sum2pq * sum(BAYESR_GAMMA .* π)
     denom > 0 || error("BayesR implied variance denominator must be positive.")
     M.G.val = M.genetic_variance.val / denom
 end

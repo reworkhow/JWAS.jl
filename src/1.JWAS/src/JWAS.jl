@@ -9,6 +9,8 @@ using .PedModule
 
 import StatsBase: describe #a new describe is exported
 
+const BAYESR_GAMMA = Float64[0.0, 0.01, 0.1, 1.0]
+
 #Models
 include("types.jl")
 include("build_MME.jl")

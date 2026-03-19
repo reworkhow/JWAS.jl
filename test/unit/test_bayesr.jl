@@ -163,6 +163,7 @@ end
 
     @test occursin("BayesR", printed)
     @test occursin("starting pi", lowercase(printed))
+    @test occursin("expected class counts", lowercase(printed))
     @test haskey(output, "marker effects geno")
     @test haskey(output, "location parameters")
     isdir(outdir) && rm(outdir, recursive=true)
