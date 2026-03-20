@@ -274,9 +274,9 @@ function runMCMC(mme::MME,df;
     #fast blocks #now only work for one geno
     ############################################################################
     if fast_blocks != false
-        if fast_blocks == true
+        if fast_blocks === true
             block_size = Int(floor(sqrt(mme.M[1].nObs)))
-        elseif typeof(fast_blocks) <: Number
+        elseif fast_blocks isa Number
             block_size = Int(floor(fast_blocks))
         end
         mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))

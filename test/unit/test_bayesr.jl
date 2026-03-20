@@ -86,6 +86,28 @@ end
                 occursin("BayesR v1 does not support fast_blocks", sprint(showerror, err)))
     end
 
+    @testset "BayesR fast_blocks=1 means block size 1" begin
+        global geno = get_genotypes(genofile, 1.0, separator=',',
+                                    method="BayesR",
+                                    Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                    estimatePi=false,
+                                    estimate_variance=false)
+        model = build_model("y1 = intercept + geno", 1.0)
+        outdir = tempname()
+        runMCMC(model, phenotypes;
+                chain_length=10,
+                burnin=0,
+                output_samples_frequency=5,
+                output_folder=outdir,
+                seed=123,
+                printout_model_info=false,
+                outputEBV=false,
+                output_heritability=false,
+                fast_blocks=1)
+        @test model.MCMCinfo.fast_blocks == collect(1:1:geno.nMarkers)
+        isdir(outdir) && rm(outdir, recursive=true)
+    end
+
     @testset "BayesR still rejects stream, multi-trait, annotations, and RRM" begin
         @testset "stream is rejected" begin
             mktempdir() do tmpdir
