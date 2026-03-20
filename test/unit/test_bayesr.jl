@@ -108,6 +108,30 @@ end
         isdir(outdir) && rm(outdir, recursive=true)
     end
 
+    @testset "BayesR copies caller Pi input" begin
+        start_pi = Float64[0.95, 0.03, 0.015, 0.005]
+        original_pi = copy(start_pi)
+        global geno = get_genotypes(genofile, 1.0, separator=',',
+                                    method="BayesR",
+                                    Pi=start_pi,
+                                    estimatePi=true)
+        @test geno.π !== start_pi
+
+        model = build_model("y1 = intercept + geno", 1.0)
+        outdir = tempname()
+        runMCMC(model, phenotypes;
+                chain_length=10,
+                burnin=0,
+                output_samples_frequency=5,
+                output_folder=outdir,
+                seed=123,
+                printout_model_info=false,
+                outputEBV=false,
+                output_heritability=false)
+        @test start_pi == original_pi
+        isdir(outdir) && rm(outdir, recursive=true)
+    end
+
     @testset "BayesR still rejects stream, multi-trait, annotations, and RRM" begin
         @testset "stream is rejected" begin
             mktempdir() do tmpdir

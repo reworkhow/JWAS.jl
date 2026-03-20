@@ -104,6 +104,8 @@ function normalize_annotation_estimatePi(annotation_matrix, estimatePi)
     return estimatePi
 end
 
+copy_pi_input(Pi) = (Pi isa AbstractArray || Pi isa AbstractDict) ? copy(Pi) : Pi
+
 """
     get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
                   ## method:
@@ -210,7 +212,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes.genetic_variance = Variance(G_is_marker_variance ? false : G, df,false,estimate_variance,estimate_scale,constraint)
         genotypes.method     = method
         genotypes.estimatePi = estimatePi
-        genotypes.π          = Pi
+        genotypes.π          = copy_pi_input(Pi)
         genotypes.annotations = build_marker_annotations(annotation_matrix)
 
         println("Genotype informatin:")
@@ -360,7 +362,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
-    genotypes.π          = Pi
+    genotypes.π          = copy_pi_input(Pi)
     genotypes.annotations = build_marker_annotations(annotation_matrix)
 
     println("Genotype informatin:")
