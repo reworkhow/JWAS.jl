@@ -45,9 +45,10 @@ function install_bayesr_block_dispatch_probe(genotype_type)
     if BAYESR_BLOCK_DISPATCH_INSTALLED[]
         return nothing
     end
-    @eval function JWAS.BayesR_block!(genotypes::$genotype_type, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)))
+    @eval function JWAS.BayesR_block!(genotypes::$genotype_type, ycorr, vare, Rinv, iter::Integer, burnin::Integer)
         Main.BAYESR_BLOCK_DISPATCH_COUNTER[] += 1
-        return invoke(JWAS.BayesR_block!, Tuple{Any, Any, Any, Any}, genotypes, ycorr, vare, Rinv)
+        return invoke(JWAS.BayesR_block!, Tuple{Any, Any, Any, Any, Integer, Integer},
+                      genotypes, ycorr, vare, Rinv, iter, burnin)
     end
     BAYESR_BLOCK_DISPATCH_INSTALLED[] = true
     return nothing
@@ -251,6 +252,14 @@ end
 
     @test all(1 .<= δ .<= 4)
     @test length(α) == 2
+end
+
+@testset "BayesR fast-block repetition schedule" begin
+    @test JWAS.bayesr_block_nreps(1, 10, 7) == 1
+    @test JWAS.bayesr_block_nreps(10, 10, 7) == 1
+    @test JWAS.bayesr_block_nreps(11, 10, 7) == 7
+    @test JWAS.bayesr_block_nreps(25, 0, 7) == 7
+    @test JWAS.bayesr_block_nreps(3, 8, 1) == 1
 end
 
 @testset "BayesR variance sufficient statistics" begin

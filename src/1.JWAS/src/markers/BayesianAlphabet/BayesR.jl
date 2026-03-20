@@ -3,16 +3,25 @@
     return max_log + log(sum(exp.(log_probs .- max_log)))
 end
 
+@inline function bayesr_block_nreps(iter::Integer, burnin::Integer, block_size::Integer)
+    block_size < 1 && error("BayesR block_size must be at least 1.")
+    return iter <= burnin ? 1 : Int(block_size)
+end
+
 function BayesR!(genotypes, ycorr, vare)
     BayesR!(genotypes.mArray, genotypes.mRinvArray, genotypes.mpRinvm,
             ycorr, genotypes.α[1], genotypes.δ[1], vare, genotypes.G.val, genotypes.π, BAYESR_GAMMA)
 end
 
 function BayesR_block!(genotypes, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)))
+    BayesR_block!(genotypes, ycorr, vare, Rinv, typemax(Int), 0)
+end
+
+function BayesR_block!(genotypes, ycorr, vare, Rinv, iter::Integer, burnin::Integer)
     BayesR_block!(genotypes.MArray, genotypes.mpRinvm,
                   genotypes.genotypes, genotypes.MpRinvM,
                   ycorr, genotypes.α[1], genotypes.δ[1], vare,
-                  genotypes.G.val, genotypes.π, BAYESR_GAMMA, Rinv)
+                  genotypes.G.val, genotypes.π, BAYESR_GAMMA, Rinv, iter, burnin)
 end
 
 function BayesR!(xArray, xRinvArray, xpRinvx,
@@ -75,6 +84,18 @@ function BayesR_block!(XArray, xpRinvx,
                        yCorr,
                        α, δ,
                        vare, sigmaSq, π, gamma, Rinv)
+    BayesR_block!(XArray, xpRinvx,
+                  X, XpRinvX,
+                  yCorr,
+                  α, δ,
+                  vare, sigmaSq, π, gamma, Rinv, typemax(Int), 0)
+end
+
+function BayesR_block!(XArray, xpRinvx,
+                       X, XpRinvX,
+                       yCorr,
+                       α, δ,
+                       vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer)
     nclasses = length(gamma)
     length(π) == nclasses || error("BayesR pi vector length $(length(π)) must match the number of mixture classes ($nclasses).")
     isapprox(sum(π), 1.0; atol=1e-8) || error("BayesR pi must sum to 1.")
@@ -97,7 +118,7 @@ function BayesR_block!(XArray, xpRinvx,
         copyto!(view(αold_block, 1:block_size), view(α, block_range))
         XpRinvycorr = view(rhs_block, 1:block_size)
         block_rhs!(XpRinvycorr, XArray[i], yCorr, Rinv, unit_weights)
-        nreps = block_size
+        nreps = bayesr_block_nreps(iter, burnin, block_size)
 
         for reps in 1:nreps
             for j in 1:block_size

@@ -334,7 +334,7 @@ function MCMC_BayesianAlphabet(mme,df)
                     if fast_blocks == false
                         BayesR!(Mi, ycorr, mme.R.val)
                     else
-                        BayesR_block!(Mi, ycorr, mme.R.val, invweights)
+                        BayesR_block!(Mi, ycorr, mme.R.val, invweights, iter, burnin)
                     end
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait
