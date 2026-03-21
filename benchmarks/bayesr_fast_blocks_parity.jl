@@ -38,9 +38,9 @@ function parse_seed_list(raw::AbstractString)
 end
 
 function resolve_fast_block_size(fast_blocks, n_obs)
-    if fast_blocks == false
+    if fast_blocks === false
         return 1
-    elseif fast_blocks == true
+    elseif fast_blocks === true
         return Int(floor(sqrt(n_obs)))
     elseif fast_blocks isa Number
         return Int(floor(fast_blocks))
@@ -52,8 +52,14 @@ end
 function block_aware_burnin(chain_length, burnin, fast_blocks, n_obs)
     block_size = resolve_fast_block_size(fast_blocks, n_obs)
     adjusted_chain_length = max(1, Int(floor(chain_length / block_size)))
-    adjusted_burnin = fast_blocks == false ? burnin : Int(floor(burnin / block_size))
+    adjusted_burnin = fast_blocks === false ? burnin : Int(floor(burnin / block_size))
     return min(adjusted_burnin, adjusted_chain_length - 1)
+end
+
+function trace_fast_block_starts(fast_blocks, n_obs, n_markers)
+    fast_blocks === false && return false
+    block_size = resolve_fast_block_size(fast_blocks, n_obs)
+    return collect(range(1, step=block_size, stop=n_markers))
 end
 
 function run_bayesr_case(case_outdir;
@@ -104,7 +110,7 @@ function run_bayesr_case(case_outdir;
                                 center=false)
     model = build_model("y1 = intercept + geno", start_vare)
 
-    output_dir = joinpath(case_outdir, fast_blocks == false ? "dense_run" : "fast_blocks_run")
+    output_dir = joinpath(case_outdir, fast_blocks === false ? "dense_run" : "fast_blocks_run")
     isdir(output_dir) && rm(output_dir; recursive=true, force=true)
     elapsed = @elapsed output = runMCMC(model, phenotypes,
                                         chain_length=chain_length,
@@ -117,7 +123,7 @@ function run_bayesr_case(case_outdir;
                                         output_heritability=false,
                                         fast_blocks=fast_blocks)
 
-    summary_dir = joinpath(case_outdir, fast_blocks == false ? "dense_summary" : "fast_blocks_summary")
+    summary_dir = joinpath(case_outdir, fast_blocks === false ? "dense_summary" : "fast_blocks_summary")
     write_jwas_parity_summary(output, summary_dir;
                               sigma_sq=model.M[1].meanVara,
                               pi_values=model.M[1].π,
@@ -254,41 +260,180 @@ function run_dense_multiseed_mode(outdir;
     println("WROTE ", joinpath(outdir, "multiseed_summary.csv"))
 end
 
-if length(ARGS) > 1
-    error("Usage: julia --project=. --startup-file=no benchmarks/bayesr_fast_blocks_parity.jl [outdir]")
+function schedule_run_row(method::AbstractString,
+                          seed::Integer,
+                          summary,
+                          seconds::Real,
+                          block_size::Integer,
+                          effective_burnin::Integer)
+    pi_lookup = Dict(String(row.class) => Float64(row.estimate) for row in eachrow(summary.pi))
+    return (
+        method=String(method),
+        seed=Int(seed),
+        sigmaSq=metric_value(summary.scalar_metrics, "sigmaSq"),
+        residual_variance=metric_value(summary.scalar_metrics, "residual_variance"),
+        mean_nonzero_frequency=metric_value(summary.scalar_metrics, "mean_nonzero_frequency"),
+        pi_class1=get(pi_lookup, "class1", NaN),
+        pi_class2=get(pi_lookup, "class2", NaN),
+        pi_class3=get(pi_lookup, "class3", NaN),
+        pi_class4=get(pi_lookup, "class4", NaN),
+        seconds=Float64(seconds),
+        block_size=Int(block_size),
+        effective_burnin=Int(effective_burnin),
+    )
 end
 
-outdir = length(ARGS) == 1 ? abspath(ARGS[1]) : joinpath(@__DIR__, "out", "bayesr_fast_blocks_parity")
-mode = env_string("JWAS_BAYESR_BLOCK_MODE", "fixed_hyperparameters")
-data_seed = env_int("JWAS_BAYESR_BLOCK_DATA_SEED", 2026)
-seed = env_int("JWAS_BAYESR_BLOCK_SEED", 2026)
-chain_length = env_int("JWAS_BAYESR_BLOCK_CHAIN_LENGTH", 300)
-burnin = env_int("JWAS_BAYESR_BLOCK_BURNIN", 100)
-n_obs = env_int("JWAS_BAYESR_BLOCK_N_OBS", 60)
-n_markers = env_int("JWAS_BAYESR_BLOCK_N_MARKERS", 40)
-start_h2 = env_float("JWAS_BAYESR_BLOCK_START_H2", 0.5)
-block_setting = env_fast_blocks("JWAS_BAYESR_BLOCK_SETTING", "true")
-seed_list = parse_seed_list(env_string("JWAS_BAYESR_BLOCK_SEEDS", "2026,2027,2028,2029,2030"))
+function summarize_schedule_pairwise(runs::DataFrame)
+    dense = rename(
+        runs[runs.method .== "dense", [:seed, :sigmaSq, :residual_variance, :mean_nonzero_frequency, :pi_class1, :pi_class2, :pi_class3, :pi_class4]],
+        :sigmaSq => :dense_sigmaSq,
+        :residual_variance => :dense_residual_variance,
+        :mean_nonzero_frequency => :dense_mean_nonzero_frequency,
+        :pi_class1 => :dense_pi_class1,
+        :pi_class2 => :dense_pi_class2,
+        :pi_class3 => :dense_pi_class3,
+        :pi_class4 => :dense_pi_class4,
+    )
 
-if mode == "fixed_hyperparameters"
-    run_fixed_hyperparameter_mode(outdir;
-                                  data_seed=data_seed,
-                                  mcmc_seed=seed,
-                                  n_obs=n_obs,
-                                  n_markers=n_markers,
-                                  chain_length=chain_length,
-                                  burnin=burnin,
-                                  start_h2=start_h2,
-                                  block_setting=block_setting)
-elseif mode == "dense_multiseed"
-    run_dense_multiseed_mode(outdir;
-                             data_seed=data_seed,
-                             seeds=seed_list,
-                             n_obs=n_obs,
-                             n_markers=n_markers,
-                             chain_length=chain_length,
-                             burnin=burnin,
-                             start_h2=start_h2)
-else
-    error("Unsupported benchmark mode: $mode")
+    rows = NamedTuple[]
+    metrics = ("sigmaSq", "residual_variance", "mean_nonzero_frequency", "pi_class1", "pi_class2", "pi_class3", "pi_class4")
+    methods = sort(setdiff(unique(String.(runs.method)), ["dense"]))
+    for method in methods
+        method_df = rename(
+            runs[runs.method .== method, [:seed, :sigmaSq, :residual_variance, :mean_nonzero_frequency, :pi_class1, :pi_class2, :pi_class3, :pi_class4]],
+            :sigmaSq => :method_sigmaSq,
+            :residual_variance => :method_residual_variance,
+            :mean_nonzero_frequency => :method_mean_nonzero_frequency,
+            :pi_class1 => :method_pi_class1,
+            :pi_class2 => :method_pi_class2,
+            :pi_class3 => :method_pi_class3,
+            :pi_class4 => :method_pi_class4,
+        )
+        merged = innerjoin(method_df, dense, on=:seed)
+        for metric in metrics
+            method_col = Symbol("method_" * metric)
+            dense_col = Symbol("dense_" * metric)
+            diffs = abs.(Float64.(merged[!, method_col]) .- Float64.(merged[!, dense_col]))
+            push!(rows, (
+                comparison=String(method * "_vs_dense"),
+                metric=String(metric),
+                mean_abs_diff=mean(diffs),
+                max_abs_diff=maximum(diffs),
+            ))
+        end
+    end
+
+    return DataFrame(rows)
+end
+
+function run_long_chain_schedule_comparison_mode(outdir;
+                                                 data_seed,
+                                                 seeds,
+                                                 n_obs,
+                                                 n_markers,
+                                                 chain_length,
+                                                 burnin,
+                                                 start_h2,
+                                                 block_setting)
+    mkpath(outdir)
+    data = build_bayesr_parity_dataset(seed=data_seed, n_obs=n_obs, n_markers=n_markers)
+    vary = var(data.y)
+    start_vare = vary * (1 - start_h2)
+    start_sigma_sq = vary * start_h2 / (n_markers * sum(DEFAULT_GAMMA .* DEFAULT_START_PI))
+    block_size = resolve_fast_block_size(block_setting, n_obs)
+
+    rows = NamedTuple[]
+
+    for seed in seeds
+        dense_run = run_bayesr_case(joinpath(outdir, "dense_seed_$(seed)");
+                                    data=data,
+                                    mcmc_seed=seed,
+                                    chain_length=chain_length,
+                                    burnin=burnin,
+                                    start_h2=start_h2,
+                                    start_sigma_sq=start_sigma_sq,
+                                    start_vare=start_vare,
+                                    fast_blocks=false,
+                                    estimate_pi=true,
+                                    estimate_marker_variance=true,
+                                    fixed_hyperparameters=false)
+        dense_summary = read_parity_summary(dense_run.summary_dir)
+        push!(rows, schedule_run_row("dense", seed, dense_summary, dense_run.elapsed, dense_run.block_size, dense_run.run_burnin))
+
+        burnin_gated_run = run_bayesr_case(joinpath(outdir, "burnin_gated_seed_$(seed)");
+                                           data=data,
+                                           mcmc_seed=seed,
+                                           chain_length=chain_length,
+                                           burnin=burnin,
+                                           start_h2=start_h2,
+                                           start_sigma_sq=start_sigma_sq,
+                                           start_vare=start_vare,
+                                           fast_blocks=block_setting,
+                                           estimate_pi=true,
+                                           estimate_marker_variance=true,
+                                           fixed_hyperparameters=false)
+        burnin_gated_summary = read_parity_summary(burnin_gated_run.summary_dir)
+        push!(rows, schedule_run_row("burnin_gated", seed, burnin_gated_summary, burnin_gated_run.elapsed, burnin_gated_run.block_size, burnin_gated_run.run_burnin))
+    end
+
+    runs_df = DataFrame(rows)
+    summary_df = summarize_schedule_pairwise(runs_df)
+    CSV.write(joinpath(outdir, "schedule_runs.csv"), runs_df)
+    CSV.write(joinpath(outdir, "schedule_pairwise_summary.csv"), summary_df)
+
+    println("WROTE ", joinpath(outdir, "schedule_runs.csv"))
+    println("WROTE ", joinpath(outdir, "schedule_pairwise_summary.csv"))
+end
+
+function main(argv=ARGS)
+    length(argv) > 1 && error("Usage: julia --project=. --startup-file=no benchmarks/bayesr_fast_blocks_parity.jl [outdir]")
+
+    outdir = length(argv) == 1 ? abspath(argv[1]) : joinpath(@__DIR__, "out", "bayesr_fast_blocks_parity")
+    mode = env_string("JWAS_BAYESR_BLOCK_MODE", "fixed_hyperparameters")
+    data_seed = env_int("JWAS_BAYESR_BLOCK_DATA_SEED", 2026)
+    seed = env_int("JWAS_BAYESR_BLOCK_SEED", 2026)
+    chain_length = env_int("JWAS_BAYESR_BLOCK_CHAIN_LENGTH", 300)
+    burnin = env_int("JWAS_BAYESR_BLOCK_BURNIN", 100)
+    n_obs = env_int("JWAS_BAYESR_BLOCK_N_OBS", 60)
+    n_markers = env_int("JWAS_BAYESR_BLOCK_N_MARKERS", 40)
+    start_h2 = env_float("JWAS_BAYESR_BLOCK_START_H2", 0.5)
+    block_setting = env_fast_blocks("JWAS_BAYESR_BLOCK_SETTING", "true")
+    seed_list = parse_seed_list(env_string("JWAS_BAYESR_BLOCK_SEEDS", "2026,2027,2028,2029,2030"))
+
+    if mode == "fixed_hyperparameters"
+        run_fixed_hyperparameter_mode(outdir;
+                                      data_seed=data_seed,
+                                      mcmc_seed=seed,
+                                      n_obs=n_obs,
+                                      n_markers=n_markers,
+                                      chain_length=chain_length,
+                                      burnin=burnin,
+                                      start_h2=start_h2,
+                                      block_setting=block_setting)
+    elseif mode == "dense_multiseed"
+        run_dense_multiseed_mode(outdir;
+                                 data_seed=data_seed,
+                                 seeds=seed_list,
+                                 n_obs=n_obs,
+                                 n_markers=n_markers,
+                                 chain_length=chain_length,
+                                 burnin=burnin,
+                                 start_h2=start_h2)
+    elseif mode == "long_chain_schedule_comparison"
+        run_long_chain_schedule_comparison_mode(outdir;
+                                                data_seed=data_seed,
+                                                seeds=seed_list,
+                                                n_obs=n_obs,
+                                                n_markers=n_markers,
+                                                chain_length=chain_length,
+                                                burnin=burnin,
+                                                start_h2=start_h2,
+                                                block_setting=block_setting)
+    else
+        error("Unsupported benchmark mode: $mode")
+    end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end

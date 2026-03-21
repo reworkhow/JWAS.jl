@@ -125,6 +125,34 @@ end
     @test nrow(report) == 3
 end
 
+@testset "BayesR generic trace comparator" begin
+    dense_trace = DataFrame(
+        iter=1:2,
+        residual_variance=[0.95, 0.92],
+        ycorr_norm=[4.0, 3.8],
+        alpha_norm=[0.6, 0.8],
+        alpha_abs_mean=[0.05, 0.06],
+        nnz=[2, 3],
+        max_abs_alpha=[0.3, 0.4],
+    )
+    block_trace = DataFrame(
+        iter=1:2,
+        residual_variance=[0.96, 0.88],
+        ycorr_norm=[4.0, 3.7],
+        alpha_norm=[0.61, 0.79],
+        alpha_abs_mean=[0.05, 0.055],
+        nnz=[2, 3],
+        max_abs_alpha=[0.31, 0.41],
+    )
+
+    report = compare_trace_metrics(block_trace, dense_trace)
+
+    @test "residual_variance_abs_diff" in names(report)
+    @test "ycorr_norm_abs_diff" in names(report)
+    @test "alpha_norm_abs_diff" in names(report)
+    @test report.residual_variance_abs_diff[2] ≈ 0.04
+end
+
 @testset "BayesR replay draw export and comparison schema" begin
     outdir = mktempdir()
     draws = build_bayesr_replay_draws(5; seed=20260318)
@@ -209,4 +237,46 @@ end
     @test "residual_variance" in summary.metric
     @test summary[summary.metric .== "mean_nonzero_frequency", :mean_value][1] ≈ mean(runs.mean_nonzero_frequency)
     @test summary[summary.metric .== "marker_abs_mean", :max_value][1] ≈ maximum(runs.marker_abs_mean)
+end
+
+@testset "BayesR debug default-blocks single-rep benchmark mode" begin
+    outdir = mktempdir()
+    repo_root = normpath(joinpath(@__DIR__, "..", ".."))
+    benchmark_script = joinpath(repo_root, "benchmarks", "debug", "bayesr_fast_blocks_debug.jl")
+    cmd = `$(Base.julia_cmd()) --project=$(Base.active_project()) --startup-file=no $benchmark_script $outdir`
+    env = copy(ENV)
+    env["JWAS_BAYESR_BLOCK_MODE"] = "default_blocks_single_rep"
+    env["JWAS_BAYESR_BLOCK_CHAIN_LENGTH"] = "40"
+    env["JWAS_BAYESR_BLOCK_BURNIN"] = "10"
+    env["JWAS_BAYESR_BLOCK_N_OBS"] = "20"
+    env["JWAS_BAYESR_BLOCK_N_MARKERS"] = "12"
+
+    @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
+    @test isfile(joinpath(outdir, "comparison_scalar_metrics.csv"))
+    @test isfile(joinpath(outdir, "comparison_pi.csv"))
+    @test isfile(joinpath(outdir, "comparison_marker_effects_top.csv"))
+    @test isfile(joinpath(outdir, "runtime.csv"))
+end
+
+@testset "BayesR long-chain schedule comparison benchmark mode" begin
+    outdir = mktempdir()
+    repo_root = normpath(joinpath(@__DIR__, "..", ".."))
+    benchmark_script = joinpath(repo_root, "benchmarks", "bayesr_fast_blocks_parity.jl")
+    cmd = `$(Base.julia_cmd()) --project=$(Base.active_project()) --startup-file=no $benchmark_script $outdir`
+    env = copy(ENV)
+    env["JWAS_BAYESR_BLOCK_MODE"] = "long_chain_schedule_comparison"
+    env["JWAS_BAYESR_BLOCK_CHAIN_LENGTH"] = "60"
+    env["JWAS_BAYESR_BLOCK_BURNIN"] = "20"
+    env["JWAS_BAYESR_BLOCK_N_OBS"] = "20"
+    env["JWAS_BAYESR_BLOCK_N_MARKERS"] = "12"
+    env["JWAS_BAYESR_BLOCK_SEEDS"] = "2026,2027"
+    env["JWAS_BAYESR_BLOCK_SETTING"] = "2"
+
+    @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
+    @test isfile(joinpath(outdir, "schedule_runs.csv"))
+    @test isfile(joinpath(outdir, "schedule_pairwise_summary.csv"))
+
+    runs = CSV.read(joinpath(outdir, "schedule_runs.csv"), DataFrame)
+    @test sort!(collect(unique(runs.method))) == ["burnin_gated", "dense"]
+    @test all(runs[runs.method .!= "dense", :block_size] .== 2)
 end

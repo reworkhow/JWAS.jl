@@ -331,23 +331,26 @@ function compare_parity_summaries(jwas_scalars, ref_scalars, jwas_pi, ref_pi, jw
 end
 
 function compare_trace_metrics(jwas_trace, ref_trace)
+    shared_names = intersect(names(jwas_trace), names(ref_trace))
+    metric_names = filter(!=("iter"), String.(shared_names))
+
+    jwas_pairs = [Symbol(name) => Symbol("jwas_" * name) for name in metric_names]
+    ref_pairs = [Symbol(name) => Symbol("ref_" * name) for name in metric_names]
+
     merged = innerjoin(
-        rename(jwas_trace,
-               :sigmaSq => :jwas_sigmaSq,
-               :ssq => :jwas_ssq,
-               :nnz => :jwas_nnz,
-               :vare => :jwas_vare),
-        rename(ref_trace,
-               :sigmaSq => :ref_sigmaSq,
-               :ssq => :ref_ssq,
-               :nnz => :ref_nnz,
-               :vare => :ref_vare),
+        rename(jwas_trace, jwas_pairs...),
+        rename(ref_trace, ref_pairs...),
         on=:iter,
     )
-    merged.sigmaSq_abs_diff = abs.(merged.jwas_sigmaSq .- merged.ref_sigmaSq)
-    merged.ssq_abs_diff = abs.(merged.jwas_ssq .- merged.ref_ssq)
-    merged.nnz_abs_diff = abs.(merged.jwas_nnz .- merged.ref_nnz)
-    merged.vare_abs_diff = abs.(merged.jwas_vare .- merged.ref_vare)
+
+    for name in metric_names
+        jwas_name = Symbol("jwas_" * name)
+        ref_name = Symbol("ref_" * name)
+        if eltype(merged[!, jwas_name]) <: Number && eltype(merged[!, ref_name]) <: Number
+            merged[!, Symbol(name * "_abs_diff")] = abs.(merged[!, jwas_name] .- merged[!, ref_name])
+        end
+    end
+
     return merged
 end
 
