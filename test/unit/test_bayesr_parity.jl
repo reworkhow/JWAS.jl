@@ -280,3 +280,33 @@ end
     @test sort!(collect(unique(runs.method))) == ["burnin_gated", "dense"]
     @test all(runs[runs.method .!= "dense", :block_size] .== 2)
 end
+
+@testset "BayesC and BayesR fast-block benchmark mode" begin
+    outdir = mktempdir()
+    repo_root = normpath(joinpath(@__DIR__, "..", ".."))
+    benchmark_script = joinpath(repo_root, "benchmarks", "bayesc_bayesr_fast_blocks_comparison.jl")
+    cmd = `$(Base.julia_cmd()) --project=$(Base.active_project()) --startup-file=no $benchmark_script $outdir`
+    env = copy(ENV)
+    env["JWAS_METHOD_BLOCK_CHAIN_LENGTH"] = "60"
+    env["JWAS_METHOD_BLOCK_BURNIN"] = "20"
+    env["JWAS_METHOD_BLOCK_N_OBS"] = "20"
+    env["JWAS_METHOD_BLOCK_N_MARKERS"] = "12"
+    env["JWAS_METHOD_BLOCK_SEEDS"] = "2026,2027"
+
+    @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
+    @test isfile(joinpath(outdir, "comparison_runs.csv"))
+    @test isfile(joinpath(outdir, "comparison_pairwise_summary.csv"))
+
+    runs = CSV.read(joinpath(outdir, "comparison_runs.csv"), DataFrame)
+    summary = CSV.read(joinpath(outdir, "comparison_pairwise_summary.csv"), DataFrame)
+    @test sort!(collect(unique(runs.method_variant))) == [
+        "BayesC_dense",
+        "BayesC_fast_blocks_1",
+        "BayesC_fast_blocks_default",
+        "BayesR_dense",
+        "BayesR_fast_blocks_1",
+        "BayesR_fast_blocks_default",
+    ]
+    @test "phenotype_ebv_correlation" in names(runs)
+    @test "phenotype_ebv_correlation" in summary.metric
+end
