@@ -310,3 +310,36 @@ end
     @test "phenotype_ebv_correlation" in names(runs)
     @test "phenotype_ebv_correlation" in summary.metric
 end
+
+@testset "Annotated BayesR production benchmark mode" begin
+    outdir = mktempdir()
+    repo_root = normpath(joinpath(@__DIR__, "..", ".."))
+    benchmark_script = joinpath(repo_root, "benchmarks", "annotated_bayesr_comparison.jl")
+    cmd = `$(Base.julia_cmd()) --project=$(Base.active_project()) --startup-file=no $benchmark_script $outdir`
+    env = copy(ENV)
+    env["JWAS_ANNOT_BENCH_CHAIN_LENGTH"] = "60"
+    env["JWAS_ANNOT_BENCH_BURNIN"] = "20"
+    env["JWAS_ANNOT_BENCH_N_OBS"] = "30"
+    env["JWAS_ANNOT_BENCH_N_MARKERS"] = "40"
+    env["JWAS_ANNOT_BENCH_SEEDS"] = "2026,2027"
+
+    @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
+    @test isfile(joinpath(outdir, "comparison_runs.csv"))
+    @test isfile(joinpath(outdir, "comparison_summary.csv"))
+    @test isfile(joinpath(outdir, "pip_group_summary.csv"))
+    @test isfile(joinpath(outdir, "annotation_coefficients.csv"))
+    @test isfile(joinpath(outdir, "truth_metadata.csv"))
+
+    runs = CSV.read(joinpath(outdir, "comparison_runs.csv"), DataFrame)
+    summary = CSV.read(joinpath(outdir, "comparison_summary.csv"), DataFrame)
+    coeffs = CSV.read(joinpath(outdir, "annotation_coefficients.csv"), DataFrame)
+
+    @test sort!(collect(unique(runs.method_variant))) == [
+        "Annotated_BayesC",
+        "Annotated_BayesR",
+        "BayesR",
+    ]
+    @test "phenotype_ebv_correlation" in names(runs)
+    @test "mean_pip_causal" in names(summary)
+    @test "Step" in names(coeffs)
+end
