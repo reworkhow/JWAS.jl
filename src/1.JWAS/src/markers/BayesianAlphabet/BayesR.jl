@@ -3,14 +3,31 @@
     return max_log + log(sum(exp.(log_probs .- max_log)))
 end
 
+@inline bayesr_prior_row(π::AbstractVector, ::Integer) = π
+@inline bayesr_prior_row(π::AbstractMatrix, j::Integer) = view(π, j, :)
+
+function bayesr_validate_priors(π::AbstractVector, nclasses::Integer, ::Integer)
+    length(π) == nclasses || error("BayesR pi vector length $(length(π)) must match the number of mixture classes ($nclasses).")
+    all(x -> x >= 0, π) || error("BayesR pi entries must be nonnegative.")
+    isapprox(sum(π), 1.0; atol=1e-8) || error("BayesR pi must sum to 1.")
+    return nothing
+end
+
+function bayesr_validate_priors(π::AbstractMatrix, nclasses::Integer, nmarkers::Integer)
+    size(π, 1) == nmarkers || error("BayesR per-marker pi must have one row per marker.")
+    size(π, 2) == nclasses || error("BayesR per-marker pi must have $nclasses columns.")
+    return nothing
+end
+
 @inline function bayesr_block_nreps(iter::Integer, burnin::Integer, block_size::Integer)
     block_size < 1 && error("BayesR block_size must be at least 1.")
     return iter <= burnin ? 1 : Int(block_size)
 end
 
 function BayesR!(genotypes, ycorr, vare)
+    priors = genotypes.annotations === false ? genotypes.π : genotypes.annotations.snp_pi
     BayesR!(genotypes.mArray, genotypes.mRinvArray, genotypes.mpRinvm,
-            ycorr, genotypes.α[1], genotypes.δ[1], vare, genotypes.G.val, genotypes.π, BAYESR_GAMMA)
+            ycorr, genotypes.α[1], genotypes.δ[1], vare, genotypes.G.val, priors, BAYESR_GAMMA)
 end
 
 function BayesR_block!(genotypes, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)))
@@ -18,10 +35,11 @@ function BayesR_block!(genotypes, ycorr, vare, Rinv=ones(eltype(ycorr), length(y
 end
 
 function BayesR_block!(genotypes, ycorr, vare, Rinv, iter::Integer, burnin::Integer)
+    priors = genotypes.annotations === false ? genotypes.π : genotypes.annotations.snp_pi
     BayesR_block!(genotypes.MArray, genotypes.mpRinvm,
                   genotypes.genotypes, genotypes.MpRinvM,
                   ycorr, genotypes.α[1], genotypes.δ[1], vare,
-                  genotypes.G.val, genotypes.π, BAYESR_GAMMA, Rinv, iter, burnin)
+                  genotypes.G.val, priors, BAYESR_GAMMA, Rinv, iter, burnin)
 end
 
 function BayesR!(xArray, xRinvArray, xpRinvx,
@@ -29,13 +47,11 @@ function BayesR!(xArray, xRinvArray, xpRinvx,
                  α, δ,
                  vare, sigmaSq, π, gamma)
     nclasses = length(gamma)
-    length(π) == nclasses || error("BayesR pi vector length $(length(π)) must match the number of mixture classes ($nclasses).")
-    isapprox(sum(π), 1.0; atol=1e-8) || error("BayesR pi must sum to 1.")
+    bayesr_validate_priors(π, nclasses, length(α))
     sigmaSq > 0 || error("BayesR sigmaSq must be positive.")
 
     log_probs = zeros(Float64, nclasses)
     probs = zeros(Float64, nclasses)
-    logPi = log.(π)
     invVarRes = 1 / vare
 
     for j in eachindex(α)
@@ -43,15 +59,16 @@ function BayesR!(xArray, xRinvArray, xpRinvx,
         xRinv = xRinvArray[j]
         rhs = (dot(xRinv, yCorr) + xpRinvx[j] * α[j]) * invVarRes
         oldAlpha = α[j]
+        πj = bayesr_prior_row(π, j)
 
-        log_probs[1] = logPi[1]
+        log_probs[1] = log(πj[1])
         for k in 2:nclasses
             varEffect = gamma[k] * sigmaSq
             invVarEffect = 1 / varEffect
             lhs = xpRinvx[j] * invVarRes + invVarEffect
             invLhs = 1 / lhs
             betaHat = invLhs * rhs
-            log_probs[k] = 0.5 * (log(invLhs) - log(varEffect) + betaHat * rhs) + logPi[k]
+            log_probs[k] = 0.5 * (log(invLhs) - log(varEffect) + betaHat * rhs) + log(πj[k])
         end
 
         log_norm = bayesr_logsumexp(log_probs)
@@ -97,13 +114,11 @@ function BayesR_block!(XArray, xpRinvx,
                        α, δ,
                        vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer)
     nclasses = length(gamma)
-    length(π) == nclasses || error("BayesR pi vector length $(length(π)) must match the number of mixture classes ($nclasses).")
-    isapprox(sum(π), 1.0; atol=1e-8) || error("BayesR pi must sum to 1.")
+    bayesr_validate_priors(π, nclasses, length(α))
     sigmaSq > 0 || error("BayesR sigmaSq must be positive.")
 
     log_probs = zeros(Float64, nclasses)
     probs = zeros(Float64, nclasses)
-    logPi = log.(π)
     invVarRes = 1 / vare
     nblocks = length(XpRinvX)
     start_pos = 0
@@ -125,15 +140,16 @@ function BayesR_block!(XArray, xpRinvx,
                 locus_j = start_pos + j
                 rhs = (XpRinvycorr[j] + xpRinvx[locus_j] * α[locus_j]) * invVarRes
                 oldAlpha = α[locus_j]
+                πj = bayesr_prior_row(π, locus_j)
 
-                log_probs[1] = logPi[1]
+                log_probs[1] = log(πj[1])
                 for k in 2:nclasses
                     varEffect = gamma[k] * sigmaSq
                     invVarEffect = 1 / varEffect
                     lhs = xpRinvx[locus_j] * invVarRes + invVarEffect
                     invLhs = 1 / lhs
                     betaHat = invLhs * rhs
-                    log_probs[k] = 0.5 * (log(invLhs) - log(varEffect) + betaHat * rhs) + logPi[k]
+                    log_probs[k] = 0.5 * (log(invLhs) - log(varEffect) + betaHat * rhs) + log(πj[k])
                 end
 
                 log_norm = bayesr_logsumexp(log_probs)

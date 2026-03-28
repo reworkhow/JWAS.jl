@@ -92,6 +92,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_annotated_bayesc.jl"))
         end
 
+        @testset "Annotated BayesR" begin
+            include(joinpath(@__DIR__, "unit", "test_annotated_bayesr.jl"))
+        end
+
         @testset "set_random (Random Effects)" begin
             include(joinpath(@__DIR__, "unit", "test_set_random.jl"))
         end

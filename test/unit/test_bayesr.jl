@@ -133,7 +133,7 @@ end
         isdir(outdir) && rm(outdir, recursive=true)
     end
 
-    @testset "BayesR still rejects stream, multi-trait, annotations, and RRM" begin
+    @testset "BayesR still rejects stream, multi-trait, and RRM" begin
         @testset "stream is rejected" begin
             mktempdir() do tmpdir
                 cd(tmpdir) do
@@ -179,24 +179,6 @@ end
             err = bayesr_run_error(model, phenotypes_mt)
             @test err isa ErrorException
             @test occursin("single-trait", sprint(showerror, err))
-        end
-
-        @testset "annotations are rejected" begin
-            annotations = rand(Float64, 5, 1)
-            err = try
-                get_genotypes(genofile, 1.0,
-                              separator=',',
-                              method="BayesR",
-                              Pi=Float64[0.95, 0.03, 0.015, 0.005],
-                              estimatePi=true,
-                              annotations=annotations,
-                              quality_control=false)
-                nothing
-            catch exc
-                exc
-            end
-            @test err isa ErrorException
-            @test occursin("annotations", sprint(showerror, err))
         end
 
         @testset "RRM is rejected" begin
