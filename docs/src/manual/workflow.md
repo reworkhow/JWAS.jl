@@ -12,6 +12,14 @@ Pages = [
 Depth = 2
 ```
 
+## Method-Specific Guides
+
+For method-specific workflows beyond the general setup in this page, see:
+
+- [Annotated BayesC](annotated_bayesc.md)
+- [Annotated BayesR](annotated_bayesr.md)
+- [Block BayesC](block_bayesc.md)
+
 
 ## Available Models
 
