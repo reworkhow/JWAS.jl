@@ -18,6 +18,10 @@ function env_float(name, default)
     return parse(Float64, get(ENV, name, string(default)))
 end
 
+function env_string(name, default)
+    return String(get(ENV, name, default))
+end
+
 function parse_seed_list(raw::AbstractString)
     isempty(strip(raw)) && error("Seed list must not be empty.")
     return parse.(Int, strip.(split(raw, ",")))
@@ -38,11 +42,26 @@ function write_benchmark_dataset(outdir; ids, marker_ids, X, y)
     CSV.write(joinpath(outdir, "phenotypes.csv"), DataFrame(ID=ids, y1=y))
 end
 
-function sample_truth_classes!(rng, annotation_1)
+function scenario_class_probabilities(name::AbstractString)
+    if name == "sparse_upper_classes"
+        return (
+            baseline=Float64[0.97, 0.02, 0.008, 0.002],
+            enriched=Float64[0.80, 0.08, 0.07, 0.05],
+        )
+    elseif name == "less_sparse_upper_classes"
+        return (
+            baseline=Float64[0.90, 0.05, 0.03, 0.02],
+            enriched=Float64[0.65, 0.15, 0.12, 0.08],
+        )
+    end
+    error("Unsupported annotated benchmark scenario: $name")
+end
+
+function sample_truth_classes!(rng, annotation_1, class_probs)
     n_markers = length(annotation_1)
     true_class = Vector{Int}(undef, n_markers)
-    baseline_probs = [0.97, 0.02, 0.008, 0.002]
-    enriched_probs = [0.80, 0.08, 0.07, 0.05]
+    baseline_probs = class_probs.baseline
+    enriched_probs = class_probs.enriched
 
     for j in 1:n_markers
         probs = annotation_1[j] == 1.0 ? enriched_probs : baseline_probs
@@ -63,8 +82,9 @@ function sample_truth_classes!(rng, annotation_1)
     return true_class
 end
 
-function build_annotated_benchmark_dataset(; seed=20260328, n_obs=200, n_markers=1000, h2=0.45)
+function build_annotated_benchmark_dataset(; seed=20260328, n_obs=200, n_markers=1000, h2=0.45, scenario="sparse_upper_classes")
     rng = MersenneTwister(seed)
+    class_probs = scenario_class_probabilities(scenario)
 
     ids = ["id_$(i)" for i in 1:n_obs]
     marker_ids = ["m$(j)" for j in 1:n_markers]
@@ -86,7 +106,7 @@ function build_annotated_benchmark_dataset(; seed=20260328, n_obs=200, n_markers
     annotation_2 = zeros(Float64, n_markers)
     annotation_2[randperm(rng, n_markers)[1:n_nuisance]] .= 1.0
 
-    true_class = sample_truth_classes!(rng, annotation_1)
+    true_class = sample_truth_classes!(rng, annotation_1, class_probs)
 
     raw_beta = zeros(Float64, n_markers)
     for j in 1:n_markers
@@ -108,6 +128,7 @@ function build_annotated_benchmark_dataset(; seed=20260328, n_obs=200, n_markers
     y = 1.0 .+ genetic_value .+ randn(rng, n_obs) .* residual_sd
 
     truth_metadata = DataFrame(
+        scenario=fill(String(scenario), n_markers),
         marker_id=marker_ids,
         annotation_1=annotation_1,
         annotation_2=annotation_2,
@@ -119,6 +140,7 @@ function build_annotated_benchmark_dataset(; seed=20260328, n_obs=200, n_markers
     )
 
     return (
+        scenario=String(scenario),
         ids=ids,
         marker_ids=marker_ids,
         X=X,
@@ -135,7 +157,7 @@ function ebv_correlation(output, phenotypes)
     return cor(Float64.(joined[!, :y1]), Float64.(joined[!, :EBV]))
 end
 
-function marker_summary_rows(method_variant::AbstractString, seed::Integer, merged::DataFrame)
+function marker_summary_rows(method_variant::AbstractString, seed::Integer, scenario::AbstractString, merged::DataFrame)
     rows = NamedTuple[]
 
     group_specs = [
@@ -153,6 +175,7 @@ function marker_summary_rows(method_variant::AbstractString, seed::Integer, merg
         subset = merged[mask, :]
         isempty(subset) && continue
         push!(rows, (
+            scenario=String(scenario),
             method_variant=String(method_variant),
             seed=Int(seed),
             group_type=String(group_type),
@@ -166,7 +189,7 @@ function marker_summary_rows(method_variant::AbstractString, seed::Integer, merg
     return rows
 end
 
-function annotation_coefficient_rows(method_variant::AbstractString, seed::Integer, output)
+function annotation_coefficient_rows(method_variant::AbstractString, seed::Integer, scenario::AbstractString, output)
     key = "annotation coefficients geno"
     haskey(output, key) || return NamedTuple[]
 
@@ -180,6 +203,7 @@ function annotation_coefficient_rows(method_variant::AbstractString, seed::Integ
     rows = NamedTuple[]
     for rowi in 1:nrow(coeff_df)
         push!(rows, (
+            scenario=String(scenario),
             method_variant=String(method_variant),
             seed=Int(seed),
             Annotation=String(coeff_df[rowi, :Annotation]),
@@ -193,6 +217,7 @@ end
 
 function method_case_row(method_variant::AbstractString,
                          seed::Integer,
+                         scenario::AbstractString,
                          output,
                          phenotypes::DataFrame,
                          truth_metadata::DataFrame,
@@ -239,6 +264,7 @@ function method_case_row(method_variant::AbstractString,
     end
 
     return (
+        scenario=String(scenario),
         method=occursin("BayesC", method_variant) ? "BayesC" : "BayesR",
         method_variant=String(method_variant),
         seed=Int(seed),
@@ -278,7 +304,7 @@ function summarize_runs(runs::DataFrame)
         :seconds,
     ]
 
-    for subdf in groupby(runs, :method_variant)
+    for subdf in groupby(runs, [:scenario, :method_variant])
         values = Dict{Symbol, Float64}()
         sds = Dict{Symbol, Float64}()
         for metric in metric_names
@@ -288,6 +314,7 @@ function summarize_runs(runs::DataFrame)
             sds[metric] = isempty(numeric_values) ? NaN : std(numeric_values)
         end
         push!(summary_rows, (
+            scenario=String(subdf.scenario[1]),
             method_variant=String(subdf.method_variant[1]),
             method=String(subdf.method[1]),
             n_seeds=nrow(subdf),
@@ -423,12 +450,14 @@ function main(argv=ARGS)
     seeds = parse_seed_list(get(ENV, "JWAS_ANNOT_BENCH_SEEDS", "2026,2027,2028,2029,2030"))
     data_seed = env_int("JWAS_ANNOT_BENCH_DATA_SEED", 20260328)
     target_h2 = env_float("JWAS_ANNOT_BENCH_H2", 0.45)
+    scenario = env_string("JWAS_ANNOT_BENCH_SCENARIO", "sparse_upper_classes")
 
     dataset = build_annotated_benchmark_dataset(
         seed=data_seed,
         n_obs=n_obs,
         n_markers=n_markers,
         h2=target_h2,
+        scenario=scenario,
     )
 
     datadir = joinpath(outdir, "data")
@@ -464,6 +493,7 @@ function main(argv=ARGS)
             run_row, merged = method_case_row(
                 method_variant,
                 seed,
+                dataset.scenario,
                 output,
                 phenotypes,
                 dataset.truth_metadata,
@@ -471,17 +501,17 @@ function main(argv=ARGS)
                 elapsed,
             )
             push!(runs, run_row)
-            append!(pip_group_rows, marker_summary_rows(method_variant, seed, merged))
-            append!(coefficient_rows, annotation_coefficient_rows(method_variant, seed, output))
+            append!(pip_group_rows, marker_summary_rows(method_variant, seed, dataset.scenario, merged))
+            append!(coefficient_rows, annotation_coefficient_rows(method_variant, seed, dataset.scenario, output))
         end
     end
 
     runs_df = sort!(DataFrame(runs), [:method_variant, :seed])
-    summary_df = sort!(summarize_runs(runs_df), :method_variant)
-    pip_group_df = sort!(DataFrame(pip_group_rows), [:method_variant, :seed, :group_type, :group_label])
+    summary_df = sort!(summarize_runs(runs_df), [:scenario, :method_variant])
+    pip_group_df = sort!(DataFrame(pip_group_rows), [:scenario, :method_variant, :seed, :group_type, :group_label])
     coeff_df = DataFrame(coefficient_rows)
     if !isempty(coeff_df)
-        sort!(coeff_df, [:method_variant, :seed, :Annotation, :Step])
+        sort!(coeff_df, [:scenario, :method_variant, :seed, :Annotation, :Step])
     end
 
     CSV.write(joinpath(outdir, "comparison_runs.csv"), runs_df)

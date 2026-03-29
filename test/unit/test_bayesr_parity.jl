@@ -322,6 +322,7 @@ end
     env["JWAS_ANNOT_BENCH_N_OBS"] = "30"
     env["JWAS_ANNOT_BENCH_N_MARKERS"] = "40"
     env["JWAS_ANNOT_BENCH_SEEDS"] = "2026,2027"
+    env["JWAS_ANNOT_BENCH_SCENARIO"] = "less_sparse_upper_classes"
 
     @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
     @test isfile(joinpath(outdir, "comparison_runs.csv"))
@@ -333,6 +334,7 @@ end
     runs = CSV.read(joinpath(outdir, "comparison_runs.csv"), DataFrame)
     summary = CSV.read(joinpath(outdir, "comparison_summary.csv"), DataFrame)
     coeffs = CSV.read(joinpath(outdir, "annotation_coefficients.csv"), DataFrame)
+    truth = CSV.read(joinpath(outdir, "truth_metadata.csv"), DataFrame)
 
     @test sort!(collect(unique(runs.method_variant))) == [
         "Annotated_BayesC",
@@ -340,6 +342,10 @@ end
         "BayesR",
     ]
     @test "phenotype_ebv_correlation" in names(runs)
+    @test "scenario" in names(summary)
+    @test all(summary.scenario .== "less_sparse_upper_classes")
     @test "mean_pip_causal" in names(summary)
     @test "Step" in names(coeffs)
+    @test "scenario" in names(truth)
+    @test all(truth.scenario .== "less_sparse_upper_classes")
 end
