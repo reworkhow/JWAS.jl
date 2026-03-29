@@ -8,10 +8,11 @@ compare it against:
 - dense BayesR
 - dense annotated BayesC
 
-under two synthetic regimes:
+under three synthetic regimes:
 
 - a sparse upper-class regime
 - a less-sparse upper-class regime
+- a stepwise conditional-signal regime
 
 The main question is whether annotated BayesR improves SNP prioritization and
 prediction when the annotations truly enrich nonzero and larger-effect markers.
@@ -26,6 +27,7 @@ Output directories:
 
 - sparse scenario: `/tmp/annotated_bayesr_benchmark_20260328`
 - less-sparse scenario: `/tmp/annotated_bayesr_benchmark_20260328_less_sparse`
+- stepwise-signal scenario: `/tmp/annotated_bayesr_benchmark_20260328_stepwise_signal`
 
 Methods:
 
@@ -48,7 +50,7 @@ Common settings:
 
 ## Data-Generating Truth
 
-Both scenarios used the same annotation layout:
+All three scenarios used the same annotation layout:
 
 - `250` enriched SNPs (`annotation_1 = 1`)
 - `750` baseline SNPs (`annotation_1 = 0`)
@@ -100,6 +102,46 @@ Rates:
 
 This second regime gives the step-2 and step-3 annotation models much more real
 signal than the sparse regime.
+
+### Scenario 3: `stepwise_annotation_signal`
+
+This regime was designed directly in the sequential conditional parameterization
+used by annotated BayesR.
+
+Target conditional probabilities:
+
+- baseline SNPs:
+  - `P(delta > 1) = 0.10`
+  - `P(delta > 2 | delta > 1) = 0.20`
+  - `P(delta > 3 | delta > 2) = 0.20`
+- enriched SNPs:
+  - `P(delta > 1) = 0.30`
+  - `P(delta > 2 | delta > 1) = 0.60`
+  - `P(delta > 3 | delta > 2) = 0.60`
+
+Realized truth summary:
+
+- total markers: `1000`
+- causal markers: `144`
+- class counts:
+  - `class1 = 856`
+  - `class2 = 92`
+  - `class3 = 31`
+  - `class4 = 21`
+
+Realized rates:
+
+- baseline causal rate: `0.1053`
+- enriched causal rate: `0.2600`
+- baseline large-class rate (`class3` or `class4`): `0.0213`
+- enriched large-class rate: `0.1440`
+- baseline realized `P(delta > 2 | delta > 1)`: `0.2025`
+- enriched realized `P(delta > 2 | delta > 1)`: `0.5538`
+- baseline realized `P(delta > 3 | delta > 2)`: `0.1875`
+- enriched realized `P(delta > 3 | delta > 2)`: `0.5000`
+
+This is the first regime in this benchmark family where steps 2 and 3 were
+given strong signal by design rather than only becoming less rare indirectly.
 
 ## Scenario 1 Results: `sparse_upper_classes`
 
@@ -212,31 +254,103 @@ Interpretation:
 So the less-sparse regime helped, but it did not fully stabilize the upper
 conditional annotation models.
 
+## Scenario 3 Results: `stepwise_annotation_signal`
+
+Mean results across five seeds:
+
+| Method | cor(y, EBV) | mean PIP causal | mean PIP noncausal | enriched PIP | baseline PIP | top-causal recall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `BayesR` | `0.9164` | `0.4983` | `0.4840` | `0.4910` | `0.4844` | `0.2222` |
+| `Annotated_BayesR` | `0.7409` | `0.1027` | `0.0606` | `0.1388` | `0.0426` | `0.2986` |
+| `Annotated_BayesC` | `0.8595` | `0.3156` | `0.2340` | `0.4695` | `0.1712` | `0.2472` |
+
+Main observations:
+
+1. Annotated BayesR finally learned positive signal in all three steps.
+   - step 1:
+     - `Annotation_1 = +1.3349`
+     - `Annotation_2 = -0.9746`
+   - step 2:
+     - `Annotation_1 = +0.2365`
+     - `Annotation_2 = -0.2444`
+   - step 3:
+     - `Annotation_1 = +0.2518`
+     - `Annotation_2 = +0.0275`
+2. The deeper-step intercepts dropped materially relative to the earlier
+   scenarios.
+   - sparse regime:
+     - step 2 intercept `19.2796`
+     - step 3 intercept `28.1303`
+   - less-sparse regime:
+     - step 2 intercept `13.1159`
+     - step 3 intercept `18.9376`
+   - stepwise-signal regime:
+     - step 2 intercept `11.0214`
+     - step 3 intercept `8.3824`
+3. Annotated BayesR again improved prioritization over BayesR.
+   - causal minus noncausal mean PIP gap:
+     - `BayesR = 0.0143`
+     - `Annotated_BayesR = 0.0422`
+   - enriched minus baseline mean PIP gap:
+     - `BayesR = 0.0067`
+     - `Annotated_BayesR = 0.0963`
+   - top-causal recall:
+     - `BayesR = 0.2222`
+     - `Annotated_BayesR = 0.2986`
+4. True-class ordering improved again.
+   - BayesR mean PIP by true class:
+     - `class1 = 0.4840`
+     - `class2 = 0.4829`
+     - `class3 = 0.4938`
+     - `class4 = 0.5721`
+   - Annotated BayesR mean PIP by true class:
+     - `class1 = 0.0606`
+     - `class2 = 0.0679`
+     - `class3 = 0.0962`
+     - `class4 = 0.2651`
+5. Prediction still stayed below ordinary BayesR.
+   - `BayesR = 0.9164`
+   - `Annotated_BayesR = 0.7409`
+
+Interpretation:
+
+- This scenario answered the main open scientific question from the first two
+  benchmarks: the annotated BayesR implementation can move in the correct
+  direction on steps 2 and 3 when the truth explicitly drives those steps.
+- The deeper sequential models are therefore not purely dead code or purely a
+  numerical artifact.
+- But the prediction penalty did not disappear, even after giving the deeper
+  steps signal by design.
+- The nuisance annotation still moved away from zero, especially in step 1 and
+  step 2, even though it was generated independently of the truth. That is a
+  real caution sign about overfitting in the annotation submodel.
+
 ## What This Says About Annotated BayesR
 
-Across both scenarios, the pattern was consistent.
+Across all three scenarios, the pattern was consistent.
 
 ### 1. The production implementation is working
 
 The benchmark used only the production `runMCMC` path, and annotated BayesR
-behaved coherently in both regimes:
+behaved coherently in all regimes:
 
 - it learned the informative annotation at step 1
-- it kept the nuisance annotation near zero
+- it moved step-2 and step-3 informative coefficients in the expected direction
+  once the truth actually supplied that signal
 - it changed SNP prioritization in the expected direction
 
 This is not a mechanics failure.
 
 ### 2. Annotated BayesR is better at prioritization than at prediction
 
-In both scenarios:
+In all three scenarios:
 
 - enriched vs baseline PIP separation improved
 - causal vs noncausal PIP separation improved
 - top-causal recall improved
 - class-order separation improved
 
-But in both scenarios:
+But in all three scenarios:
 
 - `cor(y, EBV)` stayed below ordinary BayesR
 
@@ -248,32 +362,56 @@ tool than as a predictor on these synthetic regimes.
 Even after increasing class-3 and class-4 prevalence, the upper-step intercepts
 were still large and the informative step-2/step-3 coefficients were weak.
 
-That means the central scientific issue is not the first step. It is the
-stability and usefulness of the deeper sequential annotation models.
+The stepwise-signal scenario improved that picture:
+
+- informative step-2 and step-3 coefficients became positive
+- upper-step intercepts dropped substantially
+
+But the remaining issue did not disappear:
+
+- EBV correlation still lagged ordinary BayesR
+- nuisance coefficients were still not cleanly suppressed
+
+So the central scientific issue is no longer “can the deeper steps move at
+all?” It is whether those deeper steps can improve posterior quality without
+overfitting the annotation layer.
 
 ## What This Says About Annotated BayesC
 
-Annotated BayesC behaved very differently across the two regimes.
+Annotated BayesC remained a useful comparator, but it is not testing the same
+scientific question as annotated BayesR in the stepwise-signal regime because
+it only models step 1.
 
-In the sparse regime:
+Across the three regimes:
 
-- strong enriched-vs-baseline PIP separation: `0.3302`
-- reasonable EBV correlation: `0.8928`
+- sparse regime:
+  - strong enriched-vs-baseline separation: `0.3302`
+  - reasonable EBV correlation: `0.8928`
+- less-sparse regime:
+  - enriched-vs-baseline gap turned negative: `-0.0372`
+  - informative annotation coefficient mean became negative:
+    - `Annotation_1 = -1.0116`
+- stepwise-signal regime:
+  - enriched-vs-baseline gap became positive again: `0.2983`
+  - top-causal recall improved over BayesR: `0.2472` vs `0.2222`
+  - `cor(y, EBV)` stayed below BayesR: `0.8595` vs `0.9164`
 
-In the less-sparse regime:
+So annotated BayesC is still a useful comparator, but it is not a stable
+scientific baseline across this benchmark family.
 
-- enriched-vs-baseline gap turned negative: `-0.0372`
-- causal-vs-noncausal gap also turned negative: `-0.0086`
-- informative annotation coefficient mean became negative:
-  - `Annotation_1 = -1.0116`
+In the new stepwise-signal regime specifically:
 
-So in this benchmark family, annotated BayesC is not the more reliable
-annotation baseline. It looked aggressive in the sparse regime but unstable
-across scenarios.
+- it achieved stronger enriched-vs-baseline separation than BayesR
+- it improved top-causal recall over BayesR
+- it stayed well below BayesR on `cor(y, EBV)`
+
+So it is still a useful baseline for “does annotation help prioritization,” but
+it is not a substitute for testing the deeper sequential logic of annotated
+BayesR.
 
 ## Bottom Line
 
-The two-scenario benchmark supports these conclusions.
+The three-scenario benchmark supports these conclusions.
 
 1. Annotated BayesR is implemented correctly enough to learn the annotation and
    change posterior prioritization on the production JWAS path.
@@ -281,18 +419,27 @@ The two-scenario benchmark supports these conclusions.
    ordinary BayesR.
 3. Annotated BayesR is not yet benchmark-proven to improve prediction
    (`cor(y, EBV)`) relative to ordinary BayesR.
-4. The remaining scientific weakness is the upper conditional annotation models,
-   not the basic annotated BayesR implementation.
-5. Annotated BayesC is not a uniformly stronger benchmark comparator here; it
-   became unstable when the truth regime changed.
+4. The deeper sequential annotation models can respond correctly when the truth
+   explicitly drives them, so the current limitation is not a basic
+   implementation failure.
+5. The remaining scientific weakness is the tradeoff between stronger
+   prioritization and weaker prediction, together with signs of annotation-layer
+   overfitting on nuisance features.
+6. Annotated BayesC remains useful as a comparator, but it does not answer the
+   same step-2/step-3 question as annotated BayesR.
 
 So the current implementation should be viewed as:
 
 - a sound v1 annotated BayesR sampler
 - promising for SNP prioritization
 - not yet validated as a superior predictor
+- scientifically stronger after the stepwise-signal benchmark, but still not
+  settled enough to claim the deeper annotation structure improves prediction
 
-The next benchmark that would matter most is a regime where the upper classes
-carry more signal and where the annotation effects for steps 2 and 3 are
-stronger by design. That would test whether the current limitations are due to
-weak truth or to the model structure itself.
+The next useful work is no longer another benchmark of the same kind. It is
+code and model review:
+
+- review the annotated BayesR sampler together
+- focus on the annotation submodel regularization and nuisance-feature behavior
+- decide whether v1 should be merged as a prioritization-oriented method or
+  whether the annotation layer needs further restraint first

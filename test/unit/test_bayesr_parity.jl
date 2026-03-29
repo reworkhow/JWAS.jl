@@ -322,7 +322,7 @@ end
     env["JWAS_ANNOT_BENCH_N_OBS"] = "30"
     env["JWAS_ANNOT_BENCH_N_MARKERS"] = "40"
     env["JWAS_ANNOT_BENCH_SEEDS"] = "2026,2027"
-    env["JWAS_ANNOT_BENCH_SCENARIO"] = "less_sparse_upper_classes"
+    env["JWAS_ANNOT_BENCH_SCENARIO"] = "stepwise_annotation_signal"
 
     @test success(pipeline(setenv(cmd, env), stdout=devnull, stderr=devnull))
     @test isfile(joinpath(outdir, "comparison_runs.csv"))
@@ -343,9 +343,9 @@ end
     ]
     @test "phenotype_ebv_correlation" in names(runs)
     @test "scenario" in names(summary)
-    @test all(summary.scenario .== "less_sparse_upper_classes")
+    @test all(summary.scenario .== "stepwise_annotation_signal")
     @test "mean_pip_causal" in names(summary)
     @test "Step" in names(coeffs)
     @test "scenario" in names(truth)
-    @test all(truth.scenario .== "less_sparse_upper_classes")
+    @test all(truth.scenario .== "stepwise_annotation_signal")
 end

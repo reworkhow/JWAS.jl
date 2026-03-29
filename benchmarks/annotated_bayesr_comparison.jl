@@ -42,6 +42,20 @@ function write_benchmark_dataset(outdir; ids, marker_ids, X, y)
     CSV.write(joinpath(outdir, "phenotypes.csv"), DataFrame(ID=ids, y1=y))
 end
 
+function joint_probs_from_conditionals(p1::Real, p2::Real, p3::Real)
+    0.0 <= p1 <= 1.0 || error("p1 must lie in [0, 1].")
+    0.0 <= p2 <= 1.0 || error("p2 must lie in [0, 1].")
+    0.0 <= p3 <= 1.0 || error("p3 must lie in [0, 1].")
+    probs = Float64[
+        1 - p1,
+        p1 * (1 - p2),
+        p1 * p2 * (1 - p3),
+        p1 * p2 * p3,
+    ]
+    isapprox(sum(probs), 1.0; atol=1e-12) || error("Conditional probabilities must map to a valid class distribution.")
+    return probs
+end
+
 function scenario_class_probabilities(name::AbstractString)
     if name == "sparse_upper_classes"
         return (
@@ -52,6 +66,11 @@ function scenario_class_probabilities(name::AbstractString)
         return (
             baseline=Float64[0.90, 0.05, 0.03, 0.02],
             enriched=Float64[0.65, 0.15, 0.12, 0.08],
+        )
+    elseif name == "stepwise_annotation_signal"
+        return (
+            baseline=joint_probs_from_conditionals(0.10, 0.20, 0.20),
+            enriched=joint_probs_from_conditionals(0.30, 0.60, 0.60),
         )
     end
     error("Unsupported annotated benchmark scenario: $name")
