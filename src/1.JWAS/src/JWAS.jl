@@ -22,6 +22,7 @@ include("variance_components.jl")
 include("iterative_solver/solver.jl")
 
 #Markov chain Monte Carlo
+include("MCMC/annotation_updates.jl")
 include("MCMC/MCMC_BayesianAlphabet.jl")
 
 #Genomic Markers
