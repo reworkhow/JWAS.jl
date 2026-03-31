@@ -238,6 +238,16 @@ using Random
         @test all(1 .<= geno.δ[1] .<= 4)
     end
 
+    @testset "binary annotation bounds helper" begin
+        lower = fill(999.0, 4)
+        upper = fill(999.0, 4)
+
+        JWAS.annotation_binary_bounds!(lower, upper, Int[0, 1, 1, 0])
+
+        @test lower == [-Inf, 0.0, 0.0, -Inf]
+        @test upper == [0.0, Inf, Inf, 0.0]
+    end
+
     @testset "BayesR annotation prior refresh builds 4-class snp_pi" begin
         annotations = rand(Float64, 5, 2)
         geno = get_genotypes(

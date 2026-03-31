@@ -2,6 +2,24 @@ function has_marker_annotations(Mi)
     return Mi.annotations !== false
 end
 
+"""
+    initialize_annotation_indicators!(Mi)
+
+Initialize latent mixture indicators before the first MCMC iteration.
+
+Annotated BayesC is the binary special case:
+
+`δ_j ∈ {0, 1}`, where `δ_j = 1` means the marker is included.
+
+Annotated BayesR uses a 4-class mixture:
+
+`δ_j ∈ {1, 2, 3, 4}`, where class `1` is the zero-effect class and
+classes `2:4` are the nonzero BayesR components.
+
+The initialization is intentionally simple:
+- BayesC starts from the current scalar inclusion probability.
+- BayesR samples from the current per-marker 4-class probabilities.
+"""
 function initialize_annotation_indicators!(Mi)
     if !has_marker_annotations(Mi) || Mi.nMarkers <= 1
         return nothing
@@ -48,6 +66,143 @@ function initialize_annotation_indicators!(Mi)
     return nothing
 end
 
+"""
+    annotation_binary_bounds!(lower, upper, response)
+
+Set the truncation bounds for a binary probit step.
+
+For binary indicator `z_i ∈ {0, 1}`, introduce latent liability `l_i` such that
+
+`z_i = 1(l_i > 0)`.
+
+Then the full conditional is
+
+`l_i | z_i, μ_i ~ N(μ_i, s^2)` truncated to:
+- `(-Inf, 0]` when `z_i = 0`
+- `[0, Inf)` when `z_i = 1`
+"""
+function annotation_binary_bounds!(lower::AbstractVector, upper::AbstractVector, response::AbstractVector{<:Real})
+    for i in eachindex(response, lower, upper)
+        if response[i] == 0
+            lower[i] = -Inf
+            upper[i] = 0.0
+        else
+            lower[i] = 0.0
+            upper[i] = Inf
+        end
+    end
+    return nothing
+end
+
+"""
+    sample_binary_annotation_liabilities!(liability, mu, lower, upper, response; latent_sd)
+
+Sample the latent liabilities for one binary probit step after the truncation
+bounds have been determined by [`annotation_binary_bounds!`](@ref).
+
+This is the common latent-variable update used by:
+- annotated BayesC for the single inclusion step
+- annotated BayesR for each of the nested step-up indicators
+"""
+function sample_binary_annotation_liabilities!(liability::AbstractVector,
+                                              mu::AbstractVector,
+                                              lower::AbstractVector,
+                                              upper::AbstractVector,
+                                              response::AbstractVector{<:Real};
+                                              latent_sd::Real)
+    annotation_binary_bounds!(lower, upper, response)
+    for i in eachindex(response, liability, mu, lower, upper)
+        if lower[i] == upper[i]
+            liability[i] = lower[i]
+        else
+            liability[i] = rand(truncated(Normal(mu[i], latent_sd), lower[i], upper[i]))
+        end
+    end
+    return nothing
+end
+
+"""
+    gibbs_update_annotation_coefficients!(ann)
+
+BayesC one-step coefficient update.
+
+This keeps the existing JWAS BayesC behavior: a single multivariate Gibbs update
+on the latent regression
+
+`l = Xα + ε`.
+"""
+function gibbs_update_annotation_coefficients!(ann)
+    rhs = ann.design_matrix' * ann.liability
+    Gibbs(ann.lhs, ann.coefficients, rhs, ann.variance)
+    ann.mu .= ann.design_matrix * ann.coefficients
+    return nothing
+end
+
+"""
+    gibbs_update_annotation_coefficients!(coeffs, X, latent_residual, variance)
+
+BayesR step-wise coefficient update for one binary probit submodel.
+
+Write the latent regression as
+
+`l = Xα + ε`, with `ε ~ N(0, I)`.
+
+After sampling the latent liabilities, we work with the residual
+
+`r = l - Xα`.
+
+Then each coefficient is updated by a standard scalar Gibbs step:
+- the intercept uses a flat prior
+- slopes use `α_k ~ N(0, σ^2_α)`
+"""
+function gibbs_update_annotation_coefficients!(coeffs::AbstractVector,
+                                               X::AbstractMatrix,
+                                               latent_residual::AbstractVector,
+                                               variance::Real)
+    nobs = size(X, 1)
+
+    old_sample = coeffs[1]
+    rhs = sum(latent_residual) + nobs * old_sample
+    inv_lhs = 1.0 / nobs
+    ahat = inv_lhs * rhs
+    coeffs[1] = randn() * sqrt(inv_lhs) + ahat
+    latent_residual .+= old_sample - coeffs[1]
+
+    if size(X, 2) > 1
+        for k in 2:size(X, 2)
+            old_sample = coeffs[k]
+            xk = view(X, :, k)
+            anno_diag = dot(xk, xk)
+            inv_lhs = 1.0 / (anno_diag + 1.0 / variance)
+            ahat = inv_lhs * (dot(xk, latent_residual) + anno_diag * old_sample)
+            coeffs[k] = randn() * sqrt(inv_lhs) + ahat
+            latent_residual .+= xk .* (old_sample - coeffs[k])
+        end
+    end
+    return nothing
+end
+
+"""
+    sample_annotation_effect_variance!(variance, coeffs)
+
+Update the slope variance for one annotation step using the same scaled
+inverse-chi-square form as Jian's `sbayesrc.R`:
+
+`σ^2_α = (Σ_{k>1} α_k^2 + 2) / χ^2_{p+1}`
+
+where `p` is the total number of annotation coefficients including the intercept.
+"""
+function sample_annotation_effect_variance!(variance::AbstractVector, step::Integer, coeffs::AbstractVector)
+    variance[step] = (sum(abs2, view(coeffs, 2:length(coeffs))) + 2.0) / rand(Chisq(length(coeffs) + 1.0))
+    return nothing
+end
+
+"""
+    update_annotation_bounds_single_step!(Mi)
+
+Annotated BayesC is the one-step binary special case. The thresholds remain the
+current BayesC convention, and this refactor preserves that behavior.
+"""
 function update_annotation_bounds_single_step!(Mi)
     ann = Mi.annotations
     ann.lower_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 1]
@@ -57,30 +212,39 @@ end
 
 function sample_annotation_liabilities_single_step!(Mi)
     ann = Mi.annotations
-    update_annotation_bounds_single_step!(Mi)
-    for i in 1:Mi.nMarkers
-        lower = ann.lower_bound[i]
-        upper = ann.upper_bound[i]
-        if lower == upper
-            ann.liability[i] = lower
-        else
-            ann.liability[i] = rand(truncated(Normal(ann.mu[i], sqrt(ann.variance)), lower, upper))
-        end
-    end
+    # BayesC keeps its existing latent-variance convention in this refactor.
+    sample_binary_annotation_liabilities!(
+        ann.liability,
+        ann.mu,
+        ann.lower_bound,
+        ann.upper_bound,
+        Mi.δ[1];
+        latent_sd=sqrt(ann.variance),
+    )
     return nothing
 end
 
 function update_annotation_priors_single_step!(Mi)
     ann = Mi.annotations
+    update_annotation_bounds_single_step!(Mi)
     sample_annotation_liabilities_single_step!(Mi)
-    rhs = ann.design_matrix' * ann.liability
-    Gibbs(ann.lhs, ann.coefficients, rhs, ann.variance)
-    ann.mu .= ann.design_matrix * ann.coefficients
+    gibbs_update_annotation_coefficients!(ann)
     dist = Normal(0, sqrt(ann.variance))
     Mi.π .= clamp.(1 .- cdf.(dist, ann.mu), eps(Float64), 1 - eps(Float64))
     return nothing
 end
 
+"""
+    bayesr_annotation_step_indicators(delta)
+
+Build the three nested BayesR step-up indicators:
+
+- `z1_j = 1(δ_j > 1)`
+- `z2_j = 1(δ_j > 2)`
+- `z3_j = 1(δ_j > 3)`
+
+and the corresponding active subsets used by the conditional probit updates.
+"""
 function bayesr_annotation_step_indicators(delta::AbstractVector{<:Integer})
     z1 = Int.(delta .> 1)
     z2 = Int.(delta .> 2)
@@ -93,6 +257,21 @@ function bayesr_annotation_step_indicators(delta::AbstractVector{<:Integer})
     return (z1, z2, z3), active
 end
 
+"""
+    sample_bayesr_annotation_step!(ann, step, response, active)
+
+Sample one conditional BayesR annotation step.
+
+For step-specific conditional probabilities `(p1, p2, p3)`, BayesR reconstructs
+the 4-class per-marker prior as
+
+- `π_{j1} = 1 - p1_j`
+- `π_{j2} = p1_j (1 - p2_j)`
+- `π_{j3} = p1_j p2_j (1 - p3_j)`
+- `π_{j4} = p1_j p2_j p3_j`
+
+This helper updates one binary probit submodel that contributes to `p_step`.
+"""
 function sample_bayesr_annotation_step!(ann, step::Integer, response::AbstractVector{<:Integer}, active::AbstractVector{<:Integer})
     coeffs = view(ann.coefficients, :, step)
     ann.mu[:, step] .= ann.design_matrix * coeffs
@@ -101,40 +280,26 @@ function sample_bayesr_annotation_step!(ann, step::Integer, response::AbstractVe
     isempty(active) && return nothing
 
     X = ann.design_matrix[active, :]
-    mu_active = ann.mu[active, step]
-    variance = ann.variance[step]
+    mu_active = view(ann.mu, active, step)
     liability_active = view(ann.liability, active, step)
+    lower_active = view(ann.lower_bound, active, step)
+    upper_active = view(ann.upper_bound, active, step)
+    response_active = view(response, active)
 
-    for (local_i, global_i) in pairs(active)
-        if response[global_i] == 0
-            ann.lower_bound[global_i, step] = -Inf
-            ann.upper_bound[global_i, step] = 0.0
-        else
-            ann.lower_bound[global_i, step] = 0.0
-            ann.upper_bound[global_i, step] = Inf
-        end
-        liability_active[local_i] = rand(truncated(Normal(mu_active[local_i], 1.0), ann.lower_bound[global_i, step], ann.upper_bound[global_i, step]))
-    end
+    sample_binary_annotation_liabilities!(
+        liability_active,
+        mu_active,
+        lower_active,
+        upper_active,
+        response_active;
+        latent_sd=1.0,
+    )
 
-    lj = liability_active .- mu_active
-
-    old_sample = coeffs[1]
-    rhs = sum(lj) + length(active) * old_sample
-    inv_lhs = 1.0 / length(active)
-    ahat = inv_lhs * rhs
-    coeffs[1] = randn() * sqrt(inv_lhs) + ahat
-    lj .+= old_sample - coeffs[1]
+    latent_residual = liability_active .- mu_active
+    gibbs_update_annotation_coefficients!(coeffs, X, latent_residual, ann.variance[step])
 
     if size(X, 2) > 1
-        for k in 2:size(X, 2)
-            old_sample = coeffs[k]
-            anno_diag = dot(view(X, :, k), view(X, :, k))
-            inv_lhs = 1.0 / (anno_diag + 1.0 / variance)
-            ahat = inv_lhs * (dot(view(X, :, k), lj) + anno_diag * old_sample)
-            coeffs[k] = randn() * sqrt(inv_lhs) + ahat
-            lj .+= view(X, :, k) .* (old_sample - coeffs[k])
-        end
-        ann.variance[step] = (sum(abs2, view(coeffs, 2:length(coeffs))) + 2.0) / rand(Chisq(size(X, 2) + 1.0))
+        sample_annotation_effect_variance!(ann.variance, step, coeffs)
     end
 
     ann.mu[:, step] .= ann.design_matrix * coeffs
