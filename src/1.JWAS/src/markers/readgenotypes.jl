@@ -57,8 +57,8 @@ function validate_annotations_input(annotations, nmarkers::Integer, method)
     if annotations === false
         return false
     end
-    if method != "BayesC"
-        error("annotations are only supported with method=\"BayesC\".")
+    if !(method in ("BayesC", "BayesR"))
+        error("annotations are only supported with method=\"BayesC\" or method=\"BayesR\".")
     end
     if !(annotations isa AbstractMatrix{<:Real})
         error("annotations must be a numeric matrix with one row per marker.")
@@ -87,18 +87,51 @@ function validate_annotation_design(annotations::AbstractMatrix)
     return nothing
 end
 
-function build_marker_annotations(annotations)
+function bayesr_annotation_probabilities(π::AbstractVector{<:Real})
+    length(π) == 4 || error("BayesR Pi must have length 4.")
+    total_nonzero = π[2] + π[3] + π[4]
+    total_larger = π[3] + π[4]
+    total_nonzero > 0 || error("Annotated BayesR requires positive nonzero prior mass.")
+    total_larger > 0 || error("Annotated BayesR requires positive prior mass in classes 3 or 4.")
+    p1 = total_nonzero
+    p2 = total_larger / total_nonzero
+    p3 = π[4] / total_larger
+    0.0 < p1 < 1.0 || error("Annotated BayesR requires 0 < Pr(delta > 1) < 1. Adjust Pi so the zero-vs-nonzero split is nondegenerate.")
+    0.0 < p2 < 1.0 || error("Annotated BayesR requires 0 < Pr(delta > 2 | delta > 1) < 1. Adjust Pi so classes 2 versus 3/4 are both represented.")
+    0.0 < p3 < 1.0 || error("Annotated BayesR requires 0 < Pr(delta > 3 | delta > 2) < 1. Adjust Pi so classes 3 and 4 are both represented.")
+    return p1, p2, p3
+end
+
+function bayesr_default_pi(Pi)
+    return Pi == 0.0 ? Float64[0.95, 0.03, 0.015, 0.005] : collect(Float64, Pi)
+end
+
+function build_marker_annotations(annotations, method, Pi)
     if annotations === false
         return false
     end
     validate_annotation_design(annotations)
     design_matrix = hcat(ones(Float64, size(annotations, 1)), annotations)
+    if method == "BayesR"
+        π = bayesr_default_pi(Pi)
+        p1, p2, p3 = bayesr_annotation_probabilities(π)
+        coeffs = zeros(Float64, size(design_matrix, 2), 3)
+        coeffs[1, 1] = quantile(Normal(), p1)
+        coeffs[1, 2] = quantile(Normal(), p2)
+        coeffs[1, 3] = quantile(Normal(), p3)
+        snp_pi = repeat(reshape(π, 1, :), size(design_matrix, 1), 1)
+        return MarkerAnnotations(design_matrix;
+                                 nsteps=3,
+                                 nclasses=4,
+                                 coefficients=coeffs,
+                                 snp_pi=snp_pi)
+    end
     return MarkerAnnotations(design_matrix)
 end
 
-function normalize_annotation_estimatePi(annotation_matrix, estimatePi)
+function normalize_annotation_estimatePi(annotation_matrix, estimatePi, method)
     if annotation_matrix !== false && estimatePi == false
-        @warn "estimatePi=false is ignored when annotations are provided; Annotated BayesC requires estimatePi=true."
+        @warn "estimatePi=false is ignored when annotations are provided; Annotated $method requires estimatePi=true."
         return true
     end
     return estimatePi
@@ -150,7 +183,7 @@ O3,0,0,2,1,1
   have effects (Pi = 0.0)` in single-trait analysis and `all markers have effects on all traits
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
-* `annotations` enables AnnotatedBayesC. Supply a numeric matrix with one row per raw marker; JWAS prepends an intercept column internally after marker QC/filtering.
+* `annotations` enables annotation-aware BayesC/BayesR. Supply a numeric matrix with one row per raw marker; JWAS prepends an intercept column internally after marker QC/filtering.
 * `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
   `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
@@ -178,6 +211,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         if !(typeof(file) <: AbstractString)
             error("storage=:stream requires a file path or prefix produced by prepare_streaming_genotypes.")
         end
+        if method == "BayesR" && annotations !== false
+            error("Annotated BayesR v1 supports storage=:dense only.")
+        end
         if method == "GBLUP"
             error("storage=:stream MVP does not support GBLUP.")
         end
@@ -193,7 +229,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         if annotation_matrix !== false
             annotation_matrix = annotation_matrix[backend.selected_marker_indices, :]
         end
-        estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi)
+        estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi, method)
         if center != backend.centered
             printstyled("The argument center=$center is ignored for storage=:stream. Backend metadata centered=$(backend.centered) is used.\n",
                         bold=false,color=:green)
@@ -213,7 +249,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes.method     = method
         genotypes.estimatePi = estimatePi
         genotypes.π          = copy_pi_input(Pi)
-        genotypes.annotations = build_marker_annotations(annotation_matrix)
+        genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
 
         println("Genotype informatin:")
         println("#markers: ",backend.nMarkers,"; #individuals: ",backend.nObs," (storage=:stream)")
@@ -283,7 +319,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         error("The data type is not supported.")
     end
     annotation_matrix = validate_annotations_input(annotations, length(markerID), method)
-    estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi)
+    estimatePi = normalize_annotation_estimatePi(annotation_matrix, estimatePi, method)
 
     isGRM = false
     if method == "GBLUP" #fix and check some parameters in GBLUP
@@ -363,7 +399,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = copy_pi_input(Pi)
-    genotypes.annotations = build_marker_annotations(annotation_matrix)
+    genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
 
     println("Genotype informatin:")
     println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))

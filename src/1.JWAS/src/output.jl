@@ -151,12 +151,23 @@ function output_result(mme,output_folder,
           if Mi.annotations !== false
               ann = Mi.annotations
               annotation_names = ["Intercept"; ["Annotation_$i" for i in 1:(size(ann.design_matrix, 2)-1)]]
-              annotation_sd = sqrt.(abs.(ann.mean_coefficients2 .- ann.mean_coefficients .^ 2))
-              output["annotation coefficients "*Mi.name] = DataFrame(
-                  Annotation=annotation_names,
-                  Estimate=ann.mean_coefficients,
-                  SD=annotation_sd,
-              )
+              if ann.nsteps == 1
+                  annotation_sd = sqrt.(abs.(ann.mean_coefficients2 .- ann.mean_coefficients .^ 2))
+                  output["annotation coefficients "*Mi.name] = DataFrame(
+                      Annotation=annotation_names,
+                      Estimate=ann.mean_coefficients,
+                      SD=annotation_sd,
+                  )
+              else
+                  step_labels = ["step1_zero_vs_nonzero", "step2_small_vs_larger", "step3_medium_vs_large"]
+                  annotation_sd = sqrt.(abs.(ann.mean_coefficients2 .- ann.mean_coefficients .^ 2))
+                  output["annotation coefficients "*Mi.name] = DataFrame(
+                      Annotation=repeat(annotation_names, inner=ann.nsteps),
+                      Step=repeat(step_labels[1:ann.nsteps], outer=length(annotation_names)),
+                      Estimate=vec(permutedims(ann.mean_coefficients, (2, 1))),
+                      SD=vec(permutedims(annotation_sd, (2, 1))),
+                  )
+              end
           end
       end
   end

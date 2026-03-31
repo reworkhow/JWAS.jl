@@ -46,12 +46,25 @@ function errors_args(mme)
                 mme.nModels == 1 || error("BayesR v1 supports single-trait analysis only.")
                 Mi.storage_mode == :dense || error("BayesR v1 supports storage=:dense only.")
                 mme.MCMCinfo.RRM == false || error("BayesR v1 does not support random regression model (RRM).")
-                Mi.annotations === false || error("BayesR v1 does not support annotations.")
+                if Mi.annotations !== false
+                    mme.MCMCinfo.fast_blocks == false || error("Annotated BayesR v1 does not support fast_blocks.")
+                end
                 if Mi.π != 0.0
                     Mi.π isa AbstractVector || error("BayesR Pi must be a length 4 vector or 0.0 for defaults.")
                     length(Mi.π) == 4 || error("BayesR Pi must have length 4.")
                     all(x -> x >= 0, Mi.π) || error("BayesR Pi entries must be nonnegative.")
                     isapprox(sum(Mi.π), 1.0; atol=1e-8) || error("BayesR Pi must sum to 1.")
+                    if Mi.annotations !== false
+                        total_nonzero = Mi.π[2] + Mi.π[3] + Mi.π[4]
+                        total_larger = Mi.π[3] + Mi.π[4]
+                        total_nonzero > 0 || error("Annotated BayesR requires positive nonzero prior mass.")
+                        total_larger > 0 || error("Annotated BayesR requires positive prior mass in classes 3 or 4.")
+                        p2 = total_larger / total_nonzero
+                        p3 = Mi.π[4] / total_larger
+                        total_nonzero < 1 || error("Annotated BayesR requires a nondegenerate zero-vs-nonzero split in Pi.")
+                        0.0 < p2 < 1.0 || error("Annotated BayesR requires a nondegenerate class-2 vs class-3/4 split in Pi.")
+                        0.0 < p3 < 1.0 || error("Annotated BayesR requires a nondegenerate class-3 vs class-4 split in Pi.")
+                    end
                 end
             end
             if Mi.storage_mode == :stream

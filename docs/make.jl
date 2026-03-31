@@ -17,6 +17,7 @@ makedocs(
             "Get Started" => "manual/getstarted.md",
             "Workflow" => "manual/workflow.md",
             "Annotated BayesC" => "manual/annotated_bayesc.md",
+            "Annotated BayesR" => "manual/annotated_bayesr.md",
             "Structural Equation Model (SEM)" => "manual/sem.md",
             "Block BayesC" => "manual/block_bayesc.md",
             "Benchmark" => "manual/benchmark.md",

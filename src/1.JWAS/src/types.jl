@@ -174,23 +174,42 @@ mutable struct MarkerAnnotations
     lower_bound
     upper_bound
     lhs
+    nsteps
+    nclasses
+    snp_pi
 
-    function MarkerAnnotations(design_matrix::AbstractMatrix; variance::Real=1.0)
+    function MarkerAnnotations(design_matrix::AbstractMatrix;
+                               variance::Real=1.0,
+                               nsteps::Integer=1,
+                               nclasses::Integer=2,
+                               coefficients=nothing,
+                               snp_pi=nothing)
         matrix = Matrix{Float64}(design_matrix)
         nrows, ncols = size(matrix)
-        coeffs = zeros(Float64, ncols)
-        thresholds = [-Inf, 0.0, Inf]
+        coeffs = coefficients === nothing ? (nsteps == 1 ? zeros(Float64, ncols) : zeros(Float64, ncols, nsteps)) : coefficients
+        mean_coeffs = zero(coeffs)
+        mean_coeffs2 = zero(coeffs)
+        thresholds = nsteps == 1 ? Float64[-Inf, 0.0, Inf] : [Float64[-Inf, 0.0, Inf] for _ in 1:nsteps]
+        step_variance = nsteps == 1 ? Float64(variance) : fill(Float64(variance), nsteps)
+        liabilities = nsteps == 1 ? zeros(Float64, nrows) : zeros(Float64, nrows, nsteps)
+        mu = zero(liabilities)
+        lower = nsteps == 1 ? fill(-Inf, nrows) : fill(-Inf, nrows, nsteps)
+        upper = nsteps == 1 ? fill(Inf, nrows) : fill(Inf, nrows, nsteps)
+        class_priors = snp_pi === nothing ? false : snp_pi
         new(matrix,
             coeffs,
-            zeros(Float64, ncols),
-            zeros(Float64, ncols),
-            Float64(variance),
-            zeros(Float64, nrows),
-            zeros(Float64, nrows),
+            mean_coeffs,
+            mean_coeffs2,
+            step_variance,
+            liabilities,
+            mu,
             thresholds,
-            fill(-Inf, nrows),
-            fill(Inf, nrows),
-            matrix' * matrix)
+            lower,
+            upper,
+            matrix' * matrix,
+            nsteps,
+            nclasses,
+            class_priors)
     end
 end
 
