@@ -46,9 +46,6 @@ function errors_args(mme)
                 mme.nModels == 1 || error("BayesR v1 supports single-trait analysis only.")
                 Mi.storage_mode == :dense || error("BayesR v1 supports storage=:dense only.")
                 mme.MCMCinfo.RRM == false || error("BayesR v1 does not support random regression model (RRM).")
-                if Mi.annotations !== false
-                    mme.MCMCinfo.fast_blocks == false || error("Annotated BayesR v1 does not support fast_blocks.")
-                end
                 if Mi.π != 0.0
                     Mi.π isa AbstractVector || error("BayesR Pi must be a length 4 vector or 0.0 for defaults.")
                     length(Mi.π) == 4 || error("BayesR Pi must have length 4.")

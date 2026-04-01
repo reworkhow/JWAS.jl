@@ -22,6 +22,16 @@ function env_string(name, default)
     return String(get(ENV, name, default))
 end
 
+function env_bool(name, default)
+    raw = lowercase(strip(String(get(ENV, name, string(default)))))
+    if raw in ("1", "true", "yes", "on")
+        return true
+    elseif raw in ("0", "false", "no", "off")
+        return false
+    end
+    error("Environment variable $name must parse as Bool, got: $(repr(raw))")
+end
+
 function parse_seed_list(raw::AbstractString)
     isempty(strip(raw)) && error("Seed list must not be empty.")
     return parse.(Int, strip.(split(raw, ",")))
@@ -40,6 +50,45 @@ function write_benchmark_dataset(outdir; ids, marker_ids, X, y)
     end
     CSV.write(joinpath(outdir, "genotypes.csv"), geno_df)
     CSV.write(joinpath(outdir, "phenotypes.csv"), DataFrame(ID=ids, y1=y))
+end
+
+function resolve_fast_block_size(fast_blocks, n_obs)
+    if fast_blocks === false
+        return 1
+    elseif fast_blocks === true
+        return Int(floor(sqrt(n_obs)))
+    elseif fast_blocks isa Number
+        return Int(floor(fast_blocks))
+    end
+    error("Unsupported fast_blocks setting: $fast_blocks")
+end
+
+function block_aware_burnin(chain_length, burnin, fast_blocks, n_obs)
+    block_size = resolve_fast_block_size(fast_blocks, n_obs)
+    adjusted_chain_length = max(1, Int(floor(chain_length / block_size)))
+    adjusted_burnin = fast_blocks === false ? burnin : Int(floor(burnin / block_size))
+    return min(adjusted_burnin, adjusted_chain_length - 1)
+end
+
+function fast_block_setting_label(fast_blocks)
+    if fast_blocks === false
+        return "false"
+    elseif fast_blocks === true
+        return "default"
+    end
+    return string(Int(floor(fast_blocks)))
+end
+
+function benchmark_method_cases(include_fast_blocks::Bool)
+    cases = NamedTuple[]
+    push!(cases, (method_variant="BayesR", fast_blocks=false))
+    push!(cases, (method_variant="Annotated_BayesR", fast_blocks=false))
+    push!(cases, (method_variant="Annotated_BayesC", fast_blocks=false))
+    if include_fast_blocks
+        push!(cases, (method_variant="Annotated_BayesR_fast_blocks_default", fast_blocks=true))
+        push!(cases, (method_variant="Annotated_BayesR_fast_blocks_1", fast_blocks=1))
+    end
+    return cases
 end
 
 function joint_probs_from_conditionals(p1::Real, p2::Real, p3::Real)
@@ -241,7 +290,8 @@ function method_case_row(method_variant::AbstractString,
                          phenotypes::DataFrame,
                          truth_metadata::DataFrame,
                          model,
-                         seconds::Real)
+                         seconds::Real,
+                         fast_blocks)
     marker_effects = output["marker effects geno"][:, [:Marker_ID, :Estimate, :Model_Frequency]]
     merged = innerjoin(
         rename(marker_effects, :Marker_ID => :marker_id),
@@ -287,6 +337,9 @@ function method_case_row(method_variant::AbstractString,
         method=occursin("BayesC", method_variant) ? "BayesC" : "BayesR",
         method_variant=String(method_variant),
         seed=Int(seed),
+        fast_blocks_setting=fast_block_setting_label(fast_blocks),
+        block_size=Int(resolve_fast_block_size(fast_blocks, length(phenotypes.ID))),
+        outer_chain_length=Int(model.MCMCinfo.chain_length),
         phenotype_ebv_correlation=Float64(phenotype_corr),
         residual_variance=Float64(residual_variance),
         mean_pip_all=Float64(mean_pip_all),
@@ -337,6 +390,9 @@ function summarize_runs(runs::DataFrame)
             method_variant=String(subdf.method_variant[1]),
             method=String(subdf.method[1]),
             n_seeds=nrow(subdf),
+            fast_blocks_setting=String(subdf.fast_blocks_setting[1]),
+            block_size=Float64(mean(Float64.(subdf.block_size))),
+            outer_chain_length=Float64(mean(Float64.(subdf.outer_chain_length))),
             phenotype_ebv_correlation=values[:phenotype_ebv_correlation],
             sd_phenotype_ebv_correlation=sds[:phenotype_ebv_correlation],
             residual_variance=values[:residual_variance],
@@ -376,6 +432,7 @@ function run_method_case(case_outdir;
                          geno_path,
                          pheno_path,
                          method_variant,
+                         fast_blocks,
                          mcmc_seed,
                          chain_length,
                          burnin,
@@ -385,6 +442,7 @@ function run_method_case(case_outdir;
     phenotypes = CSV.read(pheno_path, DataFrame)
     vary = var(dataset.y)
     start_vare = vary * (1 - start_h2)
+    run_burnin = block_aware_burnin(chain_length, burnin, fast_blocks, length(dataset.ids))
 
     if method_variant == "BayesR"
         start_sigma_sq = vary * start_h2 / (length(dataset.marker_ids) * sum(ANNOT_BENCH_BAYESR_GAMMA .* ANNOT_BENCH_BAYESR_START_PI))
@@ -400,7 +458,7 @@ function run_method_case(case_outdir;
             quality_control=false,
             center=false,
         )
-    elseif method_variant == "Annotated_BayesR"
+    elseif startswith(method_variant, "Annotated_BayesR")
         start_sigma_sq = vary * start_h2 / (length(dataset.marker_ids) * sum(ANNOT_BENCH_BAYESR_GAMMA .* ANNOT_BENCH_BAYESR_START_PI))
         global geno = get_genotypes(
             geno_path, start_sigma_sq;
@@ -442,7 +500,6 @@ function run_method_case(case_outdir;
         model,
         phenotypes;
         chain_length=chain_length,
-        burnin=burnin,
         output_samples_frequency=output_samples_frequency,
         output_folder=output_dir,
         seed=mcmc_seed,
@@ -450,6 +507,8 @@ function run_method_case(case_outdir;
         output_heritability=false,
         printout_model_info=false,
         printout_frequency=chain_length + 1,
+        burnin=run_burnin,
+        fast_blocks=fast_blocks,
     )
 
     return output, model, elapsed, phenotypes
@@ -470,6 +529,7 @@ function main(argv=ARGS)
     data_seed = env_int("JWAS_ANNOT_BENCH_DATA_SEED", 20260328)
     target_h2 = env_float("JWAS_ANNOT_BENCH_H2", 0.45)
     scenario = env_string("JWAS_ANNOT_BENCH_SCENARIO", "sparse_upper_classes")
+    include_fast_blocks = env_bool("JWAS_ANNOT_BENCH_INCLUDE_FAST_BLOCKS", false)
 
     dataset = build_annotated_benchmark_dataset(
         seed=data_seed,
@@ -493,8 +553,9 @@ function main(argv=ARGS)
     pip_group_rows = NamedTuple[]
     coefficient_rows = NamedTuple[]
 
-    for method_variant in ("BayesR", "Annotated_BayesR", "Annotated_BayesC")
+    for case in benchmark_method_cases(include_fast_blocks)
         for seed in seeds
+            method_variant = case.method_variant
             case_outdir = joinpath(outdir, String(method_variant), "seed_$(seed)")
             output, model, elapsed, phenotypes = run_method_case(
                 case_outdir;
@@ -502,6 +563,7 @@ function main(argv=ARGS)
                 geno_path=geno_path,
                 pheno_path=pheno_path,
                 method_variant=method_variant,
+                fast_blocks=case.fast_blocks,
                 mcmc_seed=seed,
                 chain_length=chain_length,
                 burnin=burnin,
@@ -518,6 +580,7 @@ function main(argv=ARGS)
                 dataset.truth_metadata,
                 model,
                 elapsed,
+                case.fast_blocks,
             )
             push!(runs, run_row)
             append!(pip_group_rows, marker_summary_rows(method_variant, seed, dataset.scenario, merged))
