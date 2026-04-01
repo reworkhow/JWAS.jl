@@ -36,6 +36,13 @@ During MCMC, JWAS alternates between:
 3. sampling annotation coefficients `γ`
 4. refreshing the per-marker exclusion probabilities `π_j`
 
+JWAS uses the standard probit identification convention for this annotation
+submodel:
+
+- latent annotation error variance is fixed to `1`
+- the annotation variance parameter controls coefficient shrinkage, not the
+  latent probit noise scale
+
 ## Input Requirements
 
 - Current support is **single-trait `method="BayesC"` only**.

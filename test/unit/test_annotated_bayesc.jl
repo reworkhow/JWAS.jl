@@ -252,7 +252,7 @@ using Random
         @test count(isone, geno_one.δ[1]) == 2
     end
 
-    @testset "annotation sampler uses variance semantics consistently" begin
+    @testset "annotation sampler uses standard probit latent variance" begin
         geno = get_genotypes(
             DataFrame(ID=["a1", "a2"], m1=[0.0, 1.0]),
             1.0;
@@ -274,11 +274,11 @@ using Random
         expected = JWAS.MarkerAnnotations(reshape([1.0], 1, 1); variance=4.0)
         expected.mu[1] = 0.3
         Random.seed!(20260309)
-        expected.liability[1] = rand(truncated(Normal(expected.mu[1], sqrt(expected.variance)), 0.0, Inf))
+        expected.liability[1] = rand(truncated(Normal(expected.mu[1], 1.0), 0.0, Inf))
         rhs = expected.design_matrix' * expected.liability
         JWAS.Gibbs(expected.lhs, expected.coefficients, rhs, expected.variance)
         expected.mu .= expected.design_matrix * expected.coefficients
-        expected_pi = clamp.(1 .- cdf.(Normal(0, sqrt(expected.variance)), expected.mu), eps(Float64), 1 - eps(Float64))
+        expected_pi = clamp.(1 .- cdf.(Normal(), expected.mu), eps(Float64), 1 - eps(Float64))
 
         @test actual_liability == expected.liability
         @test actual_coefficients == expected.coefficients

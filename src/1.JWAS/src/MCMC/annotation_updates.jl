@@ -212,14 +212,16 @@ end
 
 function sample_annotation_liabilities_single_step!(Mi)
     ann = Mi.annotations
-    # BayesC keeps its existing latent-variance convention in this refactor.
+    # Annotated BayesC uses the same standard-probit convention as annotated
+    # BayesR: the latent annotation error variance is fixed to 1 for
+    # identifiability, while ann.variance is reserved for coefficient shrinkage.
     sample_binary_annotation_liabilities!(
         ann.liability,
         ann.mu,
         ann.lower_bound,
         ann.upper_bound,
         Mi.δ[1];
-        latent_sd=sqrt(ann.variance),
+        latent_sd=1.0,
     )
     return nothing
 end
@@ -229,8 +231,7 @@ function update_annotation_priors_single_step!(Mi)
     update_annotation_bounds_single_step!(Mi)
     sample_annotation_liabilities_single_step!(Mi)
     gibbs_update_annotation_coefficients!(ann)
-    dist = Normal(0, sqrt(ann.variance))
-    Mi.π .= clamp.(1 .- cdf.(dist, ann.mu), eps(Float64), 1 - eps(Float64))
+    Mi.π .= clamp.(1 .- cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
     return nothing
 end
 
