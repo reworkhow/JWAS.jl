@@ -112,10 +112,14 @@ This follows the same high-level Gibbs ordering as `sbayesrc.R`, but uses JWAS i
 
 Current v1 exclusions:
 
-- `fast_blocks`
 - `storage=:stream`
 - multi-trait BayesR
 - random regression models (`RRM`)
+
+`fast_blocks` is supported for dense annotated BayesR. The block sampler uses the
+same annotation-induced marker-specific class probabilities `pi_j` as the dense
+sampler. As with ordinary BayesR, block mode is an accelerated approximation to
+the dense transition kernel rather than the exact same sampler.
 
 ## Dense Example
 
@@ -148,6 +152,21 @@ output = runMCMC(
     chain_length=2000,
     burnin=500,
     output_samples_frequency=10,
+    outputEBV=false,
+    output_heritability=false,
+)
+```
+
+## Dense Block Example
+
+```julia
+output = runMCMC(
+    model,
+    phenotypes;
+    chain_length=2000,
+    burnin=500,
+    output_samples_frequency=10,
+    fast_blocks=true,
     outputEBV=false,
     output_heritability=false,
 )

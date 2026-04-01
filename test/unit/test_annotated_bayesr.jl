@@ -68,19 +68,6 @@ using Random
     @testset "rejects unsupported BayesR annotation modes" begin
         annotations = rand(Float64, 5, 2)
 
-        begin
-            global annotated_bayesr_fast = get_genotypes(
-                genofile, 1.0;
-                method="BayesR",
-                annotations=annotations,
-                separator=',',
-                quality_control=false,
-            )
-            model_fast = build_model("y1 = intercept + annotated_bayesr_fast", 1.0)
-            err_fast = bayesr_annotation_run_error(model_fast, phenotypes; fast_blocks=true)
-            @test err_fast isa Exception
-        end
-
         mktempdir() do tmpdir
             cd(tmpdir) do
                 open("annotated_bayesr_stream.csv", "w") do io
@@ -327,6 +314,49 @@ using Random
                       Set(["step1_zero_vs_nonzero", "step2_small_vs_larger", "step3_medium_vs_large"])
                 @test size(model.M[1].annotations.snp_pi, 2) == 4
                 @test all(abs.(sum(model.M[1].annotations.snp_pi, dims=2) .- 1.0) .< 1e-8)
+            end
+        end
+    end
+
+    @testset "Annotated BayesR fast_blocks run" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+
+        mktempdir() do tmpdir
+            cd(tmpdir) do
+                global annotated_bayesr_fast = get_genotypes(
+                    genofile, 1.0;
+                    separator=',',
+                    method="BayesR",
+                    quality_control=false,
+                    annotations=annotations,
+                )
+                local model = build_model("y1 = intercept + annotated_bayesr_fast", 1.0)
+                local output = runMCMC(
+                    model,
+                    phenotypes,
+                    chain_length=30,
+                    burnin=10,
+                    output_samples_frequency=10,
+                    printout_frequency=31,
+                    seed=2026,
+                    fast_blocks=true,
+                    outputEBV=false,
+                    output_heritability=false,
+                )
+
+                @test haskey(output, "marker effects annotated_bayesr_fast")
+                @test "Model_Frequency" in names(output["marker effects annotated_bayesr_fast"])
+                @test haskey(output, "annotation coefficients annotated_bayesr_fast")
+                @test names(output["annotation coefficients annotated_bayesr_fast"]) == ["Annotation", "Step", "Estimate", "SD"]
+                @test size(model.M[1].annotations.snp_pi, 2) == 4
+                @test all(abs.(sum(model.M[1].annotations.snp_pi, dims=2) .- 1.0) .< 1e-8)
+                @test model.MCMCinfo.fast_blocks != false
             end
         end
     end
