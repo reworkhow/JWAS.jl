@@ -94,6 +94,234 @@ For each MCMC iteration, JWAS runs annotated BayesR in this order:
 
 This follows the same high-level Gibbs ordering as `sbayesrc.R`, but uses JWAS individual-level marker updates instead of summary-statistics equations.
 
+## Annotation Update In Detail
+
+The BayesR class label for marker `j`
+
+```math
+\delta_j \in \{1,2,3,4\}
+```
+
+is still sampled in one four-way draw during the marker sweep.
+The annotation model does not sample `\delta_j` sequentially.
+Instead, it re-parameterizes the four class probabilities with three nested binary indicators:
+
+```math
+z_{1j} = 1(\delta_j > 1)
+```
+
+```math
+z_{2j} = 1(\delta_j > 2)
+```
+
+```math
+z_{3j} = 1(\delta_j > 3)
+```
+
+These indicators define three binary probit regressions:
+
+- `z1` is fit on all markers
+- `z2` is fit only on markers with `\delta_j > 1`
+- `z3` is fit only on markers with `\delta_j > 2`
+
+If `A_1`, `A_2`, and `A_3` denote those three marker sets, then:
+
+```math
+A_1 = \{1,\ldots,m\}
+```
+
+```math
+A_2 = \{j : \delta_j > 1\}
+```
+
+```math
+A_3 = \{j : \delta_j > 2\}
+```
+
+For each conditional model `s \in \{1,2,3\}`, JWAS uses the annotation design matrix restricted to the active marker set:
+
+```math
+X_s = A[A_s, :]
+```
+
+where `A` is the full annotation design matrix after JWAS has added the intercept column.
+
+## Latent Probit Form
+
+For each conditional model `s`, JWAS introduces a latent liability:
+
+```math
+l_{sj} = x_j^\top \alpha_s + \varepsilon_{sj}
+```
+
+with:
+
+- `x_j` as the annotation row for marker `j`, including the intercept term
+- `\alpha_s` as the coefficient vector for conditional model `s`
+- `\varepsilon_{sj} \sim N(0,1)`
+
+The observed binary indicator is recovered by thresholding at zero:
+
+```math
+z_{sj} = 1(l_{sj} > 0)
+```
+
+So after the current marker classes `\delta_j` are sampled, JWAS updates each conditional model by:
+
+1. sampling latent liabilities from a truncated normal distribution
+2. sampling the intercept and annotation effects by Gibbs
+3. sampling the annotation-effect variance for the slope terms
+
+## Liability Update
+
+For active marker `j` in conditional model `s`, let
+
+```math
+\mu_{sj} = x_j^\top \alpha_s
+```
+
+Then the liability update is:
+
+- if `z_{sj} = 0`, sample `l_{sj} \sim N(\mu_{sj}, 1)` truncated to `(-\infty, 0]`
+- if `z_{sj} = 1`, sample `l_{sj} \sim N(\mu_{sj}, 1)` truncated to `[0, \infty)`
+
+The latent error variance is fixed to `1` for identifiability.
+
+## Coefficient Update
+
+For one conditional model, write:
+
+```math
+l = X \alpha + \varepsilon
+```
+
+After liabilities are sampled, JWAS works with the residual
+
+```math
+r = l - X\alpha
+```
+
+and updates the coefficient vector `\alpha` one element at a time.
+
+The first coefficient is the intercept. Its prior is flat, so if `n = |A_s|` is the number of active markers in the current conditional model, then:
+
+```math
+\alpha_0 \mid \cdot \sim N(\hat{\alpha}_0, 1/n)
+```
+
+with:
+
+```math
+\hat{\alpha}_0 = \frac{\sum_i r_i + n \alpha_0^{old}}{n}
+```
+
+The remaining coefficients are annotation effects. Each annotation effect uses a normal prior:
+
+```math
+\alpha_k \sim N(0, \sigma^2_{\alpha,s})
+```
+
+For annotation column `x_k`, the Gibbs update is:
+
+```math
+\alpha_k \mid \cdot \sim N(\hat{\alpha}_k, v_k)
+```
+
+where:
+
+```math
+v_k = \frac{1}{x_k^\top x_k + 1/\sigma^2_{\alpha,s}}
+```
+
+```math
+\hat{\alpha}_k = v_k \left(x_k^\top r + (x_k^\top x_k)\alpha_k^{old}\right)
+```
+
+So the intercept is updated from the active marker count, while the annotation effects are updated from the active-subset annotation crossproducts plus the step-specific shrinkage variance.
+
+## Annotation-Effect Variance Update
+
+Each conditional model has its own slope-variance parameter `\sigma^2_{\alpha,s}`.
+After the slope coefficients are updated, JWAS samples that variance with the same scaled inverse-chi-square form used in the reference implementation:
+
+```math
+\sigma^2_{\alpha,s} = \frac{\sum_{k>1}\alpha_{k,s}^2 + 2}{\chi^2_{p+1}}
+```
+
+where `p` is the total number of coefficients in that conditional model, including the intercept.
+
+The intercept is not shrunk by this variance update.
+
+## Prior Reconstruction
+
+After all three conditional models are updated, JWAS evaluates:
+
+```math
+p_{1j} = \Phi(x_j^\top \alpha_1)
+```
+
+```math
+p_{2j} = \Phi(x_j^\top \alpha_2)
+```
+
+```math
+p_{3j} = \Phi(x_j^\top \alpha_3)
+```
+
+for every marker `j`, and then reconstructs the per-marker four-class prior matrix:
+
+```math
+\pi_{j1} = 1 - p_{1j}
+```
+
+```math
+\pi_{j2} = p_{1j}(1 - p_{2j})
+```
+
+```math
+\pi_{j3} = p_{1j}p_{2j}(1 - p_{3j})
+```
+
+```math
+\pi_{j4} = p_{1j}p_{2j}p_{3j}
+```
+
+These `\pi_{jk}` values are the class priors used in the next BayesR marker sweep.
+
+## Pseudocode
+
+The annotation part of one MCMC iteration is:
+
+```text
+given current marker classes delta_j:
+    z1_j = 1(delta_j > 1)
+    z2_j = 1(delta_j > 2)
+    z3_j = 1(delta_j > 3)
+
+    A1 = all markers
+    A2 = markers with delta_j > 1
+    A3 = markers with delta_j > 2
+
+    for s in {1, 2, 3}:
+        X_s = annotation design on active set A_s
+        z_s = binary response on active set A_s
+
+        sample latent liabilities l_s from truncated normals
+        sample intercept with flat prior using n_s = number of active markers
+        sample annotation slopes with N(0, sigmaSqAlpha_s) priors
+        sample sigmaSqAlpha_s from the updated slopes
+
+    for every marker j:
+        p1_j = Phi(x_j' alpha_1)
+        p2_j = Phi(x_j' alpha_2)
+        p3_j = Phi(x_j' alpha_3)
+
+        pi_j1 = 1 - p1_j
+        pi_j2 = p1_j * (1 - p2_j)
+        pi_j3 = p1_j * p2_j * (1 - p3_j)
+        pi_j4 = p1_j * p2_j * p3_j
+```
+
 ## Input Requirements
 
 - Current support is **single-trait `method="BayesR"` only**.
