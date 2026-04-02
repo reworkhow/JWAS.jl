@@ -213,7 +213,7 @@ using Random
         end
     end
 
-    @testset "uses 10 percent fallback for degenerate annotation initialization" begin
+    @testset "annotated BayesC startup matches Jian-style zero-alpha initialization" begin
         marker_names = Symbol.("m" .* string.(1:20))
         geno_df = DataFrame(ID=["a1", "a2"])
         for (j, marker) in enumerate(marker_names)
@@ -221,35 +221,57 @@ using Random
         end
         annotations = reshape(collect(1.0:20.0), 20, 1)
 
+        Random.seed!(2026)
         geno_zero = get_genotypes(
             geno_df, 1.0;
             method="BayesC",
+            Pi=0.0,
             annotations=annotations,
             quality_control=false,
         )
-        geno_zero.δ = [ones(Float64, geno_zero.nMarkers)]
-        geno_zero.π = fill(0.0, geno_zero.nMarkers)
-
-        @test_logs (:info, r"starting pi=0.0 is degenerate; using 10% excluded markers") begin
-            JWAS.initialize_annotation_indicators!(geno_zero)
-        end
-        @test count(iszero, geno_zero.δ[1]) == 2
-        @test count(isone, geno_zero.δ[1]) == 18
-
+        Random.seed!(2027)
+        geno_zero_repeat = get_genotypes(
+            geno_df, 1.0;
+            method="BayesC",
+            Pi=0.0,
+            annotations=annotations,
+            quality_control=false,
+        )
         geno_one = get_genotypes(
             geno_df, 1.0;
             method="BayesC",
+            Pi=1.0,
             annotations=annotations,
             quality_control=false,
         )
-        geno_one.δ = [ones(Float64, geno_one.nMarkers)]
-        geno_one.π = fill(1.0, geno_one.nMarkers)
+        geno_mid = get_genotypes(
+            geno_df, 1.0;
+            method="BayesC",
+            Pi=0.3,
+            annotations=annotations,
+            quality_control=false,
+        )
 
-        @test_logs (:info, r"starting pi=1.0 is degenerate; using 10% included markers") begin
-            JWAS.initialize_annotation_indicators!(geno_one)
-        end
-        @test count(iszero, geno_one.δ[1]) == 18
-        @test count(isone, geno_one.δ[1]) == 2
+        @test geno_zero.π isa AbstractVector
+        @test length(geno_zero.π) == geno_zero.nMarkers
+        @test all(geno_zero.π .== 0.0)
+        @test all(geno_zero.annotations.coefficients .== 0.0)
+        @test all(geno_zero.annotations.mu .== 0.0)
+        @test geno_zero_repeat.π == geno_zero.π
+        @test geno_zero_repeat.annotations.coefficients == geno_zero.annotations.coefficients
+        @test geno_zero_repeat.annotations.mu == geno_zero.annotations.mu
+
+        @test geno_one.π isa AbstractVector
+        @test length(geno_one.π) == geno_one.nMarkers
+        @test all(geno_one.π .== 1.0)
+        @test all(geno_one.annotations.coefficients .== 0.0)
+        @test all(geno_one.annotations.mu .== 0.0)
+
+        @test geno_mid.π isa AbstractVector
+        @test length(geno_mid.π) == geno_mid.nMarkers
+        @test all(geno_mid.π .== 0.3)
+        @test all(geno_mid.annotations.coefficients .== 0.0)
+        @test all(geno_mid.annotations.mu .== 0.0)
     end
 
     @testset "annotation sampler uses standard probit latent variance" begin
@@ -260,7 +282,7 @@ using Random
             quality_control=false,
         )
         geno.δ = [Float64[1.0]]
-        geno.π = Float64[0.5]
+        geno.π = 0.5
         geno.annotations = JWAS.MarkerAnnotations(reshape([1.0], 1, 1); variance=4.0)
         geno.annotations.mu[1] = 0.3
 
@@ -283,7 +305,29 @@ using Random
         @test actual_liability == expected.liability
         @test actual_coefficients == expected.coefficients
         @test actual_mu == expected.mu
+        @test actual_pi isa AbstractVector
         @test actual_pi == expected_pi
+    end
+
+    @testset "genetic-to-marker variance setup accepts marker-level BayesC priors" begin
+        geno = get_genotypes(
+            DataFrame(
+                ID=["a1", "a2", "a3"],
+                m1=[0.0, 1.0, 2.0],
+                m2=[1.0, 1.0, 0.0],
+                m3=[2.0, 1.0, 1.0],
+            ),
+            2.5;
+            method="BayesC",
+            Pi=0.3,
+            annotations=reshape([0.0, 1.0, 0.5], 3, 1),
+            quality_control=false,
+        )
+
+        JWAS.genetic2marker(geno, geno.π)
+
+        expected = geno.genetic_variance.val / ((1 - 0.3) * geno.sum2pq)
+        @test geno.G.val ≈ expected atol=1e-6 rtol=1e-6
     end
 
     @testset "BayesABC rejects mismatched pi vector length" begin

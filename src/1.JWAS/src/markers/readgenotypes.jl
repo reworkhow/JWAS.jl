@@ -102,8 +102,21 @@ function bayesr_annotation_probabilities(π::AbstractVector{<:Real})
     return p1, p2, p3
 end
 
+copy_pi_input(Pi) = (Pi isa AbstractArray || Pi isa AbstractDict) ? copy(Pi) : Pi
+
 function bayesr_default_pi(Pi)
     return Pi == 0.0 ? Float64[0.95, 0.03, 0.015, 0.005] : collect(Float64, Pi)
+end
+
+function annotation_starting_pi(annotation_matrix, method, Pi, nmarkers::Integer)
+    if annotation_matrix === false || method != "BayesC"
+        return copy_pi_input(Pi)
+    end
+    if Pi isa AbstractVector
+        length(Pi) == nmarkers || error("Annotated BayesC starting Pi vector length $(length(Pi)) must match the number of markers ($nmarkers).")
+        return collect(Float64, Pi)
+    end
+    return fill(Float64(Pi), nmarkers)
 end
 
 function build_marker_annotations(annotations, method, Pi)
@@ -114,11 +127,8 @@ function build_marker_annotations(annotations, method, Pi)
     design_matrix = hcat(ones(Float64, size(annotations, 1)), annotations)
     if method == "BayesR"
         π = bayesr_default_pi(Pi)
-        p1, p2, p3 = bayesr_annotation_probabilities(π)
+        bayesr_annotation_probabilities(π)
         coeffs = zeros(Float64, size(design_matrix, 2), 3)
-        coeffs[1, 1] = quantile(Normal(), p1)
-        coeffs[1, 2] = quantile(Normal(), p2)
-        coeffs[1, 3] = quantile(Normal(), p3)
         snp_pi = repeat(reshape(π, 1, :), size(design_matrix, 1), 1)
         return MarkerAnnotations(design_matrix;
                                  nsteps=3,
@@ -136,8 +146,6 @@ function normalize_annotation_estimatePi(annotation_matrix, estimatePi, method)
     end
     return estimatePi
 end
-
-copy_pi_input(Pi) = (Pi isa AbstractArray || Pi isa AbstractDict) ? copy(Pi) : Pi
 
 """
     get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
@@ -248,7 +256,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes.genetic_variance = Variance(G_is_marker_variance ? false : G, df,false,estimate_variance,estimate_scale,constraint)
         genotypes.method     = method
         genotypes.estimatePi = estimatePi
-        genotypes.π          = copy_pi_input(Pi)
+        genotypes.π          = annotation_starting_pi(annotation_matrix, method, Pi, backend.nMarkers)
         genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
 
         println("Genotype informatin:")
@@ -398,7 +406,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
-    genotypes.π          = copy_pi_input(Pi)
+    genotypes.π          = annotation_starting_pi(annotation_matrix, method, Pi, nMarkers)
     genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
 
     println("Genotype informatin:")

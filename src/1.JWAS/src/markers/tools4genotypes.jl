@@ -438,9 +438,20 @@ function genetic2marker(M::Genotypes,π::Float64)
 end
 
 function genetic2marker(M::Genotypes, π::AbstractVector{<:Real})
-    M.method == "BayesR" || error("Vector-valued Pi is supported here only for BayesR.")
-    length(π) == length(BAYESR_GAMMA) || error("BayesR Pi must have length 4.")
-    denom = M.sum2pq * sum(BAYESR_GAMMA .* π)
-    denom > 0 || error("BayesR implied variance denominator must be positive.")
-    M.G.val = M.genetic_variance.val / denom
+    if M.method == "BayesR"
+        length(π) == length(BAYESR_GAMMA) || error("BayesR Pi must have length 4.")
+        denom = M.sum2pq * sum(BAYESR_GAMMA .* π)
+        denom > 0 || error("BayesR implied variance denominator must be positive.")
+        M.G.val = M.genetic_variance.val / denom
+        return nothing
+    elseif M.method == "BayesC"
+        length(π) == M.nMarkers || error("BayesC marker-level Pi must have length $(M.nMarkers).")
+        allele_freq = vec(Float64.(M.alleleFreq))
+        include_prob = 1 .- clamp.(Float64.(π), 0.0, 1.0)
+        denom = sum((2.0 .* allele_freq .* (1.0 .- allele_freq)) .* include_prob)
+        denom > 0 || error("BayesC implied variance denominator must be positive.")
+        M.G.val = M.genetic_variance.val / denom
+        return nothing
+    end
+    error("Vector-valued Pi is supported here only for BayesC marker-level priors or BayesR class priors.")
 end

@@ -55,6 +55,7 @@ Depth = 3
 Pages = [
   "manual/getstarted.md",
   "manual/workflow.md",
+  "manual/bayesc_bayesr_comparison.md",
   "manual/annotated_bayesc.md",
   "manual/annotated_bayesr.md",
   "manual/block_bayesc.md",

@@ -66,20 +66,13 @@ Annotated BayesR starts from the same default prior as standard BayesR:
 \pi = (0.95, 0.03, 0.015, 0.005)
 ```
 
-JWAS converts this into the three conditional probabilities:
+JWAS expands this to a constant marker-level prior matrix `snp_pi`, so every
+marker starts from the same four-class BayesR prior.
 
-- `p1 = 0.05`
-- `p2 = 0.40`
-- `p3 = 0.25`
-
-and then initializes the probit intercepts as:
-
-- `Phi^{-1}(0.05) = -1.64485362695`
-- `Phi^{-1}(0.40) = -0.25334710314`
-- `Phi^{-1}(0.25) = -0.67448975020`
-
-All non-intercept annotation coefficients start at zero.
-So all markers begin with the same BayesR prior, and then the annotation model learns marker-specific class probabilities during MCMC.
+Annotation coefficients start at zero and JWAS does not fit the annotation model
+before the first phenotype-informed marker sweep. The first BayesR sweep uses the
+supplied starting `snp_pi` directly, and only then does the annotation model
+update the conditional class probabilities.
 
 ## Sampler Order
 

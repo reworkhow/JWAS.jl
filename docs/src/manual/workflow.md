@@ -16,6 +16,7 @@ Depth = 2
 
 For method-specific workflows beyond the general setup in this page, see:
 
+- [BayesC and BayesR Comparison](bayesc_bayesr_comparison.md)
 - [Annotated BayesC](annotated_bayesc.md)
 - [Annotated BayesR](annotated_bayesr.md)
 - [Block BayesC](block_bayesc.md)

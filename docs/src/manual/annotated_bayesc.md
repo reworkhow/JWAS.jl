@@ -175,5 +175,7 @@ For more on the streaming backend, see [Streaming Genotype Walkthrough](streamin
 ## Practical Notes
 
 - Standard BayesC is still the same model when no `annotations` are provided; JWAS simply fills the `π` vector with one repeated value.
+- Annotated BayesC starts from a deterministic marker-level exclusion vector `π_j` that matches the supplied starting `Pi`.
+- Annotated BayesC annotation coefficients start at zero, and JWAS does not fit the annotation model before the first phenotype-informed marker sweep.
 - Annotation rows are defined on the raw marker order, not the post-QC marker order.
 - If QC drops markers, JWAS drops the corresponding annotation rows before adding the intercept column.

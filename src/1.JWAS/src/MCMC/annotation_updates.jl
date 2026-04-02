@@ -17,7 +17,8 @@ Annotated BayesR uses a 4-class mixture:
 classes `2:4` are the nonzero BayesR components.
 
 The initialization is intentionally simple:
-- BayesC starts from the current scalar inclusion probability.
+- BayesC uses a deterministic fallback based on the current marker-level
+  exclusion prior if this helper is called directly.
 - BayesR samples from the current per-marker 4-class probabilities.
 """
 function initialize_annotation_indicators!(Mi)
@@ -33,36 +34,15 @@ function initialize_annotation_indicators!(Mi)
         end
         return nothing
     end
-    exclude_prob = Mi.π isa AbstractVector ? Float64(Mi.π[1]) : Float64(Mi.π)
-    exclude_prob = clamp(exclude_prob, 0.0, 1.0)
+    pi_vec = Mi.π isa AbstractVector ? Float64.(Mi.π) : fill(Float64(Mi.π), Mi.nMarkers)
+    pi_vec = clamp.(pi_vec, 0.0, 1.0)
     delta = Mi.δ[1]
     included = one(eltype(delta))
     excluded = zero(eltype(delta))
-    minority_count = clamp(round(Int, 0.1 * Mi.nMarkers), 1, Mi.nMarkers - 1)
-
-    if exclude_prob == 0.0
-        @info "Annotated BayesC initialization: starting pi=0.0 is degenerate; using 10% excluded markers."
-        fill!(delta, included)
-        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= excluded
-        return nothing
-    elseif exclude_prob == 1.0
-        @info "Annotated BayesC initialization: starting pi=1.0 is degenerate; using 10% included markers."
-        fill!(delta, excluded)
-        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= included
-        return nothing
-    end
-
-    for j in eachindex(delta)
-        delta[j] = rand() < exclude_prob ? excluded : included
-    end
-
-    if all(iszero, delta)
-        @info "Annotated BayesC initialization: sampled all markers as excluded; reinitializing with 10% included markers."
-        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= included
-    elseif all(isone, delta)
-        @info "Annotated BayesC initialization: sampled all markers as included; reinitializing with 10% excluded markers."
-        delta[sample(1:Mi.nMarkers, minority_count; replace=false)] .= excluded
-    end
+    exclude_count = clamp(round(Int, mean(pi_vec) * Mi.nMarkers), 1, Mi.nMarkers - 1)
+    fill!(delta, included)
+    excluded_idx = sortperm(pi_vec; rev=true)[1:exclude_count]
+    delta[excluded_idx] .= excluded
     return nothing
 end
 
@@ -231,7 +211,12 @@ function update_annotation_priors_single_step!(Mi)
     update_annotation_bounds_single_step!(Mi)
     sample_annotation_liabilities_single_step!(Mi)
     gibbs_update_annotation_coefficients!(ann)
-    Mi.π .= clamp.(1 .- cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
+    pi_values = clamp.(1 .- cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
+    if Mi.π isa AbstractVector && length(Mi.π) == length(pi_values)
+        Mi.π .= pi_values
+    else
+        Mi.π = copy(pi_values)
+    end
     return nothing
 end
 

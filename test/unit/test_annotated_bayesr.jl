@@ -34,23 +34,14 @@ using Random
         return err
     end
 
-    function bayesr_annotation_intercepts(default_pi)
-        p1 = default_pi[2] + default_pi[3] + default_pi[4]
-        p2 = (default_pi[3] + default_pi[4]) / p1
-        p3 = default_pi[4] / (default_pi[3] + default_pi[4])
-        return (p1 = p1, p2 = p2, p3 = p3,
-                b01 = quantile(Normal(), p1),
-                b02 = quantile(Normal(), p2),
-                b03 = quantile(Normal(), p3))
-    end
-
-    @testset "accepts dense single-trait annotations" begin
+    @testset "accepts dense single-trait annotations with Jian-style startup" begin
         annotations = rand(Float64, 5, 2)
-        intercepts = bayesr_annotation_intercepts(Float64[0.95, 0.03, 0.015, 0.005])
+        start_pi = Float64[0.95, 0.03, 0.015, 0.005]
         geno = get_genotypes(
             genofile, 1.0;
             method="BayesR",
             annotations=annotations,
+            Pi=start_pi,
             separator=',',
             quality_control=false,
         )
@@ -60,9 +51,9 @@ using Random
         @test size(geno.annotations.coefficients) == (size(annotations, 2) + 1, 3)
         @test size(geno.annotations.snp_pi) == (geno.nMarkers, 4)
         @test geno.annotations.design_matrix[:, 1] == ones(size(annotations, 1))
-        @test isapprox(geno.annotations.coefficients[1, 1], intercepts.b01; atol=1e-12)
-        @test isapprox(geno.annotations.coefficients[1, 2], intercepts.b02; atol=1e-12)
-        @test isapprox(geno.annotations.coefficients[1, 3], intercepts.b03; atol=1e-12)
+        @test all(geno.annotations.coefficients .== 0.0)
+        @test all(geno.annotations.mu .== 0.0)
+        @test geno.annotations.snp_pi == repeat(reshape(start_pi, 1, :), geno.nMarkers, 1)
     end
 
     @testset "rejects unsupported BayesR annotation modes" begin
@@ -175,16 +166,33 @@ using Random
         @test occursin("classes 2 versus 3/4", sprint(showerror, err_p2))
     end
 
-    @testset "default annotation intercept conversion" begin
-        default_pi = Float64[0.95, 0.03, 0.015, 0.005]
-        intercepts = bayesr_annotation_intercepts(default_pi)
+    @testset "annotated BayesR startup is deterministic across RNG seeds" begin
+        annotations = rand(Float64, 5, 2)
+        start_pi = Float64[0.95, 0.03, 0.015, 0.005]
 
-        @test isapprox(intercepts.p1, 0.05; atol=1e-12)
-        @test isapprox(intercepts.p2, 0.4; atol=1e-12)
-        @test isapprox(intercepts.p3, 0.25; atol=1e-12)
-        @test isapprox(intercepts.b01, quantile(Normal(), 0.05); atol=1e-12)
-        @test isapprox(intercepts.b02, quantile(Normal(), 0.4); atol=1e-12)
-        @test isapprox(intercepts.b03, quantile(Normal(), 0.25); atol=1e-12)
+        Random.seed!(2026)
+        geno_a = get_genotypes(
+            genofile, 1.0;
+            method="BayesR",
+            annotations=annotations,
+            Pi=start_pi,
+            separator=',',
+            quality_control=false,
+        )
+
+        Random.seed!(2027)
+        geno_b = get_genotypes(
+            genofile, 1.0;
+            method="BayesR",
+            annotations=annotations,
+            Pi=start_pi,
+            separator=',',
+            quality_control=false,
+        )
+
+        @test geno_a.annotations.coefficients == geno_b.annotations.coefficients
+        @test geno_a.annotations.mu == geno_b.annotations.mu
+        @test geno_a.annotations.snp_pi == geno_b.annotations.snp_pi
     end
 
     @testset "initialized BayesR annotation container shape" begin

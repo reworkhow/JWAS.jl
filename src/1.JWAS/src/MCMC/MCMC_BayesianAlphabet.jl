@@ -121,10 +121,6 @@ function MCMC_BayesianAlphabet(mme,df)
                     printstyled("BayesR expected class counts: $(expected_counts)\n", bold=false, color=:green)
                 end
             end
-            if !is_multi_trait && has_marker_annotations(Mi)
-                initialize_annotation_indicators!(Mi)
-                update_annotation_priors!(Mi)
-            end
         end
     end
     #phenotypes corrected for all effects
