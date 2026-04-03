@@ -15,6 +15,22 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         @test isfile(f)
     end
 
+    @testset "Simulated annotations dataset access" begin
+        genofile = Datasets.dataset("genotypes.csv", dataset_name="simulated_annotations")
+        phenofile = Datasets.dataset("phenotypes.csv", dataset_name="simulated_annotations")
+        annofile = Datasets.dataset("annotations.csv", dataset_name="simulated_annotations")
+        truthfile = Datasets.dataset("truth.csv", dataset_name="simulated_annotations")
+        rawgenofile = Datasets.dataset("raw_genotypes.txt", dataset_name="simulated_annotations")
+        generatorscript = Datasets.dataset("generate_dataset.R", dataset_name="simulated_annotations")
+
+        @test isfile(genofile)
+        @test isfile(phenofile)
+        @test isfile(annofile)
+        @test isfile(truthfile)
+        @test isfile(rawgenofile)
+        @test isfile(generatorscript)
+    end
+
     @testset "Invalid dataset errors" begin
         @test_throws Exception Datasets.dataset("nonexistent.txt", dataset_name="fake")
     end

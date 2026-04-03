@@ -1,15 +1,37 @@
-
+#
+# Synthetic multi-trait example data generator used for JWAS examples.
+#
+# This script simulates:
+# - a pedigree and marker panel with XSim
+# - genomic breeding values for three traits
+# - fixed and random non-genetic effects
+# - a phenotype table consistent with the example model equations below
+#
+# Output files are written in the current working directory:
+# - `output.txt.ped` / `output.txt.gen` from XSim
+# - `pedigree.txt`
+# - `genotypes.txt`
+# - `phenotypes.txt`
+#
+# The generated phenotypes follow the JWAS example model
+#
+#     y1 = intercept + x1
+#     y2 = intercept + x2 + x2*x3
+#     y3 = intercept + x1 + x2
+#
+# where `x1` is treated as a covariate and `x2`, `x2*x3` are random terms.
+#
 using Random,Statistics,DelimitedFiles,XSim,DataFrames,CSV;
 Random.seed!(2);
 
-#set genome information
-chrLength= 1.0  #length of each chromosome 
-numChr   = 1    #number of chromosomes
-nLoci    = 1100 #number of loci for each chromosome
-nQTL     = 1    #number of QTL for each chromosomefects,mutRate);
-build_genome(numChr,chrLength,nLoci,nQTL) #this genome information will be used for subsequent computaions
+# Genome setup for the XSim pedigree simulation.
+chrLength= 1.0  # length of each chromosome
+numChr   = 1    # number of chromosomes
+nLoci    = 1100 # number of loci per chromosome
+nQTL     = 1    # number of QTL per chromosome
+build_genome(numChr,chrLength,nLoci,nQTL) # used for all subsequent XSim operations
 
-#generate founders
+# Generate founders and advance the pedigree for several generations.
 popSizeFounder = 500
 sires = sampleFounders(popSizeFounder);
 dams  = sampleFounders(popSizeFounder);
@@ -23,6 +45,7 @@ sires4,dams4,gen2 = sampleRan(100, 1, sires3, dams3);
 
 animals=concatCohorts(sires2,dams2,sires3,dams3,sires4,dams4);
 
+# Extract full simulated genotypes and export pedigree/genotype files.
 M = getOurGenotypes(animals);
 
 outputPedigree(animals, "output.txt")
@@ -31,18 +54,22 @@ writedlm("pedigree.txt",map(Int64,readdlm("output.txt.ped")),',')
 
 [reshape(["ID";"snp".*string.(1:1000)],1,1001); map(Int64,readdlm("output.txt.gen"))[:,1:1001]]
 
+# Only the first 1000 SNPs are kept in the marker panel. The remaining loci are
+# left out of `genotypes.txt` so they can act as extra background/polygenic signal.
 writedlm("genotypes.txt",[reshape(["ID";"snp".*string.(1:1000)],1,1001); map(Int64,readdlm("output.txt.gen"))[:,1:1001]],',') #the last 100 SNP not included in marker panel (extra polygenic effect)
 
 ID=map(string,map(Int64,readdlm("output.txt.gen"))[:,1]);
 
 ["ID";"snp".*string.(1:1000)]
 
+# Simulate breeding values for three traits from a shared subset of marker loci.
 pos = collect(100:88:1100)
 BV  = [M[:,pos]*randn(length(pos)); M[:,pos]*randn(length(pos)); M[:,pos]*randn(length(pos))]
 for i =1:3
     BV[(i-1)*100+1 : i*100]= BV[(i-1)*100+1 : i*100]/sqrt(var(BV[(i-1)*100+1 : i*100]))
 end
 
+# Simulate non-genetic terms that will enter the JWAS example model.
 c_f1 = rand(rand(100),300)     #fixed covariate 0.5
 f_r1 = rand(["1","2","3"],300) #random factor
 f_f1 = rand(1:2,300);
@@ -52,6 +79,8 @@ first(df)
 
 using JWAS
 
+# Build the design matrix once with JWAS so the non-genetic component matches the
+# exact example parameterization used in the documentation/tutorial flow.
 model_equation="y1= intercept + x1
                 y2= intercept + x2 + x2*x3
                 y3= intercept + x1 + x2"
@@ -65,12 +94,13 @@ JWAS.getMME(model, df)
 res=[0.0,0.1,0.0,0.1,0.2,randn(),randn(),randn(),randn(),randn(),randn(),0.0,0.2,0.1,0.2]
 noBV=model.X*res
 
+# Final phenotype is breeding value + structured non-genetic effect + noise.
 pheno=BV+noBV+[randn(300);randn(300);randn(300)];
 
 df[!,:y1]=pheno[1:300]
 df[!,:y2]=pheno[301:600]
 df[!,:y3]=pheno[601:900]
 
+# Export the phenotype table consumed by the example analyses.
 CSV.write("phenotypes.txt",df)
-
 
