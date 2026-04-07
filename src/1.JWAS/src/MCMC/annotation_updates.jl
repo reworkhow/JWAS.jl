@@ -3,50 +3,6 @@ function has_marker_annotations(Mi)
 end
 
 """
-    initialize_annotation_indicators!(Mi)
-
-Initialize latent mixture indicators before the first MCMC iteration.
-
-Annotated BayesC is the binary special case:
-
-`δ_j ∈ {0, 1}`, where `δ_j = 1` means the marker is included.
-
-Annotated BayesR uses a 4-class mixture:
-
-`δ_j ∈ {1, 2, 3, 4}`, where class `1` is the zero-effect class and
-classes `2:4` are the nonzero BayesR components.
-
-The initialization is intentionally simple:
-- BayesC uses a deterministic fallback based on the current marker-level
-  exclusion prior if this helper is called directly.
-- BayesR samples from the current per-marker 4-class probabilities.
-"""
-function initialize_annotation_indicators!(Mi)
-    if !has_marker_annotations(Mi) || Mi.nMarkers <= 1
-        return nothing
-    end
-    ann = Mi.annotations
-    if ann.nsteps != 1
-        delta = Mi.δ[1]
-        priors = ann.snp_pi === false ? repeat(reshape(Float64.(Mi.π), 1, :), Mi.nMarkers, 1) : ann.snp_pi
-        for j in eachindex(delta)
-            delta[j] = rand(Categorical(Vector(view(priors, j, :))))
-        end
-        return nothing
-    end
-    pi_vec = Mi.π isa AbstractVector ? Float64.(Mi.π) : fill(Float64(Mi.π), Mi.nMarkers)
-    pi_vec = clamp.(pi_vec, 0.0, 1.0)
-    delta = Mi.δ[1]
-    included = one(eltype(delta))
-    excluded = zero(eltype(delta))
-    exclude_count = clamp(round(Int, mean(pi_vec) * Mi.nMarkers), 1, Mi.nMarkers - 1)
-    fill!(delta, included)
-    excluded_idx = sortperm(pi_vec; rev=true)[1:exclude_count]
-    delta[excluded_idx] .= excluded
-    return nothing
-end
-
-"""
     annotation_binary_bounds!(lower, upper, response)
 
 Set the truncation bounds for a binary probit step.

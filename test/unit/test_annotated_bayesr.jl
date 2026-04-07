@@ -215,24 +215,6 @@ using Random
         @test size(geno.annotations.snp_pi) == (geno.nMarkers, 4)
     end
 
-    @testset "BayesR annotation helper initialization uses four classes" begin
-        annotations = rand(Float64, 5, 2)
-        geno = get_genotypes(
-            genofile, 1.0;
-            method="BayesR",
-            annotations=annotations,
-            separator=',',
-            quality_control=false,
-        )
-        geno.δ = [ones(Int, geno.nMarkers)]
-
-        Random.seed!(2026)
-        JWAS.initialize_annotation_indicators!(geno)
-
-        @test length(geno.δ[1]) == geno.nMarkers
-        @test all(1 .<= geno.δ[1] .<= 4)
-    end
-
     @testset "binary annotation bounds helper" begin
         lower = fill(999.0, 4)
         upper = fill(999.0, 4)
