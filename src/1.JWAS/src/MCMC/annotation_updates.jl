@@ -58,16 +58,16 @@ function sample_binary_annotation_liabilities!(liability::AbstractVector,
 end
 
 """
-    gibbs_update_annotation_coefficients!(ann)
+    gibbs_update_one_probit_annotation_coefficients!(ann)
 
-BayesC one-step coefficient update.
+BayesC one-probit coefficient update.
 
 This keeps the existing JWAS BayesC behavior: a single multivariate Gibbs update
 on the latent regression
 
 `l = Xα + ε`.
 """
-function gibbs_update_annotation_coefficients!(ann)
+function gibbs_update_one_probit_annotation_coefficients!(ann)
     rhs = ann.design_matrix' * ann.liability
     Gibbs(ann.lhs, ann.coefficients, rhs, ann.variance)
     ann.mu .= ann.design_matrix * ann.coefficients
@@ -75,9 +75,9 @@ function gibbs_update_annotation_coefficients!(ann)
 end
 
 """
-    gibbs_update_annotation_coefficients!(coeffs, X, latent_residual, variance)
+    gibbs_update_binary_probit_annotation_coefficients!(coeffs, X, latent_residual, coef_prior_var)
 
-BayesR step-wise coefficient update for one binary probit submodel.
+Coordinate Gibbs update for one binary probit annotation submodel.
 
 Write the latent regression as
 
@@ -91,10 +91,10 @@ Then each coefficient is updated by a standard scalar Gibbs step:
 - the intercept uses a flat prior
 - slopes use `α_k ~ N(0, σ^2_α)`
 """
-function gibbs_update_annotation_coefficients!(coeffs::AbstractVector,
-                                               X::AbstractMatrix,
-                                               latent_residual::AbstractVector,
-                                               variance::Real)
+function gibbs_update_binary_probit_annotation_coefficients!(coeffs::AbstractVector,
+                                                             X::AbstractMatrix,
+                                                             latent_residual::AbstractVector,
+                                                             coef_prior_var::Real)
     nobs = size(X, 1)
 
     old_sample = coeffs[1]
@@ -109,7 +109,7 @@ function gibbs_update_annotation_coefficients!(coeffs::AbstractVector,
             old_sample = coeffs[k]
             xk = view(X, :, k)
             anno_diag = dot(xk, xk)
-            inv_lhs = 1.0 / (anno_diag + 1.0 / variance)
+            inv_lhs = 1.0 / (anno_diag + 1.0 / coef_prior_var)
             ahat = inv_lhs * (dot(xk, latent_residual) + anno_diag * old_sample)
             coeffs[k] = randn() * sqrt(inv_lhs) + ahat
             latent_residual .+= xk .* (old_sample - coeffs[k])
@@ -134,19 +134,19 @@ function sample_annotation_effect_variance!(variance::AbstractVector, step::Inte
 end
 
 """
-    update_annotation_bounds_single_step!(Mi)
+    update_bayesc_one_probit_bounds!(Mi)
 
-Annotated BayesC is the one-step binary special case. The thresholds remain the
+Annotated BayesC is the one-probit binary special case. The thresholds remain the
 current BayesC convention, and this refactor preserves that behavior.
 """
-function update_annotation_bounds_single_step!(Mi)
+function update_bayesc_one_probit_bounds!(Mi)
     ann = Mi.annotations
     ann.lower_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 1]
     ann.upper_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 2]
     return nothing
 end
 
-function sample_annotation_liabilities_single_step!(Mi)
+function sample_bayesc_one_probit_liabilities!(Mi)
     ann = Mi.annotations
     # Annotated BayesC uses the same standard-probit convention as annotated
     # BayesR: the latent annotation error variance is fixed to 1 for
@@ -162,11 +162,11 @@ function sample_annotation_liabilities_single_step!(Mi)
     return nothing
 end
 
-function update_annotation_priors_single_step!(Mi)
+function update_bayesc_one_probit_priors!(Mi)
     ann = Mi.annotations
-    update_annotation_bounds_single_step!(Mi)
-    sample_annotation_liabilities_single_step!(Mi)
-    gibbs_update_annotation_coefficients!(ann)
+    update_bayesc_one_probit_bounds!(Mi)
+    sample_bayesc_one_probit_liabilities!(Mi)
+    gibbs_update_one_probit_annotation_coefficients!(ann)
     pi_values = clamp.(1 .- cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
     if Mi.π isa AbstractVector && length(Mi.π) == length(pi_values)
         Mi.π .= pi_values
@@ -177,7 +177,7 @@ function update_annotation_priors_single_step!(Mi)
 end
 
 """
-    bayesr_annotation_step_indicators(delta)
+    bayesr_nested_step_indicators(delta)
 
 Build the three nested BayesR step-up indicators:
 
@@ -187,7 +187,7 @@ Build the three nested BayesR step-up indicators:
 
 and the corresponding active subsets used by the conditional probit updates.
 """
-function bayesr_annotation_step_indicators(delta::AbstractVector{<:Integer})
+function bayesr_nested_step_indicators(delta::AbstractVector{<:Integer})
     z1 = Int.(delta .> 1)
     z2 = Int.(delta .> 2)
     z3 = Int.(delta .> 3)
@@ -200,7 +200,7 @@ function bayesr_annotation_step_indicators(delta::AbstractVector{<:Integer})
 end
 
 """
-    sample_bayesr_annotation_step!(ann, step, response, active)
+    sample_nested_annotation_probit_step!(ann, step, response, active)
 
 Sample one conditional BayesR annotation step.
 
@@ -214,7 +214,7 @@ the 4-class per-marker prior as
 
 This helper updates one binary probit submodel that contributes to `p_step`.
 """
-function sample_bayesr_annotation_step!(ann, step::Integer, response::AbstractVector{<:Integer}, active::AbstractVector{<:Integer})
+function sample_nested_annotation_probit_step!(ann, step::Integer, response::AbstractVector{<:Integer}, active::AbstractVector{<:Integer})
     coeffs = view(ann.coefficients, :, step)
     ann.mu[:, step] .= ann.design_matrix * coeffs
     ann.lower_bound[:, step] .= -Inf
@@ -238,7 +238,7 @@ function sample_bayesr_annotation_step!(ann, step::Integer, response::AbstractVe
     )
 
     latent_residual = liability_active .- mu_active
-    gibbs_update_annotation_coefficients!(coeffs, X, latent_residual, ann.variance[step])
+    gibbs_update_binary_probit_annotation_coefficients!(coeffs, X, latent_residual, ann.variance[step])
 
     if size(X, 2) > 1
         sample_annotation_effect_variance!(ann.variance, step, coeffs)
@@ -248,7 +248,7 @@ function sample_bayesr_annotation_step!(ann, step::Integer, response::AbstractVe
     return nothing
 end
 
-function rebuild_bayesr_annotation_priors!(ann)
+function rebuild_bayesr_nested_priors!(ann)
     probs = clamp.(cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
     ann.snp_pi[:, 1] .= 1 .- probs[:, 1]
     ann.snp_pi[:, 2] .= probs[:, 1] .* (1 .- probs[:, 2])
@@ -257,26 +257,93 @@ function rebuild_bayesr_annotation_priors!(ann)
     return nothing
 end
 
-function update_annotation_priors!(Mi)
+function bayesc_mt_tree_step_indicators(deltaArray::AbstractVector)
+    d1 = Int.(deltaArray[1])
+    d2 = Int.(deltaArray[2])
+    states = Array{Int}(undef, length(d1))
+    for j in eachindex(d1, d2)
+        if d1[j] == 0 && d2[j] == 0
+            states[j] = 1
+        elseif d1[j] == 1 && d2[j] == 0
+            states[j] = 2
+        elseif d1[j] == 0 && d2[j] == 1
+            states[j] = 3
+        else
+            states[j] = 4
+        end
+    end
+
+    z1 = Int.(states .!= 1)
+    z2 = Int.(states .== 4)
+    z3 = Int.(states .== 2)
+    active = (
+        collect(eachindex(states)),
+        findall(!iszero, z1),
+        findall(s -> s == 2 || s == 3, states),
+    )
+    return (z1, z2, z3), active
+end
+
+function rebuild_bayesc_mt_tree_priors!(ann)
+    probs = clamp.(cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
+    p1 = probs[:, 1]
+    p2 = probs[:, 2]
+    p3 = probs[:, 3]
+    ann.snp_pi[:, 1] .= 1 .- p1
+    ann.snp_pi[:, 2] .= p1 .* (1 .- p2) .* p3
+    ann.snp_pi[:, 3] .= p1 .* (1 .- p2) .* (1 .- p3)
+    ann.snp_pi[:, 4] .= p1 .* p2
+    return nothing
+end
+
+function refresh_bayesc_mt_joint_pi_summary!(Mi)
+    mean_pi = vec(mean(Mi.annotations.snp_pi, dims=1))
+    summary = annotated_bayesc_mt_pi_dict(mean_pi)
+    if Mi.π isa AbstractDict
+        empty!(Mi.π)
+        for (state, prob) in summary
+            Mi.π[state] = prob
+        end
+    else
+        Mi.π = summary
+    end
+    return nothing
+end
+
+function update_marker_annotation_priors!(Mi)
     if !has_marker_annotations(Mi)
         return nothing
     end
     ann = Mi.annotations
     if ann.nsteps == 1
-        return update_annotation_priors_single_step!(Mi)
+        return update_bayesc_one_probit_priors!(Mi)
     end
 
-    delta = Int.(Mi.δ[1])
-    responses, active_sets = bayesr_annotation_step_indicators(delta)
-    for step in 1:ann.nsteps
-        sample_bayesr_annotation_step!(ann, step, responses[step], active_sets[step])
+    if Mi.method == "BayesR"
+        delta = Int.(Mi.δ[1])
+        responses, active_sets = bayesr_nested_step_indicators(delta)
+        for step in 1:ann.nsteps
+            sample_nested_annotation_probit_step!(ann, step, responses[step], active_sets[step])
+        end
+        rebuild_bayesr_nested_priors!(ann)
+        mean_pi = vec(mean(ann.snp_pi, dims=1))
+        if Mi.π isa AbstractVector
+            Mi.π .= mean_pi
+        else
+            Mi.π = mean_pi
+        end
+        return nothing
     end
-    rebuild_bayesr_annotation_priors!(ann)
-    mean_pi = vec(mean(ann.snp_pi, dims=1))
-    if Mi.π isa AbstractVector
-        Mi.π .= mean_pi
-    else
-        Mi.π = mean_pi
+
+    if Mi.method == "BayesC" && Mi.ntraits == 2
+        responses, active_sets = bayesc_mt_tree_step_indicators(Mi.δ)
+        for step in 1:ann.nsteps
+            sample_nested_annotation_probit_step!(ann, step, responses[step], active_sets[step])
+        end
+        rebuild_bayesc_mt_tree_priors!(ann)
+        refresh_bayesc_mt_joint_pi_summary!(Mi)
+        return nothing
     end
-    return nothing
+
+    error("Unsupported annotation configuration.")
 end

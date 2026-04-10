@@ -6,8 +6,33 @@ using Distributions
 using JWAS.Datasets
 using Random
 
+function multitrait_bayesc_annotation_error(model, phenotypes; kwargs...)
+    outdir = tempname()
+    err = try
+        runMCMC(
+            model,
+            phenotypes;
+            chain_length=10,
+            burnin=0,
+            output_samples_frequency=5,
+            output_folder=outdir,
+            seed=2026,
+            outputEBV=false,
+            output_heritability=false,
+            printout_model_info=false,
+            kwargs...,
+        )
+        nothing
+    catch exc
+        exc
+    end
+    isdir(outdir) && rm(outdir, recursive=true)
+    return err
+end
+
 @testset "Annotated BayesC API and validation" begin
     genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
+    phenotypes = CSV.read(Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals"), DataFrame, delim=',', missingstring=["NA"])
 
     @testset "rejects unsupported methods" begin
         annotations = rand(Float64, 5, 2)
@@ -25,6 +50,25 @@ using Random
         end
         @test err isa ErrorException
         @test occursin("annotations", sprint(showerror, err))
+    end
+
+    @testset "rejects invalid multi_trait_sampler values" begin
+        annotations = rand(Float64, 5, 2)
+        err = nothing
+        try
+            get_genotypes(
+                genofile, 1.0;
+                method="BayesC",
+                annotations=annotations,
+                separator=',',
+                quality_control=false,
+                multi_trait_sampler=:bogus,
+            )
+        catch e
+            err = e
+        end
+        @test err isa ErrorException
+        @test occursin("multi_trait_sampler", sprint(showerror, err))
     end
 
     @testset "rejects annotation row mismatches" begin
@@ -287,7 +331,7 @@ using Random
         geno.annotations.mu[1] = 0.3
 
         Random.seed!(20260309)
-        JWAS.update_annotation_priors!(geno)
+        JWAS.update_marker_annotation_priors!(geno)
         actual_liability = copy(geno.annotations.liability)
         actual_coefficients = copy(geno.annotations.coefficients)
         actual_mu = copy(geno.annotations.mu)
@@ -347,6 +391,365 @@ using Random
         @test err isa ErrorException
         @test occursin("length", sprint(showerror, err))
         @test occursin("pi", sprint(showerror, err))
+    end
+
+    @testset "initializes dense 2-trait annotated BayesC state from a joint Pi prior" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+
+        global annotated_mt_setup = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+        )
+        model = build_model(
+            "y1 = intercept + annotated_mt_setup\ny2 = intercept + annotated_mt_setup",
+            [1.0 0.2; 0.2 1.0],
+        )
+        ann = model.M[1].annotations
+
+        @test model.M[1].π isa AbstractDict
+        @test ann !== false
+        @test ann.nsteps == 3
+        @test ann.nclasses == 4
+        @test size(ann.coefficients) == (size(annotations, 2) + 1, 3)
+        @test size(ann.snp_pi) == (model.M[1].nMarkers, 4)
+        @test all(ann.coefficients .== 0.0)
+        @test all(ann.mu .== 0.0)
+        @test ann.snp_pi == repeat(ann.snp_pi[1:1, :], model.M[1].nMarkers, 1)
+        @test sort(vec(ann.snp_pi[1, :])) ≈ sort(collect(values(start_pi))) atol=1e-12 rtol=1e-12
+    end
+
+    @testset "stores explicit multi-trait sampler selection on annotated BayesC genotypes" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+
+        geno = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+            multi_trait_sampler=:II,
+        )
+
+        @test geno.multi_trait_sampler == :II
+    end
+
+    @testset "rejects explicit multi-trait sampler overrides in single-trait BayesC builds" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+
+        global annotated_singletrait_sampler_override = get_genotypes(
+            genofile,
+            1.0;
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            multi_trait_sampler=:II,
+        )
+
+        err = try
+            build_model("y1 = intercept + annotated_singletrait_sampler_override", 1.0)
+            nothing
+        catch exc
+            exc
+        end
+
+        @test err isa ErrorException
+        @test occursin("multi-trait BayesC", sprint(showerror, err))
+    end
+
+    @testset "rejects annotated multi-trait BayesC models with trait counts other than 2" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+
+        global annotated_mt_three_trait = get_genotypes(
+            genofile,
+            [1.0 0.3 0.1; 0.3 1.0 0.2; 0.1 0.2 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+        )
+
+        err = try
+            build_model(
+                "y1 = intercept + annotated_mt_three_trait\n" *
+                "y2 = intercept + annotated_mt_three_trait\n" *
+                "y3 = intercept + annotated_mt_three_trait",
+                [1.0 0.1 0.0; 0.1 1.0 0.2; 0.0 0.2 1.0],
+            )
+            nothing
+        catch exc
+            exc
+        end
+
+        @test err isa ErrorException
+        @test occursin("supports exactly 2 traits", sprint(showerror, err))
+    end
+
+    @testset "rejects annotated 2-trait BayesC startup priors without shared-state mass" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.35,
+            [0.0, 1.0] => 0.20,
+            [1.0, 1.0] => 0.00,
+        )
+
+        global annotated_mt_zero_shared = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+        )
+
+        err = try
+            build_model(
+                "y1 = intercept + annotated_mt_zero_shared\ny2 = intercept + annotated_mt_zero_shared",
+                [1.0 0.2; 0.2 1.0],
+            )
+            nothing
+        catch exc
+            exc
+        end
+
+        @test err isa ErrorException
+        @test occursin("shared state 11", sprint(showerror, err))
+    end
+
+    @testset "rebuilds annotated BayesC state when the same genotype object is reused across trait counts" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+
+        global annotated_mt_reuse = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+        )
+
+        model_mt = build_model(
+            "y1 = intercept + annotated_mt_reuse\ny2 = intercept + annotated_mt_reuse",
+            [1.0 0.2; 0.2 1.0],
+        )
+        ann_mt = model_mt.M[1].annotations
+        @test ann_mt.nsteps == 3
+        @test ann_mt.nclasses == 4
+        @test size(ann_mt.snp_pi) == (model_mt.M[1].nMarkers, 4)
+        @test model_mt.M[1].π isa AbstractDict
+
+        model_st = build_model("y1 = intercept + annotated_mt_reuse", 1.0)
+        ann_st = model_st.M[1].annotations
+        @test ann_st.nsteps == 1
+        @test ann_st.nclasses == 2
+        @test size(ann_st.coefficients) == (size(annotations, 2) + 1,)
+        @test ann_st.snp_pi === false
+        @test model_st.M[1].π isa AbstractVector
+        @test length(model_st.M[1].π) == model_st.M[1].nMarkers
+        @test all(model_st.M[1].π .≈ 0.0)
+    end
+
+    @testset "rejects reusing a joint-Pi annotated BayesC genotype in a single-trait build" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+
+        global annotated_mt_joint_reuse = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+        )
+
+        model_mt = build_model(
+            "y1 = intercept + annotated_mt_joint_reuse\ny2 = intercept + annotated_mt_joint_reuse",
+            [1.0 0.2; 0.2 1.0],
+        )
+        @test model_mt.M[1].annotations.nsteps == 3
+
+        err = try
+            build_model("y1 = intercept + annotated_mt_joint_reuse", 1.0)
+            nothing
+        catch exc
+            exc
+        end
+
+        @test err isa ErrorException
+        @test occursin("joint Pi", sprint(showerror, err))
+        @test occursin("single-trait", sprint(showerror, err))
+    end
+
+    @testset "rejects unsupported 2-trait annotated BayesC runtime modes explicitly" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+        phenotypes_mt = DataFrame(
+            ID=copy(phenotypes.ID),
+            y1=copy(phenotypes.y1),
+            y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+        )
+
+        global annotated_mt_constraint = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+            constraint=true,
+        )
+        model_constraint = build_model(
+            "y1 = intercept + annotated_mt_constraint\ny2 = intercept + annotated_mt_constraint",
+            [1.0 0.2; 0.2 1.0],
+        )
+        err_constraint = multitrait_bayesc_annotation_error(model_constraint, phenotypes_mt)
+        @test err_constraint isa Exception
+        @test occursin("constraint=false", sprint(showerror, err_constraint))
+
+        global annotated_mt_fastblocks = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+            multi_trait_sampler=:II,
+        )
+        model_fastblocks = build_model(
+            "y1 = intercept + annotated_mt_fastblocks\ny2 = intercept + annotated_mt_fastblocks",
+            [1.0 0.2; 0.2 1.0],
+        )
+        err_fastblocks = multitrait_bayesc_annotation_error(model_fastblocks, phenotypes_mt; fast_blocks=true)
+        @test err_fastblocks isa Exception
+        @test occursin("fast_blocks=false", sprint(showerror, err_fastblocks))
+
+        mktempdir() do tmpdir
+            cd(tmpdir) do
+                open("annotated_mt_stream.csv", "w") do io
+                    println(io, "ID,m1,m2,m3,m4,m5")
+                    println(io, "a1,0,1,2,0,1")
+                    println(io, "a2,1,0,1,2,0")
+                    println(io, "a3,2,1,0,1,2")
+                    println(io, "a4,0,2,1,0,1")
+                end
+                prefix = JWAS.prepare_streaming_genotypes(
+                    "annotated_mt_stream.csv";
+                    separator=',',
+                    header=true,
+                    quality_control=false,
+                    center=true,
+                )
+                global annotated_mt_stream = get_genotypes(
+                    prefix,
+                    [1.0 0.3; 0.3 1.0];
+                    method="BayesC",
+                    storage=:stream,
+                    annotations=annotations,
+                    Pi=start_pi,
+                )
+                phenotypes_stream = DataFrame(
+                    ID=["a1", "a2", "a3", "a4"],
+                    y1=Float32[1.0, -0.2, 0.5, -0.8],
+                    y2=Float32[0.6, -0.1, 0.1, -0.4],
+                )
+                model_stream = build_model(
+                    "y1 = intercept + annotated_mt_stream\ny2 = intercept + annotated_mt_stream",
+                    [1.0 0.2; 0.2 1.0],
+                )
+                err_stream = multitrait_bayesc_annotation_error(model_stream, phenotypes_stream)
+                @test err_stream isa Exception
+                @test occursin("storage=:dense", sprint(showerror, err_stream))
+            end
+        end
     end
 end
 

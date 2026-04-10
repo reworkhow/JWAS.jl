@@ -64,6 +64,22 @@ function errors_args(mme)
                     end
                 end
             end
+            if Mi.method == "BayesC" && Mi.annotations !== false && mme.nModels > 1
+                mme.nModels == 2 || error("Annotated multi-trait BayesC currently supports exactly 2 traits.")
+                Mi.storage_mode == :dense || error("Annotated multi-trait BayesC v1 supports storage=:dense only.")
+                mme.MCMCinfo.fast_blocks == false || error("Annotated multi-trait BayesC v1 supports fast_blocks=false only.")
+                Mi.G.constraint == false || error("Annotated multi-trait BayesC v1 supports constraint=false only.")
+                mme.MCMCinfo.RRM == false || error("Annotated multi-trait BayesC v1 does not support random regression model (RRM).")
+            end
+            if hasproperty(Mi, :multi_trait_sampler)
+                Mi.multi_trait_sampler in (:auto, :I, :II) || error("multi_trait_sampler must be one of :auto, :I, or :II.")
+                if Mi.multi_trait_sampler != :auto
+                    Mi.method == "BayesC" || error("multi_trait_sampler overrides are supported for BayesC only.")
+                    mme.nModels > 1 || error("multi_trait_sampler overrides require multi-trait BayesC.")
+                    Mi.storage_mode == :dense || error("multi_trait_sampler overrides require storage=:dense.")
+                    mme.MCMCinfo.fast_blocks == false || error("multi_trait_sampler overrides require fast_blocks=false.")
+                end
+            end
             if Mi.storage_mode == :stream
                 if Mi.method != "BayesC"
                     error("storage=:stream MVP supports BayesC only.")

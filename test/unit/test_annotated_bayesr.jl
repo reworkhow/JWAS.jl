@@ -236,7 +236,7 @@ using Random
         )
         geno.δ = [Int[1, 2, 3, 4, 2]]
 
-        JWAS.update_annotation_priors!(geno)
+        JWAS.update_marker_annotation_priors!(geno)
 
         @test size(geno.annotations.snp_pi) == (geno.nMarkers, 4)
         @test all(isfinite, geno.annotations.snp_pi)

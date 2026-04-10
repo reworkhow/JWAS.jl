@@ -3,25 +3,53 @@
 # Gibbs sampler I: only one of the t indicator lables is sampled at a time.
 # Gibbs sampler II: all indicator labels are sampled jointly, can be used for the restrictive model assuming any particular locus affects all traits or none of them.
 
+struct GlobalPiPrior{P}
+    big_pi::P
+end
+
+struct MarkerSpecificPiPrior{T}
+    snp_pi::T
+end
+
+@inline log_prior(prior::GlobalPiPrior, marker::Integer, state::AbstractVector{<:Real}) =
+    log(prior.big_pi[state])
+
+@inline log_prior(prior::MarkerSpecificPiPrior, marker::Integer, state::AbstractVector{<:Real}) =
+    log(prior.snp_pi[marker, annotated_bayesc_mt_state_index(state)])
+
+function mt_bayesc_sampler_mode(genotypes, nModels)
+    sampler = getproperty(genotypes, :multi_trait_sampler)
+    sampler == :auto && return length(genotypes.π) == 2^nModels ? :I : :II
+    sampler in (:I, :II) || error("multi_trait_sampler must be one of :auto, :I, or :II.")
+    return sampler
+end
+
 function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances,nModels)
-    if length(genotypes.π) == 2^nModels  #Gibbs sampler I
-        MTBayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                    ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                    locus_effect_variances,genotypes.π)
-    else  #Gibbs sampler II
-        MTBayesABC_samplerII!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
-                    ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                    locus_effect_variances,genotypes.π)
+    prior = if has_marker_annotations(genotypes) && genotypes.method == "BayesC" && genotypes.ntraits == 2
+        MarkerSpecificPiPrior(genotypes.annotations.snp_pi)
+    else
+        GlobalPiPrior(genotypes.π)
+    end
+    sampler_mode = mt_bayesc_sampler_mode(genotypes, nModels)
+    if sampler_mode == :I  # Gibbs sampler I
+        _MTBayesABC_samplerI!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                             ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                             locus_effect_variances,prior)
+    else  # Gibbs sampler II
+        state_labels = collect(keys(genotypes.π))
+        _MTBayesABC_samplerII!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
+                               ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                               locus_effect_variances,state_labels,prior)
     end
 end
 
 #Gibbs sampler I
-function MTBayesABC!(xArray,xRinvArray,xpRinvx,
-                     wArray,betaArray,
-                     deltaArray,
-                     alphaArray,
-                     vare,varEffects,
-                     BigPi)
+function _MTBayesABC_samplerI!(xArray,xRinvArray,xpRinvx,
+                               wArray,betaArray,
+                               deltaArray,
+                               alphaArray,
+                               vare,varEffects,
+                               prior)
     nMarkers = length(xArray)
     ntraits  = length(alphaArray)
 
@@ -63,8 +91,8 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
             d0[k] = 0.0
             d1[k] = 1.0
 
-            logDelta0  = -0.5*(log(Ginv11)- gHat0^2*Ginv11) + log(BigPi[d0]) #logPi
-            logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log(BigPi[d1]) #logPiComp
+            logDelta0  = -0.5*(log(Ginv11)- gHat0^2*Ginv11) + log_prior(prior, marker, d0)
+            logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log_prior(prior, marker, d1)
 
             probDelta1 =  1.0/(1.0+exp(logDelta0-logDelta1))
             if(rand()<probDelta1)
@@ -88,19 +116,17 @@ function MTBayesABC!(xArray,xRinvArray,xpRinvx,
     end
 end
 
-
-#Gibbs sampler II
-function MTBayesABC_samplerII!(xArray,
-                    xRinvArray,
-                    xpRinvx,
-                    wArray, #ycorr
-                    betaArray,
-                    deltaArray,
-                    alphaArray,
-                    vare, #mme.R.val, t-by-t
-                    varEffects, # vector of length #SNPs, each element is a t-by-t covariance matrix
-                    BigPi) #genotypes.π
-
+function _MTBayesABC_samplerII!(xArray,
+                                xRinvArray,
+                                xpRinvx,
+                                wArray,
+                                betaArray,
+                                deltaArray,
+                                alphaArray,
+                                vare,
+                                varEffects,
+                                state_labels,
+                                prior)
     nMarkers = length(xArray)
     ntraits  = length(alphaArray)
 
@@ -113,20 +139,17 @@ function MTBayesABC_samplerII!(xArray,
     δ        = zeros(typeof(deltaArray[1][1]),ntraits)
     w        = zeros(typeof(wArray[1][1]),ntraits) #for rhs
 
-    nlable    = length(BigPi) #e.g.,length(Dict([1.0; 1.0]=>0.3,[0.0; 0.0]=>0.7))=2
+    nlable    = length(state_labels)
     probDelta = Array{Float64}(undef, nlable)
     logDelta  = Array{Float64}(undef, nlable)
     βeta      = Array{Array{Float64,1}}(undef, nlable)
     RinvLhs   = Array{Array{Float64,2}}(undef, nlable) # D*inv(R)*D
     RinvRhs   = Array{Array{Float64,2}}(undef, nlable) # inv(R)*D
 
-
-    iloci=1
-    for i in keys(BigPi)
-        D  = diagm(i)
+    for (iloci, state) in enumerate(state_labels)
+        D  = diagm(state)
         RinvLhs[iloci] = D*Rinv*D # D*inv(R)*D
         RinvRhs[iloci] = Rinv*D   # inv(R)*D
-        iloci += 1
     end
 
     for marker=1:nMarkers
@@ -141,44 +164,37 @@ function MTBayesABC_samplerII!(xArray,
 
         #full conditional distribution of β
         stdnorm = randn(ntraits)
-        iloci=1
-        for pi_t in values(BigPi)
+        for (iloci, state) in enumerate(state_labels)
             lhs       = RinvLhs[iloci]*xpRinvx[marker]+Ginv[marker]  #C: t-by-t
             rhs       = RinvRhs[iloci]'w  #t-by-1
             invLhs    = inv(lhs)
-            invLhsC   = cholesky(Hermitian(invLhs)).L # L, where LL'=invLhs Q:why Hermitian
+            invLhsC   = cholesky(Hermitian(invLhs)).L # L, where LL'=invLhs
             gHat      = invLhs*rhs  #t-by-1
-            logDelta[iloci] = -0.5*(log(det(lhs))-rhs'gHat)+log(pi_t)
+            logDelta[iloci] = -0.5*(log(det(lhs))-rhs'gHat)+log_prior(prior, marker, state)
             βeta[iloci]     = gHat + invLhsC*stdnorm  #var(Lz)=LL'=invLhs=inv(C)
-            iloci += 1
         end
 
         #marginal full conditional probability of δ
         for l in 1:nlable
-          denominator_l = 0.0  #denominator
-          for i in 1:nlable
-            denominator_l += exp(logDelta[i]-logDelta[l])
-          end
-          probDelta[l]=1/denominator_l
+            denominator_l = 0.0
+            for i in 1:nlable
+                denominator_l += exp(logDelta[i]-logDelta[l])
+            end
+            probDelta[l]=1/denominator_l
         end
 
-
-
         #choose label
-        whichlabel = rand(Categorical(probDelta)) #e.g., 1 means the 1st label
-        δ           = copy(collect(keys(BigPi))[whichlabel]) ##copy required,otherwise modifiying keys(BigPi)
+        whichlabel = rand(Categorical(probDelta))
+        δ           = copy(state_labels[whichlabel])
         β           = βeta[whichlabel]
         newα        = diagm(δ)*β
 
-
-        # adjust for locus j
         for trait in 1:ntraits
-            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])  #update wArray (ycorr)
+            BLAS.axpy!(oldα[trait]-newα[trait],x,wArray[trait])
             betaArray[trait][marker]       = β[trait]
             deltaArray[trait][marker]      = δ[trait]
             alphaArray[trait][marker]      = newα[trait]
         end
-
     end
 end
 

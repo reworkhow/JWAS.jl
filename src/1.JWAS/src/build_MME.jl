@@ -89,17 +89,25 @@ function build_model(model_equations::AbstractString,
     whichterm = 1
     for term in modelTerms
       term_symbol = Symbol(split(term.trmStr,":")[end])
-      if isdefined(Main,term_symbol) #@isdefined can be used to test whether a local variable or object field is defined
-        if typeof(getfield(Main,term_symbol)) == Genotypes
-          term.random_type = "genotypes"
-          genotypei = getfield(Main,term_symbol)
-          genotypei.name = string(term_symbol)
-          if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
-            genotypei.ntraits = nModels
-            genotypei.trait_names = string.(lhsVec)
-            if nModels != 1
-              genotypei.G.df = genotypei.G.df + nModels
-            end
+	      if isdefined(Main,term_symbol) #@isdefined can be used to test whether a local variable or object field is defined
+	          if typeof(getfield(Main,term_symbol)) == Genotypes
+	          term.random_type = "genotypes"
+	          genotypei = getfield(Main,term_symbol)
+	          genotypei.name = string(term_symbol)
+	          if genotypei.name ∉ map(x->x.name, genotypes) #only save unique genotype
+	            genotypei.ntraits = nModels
+	            genotypei.trait_names = string.(lhsVec)
+	            # Annotation setup happens in two phases: get_genotypes stores the
+	            # raw annotation design/start information, and build_model
+	            # finalizes any method-specific state that depends on ntraits.
+	            finalize_marker_annotation_setup!(genotypei)
+	            if genotypei.multi_trait_sampler != :auto
+	              genotypei.method == "BayesC" || error("multi_trait_sampler overrides are supported for BayesC only.")
+	              nModels > 1 || error("multi_trait_sampler overrides require multi-trait BayesC.")
+	            end
+	            if nModels != 1
+	              genotypei.G.df = genotypei.G.df + nModels
+	            end
             if genotypei.G.val != false || genotypei.genetic_variance.val != false
               if size(genotypei.G.val,1) != nModels && size(genotypei.genetic_variance.val,1) != nModels
                 error("The genomic covariance matrix is not a ",nModels," by ",nModels," matrix.")

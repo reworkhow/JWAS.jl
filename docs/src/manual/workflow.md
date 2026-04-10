@@ -18,6 +18,7 @@ For method-specific workflows beyond the general setup in this page, see:
 
 - [BayesC and BayesR Comparison](bayesc_bayesr_comparison.md)
 - [Annotated BayesC](annotated_bayesc.md)
+- [Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md)
 - [Annotated BayesR](annotated_bayesr.md)
 - [Block BayesC](block_bayesc.md)
 
@@ -235,7 +236,14 @@ Dense loading shown above is the default and primary workflow (`storage=:dense`)
 If you want marker annotations to change BayesC prior inclusion probabilities, pass
 `annotations=...` to `get_genotypes`. JWAS automatically prepends an intercept column after
 marker filtering. See [Annotated BayesC](annotated_bayesc.md) for the method description,
-requirements, and dense / `fast_blocks` / streaming examples.
+including:
+
+- single-trait dense / `fast_blocks` / streaming annotated BayesC
+- dense 2-trait annotated BayesC with the 4-state joint prior
+
+For the dense 2-trait method specifically, including startup `Pi`, supported
+sampler modes, and output interpretation, see
+[Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md).
 
 For very large marker panels, an optional streaming backend is available:
 

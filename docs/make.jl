@@ -18,6 +18,7 @@ makedocs(
             "Workflow" => "manual/workflow.md",
             "BayesC and BayesR Comparison" => "manual/bayesc_bayesr_comparison.md",
             "Annotated BayesC" => "manual/annotated_bayesc.md",
+            "Multi-Trait Annotated BayesC" => "manual/multitrait_annotated_bayesc.md",
             "Annotated BayesR" => "manual/annotated_bayesr.md",
             "Structural Equation Model (SEM)" => "manual/sem.md",
             "Block BayesC" => "manual/block_bayesc.md",

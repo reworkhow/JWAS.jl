@@ -20,6 +20,9 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         phenofile = Datasets.dataset("phenotypes.csv", dataset_name="simulated_annotations")
         annofile = Datasets.dataset("annotations.csv", dataset_name="simulated_annotations")
         truthfile = Datasets.dataset("truth.csv", dataset_name="simulated_annotations")
+        phenofile_mt = Datasets.dataset("phenotypes_mt.csv", dataset_name="simulated_annotations")
+        annofile_mt = Datasets.dataset("annotations_mt.csv", dataset_name="simulated_annotations")
+        truthfile_mt = Datasets.dataset("truth_mt.csv", dataset_name="simulated_annotations")
         rawgenofile = Datasets.dataset("raw_genotypes.txt", dataset_name="simulated_annotations")
         generatorscript = Datasets.dataset("generate_dataset.R", dataset_name="simulated_annotations")
 
@@ -27,8 +30,18 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
         @test isfile(phenofile)
         @test isfile(annofile)
         @test isfile(truthfile)
+        @test isfile(phenofile_mt)
+        @test isfile(annofile_mt)
+        @test isfile(truthfile_mt)
         @test isfile(rawgenofile)
         @test isfile(generatorscript)
+
+        phen_mt = CSV.read(phenofile_mt, DataFrame)
+        ann_mt = CSV.read(annofile_mt, DataFrame)
+        truth_mt = CSV.read(truthfile_mt, DataFrame)
+        @test names(phen_mt) == ["ID", "y1", "y2"]
+        @test names(ann_mt) == ["marker_id", "active_signal", "pleiotropy_signal", "direction_signal", "random_signal"]
+        @test names(truth_mt) == ["marker_id", "state", "is_active_y1", "is_active_y2", "is_shared", "true_effect_y1", "true_effect_y2"]
     end
 
     @testset "Invalid dataset errors" begin

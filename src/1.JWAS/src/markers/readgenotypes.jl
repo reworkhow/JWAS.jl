@@ -112,6 +112,11 @@ function annotation_starting_pi(annotation_matrix, method, Pi, nmarkers::Integer
     if annotation_matrix === false || method != "BayesC"
         return copy_pi_input(Pi)
     end
+    if Pi isa AbstractDict
+        # Keep joint Pi dictionaries intact here. Multi-trait annotated BayesC
+        # cannot finalize its annotation state until build_model supplies ntraits.
+        return copy_pi_input(Pi)
+    end
     if Pi isa AbstractVector
         length(Pi) == nmarkers || error("Annotated BayesC starting Pi vector length $(length(Pi)) must match the number of markers ($nmarkers).")
         return collect(Float64, Pi)
@@ -126,6 +131,8 @@ function build_marker_annotations(annotations, method, Pi)
     validate_annotation_design(annotations)
     design_matrix = hcat(ones(Float64, size(annotations, 1)), annotations)
     if method == "BayesR"
+        # BayesR knows its ordered four-class annotation structure at genotype
+        # loading time, so its nested annotation state can be allocated here.
         π = bayesr_default_pi(Pi)
         bayesr_annotation_probabilities(π)
         coeffs = zeros(Float64, size(design_matrix, 2), 3)
@@ -136,6 +143,9 @@ function build_marker_annotations(annotations, method, Pi)
                                  coefficients=coeffs,
                                  snp_pi=snp_pi)
     end
+    # BayesC annotations intentionally stay generic here. Single-trait BayesC
+    # uses a one-probit annotation model, while multi-trait BayesC must defer
+    # its nested joint-state setup until build_model knows ntraits.
     return MarkerAnnotations(design_matrix)
 end
 
@@ -192,6 +202,10 @@ O3,0,0,2,1,1
   (Pi=Dict([1.0; 1.0]=>1.0,[0.0; 0.0]=>0.0))` in multi-trait analysis. `Pi` is estimated if `estimatePi` = true, , defaulting to `false`.
 * Scale parameter for prior of marker effect variance is estimated if `estimate_scale` = true, defaulting to `false`.
 * `annotations` enables annotation-aware BayesC/BayesR. Supply a numeric matrix with one row per raw marker; JWAS prepends an intercept column internally after marker QC/filtering.
+  `get_genotypes` validates and stores this raw annotation information. If a method's annotation prior depends on the eventual number of traits
+  (for example annotated multi-trait BayesC), JWAS finalizes that method-specific internal state later in `build_model()`.
+* `multi_trait_sampler` controls how multi-trait BayesC chooses between Gibbs sampler I and II:
+  `:auto` preserves the existing support-based dispatch, `:I` forces one-indicator-at-a-time updates, and `:II` forces joint-state updates.
 * `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
   `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
@@ -210,7 +224,11 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        ## others:
                        center = true, starting_value = false,
                        annotations = false,
+                       multi_trait_sampler::Symbol = :auto,
                        storage::Symbol = :dense)
+    if !(multi_trait_sampler in (:auto, :I, :II))
+        error("multi_trait_sampler must be one of :auto, :I, or :II.")
+    end
     if !(storage in (:dense,:stream))
         error("storage must be :dense or :stream.")
     end
@@ -257,7 +275,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         genotypes.method     = method
         genotypes.estimatePi = estimatePi
         genotypes.π          = annotation_starting_pi(annotation_matrix, method, Pi, backend.nMarkers)
+        genotypes.annotation_start_pi = annotation_matrix === false ? false : copy_pi_input(genotypes.π)
         genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
+        genotypes.multi_trait_sampler = multi_trait_sampler
 
         println("Genotype informatin:")
         println("#markers: ",backend.nMarkers,"; #individuals: ",backend.nObs," (storage=:stream)")
@@ -407,7 +427,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
     genotypes.method     = method
     genotypes.estimatePi = estimatePi
     genotypes.π          = annotation_starting_pi(annotation_matrix, method, Pi, nMarkers)
+    genotypes.annotation_start_pi = annotation_matrix === false ? false : copy_pi_input(genotypes.π)
     genotypes.annotations = build_marker_annotations(annotation_matrix, method, genotypes.π)
+    genotypes.multi_trait_sampler = multi_trait_sampler
 
     println("Genotype informatin:")
     println("#markers: ",(isGRM ? 0 : size(genotypes.genotypes,2)),"; #individuals: ",size(genotypes.genotypes,1))

@@ -124,3 +124,16 @@ In that step, `sigmaSq` is the shared **marker-effect variance** scale, while
 - [Annotated BayesC](annotated_bayesc.md)
 - [Annotated BayesR](annotated_bayesr.md)
 - [Block BayesC](block_bayesc.md)
+
+## Multi-Trait Note
+
+The table below is still focused on the single-trait implementations. JWAS now also supports a dense 2-trait annotated BayesC path. Its main differences are:
+
+- startup `Pi` is a joint 4-state prior over `00`, `10`, `01`, and `11`
+- annotations are parameterized through a 3-step tree:
+  - `00` vs active
+  - `11` vs singleton
+  - `10` vs `01`
+- the marker sampler still uses the existing multi-trait BayesC sweep; only the prior term becomes marker-specific
+
+See [Annotated BayesC](annotated_bayesc.md) for the full 2-trait description.

@@ -13,6 +13,7 @@ const BAYESR_GAMMA = Float64[0.0, 0.01, 0.1, 1.0]
 
 #Models
 include("types.jl")
+include("markers/annotation_setup.jl")
 include("build_MME.jl")
 include("random_effects.jl")
 include("residual.jl")

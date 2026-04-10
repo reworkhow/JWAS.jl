@@ -16,8 +16,12 @@ function MCMC_BayesianAlphabet(mme,df)
     causal_structure         = mme.causal_structure
     is_multi_trait           = mme.nModels != 1
     fast_blocks              = mme.MCMCinfo.fast_blocks
-    if is_multi_trait && mme.M != 0 && any(has_marker_annotations(Mi) for Mi in mme.M)
-        error("annotations are currently supported only for single-trait analysis.")
+    if is_multi_trait && mme.M != 0
+        for Mi in mme.M
+            if has_marker_annotations(Mi) && !(Mi.method == "BayesC" && mme.nModels == 2 && Mi.storage_mode == :dense && fast_blocks == false && Mi.G.constraint == false)
+                error("Annotated multi-trait BayesC currently supports exactly 2 traits with storage=:dense, fast_blocks=false, and constraint=false.")
+            end
+        end
     end
     ############################################################################
     # Categorical Traits (starting values for maker effects defaulting to 0s)
@@ -289,14 +293,16 @@ function MCMC_BayesianAlphabet(mme,df)
                 ########################################################################
                 if Mi.estimatePi == true
                     if is_multi_trait
-                        if Mi.G.constraint==true
+                        if has_marker_annotations(Mi)
+                            update_marker_annotation_priors!(Mi)
+                        elseif Mi.G.constraint==true
                             Mi.π = [samplePi(sum(Mi.δ[i]), Mi.nMarkers) for i in 1:mme.nModels]
                         else
                             samplePi(Mi.δ,Mi.π) #samplePi(deltaArray,Mi.π,labels)
                         end
                     else
                         if has_marker_annotations(Mi)
-                            update_annotation_priors!(Mi)
+                            update_marker_annotation_priors!(Mi)
                         elseif Mi.method == "BayesR"
                             Mi.π .= samplePi(Mi.δ[1], length(Mi.π))
                         else

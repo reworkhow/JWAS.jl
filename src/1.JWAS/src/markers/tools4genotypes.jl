@@ -377,7 +377,11 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
             #(2) marker effect variances
             if Mi.G.val == false
                 if Mi.method!="GBLUP"
-                    genetic2marker(Mi,Mi.π)
+                    if Mi.method == "BayesC" && Mi.annotations !== false && Mi.ntraits == 2
+                        genetic2marker(Mi, Mi.annotations.snp_pi)
+                    else
+                        genetic2marker(Mi,Mi.π)
+                    end
                     println()
                     if mme.nModels != 1 || mme.MCMCinfo.RRM != false
                       if !isposdef(Mi.G.val) #also work for scalar
@@ -431,6 +435,23 @@ function genetic2marker(M::Genotypes,Pi::Dict)
     end
   end
   M.G.val = M.genetic_variance.val ./ denom
+end
+
+function genetic2marker(M::Genotypes, snp_pi::AbstractMatrix{<:Real})
+    if M.method == "BayesC" && M.ntraits == 2
+        size(snp_pi, 1) == M.nMarkers || error("Annotated multi-trait BayesC snp_pi row count must match nMarkers.")
+        size(snp_pi, 2) == 4 || error("Annotated multi-trait BayesC snp_pi must have 4 columns for states 00, 10, 01, 11.")
+        allele_freq = vec(Float64.(M.alleleFreq))
+        twopq = 2.0 .* allele_freq .* (1.0 .- allele_freq)
+        denom = zeros(Float64, 2, 2)
+        denom[1, 1] = sum(twopq .* (Float64.(snp_pi[:, 2]) .+ Float64.(snp_pi[:, 4])))
+        denom[2, 2] = sum(twopq .* (Float64.(snp_pi[:, 3]) .+ Float64.(snp_pi[:, 4])))
+        denom[1, 2] = denom[2, 1] = sum(twopq .* Float64.(snp_pi[:, 4]))
+        all(denom .> 0) || error("Annotated multi-trait BayesC implied covariance denominator must be positive.")
+        M.G.val = M.genetic_variance.val ./ denom
+        return nothing
+    end
+    error("Matrix-valued Pi is supported here only for annotated 2-trait BayesC.")
 end
 
 function genetic2marker(M::Genotypes,π::Float64)

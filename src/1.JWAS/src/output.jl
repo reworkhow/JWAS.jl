@@ -159,7 +159,13 @@ function output_result(mme,output_folder,
                       SD=annotation_sd,
                   )
               else
-                  step_labels = ["step1_zero_vs_nonzero", "step2_small_vs_larger", "step3_medium_vs_large"]
+                  step_labels = if Mi.method == "BayesR"
+                      ["step1_zero_vs_nonzero", "step2_small_vs_larger", "step3_medium_vs_large"]
+                  elseif Mi.method == "BayesC" && Mi.ntraits == 2
+                      ["step1_zero_vs_active", "step2_11_vs_singleton", "step3_10_vs_01"]
+                  else
+                      ["step_$i" for i in 1:ann.nsteps]
+                  end
                   annotation_sd = sqrt.(abs.(ann.mean_coefficients2 .- ann.mean_coefficients .^ 2))
                   output["annotation coefficients "*Mi.name] = DataFrame(
                       Annotation=repeat(annotation_names, inner=ann.nsteps),

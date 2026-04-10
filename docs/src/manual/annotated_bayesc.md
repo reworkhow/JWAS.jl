@@ -1,7 +1,16 @@
 # Annotated BayesC
 
-Annotated BayesC extends single-trait BayesC by letting marker annotations change the prior exclusion probability for each marker.
-Instead of using one shared exclusion probability `π`, JWAS maintains a marker-specific vector `π_j`.
+Annotated BayesC lets marker annotations change marker-state priors.
+
+This page focuses on the original single-trait production paths:
+
+- single-trait dense BayesC with marker-specific exclusion probabilities `π_j`
+- single-trait dense BayesC with `fast_blocks=true`
+- single-trait streaming BayesC
+
+JWAS also supports dense 2-trait annotated BayesC with a marker-specific
+4-state joint prior over `00`, `10`, `01`, and `11`. That method now has its
+own guide: [Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md).
 
 ## Method Overview
 
@@ -45,11 +54,17 @@ submodel:
 
 ## Input Requirements
 
-- Current support is **single-trait `method="BayesC"` only**.
+- Current support is:
+  - single-trait dense `method="BayesC"`
+  - single-trait dense `method="BayesC"` with `fast_blocks=true`
+  - single-trait streaming `method="BayesC"`
 - Pass annotations through `get_genotypes(...; annotations=...)`.
 - `annotations` must be a numeric matrix with one row per marker in the raw genotype input.
 - JWAS applies the same marker QC/filtering mask to `annotations` as it applies to genotypes.
 - JWAS prepends an intercept column automatically after filtering. Users should not include an intercept column.
+
+For the dense 2-trait method and its restrictions, see
+[Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md).
 
 ## Dense Example
 
@@ -91,7 +106,22 @@ The returned output includes an annotation-coefficient table:
 output["annotation coefficients genotypes"]
 ```
 
-The first row is the automatically added intercept, followed by `Annotation_1`, `Annotation_2`, and so on.
+The first row is the automatically added intercept, followed by `Annotation_1`,
+`Annotation_2`, and so on.
+
+## Multi-Trait Method
+
+Dense 2-trait annotated BayesC is documented separately because it has a
+different prior structure, startup `Pi` rules, sampler selection, and runtime
+restrictions than the original single-trait method.
+
+See [Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md) for:
+
+- the 4-state prior over `00`, `10`, `01`, `11`
+- the 3-step tree annotation model
+- dense 2-trait examples
+- `multi_trait_sampler=:auto|:I|:II`
+- output interpretation for the joint `pi_<geno>` summary
 
 ## Dense Example with `fast_blocks`
 
@@ -108,13 +138,14 @@ output = runMCMC(
 )
 ```
 
-This uses the same annotation-driven `π_j` updates, but samples marker effects through the block BayesC path.
+This path is still limited to the **single-trait** annotated BayesC model.
+It uses the same annotation-driven `π_j` updates, but samples marker effects through the block BayesC path.
 JWAS rescales the outer `chain_length` in block mode, so the nominal `chain_length` should be chosen large enough that the effective post-scaling chain is still longer than `burnin`.
 For block-update details, see [Block BayesC](block_bayesc.md).
 
 ## Streaming Example
 
-The streaming backend is also supported for Annotated BayesC:
+The streaming backend is also supported for **single-trait** Annotated BayesC:
 
 ```julia
 using JWAS, CSV, DataFrames
@@ -161,7 +192,7 @@ output = runMCMC(
 )
 ```
 
-Streaming keeps the same annotation logic, but it still inherits the current streaming MVP constraints:
+Streaming keeps the same single-trait annotation logic, but it still inherits the current streaming MVP constraints:
 
 - single trait only
 - BayesC only

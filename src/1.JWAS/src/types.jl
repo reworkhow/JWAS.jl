@@ -150,7 +150,9 @@ mutable struct Genotypes
   stream_backend  # backend object for storage_mode=:stream
 
   isGRM  #whether genotypes or relationship matirx is provided
+  annotation_start_pi
   annotations
+  multi_trait_sampler::Symbol
 
   Genotypes(a1,a2,a3,a4,a5,a6,a7,a8,a9)=new(false,false,
                                          a1,a2,a3,a4,a5,a6,a7,a8,a4,false,
@@ -159,7 +161,7 @@ mutable struct Genotypes
                                          false,false,false,false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,:dense,false,a9,false)
+                                         false,:dense,false,a9,false,false,:auto)
 end
 
 mutable struct MarkerAnnotations
