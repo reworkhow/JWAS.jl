@@ -1,5 +1,6 @@
 using CSV
 using DataFrames
+using Random
 using Statistics
 using JWAS
 using JWAS.Datasets
@@ -24,6 +25,7 @@ function parse_seed_list(raw::AbstractString)
 end
 
 safe_cor(x, y) = (length(x) == 0 || length(y) == 0 || std(x) == 0 || std(y) == 0) ? NaN : cor(Float64.(x), Float64.(y))
+safe_rmse(x, y) = length(x) == 0 || length(y) == 0 ? NaN : sqrt(mean((Float64.(x) .- Float64.(y)) .^ 2))
 
 function normalize_marker_id(x)
     s = strip(replace(String(x), "\"" => ""))
@@ -53,6 +55,15 @@ function top_k_count(scores::AbstractVector{<:Real}, truth::AbstractVector{Bool}
     return sum(truth[selected])
 end
 
+function top_k_mask(scores::AbstractVector{<:Real}, k::Integer)
+    mask = falses(length(scores))
+    k <= 0 && return mask
+    order = sortperm(Float64.(scores); rev=true)
+    selected = order[1:min(k, length(order))]
+    mask[selected] .= true
+    return mask
+end
+
 function dataset_paths()
     return (
         genotypes=Datasets.dataset("genotypes.csv", dataset_name="simulated_annotations"),
@@ -62,22 +73,131 @@ function dataset_paths()
     )
 end
 
-function method_cases(include_annotated_bayesr::Bool)
-    cases = [
-        (variant="MT_BayesC", method="BayesC", annotated=false, multitrait=true, trait=""),
-        (variant="MT_Annotated_BayesC", method="BayesC", annotated=true, multitrait=true, trait=""),
-        (variant="BayesC_y1", method="BayesC", annotated=false, multitrait=false, trait="y1"),
-        (variant="Annotated_BayesC_y1", method="BayesC", annotated=true, multitrait=false, trait="y1"),
-        (variant="BayesC_y2", method="BayesC", annotated=false, multitrait=false, trait="y2"),
-        (variant="Annotated_BayesC_y2", method="BayesC", annotated=true, multitrait=false, trait="y2"),
-        (variant="BayesR_y1", method="BayesR", annotated=false, multitrait=false, trait="y1"),
-        (variant="BayesR_y2", method="BayesR", annotated=false, multitrait=false, trait="y2"),
+function method_cases()
+    return [
+        (variant="MT_BayesC", method="BayesC", annotated=false, multitrait=true, trait="", multi_trait_sampler=:auto, annotation_mode=:none),
+        (variant="MT_BayesC_I", method="BayesC", annotated=false, multitrait=true, trait="", multi_trait_sampler=:I, annotation_mode=:none),
+        (variant="MT_BayesC_II", method="BayesC", annotated=false, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:none),
+        (variant="MT_Annotated_BayesC_I", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:I, annotation_mode=:real),
+        (variant="MT_Annotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:real),
+        (variant="MT_EmptyAnnotated_BayesC_I", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:I, annotation_mode=:empty),
+        (variant="MT_EmptyAnnotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:empty),
+        (variant="BayesC_y1", method="BayesC", annotated=false, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:none),
+        (variant="Annotated_BayesC_y1", method="BayesC", annotated=true, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:real),
+        (variant="BayesC_y2", method="BayesC", annotated=false, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:none),
+        (variant="Annotated_BayesC_y2", method="BayesC", annotated=true, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:real),
+        (variant="BayesR_y1", method="BayesR", annotated=false, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:none),
+        (variant="BayesR_y2", method="BayesR", annotated=false, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:none),
+        (variant="Annotated_BayesR_y1", method="BayesR", annotated=true, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:real),
+        (variant="Annotated_BayesR_y2", method="BayesR", annotated=true, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:real),
     ]
-    if include_annotated_bayesr
-        push!(cases, (variant="Annotated_BayesR_y1", method="BayesR", annotated=true, multitrait=false, trait="y1"))
-        push!(cases, (variant="Annotated_BayesR_y2", method="BayesR", annotated=true, multitrait=false, trait="y2"))
+end
+
+function selected_method_cases(focus_mode::Symbol)
+    cases = method_cases()
+    if focus_mode == :all
+        return cases
+    elseif focus_mode == :multitrait
+        return filter(case -> case.multitrait, cases)
+    elseif focus_mode == :plain_empty_sampler
+        selected = Set([
+            "MT_BayesC_I",
+            "MT_BayesC_II",
+            "MT_EmptyAnnotated_BayesC_I",
+            "MT_EmptyAnnotated_BayesC_II",
+        ])
+        return filter(case -> case.variant in selected, cases)
+    elseif focus_mode == :empty_annotated_sampler
+        selected = Set([
+            "MT_EmptyAnnotated_BayesC_I",
+            "MT_EmptyAnnotated_BayesC_II",
+        ])
+        return filter(case -> case.variant in selected, cases)
+    else
+        error("Unsupported focus mode: $focus_mode")
     end
-    return cases
+end
+
+function cv_method_cases()
+    selected = Set([
+        "MT_BayesC",
+        "MT_BayesC_I",
+        "MT_BayesC_II",
+        "MT_Annotated_BayesC_I",
+        "MT_Annotated_BayesC_II",
+        "MT_EmptyAnnotated_BayesC_I",
+        "MT_EmptyAnnotated_BayesC_II",
+        "BayesC_y1",
+        "Annotated_BayesC_y1",
+        "BayesC_y2",
+        "Annotated_BayesC_y2",
+        "BayesR_y1",
+        "BayesR_y2",
+        "Annotated_BayesR_y1",
+        "Annotated_BayesR_y2",
+    ])
+    return filter(case -> case.variant in selected, method_cases())
+end
+
+function cv_fold_assignments(ids::AbstractVector, nfolds::Integer, seed::Int)
+    nfolds >= 2 || error("Cross-validation requires at least 2 folds.")
+    normalized = normalize_id.(ids)
+    length(unique(normalized)) == length(normalized) || error("Fold assignment IDs must be unique.")
+    length(normalized) >= nfolds || error("Number of folds exceeds the number of IDs.")
+
+    rng = MersenneTwister(seed)
+    shuffled = shuffle(rng, sort(normalized))
+    folds = [mod(i - 1, nfolds) + 1 for i in eachindex(shuffled)]
+    df = DataFrame(ID=shuffled, fold=folds)
+    sort!(df, :ID)
+    return df
+end
+
+function masked_phenotype_frame(pheno_df::DataFrame, case::NamedTuple, heldout_ids)
+    heldout_set = Set(normalize_id.(collect(heldout_ids)))
+    df = copy(pheno_df)
+    df.ID = normalize_id.(df.ID)
+    allowmissing!(df)
+    heldout_mask = in.(df.ID, Ref(heldout_set))
+    if case.multitrait
+        df[heldout_mask, :y1] .= missing
+        df[heldout_mask, :y2] .= missing
+    else
+        df[heldout_mask, Symbol(case.trait)] .= missing
+    end
+    return df
+end
+
+function heldout_prediction_join(ebv_df::DataFrame, pheno_df::DataFrame, heldout_ids, trait::AbstractString)
+    heldout_set = Set(normalize_id.(collect(heldout_ids)))
+    heldout_ebv = filter(:ID => id -> normalize_id(id) in heldout_set, copy(ebv_df))
+    heldout_ebv.ID = normalize_id.(heldout_ebv.ID)
+    heldout_pheno = filter(:ID => id -> normalize_id(id) in heldout_set, select(copy(pheno_df), :ID, Symbol(trait)))
+    heldout_pheno.ID = normalize_id.(heldout_pheno.ID)
+    rename!(heldout_pheno, Symbol(trait) => :phenotype)
+    joined = innerjoin(heldout_ebv, heldout_pheno; on=:ID)
+    assert_id_join(heldout_ebv, heldout_pheno, joined)
+    return joined
+end
+
+function heldout_prediction_row(case::NamedTuple, seed::Int, fold::Int, trait::AbstractString,
+                                ebv_df::DataFrame, pheno_df::DataFrame, heldout_ids, runtime_seconds::Real)
+    joined = heldout_prediction_join(ebv_df, pheno_df, heldout_ids, trait)
+    return (
+        variant=case.variant,
+        family=family_label(case),
+        method=case.method,
+        annotated=case.annotated,
+        multitrait=case.multitrait,
+        trait=trait,
+        multi_trait_sampler=String(case.multi_trait_sampler),
+        seed=seed,
+        fold=fold,
+        heldout_count=nrow(joined),
+        runtime_seconds=Float64(runtime_seconds),
+        heldout_correlation=safe_cor(joined.ebv, joined.phenotype),
+        heldout_rmse=safe_rmse(joined.ebv, joined.phenotype),
+    )
 end
 
 function marker_frame(output, geno_name::AbstractString, trait::AbstractString)
@@ -114,6 +234,17 @@ function annotation_matrix(paths)
     ann = CSV.read(paths.annotations_mt, DataFrame)
     ann.marker_id = normalize_marker_id.(ann.marker_id)
     return ann
+end
+
+function annotation_mode_matrix(ann_df::DataFrame, mode::Symbol)
+    base = Matrix{Float64}(ann_df[:, Not(:marker_id)])
+    if mode == :real
+        return base
+    elseif mode == :empty
+        return zeros(Float64, size(base, 1), 0)
+    else
+        error("Unsupported annotation mode: $mode")
+    end
 end
 
 function read_joined_marker_table(path::AbstractString)
@@ -170,47 +301,98 @@ function multitrait_joint_state_posterior_table(run_dir::AbstractString, truth::
     return joined
 end
 
-function shared_posterior_row(label::AbstractString, seed::Int, posterior::DataFrame, threshold::Float64)
+function shared_posterior_row(label::AbstractString, seed::Int, posterior::DataFrame)
     shared_truth = Bool.(posterior.is_shared)
-    declared = Float64.(posterior.pip_11) .>= threshold
     shared_truth_count = sum(shared_truth)
+    declared = top_k_mask(posterior.pip_11, shared_truth_count)
     declared_shared_count = sum(declared)
     true_shared_declared = sum(declared .& shared_truth)
     meta = pleiotropy_metadata(label)
+    precision = declared_shared_count > 0 ? true_shared_declared / declared_shared_count : NaN
+    recall = shared_truth_count > 0 ? true_shared_declared / shared_truth_count : NaN
+    f1 = isnan(precision) || isnan(recall) || (precision + recall == 0) ? NaN : 2 * precision * recall / (precision + recall)
     return (
         label=label,
         method=meta.method,
         annotated=meta.annotated,
         multitrait=meta.multitrait,
         seed=seed,
-        threshold=threshold,
+        shared_score_source="P11_topk",
         shared_truth_count=shared_truth_count,
         declared_shared_count=declared_shared_count,
         true_shared_declared_count=true_shared_declared,
         false_shared_declared_count=sum(declared .& .!shared_truth),
-        shared_precision=declared_shared_count > 0 ? true_shared_declared / declared_shared_count : NaN,
-        shared_recall=shared_truth_count > 0 ? true_shared_declared / shared_truth_count : NaN,
+        shared_precision=precision,
+        shared_recall=recall,
+        shared_f1=f1,
         mean_pip_11_true_shared=shared_truth_count > 0 ? mean(Float64.(posterior.pip_11[shared_truth])) : NaN,
         mean_pip_11_not_shared=sum(.!shared_truth) > 0 ? mean(Float64.(posterior.pip_11[.!shared_truth])) : NaN,
     )
 end
 
-function summarize_multitrait_shared_posteriors(output_dir::AbstractString, truth::DataFrame, cases, seeds; threshold::Float64=0.5)
+function summarize_multitrait_shared_posteriors(output_dir::AbstractString, truth::DataFrame, cases, seeds)
     rows = NamedTuple[]
     for case in cases
         case.multitrait || continue
         for seed in seeds
             run_dir = joinpath(output_dir, case.variant, "seed_$(seed)", "run")
             posterior = multitrait_joint_state_posterior_table(run_dir, truth)
-            posterior.declared_shared = Float64.(posterior.pip_11) .>= threshold
+            shared_truth_count = sum(Bool.(posterior.is_shared))
+            posterior.declared_shared_topk = top_k_mask(posterior.pip_11, shared_truth_count)
             CSV.write(joinpath(output_dir, case.variant, "seed_$(seed)", "posterior_joint_state_probabilities.csv"), posterior)
-            push!(rows, shared_posterior_row(case.variant, seed, posterior, threshold))
+            push!(rows, shared_posterior_row(case.variant, seed, posterior))
         end
     end
 
     per_seed_df = DataFrame(rows)
+    if nrow(per_seed_df) == 0
+        empty_per_seed = DataFrame(
+            label=String[],
+            method=String[],
+            annotated=Bool[],
+            multitrait=Bool[],
+            seed=Int[],
+            shared_score_source=String[],
+            shared_truth_count=Int[],
+            declared_shared_count=Int[],
+            true_shared_declared_count=Int[],
+            false_shared_declared_count=Int[],
+            shared_precision=Float64[],
+            shared_recall=Float64[],
+            shared_f1=Float64[],
+            mean_pip_11_true_shared=Float64[],
+            mean_pip_11_not_shared=Float64[],
+        )
+        empty_summary = DataFrame(
+            label=String[],
+            method=String[],
+            annotated=Bool[],
+            multitrait=Bool[],
+            shared_score_source=String[],
+            shared_truth_count=Int[],
+            declared_shared_count_mean=Float64[],
+            declared_shared_count_sd=Float64[],
+            true_shared_declared_count_mean=Float64[],
+            true_shared_declared_count_sd=Float64[],
+            false_shared_declared_count_mean=Float64[],
+            false_shared_declared_count_sd=Float64[],
+            shared_precision_mean=Float64[],
+            shared_precision_sd=Float64[],
+            shared_recall_mean=Float64[],
+            shared_recall_sd=Float64[],
+            shared_f1_mean=Float64[],
+            shared_f1_sd=Float64[],
+            mean_pip_11_true_shared_mean=Float64[],
+            mean_pip_11_true_shared_sd=Float64[],
+            mean_pip_11_not_shared_mean=Float64[],
+            mean_pip_11_not_shared_sd=Float64[],
+        )
+        CSV.write(joinpath(output_dir, "multitrait_shared_posterior_per_seed_summary.csv"), empty_per_seed)
+        CSV.write(joinpath(output_dir, "multitrait_shared_posterior_summary.csv"), empty_summary)
+        return (per_seed=empty_per_seed, summary=empty_summary)
+    end
     summary_df = combine(
-        groupby(per_seed_df, [:label, :method, :annotated, :multitrait, :threshold]),
+        groupby(per_seed_df, [:label, :method, :annotated, :multitrait, :shared_score_source]),
         :shared_truth_count => first => :shared_truth_count,
         :declared_shared_count => mean => :declared_shared_count_mean,
         :declared_shared_count => std => :declared_shared_count_sd,
@@ -222,6 +404,8 @@ function summarize_multitrait_shared_posteriors(output_dir::AbstractString, trut
         :shared_precision => std => :shared_precision_sd,
         :shared_recall => mean => :shared_recall_mean,
         :shared_recall => std => :shared_recall_sd,
+        :shared_f1 => mean => :shared_f1_mean,
+        :shared_f1 => std => :shared_f1_sd,
         :mean_pip_11_true_shared => mean => :mean_pip_11_true_shared_mean,
         :mean_pip_11_true_shared => std => :mean_pip_11_true_shared_sd,
         :mean_pip_11_not_shared => mean => :mean_pip_11_not_shared_mean,
@@ -231,6 +415,67 @@ function summarize_multitrait_shared_posteriors(output_dir::AbstractString, trut
     CSV.write(joinpath(output_dir, "multitrait_shared_posterior_per_seed_summary.csv"), per_seed_df)
     CSV.write(joinpath(output_dir, "multitrait_shared_posterior_summary.csv"), summary_df)
     return (per_seed=per_seed_df, summary=summary_df)
+end
+
+function summarize_multitrait_mixing(method_summary::DataFrame, multitrait_shared_summary::DataFrame)
+    multitrait_method_summary = filter(:multitrait => identity, method_summary)
+    isempty(multitrait_method_summary) && return DataFrame()
+    isempty(multitrait_shared_summary) && return DataFrame()
+
+    mt_shared = copy(multitrait_shared_summary)
+    rename!(mt_shared, :label => :variant)
+
+    mt_shared = select(
+        mt_shared,
+        :variant,
+        :method,
+        :annotated,
+        :multitrait,
+        :shared_score_source,
+        :shared_truth_count,
+        :declared_shared_count_mean,
+        :declared_shared_count_sd,
+        :true_shared_declared_count_mean,
+        :true_shared_declared_count_sd,
+        :false_shared_declared_count_mean,
+        :false_shared_declared_count_sd,
+        :shared_precision_mean,
+        :shared_precision_sd,
+        :shared_recall_mean,
+        :shared_recall_sd,
+        :shared_f1_mean,
+        :shared_f1_sd,
+        :mean_pip_11_true_shared_mean,
+        :mean_pip_11_true_shared_sd,
+        :mean_pip_11_not_shared_mean,
+        :mean_pip_11_not_shared_sd,
+    )
+
+    mt_method = select(
+        multitrait_method_summary,
+        :variant,
+        :method,
+        :annotated,
+        :multitrait,
+        :multi_trait_sampler,
+        :runtime_seconds_mean,
+        :runtime_seconds_sd,
+        :ebv_correlation_mean,
+        :ebv_correlation_sd,
+        :marker_effect_correlation_mean,
+        :marker_effect_correlation_sd,
+        :pip_gap_mean,
+        :pip_gap_sd,
+        :topk_recall_mean,
+        :topk_recall_sd,
+        :active_count,
+        :any_active_topk_recall_mean,
+        :any_active_topk_recall_sd,
+    )
+
+    mix = innerjoin(mt_method, mt_shared; on=[:variant, :method, :annotated, :multitrait])
+    sort!(mix, [:variant, :multi_trait_sampler])
+    return mix
 end
 
 function pair_table_from_trait_tables(y1_table::DataFrame, y2_table::DataFrame)
@@ -252,7 +497,6 @@ function pair_table_from_trait_tables(y1_table::DataFrame, y2_table::DataFrame)
     )
     pair.any_active = Bool.(pair.is_active_y1) .| Bool.(pair.is_active_y2)
     pair.any_score = max.(Float64.(pair.pip_y1), Float64.(pair.pip_y2))
-    pair.shared_score = min.(Float64.(pair.pip_y1), Float64.(pair.pip_y2))
     return pair
 end
 
@@ -263,86 +507,119 @@ function pleiotropy_metadata(label::AbstractString)
     return (method=method, annotated=annotated, multitrait=multitrait)
 end
 
-function pleiotropy_row(label::AbstractString, seed::Int, pair_table::DataFrame)
+function single_trait_shared_overlap_row(label::AbstractString, seed::Int, pair_table::DataFrame)
     shared_truth = Bool.(pair_table.is_shared)
-    any_truth = Bool.(pair_table.any_active)
-    shared_k = sum(shared_truth)
-    any_k = sum(any_truth)
-    shared_top_count = top_k_count(pair_table.shared_score, shared_truth, shared_k)
-    any_selected_count = top_k_count(pair_table.any_score, shared_truth, any_k)
+    k_y1 = sum(Bool.(pair_table.is_active_y1))
+    k_y2 = sum(Bool.(pair_table.is_active_y2))
+    detected_y1 = top_k_mask(pair_table.pip_y1, k_y1)
+    detected_y2 = top_k_mask(pair_table.pip_y2, k_y2)
+    declared_shared = detected_y1 .& detected_y2
+    shared_truth_count = sum(shared_truth)
+    declared_shared_count = sum(declared_shared)
+    true_shared_declared = sum(declared_shared .& shared_truth)
     meta = pleiotropy_metadata(label)
+    precision = declared_shared_count > 0 ? true_shared_declared / declared_shared_count : NaN
+    recall = shared_truth_count > 0 ? true_shared_declared / shared_truth_count : NaN
+    f1 = isnan(precision) || isnan(recall) || (precision + recall == 0) ? NaN : 2 * precision * recall / (precision + recall)
     return (
         label=label,
         method=meta.method,
         annotated=meta.annotated,
         multitrait=meta.multitrait,
         seed=seed,
-        shared_truth_count=shared_k,
-        any_active_truth_count=any_k,
-        shared_topk_count=shared_top_count,
-        shared_topk_recall=shared_k > 0 ? shared_top_count / shared_k : NaN,
-        shared_count_among_detected_any_active=any_selected_count,
-        shared_fraction_among_detected_any_active=any_k > 0 ? any_selected_count / any_k : NaN,
-        shared_recall_within_detected_any_active=shared_k > 0 ? any_selected_count / shared_k : NaN,
+        shared_score_source="single_trait_overlap_topk",
+        shared_truth_count=shared_truth_count,
+        declared_shared_count=declared_shared_count,
+        true_shared_declared_count=true_shared_declared,
+        false_shared_declared_count=sum(declared_shared .& .!shared_truth),
+        shared_precision=precision,
+        shared_recall=recall,
+        shared_f1=f1,
+        mean_pip_11_true_shared=NaN,
+        mean_pip_11_not_shared=NaN,
     )
 end
 
-function summarize_pleiotropy_from_family_tables(case_results::Dict, truth::DataFrame, output_root::AbstractString)
+function summarize_single_trait_shared_overlaps(case_results::Dict, truth::DataFrame, output_root::AbstractString)
     rows = NamedTuple[]
-
-    for (label, seed_map) in case_results
-        if startswith(label, "MT_")
-            for (seed, trait_map) in seed_map
-                haskey(trait_map, "y1") && haskey(trait_map, "y2") || continue
-                pair = pair_table_from_trait_tables(trait_map["y1"], trait_map["y2"])
-                assert_marker_join(pair, select(copy(truth), :marker_id), pair)
-                CSV.write(joinpath(output_root, label, "seed_$(seed)", "pleiotropy_pair_table.csv"), pair)
-                push!(rows, pleiotropy_row(label, seed, pair))
-            end
-        else
-            for (seed, trait_map) in seed_map
-                haskey(trait_map, "y1") && haskey(trait_map, "y2") || continue
-                pair = innerjoin(
-                    select(copy(trait_map["y1"]), :marker_id, :pip),
-                    select(copy(trait_map["y2"]), :marker_id, :pip);
-                    on=:marker_id,
-                    renamecols="_y1" => "_y2",
-                )
-                nrow(trait_map["y1"]) == nrow(trait_map["y2"]) || error("Trait marker tables do not have the same row count.")
-                length(unique(trait_map["y1"].marker_id)) == nrow(trait_map["y1"]) || error("Trait y1 marker table contains duplicate marker IDs.")
-                length(unique(trait_map["y2"].marker_id)) == nrow(trait_map["y2"]) || error("Trait y2 marker table contains duplicate marker IDs.")
-                Set(trait_map["y1"].marker_id) == Set(trait_map["y2"].marker_id) || error("Trait marker ID sets do not match.")
-                nrow(pair) == nrow(trait_map["y1"]) || error("Trait marker join did not produce the expected row count.")
-                pair = leftjoin(pair, select(copy(truth), :marker_id, :state, :is_active_y1, :is_active_y2, :is_shared); on=:marker_id)
-                assert_marker_join(pair, select(copy(truth), :marker_id), pair)
-                pair.any_active = Bool.(pair.is_active_y1) .| Bool.(pair.is_active_y2)
-                pair.any_score = max.(Float64.(pair.pip_y1), Float64.(pair.pip_y2))
-                pair.shared_score = min.(Float64.(pair.pip_y1), Float64.(pair.pip_y2))
-                CSV.write(joinpath(output_root, "$(label)_seed_$(seed)_pleiotropy_pair_table.csv"), pair)
-                push!(rows, pleiotropy_row(label, seed, pair))
-            end
+    for (family, seed_map) in case_results
+        startswith(family, "MT_") && continue
+        for (seed, trait_map) in seed_map
+            haskey(trait_map, "y1") && haskey(trait_map, "y2") || continue
+            pair = pair_table_from_trait_tables(trait_map["y1"], trait_map["y2"])
+            assert_marker_join(pair, select(copy(truth), :marker_id), pair)
+            k_y1 = sum(Bool.(pair.is_active_y1))
+            k_y2 = sum(Bool.(pair.is_active_y2))
+            pair.detected_y1_topk = top_k_mask(pair.pip_y1, k_y1)
+            pair.detected_y2_topk = top_k_mask(pair.pip_y2, k_y2)
+            pair.declared_shared_overlap = pair.detected_y1_topk .& pair.detected_y2_topk
+            CSV.write(joinpath(output_root, "$(family)_seed_$(seed)_shared_overlap_table.csv"), pair)
+            push!(rows, single_trait_shared_overlap_row(family, seed, pair))
         end
     end
 
     per_seed_df = DataFrame(rows)
+    if nrow(per_seed_df) == 0
+        empty_per_seed = DataFrame(
+            label=String[],
+            method=String[],
+            annotated=Bool[],
+            multitrait=Bool[],
+            seed=Int[],
+            shared_score_source=String[],
+            shared_truth_count=Int[],
+            declared_shared_count=Int[],
+            true_shared_declared_count=Int[],
+            false_shared_declared_count=Int[],
+            shared_precision=Float64[],
+            shared_recall=Float64[],
+            shared_f1=Float64[],
+            mean_pip_11_true_shared=Float64[],
+            mean_pip_11_not_shared=Float64[],
+        )
+        empty_summary = DataFrame(
+            label=String[],
+            method=String[],
+            annotated=Bool[],
+            multitrait=Bool[],
+            shared_score_source=String[],
+            shared_truth_count=Int[],
+            declared_shared_count_mean=Float64[],
+            declared_shared_count_sd=Float64[],
+            true_shared_declared_count_mean=Float64[],
+            true_shared_declared_count_sd=Float64[],
+            false_shared_declared_count_mean=Float64[],
+            false_shared_declared_count_sd=Float64[],
+            shared_precision_mean=Float64[],
+            shared_precision_sd=Float64[],
+            shared_recall_mean=Float64[],
+            shared_recall_sd=Float64[],
+            shared_f1_mean=Float64[],
+            shared_f1_sd=Float64[],
+        )
+        CSV.write(joinpath(output_root, "single_trait_shared_overlap_per_seed_summary.csv"), empty_per_seed)
+        CSV.write(joinpath(output_root, "single_trait_shared_overlap_summary.csv"), empty_summary)
+        return (per_seed=empty_per_seed, summary=empty_summary)
+    end
     summary_df = combine(
-        groupby(per_seed_df, [:label, :method, :annotated, :multitrait]),
+        groupby(per_seed_df, [:label, :method, :annotated, :multitrait, :shared_score_source]),
         :shared_truth_count => first => :shared_truth_count,
-        :any_active_truth_count => first => :any_active_truth_count,
-        :shared_topk_count => mean => :shared_topk_count_mean,
-        :shared_topk_count => std => :shared_topk_count_sd,
-        :shared_topk_recall => mean => :shared_topk_recall_mean,
-        :shared_topk_recall => std => :shared_topk_recall_sd,
-        :shared_count_among_detected_any_active => mean => :shared_count_among_detected_any_active_mean,
-        :shared_count_among_detected_any_active => std => :shared_count_among_detected_any_active_sd,
-        :shared_fraction_among_detected_any_active => mean => :shared_fraction_among_detected_any_active_mean,
-        :shared_fraction_among_detected_any_active => std => :shared_fraction_among_detected_any_active_sd,
-        :shared_recall_within_detected_any_active => mean => :shared_recall_within_detected_any_active_mean,
-        :shared_recall_within_detected_any_active => std => :shared_recall_within_detected_any_active_sd,
+        :declared_shared_count => mean => :declared_shared_count_mean,
+        :declared_shared_count => std => :declared_shared_count_sd,
+        :true_shared_declared_count => mean => :true_shared_declared_count_mean,
+        :true_shared_declared_count => std => :true_shared_declared_count_sd,
+        :false_shared_declared_count => mean => :false_shared_declared_count_mean,
+        :false_shared_declared_count => std => :false_shared_declared_count_sd,
+        :shared_precision => mean => :shared_precision_mean,
+        :shared_precision => std => :shared_precision_sd,
+        :shared_recall => mean => :shared_recall_mean,
+        :shared_recall => std => :shared_recall_sd,
+        :shared_f1 => mean => :shared_f1_mean,
+        :shared_f1 => std => :shared_f1_sd,
     )
 
-    CSV.write(joinpath(output_root, "pleiotropy_per_seed_summary.csv"), per_seed_df)
-    CSV.write(joinpath(output_root, "pleiotropy_summary.csv"), summary_df)
+    CSV.write(joinpath(output_root, "single_trait_shared_overlap_per_seed_summary.csv"), per_seed_df)
+    CSV.write(joinpath(output_root, "single_trait_shared_overlap_summary.csv"), summary_df)
     return (per_seed=per_seed_df, summary=summary_df)
 end
 
@@ -397,6 +674,7 @@ function annotation_rows(output, case, seed)
         annotated=Bool[],
         multitrait=Bool[],
         trait=String[],
+        multi_trait_sampler=String[],
         seed=Int[],
         annotation=String[],
         step=String[],
@@ -414,6 +692,7 @@ function annotation_rows(output, case, seed)
         annotated=fill(case.annotated, nrow(ann_df)),
         multitrait=fill(case.multitrait, nrow(ann_df)),
         trait=fill(case.trait, nrow(ann_df)),
+        multi_trait_sampler=fill(String(case.multi_trait_sampler), nrow(ann_df)),
         seed=fill(seed, nrow(ann_df)),
         annotation=String.(ann_df.Annotation),
         step=step_values,
@@ -423,10 +702,14 @@ end
 
 function run_case(case::NamedTuple, seed::Int, paths;
                   chain_length::Int, burnin::Int, output_samples_frequency::Int,
-                  start_h2::Float64, output_root::AbstractString)
-    pheno_all = phenotype_frame(paths)
+                  start_h2::Float64, output_root::AbstractString,
+                  pheno_input::Union{Nothing,DataFrame}=nothing,
+                  fold::Union{Nothing,Int}=nothing)
+    pheno_reference = phenotype_frame(paths)
+    pheno_run = pheno_input === nothing ? copy(pheno_reference) : copy(pheno_input)
+    pheno_run.ID = normalize_id.(pheno_run.ID)
     ann_df = annotation_matrix(paths)
-    ann_matrix = Matrix{Float64}(ann_df[:, Not(:marker_id)])
+    ann_matrix = case.annotated ? annotation_mode_matrix(ann_df, case.annotation_mode) : zeros(0, 0)
 
     geno_kwargs = (
         separator=',',
@@ -438,7 +721,7 @@ function run_case(case::NamedTuple, seed::Int, paths;
     )
 
     if case.multitrait
-        ymat = Matrix{Float64}(pheno_all[:, [:y1, :y2]])
+        ymat = Matrix{Float64}(pheno_reference[:, [:y1, :y2]])
         start_g = Matrix(cov(ymat)) .* start_h2
         start_r = Matrix(cov(ymat)) .* (1 - start_h2)
 
@@ -446,6 +729,7 @@ function run_case(case::NamedTuple, seed::Int, paths;
             get_genotypes(
                 paths.genotypes, start_g;
                 geno_kwargs...,
+                multi_trait_sampler=case.multi_trait_sampler,
                 Pi=copy(MT_START_PI),
                 annotations=ann_matrix,
             )
@@ -453,16 +737,17 @@ function run_case(case::NamedTuple, seed::Int, paths;
             get_genotypes(
                 paths.genotypes, start_g;
                 geno_kwargs...,
+                multi_trait_sampler=case.multi_trait_sampler,
                 Pi=copy(MT_START_PI),
             )
         end
 
         model = build_model("y1 = intercept + bench_geno\ny2 = intercept + bench_geno", start_r)
-        outputEBV(model, pheno_all.ID)
+        outputEBV(model, pheno_run.ID)
     else
         trait = Symbol(case.trait)
-        start_g = var(Float64.(pheno_all[!, trait])) * start_h2
-        start_r = var(Float64.(pheno_all[!, trait])) * (1 - start_h2)
+        start_g = var(Float64.(pheno_reference[!, trait])) * start_h2
+        start_r = var(Float64.(pheno_reference[!, trait])) * (1 - start_h2)
 
         if case.method == "BayesC"
             global bench_geno = if case.annotated
@@ -501,17 +786,19 @@ function run_case(case::NamedTuple, seed::Int, paths;
         end
 
         model = build_model("$(case.trait) = intercept + bench_geno", start_r)
-        outputEBV(model, pheno_all.ID)
+        outputEBV(model, pheno_run.ID)
     end
 
-    seed_dir = joinpath(output_root, case.variant, "seed_$(seed)")
+    seed_dir = fold === nothing ?
+        joinpath(output_root, case.variant, "seed_$(seed)") :
+        joinpath(output_root, case.variant, "seed_$(seed)", "fold_$(fold)")
     mkpath(seed_dir)
     raw_output_dir = joinpath(seed_dir, "run")
     isdir(raw_output_dir) && rm(raw_output_dir; recursive=true, force=true)
 
     elapsed = @elapsed output = runMCMC(
         model,
-        pheno_all;
+        pheno_run;
         chain_length=chain_length,
         burnin=burnin,
         output_samples_frequency=output_samples_frequency,
@@ -559,6 +846,7 @@ function summarize_case(case::NamedTuple, seed::Int, run_result, paths)
             annotated=case.annotated,
             multitrait=case.multitrait,
             trait=trait,
+            multi_trait_sampler=String(case.multi_trait_sampler),
             seed=seed,
             runtime_seconds=run_result.runtime_seconds,
             ebv_correlation=safe_cor(joined_ebv.ebv, joined_ebv.phenotype),
@@ -596,14 +884,121 @@ function summarize_case(case::NamedTuple, seed::Int, run_result, paths)
     )
 end
 
+function summarize_case_cv(case::NamedTuple, seed::Int, fold::Int, run_result, pheno_reference::DataFrame, heldout_ids)
+    output = run_result.output
+    traits = case.multitrait ? ["y1", "y2"] : [case.trait]
+    rows = NamedTuple[]
+    for trait in traits
+        ebv_df = ebv_frame(output, trait)
+        joined = heldout_prediction_join(ebv_df, pheno_reference, heldout_ids, trait)
+        CSV.write(joinpath(dirname(run_result.output_dir), "heldout_ebv_$(trait).csv"), joined)
+        push!(rows, heldout_prediction_row(case, seed, fold, trait, ebv_df, pheno_reference, heldout_ids, run_result.runtime_seconds))
+    end
+    return DataFrame(rows)
+end
+
 function family_label(case::NamedTuple)
     if case.multitrait
-        return case.annotated ? "MT_Annotated_BayesC" : "MT_BayesC"
+        return case.variant
     end
     if case.method == "BayesC"
         return case.annotated ? "Annotated_BayesC_single" : "BayesC_single"
     end
     return case.annotated ? "Annotated_BayesR_single" : "BayesR_single"
+end
+
+function summarize_cv_results(per_fold_df::DataFrame)
+    method_summary = combine(
+        groupby(per_fold_df, [:variant, :family, :method, :annotated, :multitrait, :trait, :multi_trait_sampler]),
+        :heldout_count => sum => :heldout_count_total,
+        :runtime_seconds => mean => :runtime_seconds_mean,
+        :runtime_seconds => std => :runtime_seconds_sd,
+        :heldout_correlation => mean => :heldout_correlation_mean,
+        :heldout_correlation => std => :heldout_correlation_sd,
+        :heldout_rmse => mean => :heldout_rmse_mean,
+        :heldout_rmse => std => :heldout_rmse_sd,
+    )
+
+    family_summary = combine(
+        groupby(method_summary, [:family, :method, :annotated, :multitrait]),
+        :heldout_count_total => sum => :heldout_count_total,
+        :runtime_seconds_mean => mean => :runtime_seconds_mean,
+        :runtime_seconds_mean => std => :runtime_seconds_sd,
+        :heldout_correlation_mean => mean => :heldout_correlation_trait_mean,
+        :heldout_correlation_mean => std => :heldout_correlation_trait_sd,
+        :heldout_rmse_mean => mean => :heldout_rmse_trait_mean,
+        :heldout_rmse_mean => std => :heldout_rmse_trait_sd,
+    )
+
+    sort!(method_summary, [:variant, :trait])
+    sort!(family_summary, [:family])
+    return (method_summary=method_summary, family_summary=family_summary)
+end
+
+function run_cv_benchmark(output_dir::AbstractString, paths, cases, seeds;
+                          chain_length::Int, burnin::Int, output_freq::Int,
+                          start_h2::Float64, do_warmup::Bool, nfolds::Int)
+    pheno_reference = phenotype_frame(paths)
+    assignment_tables = DataFrame[]
+    fold_maps = Dict{Int,DataFrame}()
+
+    for seed in seeds
+        fold_df = cv_fold_assignments(pheno_reference.ID, nfolds, seed)
+        fold_maps[seed] = fold_df
+        push!(assignment_tables, DataFrame(seed=fill(seed, nrow(fold_df)), ID=fold_df.ID, fold=fold_df.fold))
+    end
+
+    fold_assignments = vcat(assignment_tables...)
+    CSV.write(joinpath(output_dir, "cv_fold_assignments.csv"), fold_assignments)
+
+    per_fold_tables = DataFrame[]
+
+    for case in cases
+        if do_warmup
+            warmup_root = mktempdir()
+            try
+                warmup_seed = first(seeds)
+                warmup_fold = 1
+                heldout_ids = Set(fold_maps[warmup_seed].ID[fold_maps[warmup_seed].fold .== warmup_fold])
+                warmup_pheno = masked_phenotype_frame(pheno_reference, case, heldout_ids)
+                run_case(case, warmup_seed, paths;
+                         chain_length=min(chain_length, 50),
+                         burnin=0,
+                         output_samples_frequency=max(1, min(output_freq, 10)),
+                         start_h2=start_h2,
+                         output_root=warmup_root,
+                         pheno_input=warmup_pheno,
+                         fold=warmup_fold)
+            finally
+                rm(warmup_root; recursive=true, force=true)
+            end
+        end
+
+        for seed in seeds
+            fold_df = fold_maps[seed]
+            for fold in 1:nfolds
+                heldout_ids = Set(fold_df.ID[fold_df.fold .== fold])
+                masked_pheno = masked_phenotype_frame(pheno_reference, case, heldout_ids)
+                run_result = run_case(case, seed, paths;
+                                      chain_length=chain_length,
+                                      burnin=burnin,
+                                      output_samples_frequency=output_freq,
+                                      start_h2=start_h2,
+                                      output_root=output_dir,
+                                      pheno_input=masked_pheno,
+                                      fold=fold)
+                push!(per_fold_tables, summarize_case_cv(case, seed, fold, run_result, pheno_reference, heldout_ids))
+            end
+        end
+    end
+
+    per_fold_df = vcat(per_fold_tables...)
+    CSV.write(joinpath(output_dir, "cv_per_fold_summary.csv"), per_fold_df)
+    cv_summaries = summarize_cv_results(per_fold_df)
+    CSV.write(joinpath(output_dir, "cv_method_summary.csv"), cv_summaries.method_summary)
+    CSV.write(joinpath(output_dir, "cv_family_summary.csv"), cv_summaries.family_summary)
+    return (fold_assignments=fold_assignments, per_fold=per_fold_df,
+            method_summary=cv_summaries.method_summary, family_summary=cv_summaries.family_summary)
 end
 
 function summarize_single_family_any_active(case_results::Dict, truth::DataFrame, output_root::AbstractString)
@@ -647,15 +1042,33 @@ function main(args=ARGS)
     burnin = env_int("JWAS_SIMULATED_MT_BURNIN", 500)
     output_freq = env_int("JWAS_SIMULATED_MT_OUTPUT_FREQ", 20)
     start_h2 = env_float("JWAS_SIMULATED_MT_START_H2", 0.5)
-    include_annotated_bayesr = env_bool("JWAS_SIMULATED_MT_INCLUDE_ANNOTATED_BAYESR", false)
     do_warmup = env_bool("JWAS_SIMULATED_MT_WARMUP", true)
     analyze_only = env_bool("JWAS_SIMULATED_MT_ANALYZE_ONLY", false)
+    benchmark_mode = Symbol(env_string("JWAS_SIMULATED_MT_BENCHMARK_MODE", "standard"))
+    cv_folds = env_int("JWAS_SIMULATED_MT_CV_FOLDS", 5)
+    focused_multitrait_only = env_bool("JWAS_SIMULATED_MT_FOCUSED_MULTITRAIT", false)
+    focus_mode = Symbol(env_string("JWAS_SIMULATED_MT_FOCUS_MODE", focused_multitrait_only ? "multitrait" : "all"))
 
     paths = dataset_paths()
     truth = truth_frame(paths)
-    cases = method_cases(include_annotated_bayesr)
+    cases = benchmark_mode == :cv ? cv_method_cases() : selected_method_cases(focus_mode)
+
+    if benchmark_mode == :cv
+        analyze_only && error("Analyze-only mode is not supported for the CV benchmark.")
+        run_cv_benchmark(output_dir, paths, cases, seeds;
+                         chain_length=chain_length,
+                         burnin=burnin,
+                         output_freq=output_freq,
+                         start_h2=start_h2,
+                         do_warmup=do_warmup,
+                         nfolds=cv_folds)
+        println("Wrote simulated annotations CV benchmark outputs to ", output_dir)
+        return
+    end
 
     family_marker_tables = Dict{String,Dict{Int,Dict{String,DataFrame}}}()
+    method_summary = DataFrame()
+    multitrait_shared = nothing
 
     if analyze_only
         family_marker_tables = load_family_marker_tables(output_dir, cases, seeds)
@@ -700,7 +1113,7 @@ function main(args=ARGS)
         CSV.write(joinpath(output_dir, "per_run_summary.csv"), per_run_df)
 
         method_summary = combine(
-            groupby(per_run_df, [:variant, :method, :annotated, :multitrait, :trait]),
+            groupby(per_run_df, [:variant, :method, :annotated, :multitrait, :trait, :multi_trait_sampler]),
             :runtime_seconds => mean => :runtime_seconds_mean,
             :runtime_seconds => std => :runtime_seconds_sd,
             :ebv_correlation => mean => :ebv_correlation_mean,
@@ -721,21 +1134,32 @@ function main(args=ARGS)
             annotation_df = vcat(annotation_tables...)
             CSV.write(joinpath(output_dir, "annotation_coefficients_by_seed.csv"), annotation_df)
             annotation_summary = combine(
-                groupby(annotation_df, [:variant, :method, :annotated, :multitrait, :trait, :annotation, :step]),
+                groupby(annotation_df, [:variant, :method, :annotated, :multitrait, :trait, :multi_trait_sampler, :annotation, :step]),
                 :estimate => mean => :estimate_mean,
                 :estimate => std => :estimate_sd,
             )
             CSV.write(joinpath(output_dir, "annotation_coefficients_summary.csv"), annotation_summary)
         end
+
+        multitrait_shared = summarize_multitrait_shared_posteriors(output_dir, truth, cases, seeds)
+        mixing_summary = summarize_multitrait_mixing(method_summary, multitrait_shared.summary)
+        if nrow(mixing_summary) > 0
+            CSV.write(joinpath(output_dir, "multitrait_mixing_summary.csv"), mixing_summary)
+        end
+
     end
 
     family_any_active = summarize_single_family_any_active(family_marker_tables, truth, output_dir)
     CSV.write(joinpath(output_dir, "single_trait_family_any_active_summary.csv"), family_any_active)
 
-    shared_threshold = env_float("JWAS_SIMULATED_MT_SHARED_THRESHOLD", 0.5)
-    summarize_multitrait_shared_posteriors(output_dir, truth, cases, seeds; threshold=shared_threshold)
+    multitrait_shared === nothing && (multitrait_shared = summarize_multitrait_shared_posteriors(output_dir, truth, cases, seeds))
+    single_trait_shared = summarize_single_trait_shared_overlaps(family_marker_tables, truth, output_dir)
+    CSV.write(joinpath(output_dir, "pleiotropy_per_seed_summary.csv"), vcat(multitrait_shared.per_seed, single_trait_shared.per_seed; cols=:union))
+    CSV.write(joinpath(output_dir, "pleiotropy_summary.csv"), vcat(multitrait_shared.summary, single_trait_shared.summary; cols=:union))
 
     println("Wrote multi-trait simulated annotations benchmark outputs to ", output_dir)
 end
 
-main()
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end
