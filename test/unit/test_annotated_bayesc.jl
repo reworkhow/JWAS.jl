@@ -766,15 +766,27 @@ end
             quality_control=false,
             annotations=annotations,
             Pi=start_pi,
-            multi_trait_sampler=:II,
         )
         model_fastblocks = build_model(
             "y1 = intercept + annotated_mt_fastblocks\ny2 = intercept + annotated_mt_fastblocks",
             [1.0 0.2; 0.2 1.0],
         )
-        err_fastblocks = multitrait_bayesc_annotation_error(model_fastblocks, phenotypes_mt; fast_blocks=true)
-        @test err_fastblocks isa Exception
-        @test occursin("fast_blocks=false", sprint(showerror, err_fastblocks))
+        output_fastblocks = runMCMC(
+            model_fastblocks,
+            phenotypes_mt;
+            chain_length=10,
+            burnin=0,
+            output_samples_frequency=5,
+            output_folder="test_mt_annotated_bayesc_fastblocks",
+            seed=2026,
+            outputEBV=false,
+            output_heritability=false,
+            printout_model_info=false,
+            fast_blocks=true,
+        )
+        @test haskey(output_fastblocks, "annotation coefficients annotated_mt_fastblocks")
+        @test haskey(output_fastblocks, "pi_annotated_mt_fastblocks")
+        isdir("test_mt_annotated_bayesc_fastblocks") && rm("test_mt_annotated_bayesc_fastblocks", recursive=true, force=true)
 
         mktempdir() do tmpdir
             cd(tmpdir) do

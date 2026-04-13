@@ -24,6 +24,16 @@ function mt_bayesc_sampler_mode(genotypes, nModels)
     return sampler
 end
 
+function mt_bayesc_block_context(genotypes, nModels)
+    prior = if has_marker_annotations(genotypes) && genotypes.method == "BayesC"
+        MarkerSpecificPiPrior(genotypes.annotations.snp_pi)
+    else
+        GlobalPiPrior(genotypes.π)
+    end
+    sampler_mode = mt_bayesc_sampler_mode(genotypes, nModels)
+    return prior, sampler_mode
+end
+
 function MTBayesABC!(genotypes,ycorr_array,vare,locus_effect_variances,nModels)
     prior = if has_marker_annotations(genotypes) && genotypes.method == "BayesC" && genotypes.ntraits == 2
         MarkerSpecificPiPrior(genotypes.annotations.snp_pi)
@@ -175,13 +185,14 @@ function _MTBayesABC_samplerII!(xArray,
         end
 
         #marginal full conditional probability of δ
+        max_logDelta = maximum(logDelta)
+        isfinite(max_logDelta) || error("All MTBayesABC sampler II state probabilities are zero or invalid.")
+        denominator = 0.0
         for l in 1:nlable
-            denominator_l = 0.0
-            for i in 1:nlable
-                denominator_l += exp(logDelta[i]-logDelta[l])
-            end
-            probDelta[l]=1/denominator_l
+            probDelta[l] = exp(logDelta[l] - max_logDelta)
+            denominator += probDelta[l]
         end
+        probDelta ./= denominator
 
         #choose label
         whichlabel = rand(Categorical(probDelta))
@@ -200,18 +211,29 @@ end
 
 #block
 function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])))
-    MTBayesABC_block!(genotypes.MArray,genotypes.mpRinvm,
-                genotypes.genotypes,genotypes.MpRinvM,
-                ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                locus_effect_variances,genotypes.π,Rinv)
+    prior, sampler_mode = mt_bayesc_block_context(genotypes, genotypes.ntraits)
+    if sampler_mode == :I
+        return _MTBayesABC_block_samplerI!(genotypes.MArray,genotypes.mpRinvm,
+                                           genotypes.genotypes,genotypes.MpRinvM,
+                                           ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                                           locus_effect_variances,prior,Rinv)
+    elseif sampler_mode == :II
+        state_labels = collect(keys(genotypes.π))
+        return _MTBayesABC_block_samplerII!(genotypes.MArray,genotypes.mpRinvm,
+                                            genotypes.genotypes,genotypes.MpRinvM,
+                                            ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                                            locus_effect_variances,state_labels,prior,Rinv)
+    else
+        error("multi_trait_sampler must resolve to :I or :II.")
+    end
 end
 
-function MTBayesABC_block!(XArray,xpRinvx,
-                     X, XpRinvX,
-                     wArray,
-                     betaArray,deltaArray,alphaArray,
-                     vare,varEffects,
-                     BigPi,Rinvw)
+function _MTBayesABC_block_samplerI!(XArray,xpRinvx,
+                                     X, XpRinvX,
+                                     wArray,
+                                     betaArray,deltaArray,alphaArray,
+                                     vare,varEffects,
+                                     prior,Rinvw)
     nMarkers = length(xpRinvx)
     ntraits  = length(alphaArray)
 
@@ -267,8 +289,8 @@ function MTBayesABC_block!(XArray,xpRinvx,
                     d0[k] = 0.0
                     d1[k] = 1.0
 
-                    logDelta0  = -0.5*(log(Ginv11)- gHat0^2*Ginv11) + log(BigPi[d0]) #logPi
-                    logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log(BigPi[d1]) #logPiComp
+                    logDelta0  = -0.5*(log(Ginv11)- gHat0^2*Ginv11) + log_prior(prior, locus_j, d0) #logPi
+                    logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log_prior(prior, locus_j, d1) #logPiComp
 
                     probDelta1 =  1.0/(1.0+exp(logDelta0-logDelta1))
                     if(rand()<probDelta1)
@@ -285,14 +307,114 @@ function MTBayesABC_block!(XArray,xpRinvx,
                     end
                 end
                 for trait = 1:ntraits
-                    betaArray[trait][locus_j]       = β[trait]
-                    deltaArray[trait][locus_j]      = δ[trait]
-                    alphaArray[trait][locus_j]      = newα[trait]
+                    betaArray[trait][locus_j]  = β[trait]
+                    deltaArray[trait][locus_j] = δ[trait]
+                    alphaArray[trait][locus_j] = newα[trait]
                 end
             end
         end
         for trait = 1:ntraits
-            wArray[trait][:]  = wArray[trait] + XArray[i]*(oldalphaArray[trait]-alphaArray[trait])[(start_pos+1):(start_pos+block_size)]
+            wArray[trait][:] = wArray[trait] + XArray[i] * (oldalphaArray[trait] - alphaArray[trait])[(start_pos+1):(start_pos+block_size)]
+        end
+        start_pos += block_size
+    end
+end
+
+function _MTBayesABC_block_samplerII!(XArray,xpRinvx,
+                                      X, XpRinvX,
+                                      wArray,
+                                      betaArray,deltaArray,alphaArray,
+                                      vare,varEffects,
+                                      state_labels,
+                                      prior,Rinvw)
+    nMarkers = length(xpRinvx)
+    ntraits  = length(alphaArray)
+
+    Rinv     = inv(vare) #Do Not Use inv.(): elementwise inversion
+    Ginv     = inv.(varEffects)
+
+    β        = zeros(typeof(betaArray[1][1]),ntraits)
+    newα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
+    δ        = zeros(typeof(deltaArray[1][1]),ntraits)
+    w        = zeros(typeof(wArray[1][1]),ntraits)
+
+    nlable    = length(state_labels)
+    probDelta = Array{Float64}(undef, nlable)
+    logDelta  = Array{Float64}(undef, nlable)
+    βeta      = Array{Array{Float64,1}}(undef, nlable)
+    RinvLhs   = Array{Array{Float64,2}}(undef, nlable)
+    RinvRhs   = Array{Array{Float64,2}}(undef, nlable)
+
+    for (iloci, state) in enumerate(state_labels)
+        D  = diagm(state)
+        RinvLhs[iloci] = D*Rinv*D
+        RinvRhs[iloci] = Rinv*D
+    end
+
+    nblocks       = length(XpRinvX)
+    start_pos     = 0
+    unit_weights  = is_unit_weights(Rinvw)
+    max_block_size = maximum(size(XpRinvX[i],1) for i in 1:nblocks)
+    rhs_cache = [zeros(eltype(wArray[trait]),max_block_size) for trait = 1:ntraits]
+
+    for i in 1:nblocks
+        block_size  = size(XpRinvX[i],1)
+        block_range = start_pos + 1:start_pos + block_size
+        XpRinvycorr = [view(rhs_cache[trait],1:block_size) for trait = 1:ntraits]
+        for trait = 1:ntraits
+            block_rhs!(XpRinvycorr[trait],XArray[i],wArray[trait],Rinvw,unit_weights)
+        end
+
+        block_old_alpha = [copy(view(alphaArray[trait], block_range)) for trait in 1:ntraits]
+        nreps = block_size
+
+        for reps = 1:nreps
+            for j = 1:block_size
+                locus_j = start_pos + j
+                for trait = 1:ntraits
+                    β[trait]  = betaArray[trait][locus_j]
+                    oldα[trait]  = newα[trait] = alphaArray[trait][locus_j]
+                    δ[trait]  = deltaArray[trait][locus_j]
+                    w[trait]  = XpRinvycorr[trait][j] + xpRinvx[locus_j]*oldα[trait]
+                end
+
+                stdnorm = randn(ntraits)
+                for (iloci, state) in enumerate(state_labels)
+                    lhs       = RinvLhs[iloci]*xpRinvx[locus_j] + Ginv[locus_j]
+                    rhs       = RinvRhs[iloci]'*w
+                    invLhs    = inv(lhs)
+                    invLhsC   = cholesky(Hermitian(invLhs)).L
+                    gHat      = invLhs*rhs
+                    logDelta[iloci] = -0.5*(log(det(lhs))-rhs'gHat) + log_prior(prior, locus_j, state)
+                    βeta[iloci]     = gHat + invLhsC*stdnorm
+                end
+
+                max_logDelta = maximum(logDelta)
+                isfinite(max_logDelta) || error("All MTBayesABC block sampler II state probabilities are zero or invalid.")
+                denominator = 0.0
+                for l in 1:nlable
+                    probDelta[l] = exp(logDelta[l] - max_logDelta)
+                    denominator += probDelta[l]
+                end
+                probDelta ./= denominator
+
+                whichlabel = rand(Categorical(probDelta))
+                δ = copy(state_labels[whichlabel])
+                β = βeta[whichlabel]
+                newα = diagm(δ)*β
+
+                for trait = 1:ntraits
+                    BLAS.axpy!(oldα[trait]-newα[trait], view(XpRinvX[i], :, j), XpRinvycorr[trait])
+                    betaArray[trait][locus_j]  = β[trait]
+                    deltaArray[trait][locus_j] = δ[trait]
+                    alphaArray[trait][locus_j] = newα[trait]
+                end
+            end
+        end
+
+        for trait = 1:ntraits
+            wArray[trait][:] = wArray[trait] + XArray[i] * (block_old_alpha[trait] - alphaArray[trait][block_range])
         end
         start_pos += block_size
     end
