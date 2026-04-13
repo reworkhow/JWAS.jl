@@ -93,6 +93,16 @@ R = [1.0 0.5; 0.5 1.0]
     rm("test_mt_bayesc", recursive=true)
 end
 
+@testset "Multi-trait BayesC sampler default and auto selection" begin
+    G = [1.0 0.5; 0.5 1.0]
+
+    geno_default = get_genotypes(genofile, G, separator=',', method="BayesC")
+    geno_auto = get_genotypes(genofile, G, separator=',', method="BayesC", multi_trait_sampler=:auto)
+
+    @test geno_default.multi_trait_sampler == :I
+    @test geno_auto.multi_trait_sampler == :auto
+end
+
 @testset "Multi-trait annotated BayesC" begin
     G = [1.0 0.5; 0.5 1.0]
     annotations = [

@@ -73,7 +73,7 @@ function errors_args(mme)
             end
             if hasproperty(Mi, :multi_trait_sampler)
                 Mi.multi_trait_sampler in (:auto, :I, :II) || error("multi_trait_sampler must be one of :auto, :I, or :II.")
-                if Mi.multi_trait_sampler != :auto
+                if Mi.multi_trait_sampler == :II
                     Mi.method == "BayesC" || error("multi_trait_sampler overrides are supported for BayesC only.")
                     mme.nModels > 1 || error("multi_trait_sampler overrides require multi-trait BayesC.")
                     Mi.storage_mode == :dense || error("multi_trait_sampler overrides require storage=:dense.")

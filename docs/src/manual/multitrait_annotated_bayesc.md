@@ -116,9 +116,10 @@ Dense 2-trait annotated BayesC supports explicit sampler selection through
 - `:I`
 - `:II`
 
-The default is `:auto`, which preserves the current JWAS dispatch rule. For
-annotated 2-trait BayesC, `:auto` typically uses sampler I because the model
-starts with all four joint states available.
+The default is `:I` for multi-trait BayesC. `:auto` still preserves the current
+JWAS dispatch rule when you request it explicitly. For annotated 2-trait
+BayesC, `:auto` typically uses sampler I because the model starts with all four
+joint states available.
 
 Use:
 
@@ -176,9 +177,9 @@ output = runMCMC(
 )
 ```
 
-This example uses the default `multi_trait_sampler=:auto`. Add
-`multi_trait_sampler=:I` or `multi_trait_sampler=:II` in `get_genotypes(...)`
-only when you want to override the default dispatch explicitly.
+This example uses the default `multi_trait_sampler=:I`. Add
+`multi_trait_sampler=:auto` or `multi_trait_sampler=:II` in `get_genotypes(...)`
+only when you want to override the default explicitly.
 
 ## Output Interpretation
 

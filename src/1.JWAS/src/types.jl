@@ -161,7 +161,7 @@ mutable struct Genotypes
                                          false,false,false,false,false,false,false,false,false,
                                          false,false,false,false,
                                          false,false,false,false,false,false,false,false,false,
-                                         false,:dense,false,a9,false,false,:auto)
+                                         false,:dense,false,a9,false,false,:I)
 end
 
 mutable struct MarkerAnnotations

@@ -101,7 +101,7 @@ function build_model(model_equations::AbstractString,
 	            # raw annotation design/start information, and build_model
 	            # finalizes any method-specific state that depends on ntraits.
 	            finalize_marker_annotation_setup!(genotypei)
-	            if genotypei.multi_trait_sampler != :auto
+	            if genotypei.multi_trait_sampler == :II
 	              genotypei.method == "BayesC" || error("multi_trait_sampler overrides are supported for BayesC only.")
 	              nModels > 1 || error("multi_trait_sampler overrides require multi-trait BayesC.")
 	            end

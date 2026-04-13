@@ -464,6 +464,45 @@ end
         @test geno.multi_trait_sampler == :II
     end
 
+    @testset "defaults annotated multi-trait BayesC sampler to I and preserves explicit auto" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+        start_pi = Dict(
+            [0.0, 0.0] => 0.45,
+            [1.0, 0.0] => 0.20,
+            [0.0, 1.0] => 0.15,
+            [1.0, 1.0] => 0.20,
+        )
+
+        geno_default = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+        )
+        geno_auto = get_genotypes(
+            genofile,
+            [1.0 0.3; 0.3 1.0];
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            Pi=start_pi,
+            multi_trait_sampler=:auto,
+        )
+
+        @test geno_default.multi_trait_sampler == :I
+        @test geno_auto.multi_trait_sampler == :auto
+    end
+
     @testset "rejects explicit multi-trait sampler overrides in single-trait BayesC builds" begin
         annotations = [
             0.0 1.0
@@ -492,6 +531,31 @@ end
 
         @test err isa ErrorException
         @test occursin("multi-trait BayesC", sprint(showerror, err))
+    end
+
+    @testset "accepts explicit auto on single-trait BayesC builds and runs" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+
+        global annotated_singletrait_sampler_auto = get_genotypes(
+            genofile,
+            1.0;
+            separator=',',
+            method="BayesC",
+            quality_control=false,
+            annotations=annotations,
+            multi_trait_sampler=:auto,
+        )
+
+        model = build_model("y1 = intercept + annotated_singletrait_sampler_auto", 1.0)
+        err = multitrait_bayesc_annotation_error(model, phenotypes)
+
+        @test err === nothing
     end
 
     @testset "rejects annotated multi-trait BayesC models with trait counts other than 2" begin

@@ -205,7 +205,7 @@ O3,0,0,2,1,1
   `get_genotypes` validates and stores this raw annotation information. If a method's annotation prior depends on the eventual number of traits
   (for example annotated multi-trait BayesC), JWAS finalizes that method-specific internal state later in `build_model()`.
 * `multi_trait_sampler` controls how multi-trait BayesC chooses between Gibbs sampler I and II:
-  `:auto` preserves the existing support-based dispatch, `:I` forces one-indicator-at-a-time updates, and `:II` forces joint-state updates.
+  `:I` is the default, `:auto` preserves the existing support-based dispatch, and `:II` forces joint-state updates.
 * `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
   `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
@@ -224,7 +224,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        ## others:
                        center = true, starting_value = false,
                        annotations = false,
-                       multi_trait_sampler::Symbol = :auto,
+                       multi_trait_sampler::Symbol = :I,
                        storage::Symbol = :dense)
     if !(multi_trait_sampler in (:auto, :I, :II))
         error("multi_trait_sampler must be one of :auto, :I, or :II.")
