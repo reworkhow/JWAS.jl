@@ -239,7 +239,8 @@ marker filtering. See [Annotated BayesC](annotated_bayesc.md) for the method des
 including:
 
 - single-trait dense / `fast_blocks` / streaming annotated BayesC
-- dense 2-trait annotated BayesC with the 4-state joint prior
+- dense 2-trait annotated BayesC with the 4-state joint prior, including
+  `fast_blocks=true` and `multi_trait_sampler=:I|:II|:auto`
 
 For the dense 2-trait method specifically, including startup `Pi`, supported
 sampler modes, and output interpretation, see

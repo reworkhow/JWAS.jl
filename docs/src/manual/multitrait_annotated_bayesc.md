@@ -9,8 +9,9 @@ inclusion prior over the four joint states:
 - `11`: included for both traits
 
 JWAS currently supports this as a production path for **dense 2-trait BayesC**
-with a marker-specific 4-state prior. The single-trait annotated BayesC path is
-documented separately in [Annotated BayesC](annotated_bayesc.md).
+with a marker-specific 4-state prior, under both the standard and fast-block
+marker sweeps. The single-trait annotated BayesC path is documented separately
+in [Annotated BayesC](annotated_bayesc.md).
 
 ## Method Overview
 
@@ -59,12 +60,11 @@ Dense 2-trait annotated BayesC v1 requires:
 - exactly 2 traits
 - `storage=:dense`
 - `constraint=false`
-- `fast_blocks=false`
+- either the standard sweep (`fast_blocks=false`) or the fast-block sweep (`fast_blocks=true`)
 
 Dense 2-trait annotated BayesC v1 does **not** support:
 
 - `storage=:stream`
-- `fast_blocks=true`
 - `constraint=true`
 - more than 2 traits
 
@@ -126,7 +126,12 @@ Use:
 - `:I` to force the one-bit-flip sampler
 - `:II` to force the full joint-state sampler
 
-## Dense Example
+The same sampler choices apply to both:
+
+- the standard dense sweep (`fast_blocks=false`)
+- the fast-block sweep (`fast_blocks=true`)
+
+## Example
 
 ```julia
 using JWAS, CSV, DataFrames
@@ -174,12 +179,14 @@ output = runMCMC(
     chain_length=2000,
     burnin=500,
     output_samples_frequency=10,
+    fast_blocks=true,
 )
 ```
 
 This example uses the default `multi_trait_sampler=:I`. Add
 `multi_trait_sampler=:auto` or `multi_trait_sampler=:II` in `get_genotypes(...)`
-only when you want to override the default explicitly.
+only when you want to override the default explicitly. Set
+`fast_blocks=false` if you want the original non-block sweep instead.
 
 ## Output Interpretation
 
