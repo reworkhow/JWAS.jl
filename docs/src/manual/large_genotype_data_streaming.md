@@ -237,7 +237,7 @@ while adding mainly the `S` term for `XpRinvX`.
 4. Startup/precompute cost:
    - `XpRinvX` build can dominate startup on very large `N,P`
 5. Multi-trait specifics:
-   - current multi-trait block mode behavior differs from the full non-block sampler dispatcher
+   - multi-trait block mode supports sampler I/II dispatch, but should still be benchmarked separately from the non-block path
 6. Numerical reproducibility:
    - equivalent algebraic refactors may change floating-point roundoff (especially `Float32`)
 7. Weighting caveat:

@@ -141,6 +141,8 @@ output = runMCMC(
 This path is still limited to the **single-trait** annotated BayesC model.
 It uses the same annotation-driven `π_j` updates, but samples marker effects through the block BayesC path.
 JWAS rescales the outer `chain_length` in block mode, so the nominal `chain_length` should be chosen large enough that the effective post-scaling chain is still longer than `burnin`.
+You can also provide explicit block starts, for example `fast_blocks=[1, 501, 975]`.
+Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism.
 For block-update details, see [Block BayesC](block_bayesc.md).
 
 ## Streaming Example

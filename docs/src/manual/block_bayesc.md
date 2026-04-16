@@ -1,7 +1,8 @@
 # Block BayesC (`fast_blocks`)
 
-This page explains how JWAS implements block updates for BayesC marker sampling and how the block path changes speed and memory usage.
+This page explains how JWAS implements block updates for marker sampling and how the block path changes speed and memory usage.
 The block BayesC implementation uses a strategy similar to the blocked update scheme described in the BayesR3 paper.
+JWAS keeps the exact sequential block sweep as the default and also provides an explicit approximate parallel mode through `independent_blocks=true`.
 For detailed non-block vs block memory accounting, see [Memory Usage](memory_usage.md).
 For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `chain_length=2000`, see [Benchmark](benchmark.md).
 
@@ -15,14 +16,24 @@ Block updates are enabled with:
 out = runMCMC(model, phenotypes; fast_blocks=true)
 # or provide a fixed block size
 out = runMCMC(model, phenotypes; fast_blocks=64)
+# or provide explicit marker block starts
+out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600])
+# or opt into the approximate independent-block mode
+out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
+              independent_blocks=true)
 ```
 
 - If `fast_blocks=true`, JWAS chooses `block_size = floor(sqrt(nObs))`.
+- If `fast_blocks` is numeric, JWAS uses that fixed block size.
+- If `fast_blocks` is a vector, JWAS treats the entries as explicit marker block starts. The vector must be sorted, unique, start at `1`, and stay within `1:nMarkers`.
+- `independent_blocks=false` is the default. It keeps the exact sequential block sweep: after each block, JWAS updates the global corrected phenotype / residual before sampling the next block.
+- `independent_blocks=true` is opt-in. It freezes the sweep-level corrected phenotype / residual, updates blocks independently using Julia threads, and merges all block deltas after the block barrier.
 - In single-trait BayesA/B/C, JWAS calls `BayesABC_block!`.
-- In multi-trait BayesA/B/C with unconstrained marker covariance (`Mi.G.constraint == false`), JWAS calls `MTBayesABC_block!`.
+- In single-trait BayesR, JWAS calls `BayesR_block!`.
+- Dense annotated single-trait BayesC and BayesR use the same block machinery with marker-specific annotation priors.
+- In multi-trait BayesA/B/C with unconstrained marker covariance (`Mi.G.constraint == false`), JWAS calls `MTBayesABC_block!` and honors `multi_trait_sampler=:I`, `:II`, or `:auto`.
+- Dense annotated 2-trait BayesC uses the same multi-trait block sampler choices.
 - If `Mi.G.constraint == true`, JWAS uses `megaBayesABC!` (non-block path).
-- In current multi-trait block mode, the update is sampler-I style (trait-wise `δ` updates from `BigPi[d0]`/`BigPi[d1]`) rather than the non-block sampler-I/II dispatcher.
-- Current implementation note in source: this option is intended for one genotype category.
 - In current implementation, numeric `fast_blocks` should satisfy `block_size < nMarkers` (chain-length scaling indexes the second block start).
 
 ## Single-Trait BayesC Without Blocks
@@ -65,10 +76,89 @@ For each block:
 
 In the current JWAS code:
 
-- inner repeats are set to `nreps = block_size`;
-- outer `chain_length` is reduced by approximately `block_size`.
+- for `fast_blocks=true` or numeric `fast_blocks`, inner repeats are set to `nreps = block_size`;
+- for `fast_blocks=true` or numeric `fast_blocks`, outer `chain_length` is reduced by approximately `block_size`;
+- for explicit block starts, one MCMC iteration means one full sweep over the supplied blocks and JWAS does not rescale `chain_length`.
 
 This keeps effective marker-update work on a similar scale while moving much of the per-marker work from `nObs`-length operations to `block_size`-length operations.
+The explicit block-start form uses sweep semantics because user-provided LD or pedigree-informed blocks can have different sizes.
+
+## Exact Sequential Blocks vs Independent Blocks
+
+The default block sampler is exact for the current model because blocks are updated in sequence and the global corrected phenotype / residual is refreshed after each block.
+The independent-block mode changes only the inter-block schedule.
+
+### Single-Trait View
+
+Let:
+
+- `y*` be the phenotype after non-marker terms are removed
+- `X = [X_1, X_2, ..., X_B]` be the marker matrix partitioned into blocks
+- `alpha_b` be marker effects in block `b`
+- `W` be the diagonal observation-weight matrix represented by `Rinv`
+
+The exact block update for block `b` uses:
+
+```text
+s_b = X_b' W (r + X_b alpha_b)
+    = X_b' W (y* - sum_{c != b} X_c alpha_c)
+```
+
+`independent_blocks=true` assumes the off-block weighted genotype crossproducts are negligible:
+
+```text
+X_b' W X_c = 0  for b != c
+```
+
+Under that condition, the off-block terms vanish. For two marker blocks, this is the user's intuition:
+
+```text
+x1' W (y - x1 alpha1 - x2 alpha2) = x1' W (y - x1 alpha1)
+```
+
+when:
+
+```text
+x1' W x2 = 0
+```
+
+If the off-block crossproducts are small but not zero, `independent_blocks=true` is an approximation.
+
+### Multi-Trait View
+
+For multi-trait models, let:
+
+- `Y*` be the matrix of corrected phenotypes after non-marker terms are removed
+- `A_b` be the marker-effect matrix for block `b`
+- `R^{-1}` be the residual precision matrix among traits
+
+The within-block sampler still uses the existing multi-trait residual covariance logic through `R^{-1}`.
+The independent-block assumption is still about genotype-side block leakage:
+
+```text
+X_b' W X_c = 0  for b != c
+```
+
+So the approximate parallel mode:
+
+1. freezes the trait-wise corrected phenotype vectors at the start of the marker sweep;
+2. updates each genotype block independently from that frozen state;
+3. applies all block effect deltas to the global corrected phenotypes after all blocks finish.
+
+The prior is not changed by this option. Plain and annotated priors keep their existing marker-state logic.
+
+### Server Use
+
+The independent-block path uses Julia threads over blocks.
+On a server, use:
+
+```bash
+export JULIA_NUM_THREADS=<num_cores>
+export OPENBLAS_NUM_THREADS=1
+julia --project=.
+```
+
+`OPENBLAS_NUM_THREADS=1` avoids oversubscribing the machine with nested BLAS threads while JWAS is already parallelizing over marker blocks.
 
 ### Detailed Comparison with BayesR3
 
@@ -94,7 +184,7 @@ JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely fol
 | Marker state sampling | Multi-class mixture state | Binary include/exclude state | Not numerically identical to BayesR |
 | Inner-repeat schedule | Uses nominal block size as fixed repeat count across blocks | `nreps = current block_size` | Last short block may receive fewer inner repeats |
 | Outer-loop scheduling | Described as a fixed block sweep schedule | JWAS also rescales outer `chain_length` by block size | Compare effective updates, not just outer iterations |
-| Scope | BayesR algorithm | JWAS block path is wired to BayesA/B/C marker samplers, with multi-trait block updates implemented in sampler-I style | Strategy reused in a different Bayesian alphabet member |
+| Scope | BayesR algorithm | JWAS block path is wired to BayesA/B/C and BayesR marker samplers, with multi-trait BayesC honoring sampler I/II dispatch | Strategy reused across Bayesian alphabet members |
 
 #### Scheduling detail (explicit)
 
@@ -109,14 +199,15 @@ This difference changes the number of within-block Gibbs sweeps for short blocks
 
 ## Algorithm Comparison
 
-| Aspect | Standard BayesC (`BayesABC!`) | Block BayesC (`BayesABC_block!`) | Practical effect |
+| Aspect | Standard BayesC (`BayesABC!`) | Exact block BayesC (`BayesABC_block!`) | Independent blocks (`independent_blocks=true`) |
 | --- | --- | --- | --- |
-| Update unit | One marker at a time | One block, then markers inside block | Better cache locality in block path |
-| `yCorr` updates | Every marker | Once per block | Fewer full-length vector updates |
-| Main per-marker linear algebra size | `nObs` | `block_size` (inside block cache) | Lower per-marker arithmetic cost |
-| Extra precompute | Minimal | `X_b'R^{-1}X_b` for all blocks (RHS computed on demand) | More startup work |
-| Extra memory | Minimal | Stores block Gram matrices (`XpRinvX`) and block workspaces | Higher memory than non-block, lower than older persisted-`XRinvArray` design |
-| Chain behavior in current implementation | Direct `chain_length` | Inner repeats + outer chain scaling | Compare runs by effective updates, not only outer iterations |
+| Update unit | One marker at a time | One block, then markers inside block | One block per thread/chunk, then markers inside block |
+| `yCorr` / corrected phenotype updates | Every marker | Once per block, before the next block | Once after all blocks in the sweep finish |
+| Inter-block schedule | Fully sequential | Sequential and exact | Parallelizable and approximate unless off-block crossproducts vanish |
+| Main per-marker linear algebra size | `nObs` | `block_size` (inside block cache) | `block_size` (inside block cache) |
+| Extra precompute | Minimal | `X_b'R^{-1}X_b` for all blocks (RHS computed on demand) | Same block precompute |
+| Extra memory | Minimal | Stores block Gram matrices (`XpRinvX`) and block workspaces | Same plus block-local deltas and thread-local buffers |
+| Chain behavior | Direct `chain_length` | Fixed-size blocks use inner repeats + outer chain scaling; explicit starts use full sweeps | Same chain semantics as the selected `fast_blocks` partition |
 
 ## Computational Complexity
 
@@ -270,16 +361,19 @@ So for unit weights, block mode remains dominated by `X`, with `XpRinvX` as the 
    - compare runs by effective updates, not only outer-iteration count
 3. Final short block behavior:
    - last block uses smaller `nreps` (equal to its own size), so sweep symmetry differs slightly
-4. Multi-trait block path specifics:
-   - current path is sampler-I style for unconstrained covariance mode
+4. Independent blocks:
+   - exact only when off-block weighted genotype crossproducts vanish
+   - otherwise it is an explicit approximation for speed and parallelism
+5. Multi-trait block path specifics:
+   - sampler I, sampler II, and `:auto` are supported for unconstrained covariance mode
    - extra temporaries (e.g., trait-wise old-alpha handling) can become noticeable at larger trait counts
-5. Numerical reproducibility:
+6. Numerical reproducibility:
    - mathematically equivalent refactors (e.g., in-place BLAS updates) can change floating-point roundoff
    - expect tiny non-bitwise differences, especially in `Float32`
-6. Weighting mode:
+7. Weighting mode:
    - block `XRinvArray` is no longer persisted
    - separate non-unit weighted non-block `xRinvArray` materialization remains a distinct issue
-7. Scope constraints:
+8. Scope constraints:
    - current source notes this fast block option is intended for one genotype category
    - numeric `fast_blocks` should keep `block_size < nMarkers`
 
@@ -310,3 +404,5 @@ Interpretation:
 1. Start with `fast_blocks=true` for large marker sets and enough RAM.
 2. If memory is tight, set a smaller numeric block size (e.g., `32` or `64`) and benchmark.
 3. If speed gain is small, try a few block sizes and choose based on wall time + memory headroom.
+4. If you have external LD, recombination, IBD, or pedigree-informed blocks, pass them as explicit starts with `fast_blocks=[...]`.
+5. Use `independent_blocks=true` only when you intentionally accept the independent-block approximation and want block-level thread parallelism.

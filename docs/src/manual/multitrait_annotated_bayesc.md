@@ -131,6 +131,13 @@ The same sampler choices apply to both:
 - the standard dense sweep (`fast_blocks=false`)
 - the fast-block sweep (`fast_blocks=true`)
 
+The fast-block sweep also supports explicit block starts, for example
+`fast_blocks=[1, 501, 975]`. `independent_blocks=false` is the default exact
+sequential block sweep. Set `independent_blocks=true` only when you intentionally
+want the approximate independent-block mode for block-level thread parallelism.
+See [Block BayesC](block_bayesc.md) for the statistical assumption and server
+threading guidance.
+
 ## Example
 
 ```julia
@@ -187,6 +194,8 @@ This example uses the default `multi_trait_sampler=:I`. Add
 `multi_trait_sampler=:auto` or `multi_trait_sampler=:II` in `get_genotypes(...)`
 only when you want to override the default explicitly. Set
 `fast_blocks=false` if you want the original non-block sweep instead.
+Add `independent_blocks=true` only for the approximate independent-block block
+sweep.
 
 ## Output Interpretation
 

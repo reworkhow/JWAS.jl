@@ -153,6 +153,8 @@ end
     defaulting to `false`.
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
   * If `big_memory`=true, defaulting to `false`, a machine with  lots of memory is assumed which may speed up the analysis.
+  * `fast_blocks` enables block marker updates. It can be `false`, `true`, a numeric block size, or a vector of explicit marker block starts such as `[1, 501, 1201]`.
+  * `independent_blocks=false` keeps the exact sequential fast-block sweep. Set `independent_blocks=true` only when `fast_blocks != false` and you explicitly want the approximate mode that updates blocks from a sweep-level residual snapshot before reconciling all block changes.
   * `memory_guard` controls the marker-memory precheck before MCMC (`:error`, `:warn`, `:off`; default `:error`).
   * `memory_guard_ratio` sets the allowed fraction of `Sys.total_memory()` for the precheck (default `0.80`).
 """

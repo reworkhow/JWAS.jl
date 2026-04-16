@@ -341,6 +341,10 @@ Current v1 exclusions:
 same annotation-induced marker-specific class probabilities `pi_j` as the dense
 sampler. As with ordinary BayesR, block mode is an accelerated approximation to
 the dense transition kernel rather than the exact same sampler.
+Explicit block starts such as `fast_blocks=[1, 501, 975]` are also supported.
+Set `independent_blocks=true` only when you intentionally want the approximate
+independent-block mode for block-level thread parallelism. See
+[Block BayesC](block_bayesc.md) for the shared block-sampler interpretation.
 
 ## Dense Example
 

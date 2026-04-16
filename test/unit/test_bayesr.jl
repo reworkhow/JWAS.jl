@@ -50,6 +50,11 @@ function install_bayesr_block_dispatch_probe(genotype_type)
         return invoke(JWAS.BayesR_block!, Tuple{Any, Any, Any, Any, Integer, Integer},
                       genotypes, ycorr, vare, Rinv, iter, burnin)
     end
+    @eval function JWAS.BayesR_block!(genotypes::$genotype_type, ycorr, vare, Rinv, iter::Integer, burnin::Integer, independent_blocks)
+        Main.BAYESR_BLOCK_DISPATCH_COUNTER[] += 1
+        return invoke(JWAS.BayesR_block!, Tuple{Any, Any, Any, Any, Integer, Integer, Any},
+                      genotypes, ycorr, vare, Rinv, iter, burnin, independent_blocks)
+    end
     BAYESR_BLOCK_DISPATCH_INSTALLED[] = true
     return nothing
 end

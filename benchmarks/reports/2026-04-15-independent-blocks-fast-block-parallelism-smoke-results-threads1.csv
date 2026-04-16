@@ -1,0 +1,17 @@
+threads,blas_threads,label,method,annotated,multitrait,sampler,run_mode,independent_blocks,chain_length,block_starts,nmarkers,elapsed_seconds,output_key_count
+1,1,BayesC,BayesC,false,false,auto,exact_fast_blocks,false,20,1;3;5,5,11.175398916,4
+1,1,BayesC,BayesC,false,false,auto,independent_blocks,true,20,1;3;5,5,0.332180291,4
+1,1,BayesR,BayesR,false,false,auto,exact_fast_blocks,false,20,1;3;5,5,0.856983,4
+1,1,BayesR,BayesR,false,false,auto,independent_blocks,true,20,1;3;5,5,0.2587425,4
+1,1,Annotated_BayesC,BayesC,true,false,auto,exact_fast_blocks,false,20,1;3;5,5,0.483129042,5
+1,1,Annotated_BayesC,BayesC,true,false,auto,independent_blocks,true,20,1;3;5,5,0.012461375,5
+1,1,Annotated_BayesR,BayesR,true,false,auto,exact_fast_blocks,false,20,1;3;5,5,1.736668917,5
+1,1,Annotated_BayesR,BayesR,true,false,auto,independent_blocks,true,20,1;3;5,5,0.239699292,5
+1,1,MT_BayesC_I,BayesC,false,true,I,exact_fast_blocks,false,20,1;3;5,5,5.663928958,4
+1,1,MT_BayesC_I,BayesC,false,true,I,independent_blocks,true,20,1;3;5,5,1.040696084,4
+1,1,MT_BayesC_II,BayesC,false,true,II,exact_fast_blocks,false,20,1;3;5,5,0.756397792,4
+1,1,MT_BayesC_II,BayesC,false,true,II,independent_blocks,true,20,1;3;5,5,0.821976625,4
+1,1,MT_Annotated_BayesC_I,BayesC,true,true,I,exact_fast_blocks,false,20,1;3;5,5,1.182795417,5
+1,1,MT_Annotated_BayesC_I,BayesC,true,true,I,independent_blocks,true,20,1;3;5,5,0.787872083,5
+1,1,MT_Annotated_BayesC_II,BayesC,true,true,II,exact_fast_blocks,false,20,1;3;5,5,0.474164583,5
+1,1,MT_Annotated_BayesC_II,BayesC,true,true,II,independent_blocks,true,20,1;3;5,5,0.612972709,5

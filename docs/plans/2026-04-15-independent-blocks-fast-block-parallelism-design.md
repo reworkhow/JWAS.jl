@@ -1,6 +1,6 @@
 # Independent-Blocks Fast-Block Parallelism Design
 
-**Status:** proposed
+**Status:** implemented
 
 **Goal:** add an explicit approximate fast-block mode, `independent_blocks=true`, that assumes user-supplied marker blocks are independent enough to update in parallel within each MCMC sweep.
 
