@@ -236,7 +236,7 @@ function MCMC_BayesianAlphabet(mme,df)
                             if fast_blocks == false
                                 MTBayesABC!(Mi,wArray,mme.R.val,locus_effect_variances,mme.nModels)
                             else
-                                MTBayesABC_block!(Mi,wArray,mme.R.val,locus_effect_variances,invweights)
+                                MTBayesABC_block!(Mi,wArray,mme.R.val,locus_effect_variances,invweights,mme.MCMCinfo.independent_blocks)
                             end
                         end
                     else
@@ -247,14 +247,14 @@ function MCMC_BayesianAlphabet(mme,df)
                                 BayesABC!(Mi,ycorr,mme.R.val,locus_effect_variances)
                             end
                         else
-                            BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances,invweights)
+                            BayesABC_block!(Mi,ycorr,mme.R.val,locus_effect_variances,invweights,mme.MCMCinfo.independent_blocks)
                         end
                     end
                 elseif Mi.method == "BayesR"
                     if fast_blocks == false
                         BayesR!(Mi, ycorr, mme.R.val)
                     else
-                        BayesR_block!(Mi, ycorr, mme.R.val, invweights, iter, burnin)
+                        BayesR_block!(Mi, ycorr, mme.R.val, invweights, iter, burnin, mme.MCMCinfo.independent_blocks)
                     end
                 elseif Mi.method =="RR-BLUP"
                     if is_multi_trait

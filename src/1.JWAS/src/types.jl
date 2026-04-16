@@ -244,6 +244,7 @@ mutable struct MCMCinfo
     output_folder
     RRM
     fast_blocks
+    independent_blocks
 end
 ################################################################################
 #the class MME is shown below with members for models, mixed model equations...

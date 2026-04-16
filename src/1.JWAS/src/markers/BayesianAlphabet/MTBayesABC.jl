@@ -210,7 +210,7 @@ function _MTBayesABC_samplerII!(xArray,
 end
 
 #block
-function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])))
+function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])),independent_blocks=false)
     prior, sampler_mode = mt_bayesc_block_context(genotypes, genotypes.ntraits)
     if sampler_mode == :I
         return _MTBayesABC_block_samplerI!(genotypes.MArray,genotypes.mpRinvm,

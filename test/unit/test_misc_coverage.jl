@@ -112,6 +112,81 @@ end
     rm("test_mt_describe", recursive=true)
 end
 
+@testset "Independent blocks API and explicit block starts" begin
+    global ib_geno_exact = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+    exact_model = build_model("y1 = intercept + ib_geno_exact", 1.0)
+    exact_output = runMCMC(
+        exact_model,
+        phenotypes;
+        chain_length=6,
+        output_samples_frequency=10,
+        output_folder="test_independent_blocks_exact",
+        seed=123,
+        fast_blocks=true,
+        independent_blocks=false,
+    )
+    @test haskey(exact_output, "marker effects ib_geno_exact")
+    @test exact_model.MCMCinfo.independent_blocks == false
+    isdir("test_independent_blocks_exact") && rm("test_independent_blocks_exact", recursive=true, force=true)
+
+    global ib_geno_independent = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+    independent_model = build_model("y1 = intercept + ib_geno_independent", 1.0)
+    independent_output = runMCMC(
+        independent_model,
+        phenotypes;
+        chain_length=6,
+        output_samples_frequency=10,
+        output_folder="test_independent_blocks_enabled",
+        seed=123,
+        fast_blocks=true,
+        independent_blocks=true,
+    )
+    @test haskey(independent_output, "marker effects ib_geno_independent")
+    @test independent_model.MCMCinfo.independent_blocks == true
+    isdir("test_independent_blocks_enabled") && rm("test_independent_blocks_enabled", recursive=true, force=true)
+
+    global ib_geno_requires_blocks = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+    requires_blocks_model = build_model("y1 = intercept + ib_geno_requires_blocks", 1.0)
+    @test_throws ErrorException runMCMC(
+        requires_blocks_model,
+        phenotypes;
+        chain_length=6,
+        output_folder="test_independent_blocks_requires_blocks",
+        independent_blocks=true,
+    )
+    isdir("test_independent_blocks_requires_blocks") && rm("test_independent_blocks_requires_blocks", recursive=true, force=true)
+
+    global ib_geno_explicit = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+    explicit_model = build_model("y1 = intercept + ib_geno_explicit", 1.0)
+    explicit_output = runMCMC(
+        explicit_model,
+        phenotypes;
+        chain_length=6,
+        output_samples_frequency=10,
+        output_folder="test_independent_blocks_explicit",
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+    )
+    @test haskey(explicit_output, "marker effects ib_geno_explicit")
+    @test explicit_model.MCMCinfo.fast_blocks == [1, 3, 5]
+    @test explicit_model.MCMCinfo.chain_length == 6
+    isdir("test_independent_blocks_explicit") && rm("test_independent_blocks_explicit", recursive=true, force=true)
+
+    for bad_blocks in ([2, 4], [1, 3, 3], [3, 1], [1, 10])
+        global ib_geno_bad_blocks = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
+        bad_blocks_model = build_model("y1 = intercept + ib_geno_bad_blocks", 1.0)
+        @test_throws ErrorException runMCMC(
+            bad_blocks_model,
+            phenotypes;
+            chain_length=6,
+            output_folder="test_independent_blocks_bad",
+            fast_blocks=bad_blocks,
+        )
+        isdir("test_independent_blocks_bad") && rm("test_independent_blocks_bad", recursive=true, force=true)
+    end
+end
+
 @testset "Simulated annotations multitrait benchmark contract" begin
     benchmark_path = abspath(joinpath(@__DIR__, "..", "..", "benchmarks", "simulated_annotations_multitrait_comparison.jl"))
     @test isfile(benchmark_path)

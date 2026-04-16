@@ -30,16 +30,16 @@ function BayesR!(genotypes, ycorr, vare)
             ycorr, genotypes.α[1], genotypes.δ[1], vare, genotypes.G.val, priors, BAYESR_GAMMA)
 end
 
-function BayesR_block!(genotypes, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)))
-    BayesR_block!(genotypes, ycorr, vare, Rinv, typemax(Int), 0)
+function BayesR_block!(genotypes, ycorr, vare, Rinv=ones(eltype(ycorr), length(ycorr)), independent_blocks=false)
+    BayesR_block!(genotypes, ycorr, vare, Rinv, typemax(Int), 0, independent_blocks)
 end
 
-function BayesR_block!(genotypes, ycorr, vare, Rinv, iter::Integer, burnin::Integer)
+function BayesR_block!(genotypes, ycorr, vare, Rinv, iter::Integer, burnin::Integer, independent_blocks=false)
     priors = genotypes.annotations === false ? genotypes.π : genotypes.annotations.snp_pi
     BayesR_block!(genotypes.MArray, genotypes.mpRinvm,
                   genotypes.genotypes, genotypes.MpRinvM,
                   ycorr, genotypes.α[1], genotypes.δ[1], vare,
-                  genotypes.G.val, priors, BAYESR_GAMMA, Rinv, iter, burnin)
+                  genotypes.G.val, priors, BAYESR_GAMMA, Rinv, iter, burnin, independent_blocks)
 end
 
 function BayesR!(xArray, xRinvArray, xpRinvx,
@@ -105,14 +105,14 @@ function BayesR_block!(XArray, xpRinvx,
                   X, XpRinvX,
                   yCorr,
                   α, δ,
-                  vare, sigmaSq, π, gamma, Rinv, typemax(Int), 0)
+                  vare, sigmaSq, π, gamma, Rinv, typemax(Int), 0, false)
 end
 
 function BayesR_block!(XArray, xpRinvx,
                        X, XpRinvX,
                        yCorr,
                        α, δ,
-                       vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer)
+                       vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer, independent_blocks=false)
     nclasses = length(gamma)
     bayesr_validate_priors(π, nclasses, length(α))
     sigmaSq > 0 || error("BayesR sigmaSq must be positive.")

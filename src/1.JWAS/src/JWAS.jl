@@ -70,6 +70,14 @@ export GWAS
 export dataset
 #export adjust_phenotypes,LOOCV
 
+function validate_fast_block_starts(block_starts::AbstractVector{<:Integer}, nmarkers::Integer)
+    isempty(block_starts) && error("fast_blocks block start vector cannot be empty.")
+    first(block_starts) == 1 || error("fast_blocks block starts must begin with 1.")
+    all(1 .<= block_starts .<= nmarkers) || error("fast_blocks block starts must be within 1:nMarkers.")
+    all(diff(block_starts) .> 0) || error("fast_blocks block starts must be sorted and unique.")
+    return nothing
+end
+
 """
     runMCMC(model::MME,df::DataFrame;
             #Data
@@ -101,6 +109,7 @@ export dataset
             big_memory                      = false,
             double_precision                = false,
             fast_blocks                     = false,
+            independent_blocks              = false,
             memory_guard                    = :error,
             memory_guard_ratio              = 0.80,
             ##MCMC samples (defaut to marker effects and hyperparametes (variance components))
@@ -175,6 +184,7 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 fast_blocks                     = false,
+                independent_blocks              = false,
                 memory_guard                    = :error,
                 memory_guard_ratio::Float64     = 0.80,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
@@ -227,6 +237,9 @@ function runMCMC(mme::MME,df;
     if seed != false
         Random.seed!(seed)
     end
+    if independent_blocks == true && fast_blocks == false
+        error("independent_blocks=true requires fast_blocks != false.")
+    end
     #when using multi-thread, make sure the results are reproducible for users
     nThread = Threads.nthreads()
     if nThread>1
@@ -253,7 +266,7 @@ function runMCMC(mme::MME,df;
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
-                   seed,double_precision,output_folder,RRM,fast_blocks)
+                   seed,double_precision,output_folder,RRM,fast_blocks,independent_blocks)
     ############################################################################
     # Check 1)Arguments; 2)Input Pedigree,Genotype,Phenotypes,
     #       3)output individual IDs; 4)Priors  5)Prediction equation
@@ -280,11 +293,24 @@ function runMCMC(mme::MME,df;
             block_size = Int(floor(sqrt(mme.M[1].nObs)))
         elseif fast_blocks isa Number
             block_size = Int(floor(fast_blocks))
+        elseif fast_blocks isa AbstractVector{<:Integer}
+            block_starts = collect(Int.(fast_blocks))
+            validate_fast_block_starts(block_starts, mme.M[1].nMarkers)
+            mme.MCMCinfo.fast_blocks = block_starts
+            println("BLOCK STARTS: $(mme.MCMCinfo.fast_blocks)")
+            flush(stdout)
+            block_size = false
+        else
+            error("fast_blocks must be false, true, a positive number, or a vector of block start positions.")
         end
-        mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
-        mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1]))) #number of outer loop
-        println("BLOCK SIZE: $block_size")
-        flush(stdout)
+        if block_size !== false
+            block_size >= 1 || error("fast_blocks block size must be at least 1.")
+            mme.MCMCinfo.fast_blocks  = collect(range(1, step=block_size, stop=mme.M[1].nMarkers))
+            length(mme.MCMCinfo.fast_blocks) > 1 || error("fast_blocks block size must create at least two block starts.")
+            mme.MCMCinfo.chain_length = Int(floor(chain_length/(mme.MCMCinfo.fast_blocks[2]-mme.MCMCinfo.fast_blocks[1]))) #number of outer loop
+            println("BLOCK SIZE: $block_size")
+            flush(stdout)
+        end
     end
     ############################################################################
     # Adhoc functions

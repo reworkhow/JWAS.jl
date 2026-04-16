@@ -108,18 +108,18 @@ function BayesABC_streaming!(backend,xpRinvx,
 end
 
 
-function BayesABC_block!(genotypes,ycorr,vare,locus_effect_variances,Rinv=ones(eltype(ycorr),length(ycorr)))
+function BayesABC_block!(genotypes,ycorr,vare,locus_effect_variances,Rinv=ones(eltype(ycorr),length(ycorr)),independent_blocks=false)
     BayesABC_block!(genotypes.MArray,genotypes.mpRinvm,
               genotypes.genotypes,genotypes.MpRinvM,
               ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
-              locus_effect_variances,genotypes.π,Rinv)
+              locus_effect_variances,genotypes.π,Rinv,independent_blocks)
 end
 
 function BayesABC_block!(XArray,xpRinvx,
                    X, XpRinvX,
                    yCorr,
                    α,β,δ,
-                   vare,varEffects,π,Rinv)
+                   vare,varEffects,π,Rinv,independent_blocks=false)
 
     nMarkers      = length(α)
     pi_vec        = bayesabc_pi_vector(π, nMarkers)
