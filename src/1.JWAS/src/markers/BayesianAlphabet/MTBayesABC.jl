@@ -213,12 +213,24 @@ end
 function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])),independent_blocks=false)
     prior, sampler_mode = mt_bayesc_block_context(genotypes, genotypes.ntraits)
     if sampler_mode == :I
+        if independent_blocks == true
+            return _MTBayesABC_block_samplerI_independent!(genotypes.MArray,genotypes.mpRinvm,
+                                                           genotypes.genotypes,genotypes.MpRinvM,
+                                                           ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                                                           locus_effect_variances,prior,Rinv)
+        end
         return _MTBayesABC_block_samplerI!(genotypes.MArray,genotypes.mpRinvm,
                                            genotypes.genotypes,genotypes.MpRinvM,
                                            ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
                                            locus_effect_variances,prior,Rinv)
     elseif sampler_mode == :II
         state_labels = collect(keys(genotypes.π))
+        if independent_blocks == true
+            return _MTBayesABC_block_samplerII_independent!(genotypes.MArray,genotypes.mpRinvm,
+                                                            genotypes.genotypes,genotypes.MpRinvM,
+                                                            ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
+                                                            locus_effect_variances,state_labels,prior,Rinv)
+        end
         return _MTBayesABC_block_samplerII!(genotypes.MArray,genotypes.mpRinvm,
                                             genotypes.genotypes,genotypes.MpRinvM,
                                             ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
@@ -320,6 +332,110 @@ function _MTBayesABC_block_samplerI!(XArray,xpRinvx,
     end
 end
 
+function _MTBayesABC_block_samplerI_independent!(XArray,xpRinvx,
+                                                 X, XpRinvX,
+                                                 wArray,
+                                                 betaArray,deltaArray,alphaArray,
+                                                 vare,varEffects,
+                                                 prior,Rinvw)
+    ntraits  = length(alphaArray)
+
+    Rinv     = inv(vare)
+    Ginv     = inv.(varEffects)
+
+    nblocks       = length(XpRinvX)
+    block_sizes   = [size(XpRinvX[i],1) for i in 1:nblocks]
+    block_offsets = cumsum([0; block_sizes[1:end-1]])
+    unit_weights  = is_unit_weights(Rinvw)
+    w_snapshot    = [copy(wArray[trait]) for trait = 1:ntraits]
+    block_deltas  = Vector{Vector{Vector{eltype(alphaArray[1])}}}(undef,nblocks)
+    block_seeds   = rand(UInt,nblocks)
+
+    Threads.@threads for i in 1:nblocks
+        rng = MersenneTwister(block_seeds[i])
+        block_size  = block_sizes[i]
+        start_pos   = block_offsets[i]
+        block_range = start_pos + 1:start_pos + block_size
+        XpRinvycorr = [zeros(eltype(wArray[trait]),block_size) for trait = 1:ntraits]
+        for trait = 1:ntraits
+            block_rhs!(XpRinvycorr[trait],XArray[i],w_snapshot[trait],Rinvw,unit_weights)
+        end
+        block_old_alpha = [copy(view(alphaArray[trait], block_range)) for trait in 1:ntraits]
+
+        β        = zeros(typeof(betaArray[1][1]),ntraits)
+        newα     = zeros(typeof(alphaArray[1][1]),ntraits)
+        oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
+        δ        = zeros(typeof(deltaArray[1][1]),ntraits)
+        w        = zeros(typeof(wArray[1][1]),ntraits)
+
+        nreps = block_size
+        for reps = 1:nreps
+            for j = 1:block_size
+                locus_j = start_pos + j
+                for trait = 1:ntraits
+                    β[trait]  = betaArray[trait][locus_j]
+                    oldα[trait]  = newα[trait] = alphaArray[trait][locus_j]
+                    δ[trait]  = deltaArray[trait][locus_j]
+                    w[trait]  = XpRinvycorr[trait][j]+xpRinvx[locus_j]*oldα[trait]
+                end
+                for k=1:ntraits
+                    Ginv11 = Ginv[locus_j][k,k]
+                    nok    = deleteat!(collect(1:ntraits),k)
+                    Ginv12 = Ginv[locus_j][k,nok]
+                    C11    = Ginv11+Rinv[k,k]*xpRinvx[locus_j]
+                    C12    = Ginv12+xpRinvx[locus_j]*Matrix(Diagonal(δ[nok]))*Rinv[k,nok]
+
+                    invLhs0  = 1/Ginv11
+                    rhs0     = - Ginv12'β[nok]
+                    gHat0    = (rhs0*invLhs0)[1,1]
+                    invLhs1  = 1/C11
+                    rhs1     = w'*Rinv[:,k]-C12'β[nok]
+                    gHat1    = (rhs1*invLhs1)[1,1]
+
+                    d0 = copy(δ)
+                    d1 = copy(δ)
+                    d0[k] = 0.0
+                    d1[k] = 1.0
+
+                    logDelta0  = -0.5*(log(Ginv11)- gHat0^2*Ginv11) + log_prior(prior, locus_j, d0)
+                    logDelta1  = -0.5*(log(C11)-gHat1^2*C11) + log_prior(prior, locus_j, d1)
+
+                    probDelta1 =  1.0/(1.0+exp(logDelta0-logDelta1))
+                    if(rand(rng)<probDelta1)
+                        δ[k] = 1
+                        β[k] = newα[k] = gHat1 + randn(rng)*sqrt(invLhs1)
+                        BLAS.axpy!(oldα[k]-newα[k],view(XpRinvX[i],:,j),XpRinvycorr[k])
+                    else
+                        β[k] = gHat0 + randn(rng)*sqrt(invLhs0)
+                        δ[k] = 0
+                        newα[k] = 0
+                        if oldα[k] != 0
+                            BLAS.axpy!(oldα[k],view(XpRinvX[i],:,j),XpRinvycorr[k])
+                        end
+                    end
+                end
+                for trait = 1:ntraits
+                    betaArray[trait][locus_j]  = β[trait]
+                    deltaArray[trait][locus_j] = δ[trait]
+                    alphaArray[trait][locus_j] = newα[trait]
+                end
+            end
+        end
+
+        for trait = 1:ntraits
+            block_old_alpha[trait] .-= alphaArray[trait][block_range]
+        end
+        block_deltas[i] = block_old_alpha
+    end
+
+    for i in 1:nblocks
+        for trait = 1:ntraits
+            mul!(wArray[trait], XArray[i], block_deltas[i][trait], 1.0, 1.0)
+        end
+    end
+    return nothing
+end
+
 function _MTBayesABC_block_samplerII!(XArray,xpRinvx,
                                       X, XpRinvX,
                                       wArray,
@@ -418,4 +534,113 @@ function _MTBayesABC_block_samplerII!(XArray,xpRinvx,
         end
         start_pos += block_size
     end
+end
+
+function _MTBayesABC_block_samplerII_independent!(XArray,xpRinvx,
+                                                  X, XpRinvX,
+                                                  wArray,
+                                                  betaArray,deltaArray,alphaArray,
+                                                  vare,varEffects,
+                                                  state_labels,
+                                                  prior,Rinvw)
+    ntraits  = length(alphaArray)
+
+    Rinv     = inv(vare)
+    Ginv     = inv.(varEffects)
+
+    nlable    = length(state_labels)
+    RinvLhs   = Array{Array{Float64,2}}(undef, nlable)
+    RinvRhs   = Array{Array{Float64,2}}(undef, nlable)
+
+    for (iloci, state) in enumerate(state_labels)
+        D  = diagm(state)
+        RinvLhs[iloci] = D*Rinv*D
+        RinvRhs[iloci] = Rinv*D
+    end
+
+    nblocks       = length(XpRinvX)
+    block_sizes   = [size(XpRinvX[i],1) for i in 1:nblocks]
+    block_offsets = cumsum([0; block_sizes[1:end-1]])
+    unit_weights  = is_unit_weights(Rinvw)
+    w_snapshot    = [copy(wArray[trait]) for trait = 1:ntraits]
+    block_deltas  = Vector{Vector{Vector{eltype(alphaArray[1])}}}(undef,nblocks)
+    block_seeds   = rand(UInt,nblocks)
+
+    Threads.@threads for i in 1:nblocks
+        rng = MersenneTwister(block_seeds[i])
+        block_size  = block_sizes[i]
+        start_pos   = block_offsets[i]
+        block_range = start_pos + 1:start_pos + block_size
+        XpRinvycorr = [zeros(eltype(wArray[trait]),block_size) for trait = 1:ntraits]
+        for trait = 1:ntraits
+            block_rhs!(XpRinvycorr[trait],XArray[i],w_snapshot[trait],Rinvw,unit_weights)
+        end
+        block_old_alpha = [copy(view(alphaArray[trait], block_range)) for trait in 1:ntraits]
+
+        β        = zeros(typeof(betaArray[1][1]),ntraits)
+        newα     = zeros(typeof(alphaArray[1][1]),ntraits)
+        oldα     = zeros(typeof(alphaArray[1][1]),ntraits)
+        δ        = zeros(typeof(deltaArray[1][1]),ntraits)
+        w        = zeros(typeof(wArray[1][1]),ntraits)
+        probDelta = Array{Float64}(undef, nlable)
+        logDelta  = Array{Float64}(undef, nlable)
+        βeta      = Array{Array{Float64,1}}(undef, nlable)
+
+        nreps = block_size
+        for reps = 1:nreps
+            for j = 1:block_size
+                locus_j = start_pos + j
+                for trait = 1:ntraits
+                    β[trait]  = betaArray[trait][locus_j]
+                    oldα[trait]  = newα[trait] = alphaArray[trait][locus_j]
+                    δ[trait]  = deltaArray[trait][locus_j]
+                    w[trait]  = XpRinvycorr[trait][j] + xpRinvx[locus_j]*oldα[trait]
+                end
+
+                stdnorm = randn(rng,ntraits)
+                for (iloci, state) in enumerate(state_labels)
+                    lhs       = RinvLhs[iloci]*xpRinvx[locus_j] + Ginv[locus_j]
+                    rhs       = RinvRhs[iloci]'*w
+                    invLhs    = inv(lhs)
+                    invLhsC   = cholesky(Hermitian(invLhs)).L
+                    gHat      = invLhs*rhs
+                    logDelta[iloci] = -0.5*(log(det(lhs))-rhs'gHat) + log_prior(prior, locus_j, state)
+                    βeta[iloci]     = gHat + invLhsC*stdnorm
+                end
+
+                max_logDelta = maximum(logDelta)
+                isfinite(max_logDelta) || error("All MTBayesABC independent block sampler II state probabilities are zero or invalid.")
+                denominator = 0.0
+                for l in 1:nlable
+                    probDelta[l] = exp(logDelta[l] - max_logDelta)
+                    denominator += probDelta[l]
+                end
+                probDelta ./= denominator
+
+                whichlabel = rand(rng,Categorical(probDelta))
+                δ = copy(state_labels[whichlabel])
+                β = βeta[whichlabel]
+                newα = diagm(δ)*β
+
+                for trait = 1:ntraits
+                    BLAS.axpy!(oldα[trait]-newα[trait], view(XpRinvX[i], :, j), XpRinvycorr[trait])
+                    betaArray[trait][locus_j]  = β[trait]
+                    deltaArray[trait][locus_j] = δ[trait]
+                    alphaArray[trait][locus_j] = newα[trait]
+                end
+            end
+        end
+
+        for trait = 1:ntraits
+            block_old_alpha[trait] .-= alphaArray[trait][block_range]
+        end
+        block_deltas[i] = block_old_alpha
+    end
+
+    for i in 1:nblocks
+        for trait = 1:ntraits
+            mul!(wArray[trait], XArray[i], block_deltas[i][trait], 1.0, 1.0)
+        end
+    end
+    return nothing
 end

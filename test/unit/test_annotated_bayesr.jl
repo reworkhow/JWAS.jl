@@ -350,4 +350,49 @@ using Random
             end
         end
     end
+
+    @testset "Annotated BayesR independent fast_blocks run" begin
+        annotations = [
+            0.0 1.0
+            1.0 0.0
+            1.0 1.0
+            0.0 0.0
+            0.5 0.5
+        ]
+
+        mktempdir() do tmpdir
+            cd(tmpdir) do
+                global annotated_bayesr_fast_independent = get_genotypes(
+                    genofile, 1.0;
+                    separator=',',
+                    method="BayesR",
+                    quality_control=false,
+                    annotations=annotations,
+                )
+                local model = build_model("y1 = intercept + annotated_bayesr_fast_independent", 1.0)
+                local output = runMCMC(
+                    model,
+                    phenotypes,
+                    chain_length=12,
+                    burnin=2,
+                    output_samples_frequency=10,
+                    printout_frequency=13,
+                    seed=2026,
+                    fast_blocks=[1, 3, 5],
+                    independent_blocks=true,
+                    outputEBV=false,
+                    output_heritability=false,
+                )
+
+                @test haskey(output, "marker effects annotated_bayesr_fast_independent")
+                @test "Model_Frequency" in names(output["marker effects annotated_bayesr_fast_independent"])
+                @test haskey(output, "annotation coefficients annotated_bayesr_fast_independent")
+                @test names(output["annotation coefficients annotated_bayesr_fast_independent"]) == ["Annotation", "Step", "Estimate", "SD"]
+                @test size(model.M[1].annotations.snp_pi, 2) == 4
+                @test all(abs.(sum(model.M[1].annotations.snp_pi, dims=2) .- 1.0) .< 1e-8)
+                @test model.MCMCinfo.independent_blocks == true
+                @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+            end
+        end
+    end
 end

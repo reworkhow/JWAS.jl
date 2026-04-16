@@ -120,6 +120,13 @@ function BayesABC_block!(XArray,xpRinvx,
                    yCorr,
                    α,β,δ,
                    vare,varEffects,π,Rinv,independent_blocks=false)
+    if independent_blocks == true
+        return BayesABC_block_independent!(XArray,xpRinvx,
+                                           X,XpRinvX,
+                                           yCorr,
+                                           α,β,δ,
+                                           vare,varEffects,π,Rinv)
+    end
 
     nMarkers      = length(α)
     pi_vec        = bayesabc_pi_vector(π, nMarkers)
@@ -178,4 +185,71 @@ function BayesABC_block!(XArray,xpRinvx,
         end
         start_pos += block_size
     end
+end
+
+function BayesABC_block_independent!(XArray,xpRinvx,
+                                     X, XpRinvX,
+                                     yCorr,
+                                     α,β,δ,
+                                     vare,varEffects,π,Rinv)
+    nMarkers      = length(α)
+    pi_vec        = bayesabc_pi_vector(π, nMarkers)
+    logPi         = log.(pi_vec)
+    logPiComp     = log.(1 .- pi_vec)
+    invVarRes     = 1/vare
+    invVarEffects = 1 ./  varEffects
+    logVarEffects = log.(varEffects)
+    nblocks       = length(XpRinvX)
+    block_sizes   = [size(XpRinvX[i],1) for i in 1:nblocks]
+    block_offsets = cumsum([0; block_sizes[1:end-1]])
+    yCorr_snapshot = copy(yCorr)
+    unit_weights  = is_unit_weights(Rinv)
+    block_deltas  = Vector{Vector{eltype(α)}}(undef,nblocks)
+    block_seeds   = rand(UInt,nblocks)
+
+    Threads.@threads for i in 1:nblocks
+        rng = MersenneTwister(block_seeds[i])
+        block_size  = block_sizes[i]
+        start_pos   = block_offsets[i]
+        block_range = start_pos + 1:start_pos + block_size
+        old_alpha   = copy(view(α,block_range))
+        XpRinvycorr = Vector{eltype(yCorr)}(undef,block_size)
+        block_rhs!(XpRinvycorr,XArray[i],yCorr_snapshot,Rinv,unit_weights)
+        nreps       = block_size
+
+        for reps = 1:nreps
+            for j=1:block_size
+                locus_j    = start_pos+j
+                rhs        = (XpRinvycorr[j] + xpRinvx[locus_j]*α[locus_j])*invVarRes
+                lhs        = xpRinvx[locus_j]*invVarRes + invVarEffects[locus_j]
+                invLhs     = 1/lhs
+                gHat       = rhs*invLhs
+                logDelta1  = -0.5*(log(lhs) + logVarEffects[locus_j] - gHat*rhs) + logPiComp[locus_j]
+                probDelta1 = 1/(1+ exp(logPi[locus_j] - logDelta1))
+                oldAlpha   = α[locus_j]
+
+                if rand(rng) < probDelta1
+                    δ[locus_j] = 1
+                    β[locus_j] = gHat + randn(rng)*sqrt(invLhs)
+                    α[locus_j] = β[locus_j]
+                    BLAS.axpy!(oldAlpha-α[locus_j],view(XpRinvX[i],:,j),XpRinvycorr)
+                else
+                    if oldAlpha != 0
+                        BLAS.axpy!(oldAlpha,view(XpRinvX[i],:,j),XpRinvycorr)
+                    end
+                    δ[locus_j] = 0
+                    β[locus_j] = randn(rng)*sqrt(varEffects[locus_j])
+                    α[locus_j] = 0
+                end
+            end
+        end
+
+        old_alpha .-= α[block_range]
+        block_deltas[i] = old_alpha
+    end
+
+    for i in 1:nblocks
+        mul!(yCorr,XArray[i],block_deltas[i],1.0,1.0)
+    end
+    return nothing
 end

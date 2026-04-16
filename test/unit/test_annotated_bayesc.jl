@@ -957,6 +957,52 @@ end
     end
 end
 
+@testset "Annotated BayesC independent fast_blocks run" begin
+    phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
+    genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
+    phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
+    annotations = [
+        0.0 1.0
+        1.0 0.0
+        1.0 1.0
+        0.0 0.0
+        0.5 0.5
+    ]
+
+    mktempdir() do tmpdir
+        cd(tmpdir) do
+            global annotated_blocks_independent = get_genotypes(
+                genofile, 1.0;
+                separator=',',
+                method="BayesC",
+                quality_control=false,
+                annotations=annotations,
+            )
+            local model = build_model("y1 = intercept + annotated_blocks_independent", 1.0)
+            local output = runMCMC(
+                model,
+                phenotypes,
+                chain_length=12,
+                burnin=2,
+                output_samples_frequency=10,
+                printout_frequency=13,
+                seed=2026,
+                fast_blocks=[1, 3, 5],
+                independent_blocks=true,
+                outputEBV=false,
+                output_heritability=false,
+            )
+
+            @test model.MCMCinfo.independent_blocks == true
+            @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+            @test model.M[1].π isa AbstractVector
+            @test length(model.M[1].π) == model.M[1].nMarkers
+            @test haskey(output, "annotation coefficients annotated_blocks_independent")
+            @test nrow(output["annotation coefficients annotated_blocks_independent"]) == size(annotations, 2) + 1
+        end
+    end
+end
+
 @testset "Annotated BayesC streaming run" begin
     annotations = [
         0.0 1.0

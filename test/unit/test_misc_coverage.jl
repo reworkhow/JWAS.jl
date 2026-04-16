@@ -4,6 +4,7 @@
 # - outputMCMCsamples for multiple terms
 # - Datasets error handling
 using Test, JWAS, DataFrames, CSV, JWAS.Datasets
+using LinearAlgebra
 
 phenofile = Datasets.dataset("phenotypes.txt", dataset_name="demo_7animals")
 genofile = Datasets.dataset("genotypes.txt", dataset_name="demo_7animals")
@@ -173,6 +174,26 @@ end
     @test explicit_model.MCMCinfo.chain_length == 6
     isdir("test_independent_blocks_explicit") && rm("test_independent_blocks_explicit", recursive=true, force=true)
 
+    global ib_geno_bayesr = get_genotypes(genofile, 1.0, separator=',', method="BayesR")
+    bayesr_model = build_model("y1 = intercept + ib_geno_bayesr", 1.0)
+    bayesr_output = runMCMC(
+        bayesr_model,
+        phenotypes;
+        chain_length=6,
+        output_samples_frequency=10,
+        output_folder="test_independent_blocks_bayesr",
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+        outputEBV=false,
+        output_heritability=false,
+    )
+    @test haskey(bayesr_output, "marker effects ib_geno_bayesr")
+    @test "Model_Frequency" in names(bayesr_output["marker effects ib_geno_bayesr"])
+    @test bayesr_model.MCMCinfo.independent_blocks == true
+    @test bayesr_model.MCMCinfo.fast_blocks == [1, 3, 5]
+    isdir("test_independent_blocks_bayesr") && rm("test_independent_blocks_bayesr", recursive=true, force=true)
+
     for bad_blocks in ([2, 4], [1, 3, 3], [3, 1], [1, 10])
         global ib_geno_bad_blocks = get_genotypes(genofile, 1.0, separator=',', method="BayesC")
         bad_blocks_model = build_model("y1 = intercept + ib_geno_bad_blocks", 1.0)
@@ -185,6 +206,24 @@ end
         )
         isdir("test_independent_blocks_bad") && rm("test_independent_blocks_bad", recursive=true, force=true)
     end
+end
+
+@testset "Independent block weighted crossproduct assumption" begin
+    y = [1.2, -0.3, 0.7, 1.4]
+    x1 = [1.0, 0.0, 0.0, 0.0]
+    x2_independent = [0.0, 0.0, 1.0, 0.0]
+    x2_coupled = [1.0, 0.0, 1.0, 0.0]
+    W = Diagonal([1.0, 2.0, 3.0, 4.0])
+    alpha1 = 0.4
+    alpha2 = -0.6
+
+    @test dot(x1, W * x2_independent) == 0.0
+    @test dot(x1, W * (y - x1 * alpha1 - x2_independent * alpha2)) ≈
+          dot(x1, W * (y - x1 * alpha1))
+
+    @test dot(x1, W * x2_coupled) != 0.0
+    @test !(dot(x1, W * (y - x1 * alpha1 - x2_coupled * alpha2)) ≈
+            dot(x1, W * (y - x1 * alpha1)))
 end
 
 @testset "Simulated annotations multitrait benchmark contract" begin

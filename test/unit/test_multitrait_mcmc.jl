@@ -370,6 +370,190 @@ end
     isdir("test_mt_annotated_bayesc_fastblocks_sampler2") && rm("test_mt_annotated_bayesc_fastblocks_sampler2", recursive=true, force=true)
 end
 
+@testset "Multi-trait BayesC independent fast_blocks sampler I run" begin
+    G = [1.0 0.5; 0.5 1.0]
+
+    global plain_mt_independent_sampler1 = get_genotypes(
+        genofile,
+        G;
+        separator=',',
+        method="BayesC",
+        quality_control=false,
+        multi_trait_sampler=:I,
+    )
+    model = build_model("y1 = intercept + plain_mt_independent_sampler1\ny2 = intercept + plain_mt_independent_sampler1", R)
+    @test JWAS.mt_bayesc_sampler_mode(model.M[1], 2) == :I
+
+    output = runMCMC(
+        model,
+        phenotypes,
+        chain_length=12,
+        burnin=2,
+        output_samples_frequency=10,
+        output_folder="test_mt_bayesc_independent_sampler1",
+        printout_frequency=13,
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+        outputEBV=false,
+        output_heritability=false,
+    )
+
+    @test haskey(output, "marker effects plain_mt_independent_sampler1")
+    @test haskey(output, "location parameters")
+    @test model.MCMCinfo.independent_blocks == true
+    @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+    isdir("test_mt_bayesc_independent_sampler1") && rm("test_mt_bayesc_independent_sampler1", recursive=true, force=true)
+end
+
+@testset "Multi-trait BayesC independent fast_blocks sampler II run" begin
+    G = [1.0 0.5; 0.5 1.0]
+
+    global plain_mt_independent_sampler2 = get_genotypes(
+        genofile,
+        G;
+        separator=',',
+        method="BayesC",
+        quality_control=false,
+        multi_trait_sampler=:II,
+    )
+    model = build_model("y1 = intercept + plain_mt_independent_sampler2\ny2 = intercept + plain_mt_independent_sampler2", R)
+    @test JWAS.mt_bayesc_sampler_mode(model.M[1], 2) == :II
+
+    output = runMCMC(
+        model,
+        phenotypes,
+        chain_length=12,
+        burnin=2,
+        output_samples_frequency=10,
+        output_folder="test_mt_bayesc_independent_sampler2",
+        printout_frequency=13,
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+        outputEBV=false,
+        output_heritability=false,
+    )
+
+    @test haskey(output, "marker effects plain_mt_independent_sampler2")
+    @test haskey(output, "location parameters")
+    @test model.MCMCinfo.independent_blocks == true
+    @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+    isdir("test_mt_bayesc_independent_sampler2") && rm("test_mt_bayesc_independent_sampler2", recursive=true, force=true)
+end
+
+@testset "Multi-trait annotated BayesC independent fast_blocks sampler I run" begin
+    G = [1.0 0.5; 0.5 1.0]
+    annotations = [
+        0.0 1.0
+        1.0 0.0
+        1.0 1.0
+        0.0 0.0
+        0.5 0.5
+    ]
+    start_pi = Dict(
+        [0.0, 0.0] => 0.45,
+        [1.0, 0.0] => 0.20,
+        [0.0, 1.0] => 0.15,
+        [1.0, 1.0] => 0.20,
+    )
+    phenotypes_mt = DataFrame(
+        ID=copy(phenotypes.ID),
+        y1=copy(phenotypes.y1),
+        y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+    )
+
+    global annotated_mt_independent_sampler1 = get_genotypes(
+        genofile,
+        G;
+        separator=',',
+        method="BayesC",
+        quality_control=false,
+        annotations=annotations,
+        Pi=start_pi,
+        multi_trait_sampler=:I,
+    )
+    model = build_model("y1 = intercept + annotated_mt_independent_sampler1\ny2 = intercept + annotated_mt_independent_sampler1", R)
+    @test JWAS.mt_bayesc_sampler_mode(model.M[1], 2) == :I
+
+    output = runMCMC(
+        model,
+        phenotypes_mt,
+        chain_length=12,
+        burnin=2,
+        output_samples_frequency=10,
+        output_folder="test_mt_annotated_bayesc_independent_sampler1",
+        printout_frequency=13,
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+        outputEBV=false,
+        output_heritability=false,
+    )
+
+    @test haskey(output, "annotation coefficients annotated_mt_independent_sampler1")
+    @test haskey(output, "pi_annotated_mt_independent_sampler1")
+    @test model.MCMCinfo.independent_blocks == true
+    @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+    isdir("test_mt_annotated_bayesc_independent_sampler1") && rm("test_mt_annotated_bayesc_independent_sampler1", recursive=true, force=true)
+end
+
+@testset "Multi-trait annotated BayesC independent fast_blocks sampler II run" begin
+    G = [1.0 0.5; 0.5 1.0]
+    annotations = [
+        0.0 1.0
+        1.0 0.0
+        1.0 1.0
+        0.0 0.0
+        0.5 0.5
+    ]
+    start_pi = Dict(
+        [0.0, 0.0] => 0.45,
+        [1.0, 0.0] => 0.20,
+        [0.0, 1.0] => 0.15,
+        [1.0, 1.0] => 0.20,
+    )
+    phenotypes_mt = DataFrame(
+        ID=copy(phenotypes.ID),
+        y1=copy(phenotypes.y1),
+        y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+    )
+
+    global annotated_mt_independent_sampler2 = get_genotypes(
+        genofile,
+        G;
+        separator=',',
+        method="BayesC",
+        quality_control=false,
+        annotations=annotations,
+        Pi=start_pi,
+        multi_trait_sampler=:II,
+    )
+    model = build_model("y1 = intercept + annotated_mt_independent_sampler2\ny2 = intercept + annotated_mt_independent_sampler2", R)
+    @test JWAS.mt_bayesc_sampler_mode(model.M[1], 2) == :II
+
+    output = runMCMC(
+        model,
+        phenotypes_mt,
+        chain_length=12,
+        burnin=2,
+        output_samples_frequency=10,
+        output_folder="test_mt_annotated_bayesc_independent_sampler2",
+        printout_frequency=13,
+        seed=123,
+        fast_blocks=[1, 3, 5],
+        independent_blocks=true,
+        outputEBV=false,
+        output_heritability=false,
+    )
+
+    @test haskey(output, "annotation coefficients annotated_mt_independent_sampler2")
+    @test haskey(output, "pi_annotated_mt_independent_sampler2")
+    @test model.MCMCinfo.independent_blocks == true
+    @test model.MCMCinfo.fast_blocks == [1, 3, 5]
+    isdir("test_mt_annotated_bayesc_independent_sampler2") && rm("test_mt_annotated_bayesc_independent_sampler2", recursive=true, force=true)
+end
+
 @testset "Multi-trait annotated BayesC samplers share the same target posterior" begin
     x = [1.0, -0.5, 0.75]
     y_by_trait = [

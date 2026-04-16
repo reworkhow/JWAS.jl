@@ -113,6 +113,14 @@ function BayesR_block!(XArray, xpRinvx,
                        yCorr,
                        α, δ,
                        vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer, independent_blocks=false)
+    if independent_blocks == true
+        return BayesR_block_independent!(XArray, xpRinvx,
+                                         X, XpRinvX,
+                                         yCorr,
+                                         α, δ,
+                                         vare, sigmaSq, π, gamma, Rinv, iter, burnin)
+    end
+
     nclasses = length(gamma)
     bayesr_validate_priors(π, nclasses, length(α))
     sigmaSq > 0 || error("BayesR sigmaSq must be positive.")
@@ -182,4 +190,84 @@ function BayesR_block!(XArray, xpRinvx,
         end
         start_pos += block_size
     end
+end
+
+function BayesR_block_independent!(XArray, xpRinvx,
+                                   X, XpRinvX,
+                                   yCorr,
+                                   α, δ,
+                                   vare, sigmaSq, π, gamma, Rinv, iter::Integer, burnin::Integer)
+    nclasses = length(gamma)
+    bayesr_validate_priors(π, nclasses, length(α))
+    sigmaSq > 0 || error("BayesR sigmaSq must be positive.")
+
+    invVarRes = 1 / vare
+    nblocks = length(XpRinvX)
+    block_sizes = [size(XpRinvX[i], 1) for i in 1:nblocks]
+    block_offsets = cumsum([0; block_sizes[1:end-1]])
+    yCorr_snapshot = copy(yCorr)
+    unit_weights = is_unit_weights(Rinv)
+    block_deltas = Vector{Vector{eltype(α)}}(undef, nblocks)
+    block_seeds = rand(UInt, nblocks)
+
+    Threads.@threads for i in 1:nblocks
+        rng = MersenneTwister(block_seeds[i])
+        log_probs = zeros(Float64, nclasses)
+        probs = zeros(Float64, nclasses)
+        block_size = block_sizes[i]
+        start_pos = block_offsets[i]
+        block_range = start_pos + 1:start_pos + block_size
+        old_alpha = copy(view(α, block_range))
+        XpRinvycorr = Vector{eltype(yCorr)}(undef, block_size)
+        block_rhs!(XpRinvycorr, XArray[i], yCorr_snapshot, Rinv, unit_weights)
+        nreps = bayesr_block_nreps(iter, burnin, block_size)
+
+        for reps in 1:nreps
+            for j in 1:block_size
+                locus_j = start_pos + j
+                rhs = (XpRinvycorr[j] + xpRinvx[locus_j] * α[locus_j]) * invVarRes
+                oldAlpha = α[locus_j]
+                πj = bayesr_prior_row(π, locus_j)
+
+                log_probs[1] = log(πj[1])
+                for k in 2:nclasses
+                    varEffect = gamma[k] * sigmaSq
+                    invVarEffect = 1 / varEffect
+                    lhs = xpRinvx[locus_j] * invVarRes + invVarEffect
+                    invLhs = 1 / lhs
+                    betaHat = invLhs * rhs
+                    log_probs[k] = 0.5 * (log(invLhs) - log(varEffect) + betaHat * rhs) + log(πj[k])
+                end
+
+                log_norm = bayesr_logsumexp(log_probs)
+                for k in 1:nclasses
+                    probs[k] = exp(log_probs[k] - log_norm)
+                end
+
+                sampled_class = rand(rng, Categorical(probs))
+                δ[locus_j] = sampled_class
+
+                if sampled_class == 1
+                    α[locus_j] = zero(eltype(α))
+                else
+                    varEffect = gamma[sampled_class] * sigmaSq
+                    invVarEffect = 1 / varEffect
+                    lhs = xpRinvx[locus_j] * invVarRes + invVarEffect
+                    invLhs = 1 / lhs
+                    betaHat = invLhs * rhs
+                    α[locus_j] = betaHat + randn(rng) * sqrt(invLhs)
+                end
+
+                BLAS.axpy!(oldAlpha - α[locus_j], view(XpRinvX[i], :, j), XpRinvycorr)
+            end
+        end
+
+        old_alpha .-= α[block_range]
+        block_deltas[i] = old_alpha
+    end
+
+    for i in 1:nblocks
+        mul!(yCorr, XArray[i], block_deltas[i], 1.0, 1.0)
+    end
+    return nothing
 end
