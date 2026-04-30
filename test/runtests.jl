@@ -116,6 +116,10 @@ println()
             include(joinpath(@__DIR__, "unit", "test_input_validation.jl"))
         end
 
+        @testset "Single-step Analysis" begin
+            include(joinpath(@__DIR__, "unit", "test_single_step.jl"))
+        end
+
         @testset "Multi-trait MCMC" begin
             include(joinpath(@__DIR__, "unit", "test_multitrait_mcmc.jl"))
         end

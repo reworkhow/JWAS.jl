@@ -22,7 +22,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
     end
     #add data for ϵ and J (add columns in input phenotypic data)
     isnongeno = [ID in mme.ped.setNG for ID in df_whole[!,1]] #true/false
-    data_ϵ    = deepcopy(df_whole[!,1])
+    data_ϵ    = String.(df_whole[!,1])
     data_ϵ[.!isnongeno].="missing"
     df_whole[!,Symbol("ϵ")]=data_ϵ
 
