@@ -23,6 +23,15 @@ out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
               independent_blocks=true)
 ```
 
+### Quick Semantics Checklist
+
+- `fast_blocks=true` and numeric `fast_blocks=<block_size>` keep exact sequential block behavior when `independent_blocks=false` (the default). JWAS still refreshes the global corrected phenotype / residual after each block before sampling the next block.
+- `fast_blocks` is currently dense-storage only; `storage=:stream` rejects `fast_blocks != false`.
+- Explicit `fast_blocks=[...]` entries are marker start positions, not block lengths. The first start must be `1`.
+- Explicit block starts use full-sweep chain semantics: one outer MCMC iteration sweeps all supplied blocks, and JWAS does not rescale `chain_length`.
+- `independent_blocks=true` is an approximate parallel schedule unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) are effectively zero.
+- On servers, set `OPENBLAS_NUM_THREADS=1` when using Julia threads (for example, with `independent_blocks=true`) to avoid nested BLAS oversubscription.
+
 - If `fast_blocks=true`, JWAS chooses `block_size = floor(sqrt(nObs))`.
 - If `fast_blocks` is numeric, JWAS uses that fixed block size.
 - If `fast_blocks` is a vector, JWAS treats the entries as explicit marker block starts. The vector must be sorted, unique, start at `1`, and stay within `1:nMarkers`.
@@ -183,7 +192,7 @@ JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely fol
 | Marker prior model | BayesR mixture (multiple non-zero normal components plus zero component) | BayesC spike-slab style inclusion (`δ∈{0,1}` for this path) | Same acceleration idea, different posterior model |
 | Marker state sampling | Multi-class mixture state | Binary include/exclude state | Not numerically identical to BayesR |
 | Inner-repeat schedule | Uses nominal block size as fixed repeat count across blocks | `nreps = current block_size` | Last short block may receive fewer inner repeats |
-| Outer-loop scheduling | Described as a fixed block sweep schedule | JWAS also rescales outer `chain_length` by block size | Compare effective updates, not just outer iterations |
+| Outer-loop scheduling | Described as a fixed block sweep schedule | For `fast_blocks=true` or numeric `fast_blocks=<block_size>`, JWAS rescales outer `chain_length` by block size; explicit starts keep full-sweep `chain_length` | Compare effective updates and partition semantics, not just outer iterations |
 | Scope | BayesR algorithm | JWAS block path is wired to BayesA/B/C and BayesR marker samplers, with multi-trait BayesC honoring sampler I/II dispatch | Strategy reused across Bayesian alphabet members |
 
 #### Scheduling detail (explicit)
@@ -239,9 +248,13 @@ So per outer iteration:
 - `O(NP + sum_i s_i^3)`
 - With near-uniform blocks (`s_i ≈ b`): `O(NP + P b^2)`
 
-JWAS rescales outer iterations to approximately `m = floor(L/b)`, so the main total cost is:
+For `fast_blocks=true` or numeric `fast_blocks=<block_size>`, JWAS rescales outer iterations to approximately `m = floor(L/b)`, so the main total cost is:
 
 - `O((L/b) * (NP + P b^2)) = O(LP(N/b + b))`
+
+For explicit `fast_blocks=[...]`, JWAS instead treats one outer iteration as one full sweep over the supplied block starts and does not rescale `chain_length`. The total over `L` requested full sweeps is:
+
+- `O(L * (NP + sum_i s_i^3))`
 
 ### BayesR3 (block strategy and paper fit)
 
@@ -302,7 +315,7 @@ Current block implementation (after removing persistent `XRinvArray`) stores:
 - dense `X`: `N*P` values
 - block Gram matrices `XpRinvX`: `sum_i s_i^2` values
 - marker summary `xpRinvx`: `P` values
-- optional `xRinvArray` extra `N*P` only for non-unit weights in the non-block marker path
+- optional `xRinvArray` extra `N*P` for non-unit weights
 - small reusable block workspaces (`O(b)`) for RHS and local deltas
 
 Approximate totals:
@@ -357,7 +370,8 @@ So for unit weights, block mode remains dominated by `X`, with `XpRinvX` as the 
    - too small: less speedup (`N/b` term remains large)
    - too large: `XpRinvX` memory and precompute cost rise (`~P*b` memory and `~NPb` setup trend)
 2. Effective chain length:
-   - current implementation rescales outer iterations and uses inner repeats (`nreps = block_size`)
+   - with `fast_blocks=true` or numeric `fast_blocks=<block_size>`, current implementation rescales outer iterations and uses inner repeats (`nreps = block_size`)
+   - with explicit `fast_blocks=[...]`, one outer iteration is a full sweep over the supplied block starts and `chain_length` is not rescaled
    - compare runs by effective updates, not only outer-iteration count
 3. Final short block behavior:
    - last block uses smaller `nreps` (equal to its own size), so sweep symmetry differs slightly
@@ -372,7 +386,7 @@ So for unit weights, block mode remains dominated by `X`, with `XpRinvX` as the 
    - expect tiny non-bitwise differences, especially in `Float32`
 7. Weighting mode:
    - block `XRinvArray` is no longer persisted
-   - separate non-unit weighted non-block `xRinvArray` materialization remains a distinct issue
+   - separate non-unit weighted `xRinvArray` materialization remains a distinct issue
 8. Scope constraints:
    - current source notes this fast block option is intended for one genotype category
    - numeric `fast_blocks` should keep `block_size < nMarkers`
