@@ -7,7 +7,7 @@
 
 ![JWAS](docs/src/assets/JWAS.png)
 
-JWAS.jl is an open-source Julia package for Bayesian mixed models in genomic prediction and genome-wide association studies. It supports single-trait and multi-trait analyses, dense, streaming, and fast-block genotype workflows, and Bayesian marker models including annotated BayesC and annotated BayesR.
+JWAS.jl is an open-source software tool written in Julia for Bayesian multiple regression methods applied to genomic prediction and genome-wide association studies.
 
 * **Homepage**: [QTL.rocks](https://QTL.rocks)
 * **Discussion group**: [available here](https://groups.io/g/qtlrocks)
