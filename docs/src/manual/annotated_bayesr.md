@@ -2,6 +2,9 @@
 
 Annotated BayesR extends single-trait dense BayesR by letting marker annotations change the full four-class mixture prior for each marker.
 It is the individual-level JWAS analogue of the `sbayesrc.R` summary-statistics sampler.
+Current support is single-trait `method="BayesR"` with dense storage, including
+dense fast-block runs and optional approximate independent-block runs. Annotated
+BayesR does not currently support `storage=:stream` or multi-trait BayesR.
 
 ## Method Overview
 
@@ -324,26 +327,30 @@ given current marker classes delta_j:
 
 ## Input Requirements
 
-- Current support is **single-trait `method="BayesR"` only**.
-- Current support is **dense storage only**.
+- Current support is:
+  - single-trait dense `method="BayesR"`
+  - single-trait dense `method="BayesR"` with `fast_blocks != false` and `independent_blocks=false`
+  - single-trait dense `method="BayesR"` with `fast_blocks != false` and `independent_blocks=true`
 - Pass annotations through `get_genotypes(...; annotations=...)`.
 - `annotations` must be a numeric matrix with one row per marker in the raw genotype input.
 - JWAS applies the same marker QC/filtering mask to `annotations` as it applies to genotypes.
 - JWAS prepends an intercept column automatically after filtering. Users should not include an intercept column.
+- Annotation columns must be non-constant and not perfectly collinear after JWAS adds the intercept.
 
 Current v1 exclusions:
 
 - `storage=:stream`
-- multi-trait BayesR
+- multi-trait BayesR, including annotated multi-trait BayesR
 - random regression models (`RRM`)
 
 `fast_blocks` is supported for dense annotated BayesR. The block sampler uses the
 same annotation-induced marker-specific class probabilities `pi_j` as the dense
-sampler. As with ordinary BayesR, block mode is an accelerated approximation to
-the dense transition kernel rather than the exact same sampler.
+sampler, but it is a block update path rather than the same transition as the
+full dense marker-by-marker sweep.
 Explicit block starts such as `fast_blocks=[1, 501, 975]` are also supported.
-Set `independent_blocks=true` only when you intentionally want the approximate
-independent-block mode for block-level thread parallelism. See
+With the default `independent_blocks=false`, this is the exact sequential block
+sweep. Set `independent_blocks=true` only when you intentionally want the
+approximate independent-block mode for block-level thread parallelism. See
 [Block BayesC](block_bayesc.md) for the shared block-sampler interpretation.
 
 ## Dense Example
@@ -434,6 +441,8 @@ They describe how annotations change the current conditional prior class probabi
 ## Practical Notes
 
 - Standard BayesR is unchanged when no `annotations` are provided.
+- Annotated BayesR starts from the supplied four-class `Pi` vector, then learns marker-specific class probabilities from the data and annotations.
+- The starting `Pi` must make all three conditional probit splits nondegenerate.
 - Annotation rows are defined on the raw marker order, not the post-QC marker order.
 - If QC drops markers, JWAS drops the corresponding annotation rows before adding the intercept column.
 - Posterior PIP is still read from the marker-effects output as `Model_Frequency = Pr(delta_j > 1 | data)`.

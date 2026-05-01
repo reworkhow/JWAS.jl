@@ -13,6 +13,26 @@ with a marker-specific 4-state prior, under both the standard and fast-block
 marker sweeps. The single-trait annotated BayesC path is documented separately
 in [Annotated BayesC](annotated_bayesc.md).
 
+## Support Boundaries
+
+Dense 2-trait annotated BayesC currently supports:
+
+- exactly 2 traits
+- `storage=:dense`
+- `constraint=false`
+- the standard dense sweep with `fast_blocks=false`
+- the exact sequential fast-block sweep with `fast_blocks != false` and `independent_blocks=false`
+- the optional approximate independent-block sweep with `fast_blocks != false` and `independent_blocks=true`
+
+It does **not** support:
+
+- `storage=:stream`
+- `constraint=true`
+- more than 2 traits
+
+If you need single-trait dense, fast-block, independent-block, or streaming
+annotated BayesC, use [Annotated BayesC](annotated_bayesc.md).
+
 ## Method Overview
 
 For each marker `j`, JWAS builds a marker-specific joint prior over the four
@@ -54,13 +74,14 @@ submodels:
 - `annotations` must be a numeric matrix with one row per marker in the raw genotype input.
 - JWAS applies the same marker QC/filtering mask to `annotations` as it applies to genotypes.
 - JWAS prepends an intercept column automatically after filtering. Users should not include an intercept column.
+- Annotation columns must be non-constant and not perfectly collinear after JWAS adds the intercept.
 
 Dense 2-trait annotated BayesC v1 requires:
 
 - exactly 2 traits
 - `storage=:dense`
 - `constraint=false`
-- either the standard sweep (`fast_blocks=false`) or the fast-block sweep (`fast_blocks=true`)
+- either the standard sweep (`fast_blocks=false`) or the fast-block sweep (`fast_blocks != false`)
 
 Dense 2-trait annotated BayesC v1 does **not** support:
 
@@ -68,8 +89,8 @@ Dense 2-trait annotated BayesC v1 does **not** support:
 - `constraint=true`
 - more than 2 traits
 
-If you need single-trait streaming or single-trait fast-block annotated BayesC,
-those remain available on the original single-trait annotated BayesC path.
+If you need single-trait streaming or single-trait block annotated BayesC, those
+remain available on the original single-trait annotated BayesC path.
 
 ## Startup Behavior
 
@@ -129,7 +150,7 @@ Use:
 The same sampler choices apply to both:
 
 - the standard dense sweep (`fast_blocks=false`)
-- the fast-block sweep (`fast_blocks=true`)
+- the fast-block sweep (`fast_blocks != false`)
 
 The fast-block sweep also supports explicit block starts, for example
 `fast_blocks=[1, 501, 975]`. `independent_blocks=false` is the default exact
@@ -194,8 +215,7 @@ This example uses the default `multi_trait_sampler=:I`. Add
 `multi_trait_sampler=:auto` or `multi_trait_sampler=:II` in `get_genotypes(...)`
 only when you want to override the default explicitly. Set
 `fast_blocks=false` if you want the original non-block sweep instead.
-Add `independent_blocks=true` only for the approximate independent-block block
-sweep.
+Add `independent_blocks=true` only for the approximate independent-block sweep.
 
 ## Output Interpretation
 

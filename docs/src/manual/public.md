@@ -16,6 +16,7 @@ Modules = [JWAS]
 build_model
 get_pedigree
 get_genotypes
+prepare_streaming_genotypes
 set_covariate
 set_random
 runMCMC

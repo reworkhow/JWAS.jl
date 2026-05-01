@@ -5,7 +5,8 @@ Annotated BayesC lets marker annotations change marker-state priors.
 This page focuses on the original single-trait production paths:
 
 - single-trait dense BayesC with marker-specific exclusion probabilities `π_j`
-- single-trait dense BayesC with `fast_blocks=true`
+- single-trait dense BayesC with exact fast-block sweeps
+- single-trait dense BayesC with optional approximate independent-block sweeps
 - single-trait streaming BayesC
 
 JWAS also supports dense 2-trait annotated BayesC with a marker-specific
@@ -56,12 +57,14 @@ submodel:
 
 - Current support is:
   - single-trait dense `method="BayesC"`
-  - single-trait dense `method="BayesC"` with `fast_blocks=true`
+  - single-trait dense `method="BayesC"` with `fast_blocks != false` and `independent_blocks=false`
+  - single-trait dense `method="BayesC"` with `fast_blocks != false` and `independent_blocks=true`
   - single-trait streaming `method="BayesC"`
 - Pass annotations through `get_genotypes(...; annotations=...)`.
 - `annotations` must be a numeric matrix with one row per marker in the raw genotype input.
 - JWAS applies the same marker QC/filtering mask to `annotations` as it applies to genotypes.
 - JWAS prepends an intercept column automatically after filtering. Users should not include an intercept column.
+- Annotation columns must be non-constant and not perfectly collinear after JWAS adds the intercept.
 
 For the dense 2-trait method and its restrictions, see
 [Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md).
@@ -142,6 +145,7 @@ This path is still limited to the **single-trait** annotated BayesC model.
 It uses the same annotation-driven `π_j` updates, but samples marker effects through the block BayesC path.
 JWAS rescales the outer `chain_length` in block mode, so the nominal `chain_length` should be chosen large enough that the effective post-scaling chain is still longer than `burnin`.
 You can also provide explicit block starts, for example `fast_blocks=[1, 501, 975]`.
+With the default `independent_blocks=false`, this is the exact sequential block sweep.
 Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism.
 For block-update details, see [Block BayesC](block_bayesc.md).
 
@@ -202,6 +206,7 @@ Streaming keeps the same single-trait annotation logic, but it still inherits th
 - unit residual weights only
 - `double_precision=false`
 - phenotype IDs must exactly match genotype IDs in the same order
+- annotated streaming requires a backend prepared by the current `prepare_streaming_genotypes` so raw-marker mapping metadata is available
 
 For more on the streaming backend, see [Streaming Genotype Walkthrough](streaming_genotype_walkthrough.md).
 
