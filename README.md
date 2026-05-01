@@ -13,7 +13,7 @@ JWAS.jl is an open-source Julia package for Bayesian mixed models in genomic pre
 * **Discussion group**: [available here](https://groups.io/g/qtlrocks)
 * **Installation**: at the Julia REPL, `using Pkg; Pkg.add("JWAS")`
 * **Documentation**: [available here](http://reworkhow.github.io/JWAS.jl/latest/)
-* **Examples**: [Documenter manual and examples](http://reworkhow.github.io/JWAS.jl/latest/); [legacy/community examples](https://github.com/reworkhow/JWAS.jl/wiki)
+* **Examples**: [current examples in the documentation](http://reworkhow.github.io/JWAS.jl/latest/); [older community examples on the wiki](https://github.com/reworkhow/JWAS.jl/wiki)
 * **Authors**: [Hao Cheng](https://qtl.rocks), [Tianjing Zhao](https://animalscience.unl.edu/faculty-staff/tianjing-zhao), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](http://www.massey.ac.nz/massey/expertise/profile.cfm?stref=600130)
 
 
@@ -40,7 +40,7 @@ JWAS.jl is an open-source Julia package for Bayesian mixed models in genomic pre
 
 ### Examples
 
-Current examples and workflows are maintained in the [Documenter manual](http://reworkhow.github.io/JWAS.jl/latest/). The [wiki](https://github.com/reworkhow/JWAS.jl/wiki) remains available for legacy/community examples.
+For current examples and workflows, start with the [JWAS documentation](http://reworkhow.github.io/JWAS.jl/latest/). The [wiki](https://github.com/reworkhow/JWAS.jl/wiki) has older community examples that may still be useful.
 
 * Single Trait Analysis
 * Multiple Trait Analysis
