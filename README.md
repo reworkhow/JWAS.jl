@@ -7,13 +7,13 @@
 
 ![JWAS](docs/src/assets/JWAS.png)
 
-JWAS.jl is an open-source software tool written in Julia for Bayesian multiple regression methods applied to genomic prediction and genome-wide association studies.
+JWAS.jl is an open-source Julia package for Bayesian mixed models in genomic prediction and genome-wide association studies. It supports single-trait and multi-trait analyses, dense, streaming, and fast-block genotype workflows, and Bayesian marker models including annotated BayesC and annotated BayesR.
 
 * **Homepage**: [QTL.rocks](https://QTL.rocks)
 * **Discussion group**: [available here](https://groups.io/g/qtlrocks)
 * **Installation**: at the Julia REPL, `using Pkg; Pkg.add("JWAS")`
 * **Documentation**: [available here](http://reworkhow.github.io/JWAS.jl/latest/)
-* **Examples**: [available here](https://github.com/reworkhow/JWAS.jl/wiki)
+* **Examples**: [Documenter manual and examples](http://reworkhow.github.io/JWAS.jl/latest/); [legacy/community examples](https://github.com/reworkhow/JWAS.jl/wiki)
 * **Authors**: [Hao Cheng](https://qtl.rocks), [Tianjing Zhao](https://animalscience.unl.edu/faculty-staff/tianjing-zhao), [Rohan Fernando](http://www.ans.iastate.edu/people/rohan-fernando), [Dorian Garrick](http://www.massey.ac.nz/massey/expertise/profile.cfm?stref=600130)
 
 
@@ -38,7 +38,9 @@ JWAS.jl is an open-source software tool written in Julia for Bayesian multiple r
 2. For help on a specific function above, type ? followed by its name, e.g. `?runMCMC` and press enter.
 3. Run `Pkg.add(PackageSpec(name="JWAS", rev="master"))` to get the newest unofficial JWAS. Run `Pkg.free("JWAS")` to go back to the official one.
 
-### Examples [available here](https://github.com/reworkhow/JWAS.jl/wiki)
+### Examples
+
+Current examples and workflows are maintained in the [Documenter manual](http://reworkhow.github.io/JWAS.jl/latest/). The [wiki](https://github.com/reworkhow/JWAS.jl/wiki) remains available for legacy/community examples.
 
 * Single Trait Analysis
 * Multiple Trait Analysis

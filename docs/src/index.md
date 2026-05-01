@@ -1,11 +1,10 @@
 
 ![JWAS](assets/JWAS.png)
 
-JWAS is a well-documented software platform based on Julia and an interactive Jupyter notebook for analyses of general
-univariate and multivariate Bayesian mixed effects models.  These models are especially useful for, but not limited to,
-routine single-trait and multi-trait genomic prediction and genome-wide association studies using either complete or incomplete
-genomic data ("single-step" methods). Currently, JWAS provides broad scope of analyses, e.g., a wide collection of Bayesian
-methods for whole-genome analyses, including shrinkage estimation and variable selection methods. The features of JWAS include:
+JWAS is a Julia software platform for analyses of univariate and multivariate Bayesian mixed effects models. These models support
+routine single-trait and multi-trait genomic prediction and genome-wide association studies using complete, streaming, and incomplete
+genomic data workflows. JWAS provides Bayesian whole-genome methods including shrinkage estimation, variable selection, annotation-aware
+marker priors, and dense or block genotype workflows. The features of JWAS include:
 
 * Univariate (single-trait) analysis
 * Multivariate (multi-trait) analysis  
@@ -20,7 +19,15 @@ methods for whole-genome analyses, including shrinkage estimation and variable s
 * Unknown (or known) variance components
 * Use of genomic information
   - Complete genomic data                                      		
-  - Incomplete genomic data (singe-step)
+  - Incomplete genomic data (single-step)
+  - Dense genotype matrices
+  - Streaming genotype storage for large marker panels
+  - Exact fast-block sampling with `fast_blocks`
+  - Approximate independent block sampling with `independent_blocks=true`
+* Bayesian whole-genome marker models
+  - BayesA, BayesB, BayesC, and BayesR workflows
+  - Annotated BayesC and Annotated BayesR
+  - Dense 2-trait Annotated BayesC
 
 
 ## Supporting and Citing
@@ -57,6 +64,7 @@ Pages = [
   "manual/workflow.md",
   "manual/bayesc_bayesr_comparison.md",
   "manual/annotated_bayesc.md",
+  "manual/multitrait_annotated_bayesc.md",
   "manual/annotated_bayesr.md",
   "manual/block_bayesc.md",
   "manual/benchmark.md",
