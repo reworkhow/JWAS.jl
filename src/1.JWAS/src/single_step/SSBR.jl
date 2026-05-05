@@ -6,17 +6,21 @@
 * add ϵ (imputation errors) and J as variables in data for non-genotyped inds
 """
 function SSBRrun(mme,df_whole,train_index,big_memory=false)
-    geno     = mme.M[1]                     #input genotyps
     ped      = mme.ped                      #pedigree
     println("calculating A inverse")
     flush(stdout)
-    @time Ai_nn,Ai_ng = calc_Ai(ped,geno,mme)     #get A inverse
-    println("imputing missing genotypes")
-    flush(stdout)
-    @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
-    println("completed imputing genotypes")
+    @time Ai_nn,Ai_ng = calc_Ai(ped,mme.M[1],mme)     #get A inverse
+    for geno in mme.M
+        println("imputing missing genotypes for ", geno.name)
+        flush(stdout)
+        @time impute_genotypes(geno,ped,mme,Ai_nn,Ai_ng,df_whole[train_index,:],big_memory) #impute genotypes for non-genotyped inds
+        println("completed imputing genotypes for ", geno.name)
+        if geno.genetic_variance == false
+            error("Please input the genetic variance using add_genotypes()")
+        end
+    end
     #add model terms for SSBR
-    add_term(mme,"ϵ") #impuatation residual
+    add_term(mme,"ϵ") #imputation residual
     if mme.MCMCinfo.fitting_J_vector == true
         add_term(mme,"J") #centering parameter
     end
@@ -30,7 +34,7 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
         df_whole[!,Symbol("J")],mme.output_X["J"]=make_JVecs(mme,df_whole,Ai_nn,Ai_ng)
         set_covariate(mme,"J")
     end
-    set_random(mme,"ϵ",geno.genetic_variance.val,Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
+    set_random(mme,"ϵ",total_single_step_genetic_variance(mme.M),Vinv=Ai_nn,names=ped.IDs[1:size(Ai_nn,1)])
     #trick to avoid errors (PedModule.getIDs(ped) [nongeno ID;geno ID])
     mme.output_X["ϵ"]=mkmat_incidence_factor(mme.output_ID,ped.IDs)[:,1:size(Ai_nn,1)]
 
@@ -41,16 +45,20 @@ function SSBRrun(mme,df_whole,train_index,big_memory=false)
         end
         mme.output_X[string(traiti)*":ϵ"] = mme.output_X["ϵ"]
     end
-    delete!(mme.output_X, "J")
-    delete!(mme.output_X, "ϵ")
-
-    if geno.genetic_variance == false
-        error("Please input the genetic variance using add_genotypes()")
-    end
     if mme.MCMCinfo.fitting_J_vector == true
+        delete!(mme.output_X, "J")
         outputMCMCsamples(mme,"J")
     end
+    delete!(mme.output_X, "ϵ")
     outputMCMCsamples(mme,"ϵ")
+end
+
+function total_single_step_genetic_variance(genotypes)
+    total = copy(genotypes[1].genetic_variance.val)
+    for geno in genotypes[2:end]
+        total = total + geno.genetic_variance.val
+    end
+    return total
 end
 
 ############################################################################

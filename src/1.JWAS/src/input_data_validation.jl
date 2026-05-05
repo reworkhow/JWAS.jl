@@ -217,9 +217,6 @@ function check_pedigree_genotypes_phenotypes(mme,df,pedigree)
                 end
             end
         end
-        if mme.MCMCinfo.single_step_analysis == true && length(mme.M) != 1
-            error("Now only one genomic category is allowed in single-step analysis.")
-        end
     end
     #3)Phenotypes
     printstyled("Checking phenotypes...\n" ,bold=false,color=:green)
