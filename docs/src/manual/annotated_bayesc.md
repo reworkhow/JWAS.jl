@@ -85,14 +85,14 @@ annotations = [
 ]
 
 genotypes = get_genotypes(
-    "genotypes.txt", 1.0;
+    "genotypes.txt";
     method="BayesC",
     separator=',',
     quality_control=false,
     annotations=annotations,
 )
 
-model = build_model("y1 = intercept + genotypes", 1.0)
+model = build_model("y1 = intercept + genotypes")
 
 output = runMCMC(
     model,
@@ -173,7 +173,7 @@ annotations = [
 ]
 
 genotypes = get_genotypes(
-    prefix, 1.0;
+    prefix;
     method="BayesC",
     storage=:stream,
     annotations=annotations,
@@ -184,7 +184,7 @@ phenotypes = DataFrame(
     y1=Float32[1.1, -0.3, 0.8, -0.9, 0.5, -0.1, 0.2],
 )
 
-model = build_model("y1 = intercept + genotypes", 1.0)
+model = build_model("y1 = intercept + genotypes")
 
 output = runMCMC(
     model,
@@ -217,3 +217,120 @@ For more on the streaming backend, see [Streaming Genotype Walkthrough](streamin
 - Annotated BayesC annotation coefficients start at zero, and JWAS does not fit the annotation model before the first phenotype-informed marker sweep.
 - Annotation rows are defined on the raw marker order, not the post-QC marker order.
 - If QC drops markers, JWAS drops the corresponding annotation rows before adding the intercept column.
+
+## Equivalence With Multi-Class BayesC
+
+For non-overlapping categorical annotations, Annotated BayesC assigns one
+exclusion probability to each annotation class. This section states when that
+single annotated model is equivalent to a multi-class representation that splits
+the marker matrix by class.
+
+Write the single annotated model as:
+
+```math
+y = Xb + M\alpha + e, \qquad e \sim N(0, \sigma_e^2 I).
+```
+
+For marker `j`:
+
+```math
+\alpha_j = \delta_j \beta_j,
+```
+
+where `δ_j = 0` excludes marker `j` and `δ_j = 1` includes marker `j`. The
+nonzero marker effect has the BayesC prior:
+
+```math
+\beta_j \mid \sigma_\alpha^2 \sim N(0, \sigma_\alpha^2).
+```
+
+With one-hot categorical annotations, marker `j` belongs to exactly one class
+`c(j) ∈ {1, ..., K}`:
+
+```math
+A_{jc} =
+\begin{cases}
+1, & c = c(j),\\
+0, & c \ne c(j),
+\end{cases}
+\qquad
+\sum_{c=1}^K A_{jc} = 1.
+```
+
+The annotated probit model then reduces to one class-level inclusion probability:
+
+```math
+\Pr(\delta_j = 1 \mid c(j)=c) = \Phi(\theta_c),
+```
+
+or, using the BayesC exclusion probability,
+
+```math
+\pi_j = \pi_{c(j)}, \qquad \pi_c = 1 - \Phi(\theta_c).
+```
+
+A multi-class representation splits the full marker matrix into class-specific
+blocks:
+
+```math
+M = [M_1 \; M_2 \; \cdots \; M_K],
+```
+
+and writes the model as:
+
+```math
+y = Xb + M_1\alpha_1 + M_2\alpha_2 + \cdots + M_K\alpha_K + e.
+```
+
+The two likelihoods are the same when:
+
+```math
+\alpha = [\alpha_1^\top \; \alpha_2^\top \; \cdots \; \alpha_K^\top]^\top
+```
+
+and each marker appears in exactly one class block. The priors are equivalent
+when both formulations use:
+
+```math
+\delta_j \mid \pi_{c(j)} \sim \mathrm{Bernoulli}(1 - \pi_{c(j)}),
+```
+
+```math
+\beta_j \mid \sigma_\alpha^2 \sim N(0, \sigma_\alpha^2).
+```
+
+Thus, class membership changes the exclusion probability `π_c`, but does not
+change the marker-effect variance. A multi-class model with separate
+class-specific marker-effect variances,
+
+```math
+\beta_j \mid c(j)=c, \sigma_{\alpha,c}^2 \sim N(0, \sigma_{\alpha,c}^2),
+```
+
+is a different model unless the annotated model is also extended to use the same
+class-specific variances.
+
+For one-hot annotations, both formulations can have one `π_c` per class. They
+are fully equivalent only if they also use the same parameterization and update
+for `π_c`. Current Annotated BayesC uses the probit parameterization:
+
+```math
+\pi_c = 1 - \Phi(\theta_c).
+```
+
+A multi-class model that instead updates each class probability directly with a
+BayesC-style Beta update,
+
+```math
+\pi_c \sim \mathrm{Beta}(a_c, b_c),
+```
+
+```math
+\pi_c \mid \delta \sim \mathrm{Beta}(a_c + N_{0c}, b_c + N_{1c}),
+```
+
+where `N_{0c}` and `N_{1c}` are the excluded and included marker counts in class
+`c`, is not the same prior model as the probit annotation model. It becomes
+equivalent only if Annotated BayesC is changed to use the same direct
+class-specific Beta update, or if the multi-class model is changed to use the
+same probit-generated class probabilities as Annotated BayesC.
