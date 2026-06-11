@@ -67,6 +67,14 @@ function validate_bayesc_mt_start_row(start_row::AbstractVector{<:Real})
     return nothing
 end
 
+function initialize_bayesc_single_trait_annotation_coefficients!(ann::MarkerAnnotations, start_pi::AbstractVector{<:Real})
+    start_inclusion = clamp(mean(1 .- Float64.(start_pi)), eps(Float64), 1 - eps(Float64))
+    ann.coefficients .= 0.0
+    ann.coefficients[1] = quantile(Normal(), start_inclusion)
+    ann.mu .= ann.design_matrix * ann.coefficients
+    return nothing
+end
+
 function initialize_bayesc_single_trait_annotations!(genotypei::Genotypes)
     if genotypei.annotations === false || genotypei.method != "BayesC" || genotypei.ntraits != 1
         return nothing
@@ -84,6 +92,7 @@ function initialize_bayesc_single_trait_annotations!(genotypei::Genotypes)
 
     design_matrix = genotypei.annotations.design_matrix
     genotypei.annotations = MarkerAnnotations(design_matrix)
+    initialize_bayesc_single_trait_annotation_coefficients!(genotypei.annotations, start_pi)
     genotypei.π = start_pi
     return nothing
 end

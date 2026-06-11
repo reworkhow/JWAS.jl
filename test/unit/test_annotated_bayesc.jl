@@ -257,7 +257,7 @@ end
         end
     end
 
-    @testset "annotated BayesC startup matches Jian-style zero-alpha initialization" begin
+    @testset "annotated BayesC startup initializes probit intercept from starting Pi" begin
         marker_names = Symbol.("m" .* string.(1:20))
         geno_df = DataFrame(ID=["a1", "a2"])
         for (j, marker) in enumerate(marker_names)
@@ -266,56 +266,71 @@ end
         annotations = reshape(collect(1.0:20.0), 20, 1)
 
         Random.seed!(2026)
-        geno_zero = get_genotypes(
+        geno_sparse = get_genotypes(
             geno_df, 1.0;
             method="BayesC",
-            Pi=0.0,
+            Pi=0.99,
             annotations=annotations,
             quality_control=false,
         )
         Random.seed!(2027)
-        geno_zero_repeat = get_genotypes(
+        geno_sparse_repeat = get_genotypes(
             geno_df, 1.0;
             method="BayesC",
-            Pi=0.0,
+            Pi=0.99,
             annotations=annotations,
             quality_control=false,
         )
-        geno_one = get_genotypes(
-            geno_df, 1.0;
-            method="BayesC",
-            Pi=1.0,
-            annotations=annotations,
-            quality_control=false,
-        )
-        geno_mid = get_genotypes(
+        geno_dense = get_genotypes(
             geno_df, 1.0;
             method="BayesC",
             Pi=0.3,
             annotations=annotations,
             quality_control=false,
         )
+        start_pi = range(0.1, 0.9; length=20)
+        geno_mid = get_genotypes(
+            geno_df, 1.0;
+            method="BayesC",
+            Pi=collect(start_pi),
+            annotations=annotations,
+            quality_control=false,
+        )
+        for geno in (geno_sparse, geno_sparse_repeat, geno_dense, geno_mid)
+            geno.ntraits = 1
+            JWAS.finalize_marker_annotation_setup!(geno)
+        end
 
-        @test geno_zero.π isa AbstractVector
-        @test length(geno_zero.π) == geno_zero.nMarkers
-        @test all(geno_zero.π .== 0.0)
-        @test all(geno_zero.annotations.coefficients .== 0.0)
-        @test all(geno_zero.annotations.mu .== 0.0)
-        @test geno_zero_repeat.π == geno_zero.π
-        @test geno_zero_repeat.annotations.coefficients == geno_zero.annotations.coefficients
-        @test geno_zero_repeat.annotations.mu == geno_zero.annotations.mu
+        sparse_intercept = quantile(Normal(), 0.01)
+        dense_intercept = quantile(Normal(), 0.7)
+        vector_intercept = quantile(Normal(), mean(1 .- collect(start_pi)))
 
-        @test geno_one.π isa AbstractVector
-        @test length(geno_one.π) == geno_one.nMarkers
-        @test all(geno_one.π .== 1.0)
-        @test all(geno_one.annotations.coefficients .== 0.0)
-        @test all(geno_one.annotations.mu .== 0.0)
+        @test geno_sparse.π isa AbstractVector
+        @test length(geno_sparse.π) == geno_sparse.nMarkers
+        @test all(geno_sparse.π .== 0.99)
+        @test geno_sparse.annotations.coefficients[1] ≈ sparse_intercept
+        @test all(geno_sparse.annotations.coefficients[2:end] .== 0.0)
+        @test geno_sparse.annotations.mu ≈ geno_sparse.annotations.design_matrix * geno_sparse.annotations.coefficients
+        @test all(geno_sparse.annotations.mu .≈ sparse_intercept)
+        @test geno_sparse_repeat.π == geno_sparse.π
+        @test geno_sparse_repeat.annotations.coefficients == geno_sparse.annotations.coefficients
+        @test geno_sparse_repeat.annotations.mu == geno_sparse.annotations.mu
+
+        @test geno_dense.π isa AbstractVector
+        @test length(geno_dense.π) == geno_dense.nMarkers
+        @test all(geno_dense.π .== 0.3)
+        @test geno_dense.annotations.coefficients[1] ≈ dense_intercept
+        @test all(geno_dense.annotations.coefficients[2:end] .== 0.0)
+        @test geno_dense.annotations.mu ≈ geno_dense.annotations.design_matrix * geno_dense.annotations.coefficients
+        @test all(geno_dense.annotations.mu .≈ dense_intercept)
 
         @test geno_mid.π isa AbstractVector
         @test length(geno_mid.π) == geno_mid.nMarkers
-        @test all(geno_mid.π .== 0.3)
-        @test all(geno_mid.annotations.coefficients .== 0.0)
-        @test all(geno_mid.annotations.mu .== 0.0)
+        @test geno_mid.π == collect(start_pi)
+        @test geno_mid.annotations.coefficients[1] ≈ vector_intercept
+        @test all(geno_mid.annotations.coefficients[2:end] .== 0.0)
+        @test geno_mid.annotations.mu ≈ geno_mid.annotations.design_matrix * geno_mid.annotations.coefficients
+        @test all(geno_mid.annotations.mu .≈ vector_intercept)
     end
 
     @testset "annotation sampler uses standard probit latent variance" begin
@@ -341,8 +356,13 @@ end
         expected.mu[1] = 0.3
         Random.seed!(20260309)
         expected.liability[1] = rand(truncated(Normal(expected.mu[1], 1.0), 0.0, Inf))
-        rhs = expected.design_matrix' * expected.liability
-        JWAS.Gibbs(expected.lhs, expected.coefficients, rhs, expected.variance)
+        latent_residual = expected.liability .- expected.mu
+        JWAS.gibbs_update_binary_probit_annotation_coefficients!(
+            expected.coefficients,
+            expected.design_matrix,
+            latent_residual,
+            expected.variance,
+        )
         expected.mu .= expected.design_matrix * expected.coefficients
         expected_pi = clamp.(1 .- cdf.(Normal(), expected.mu), eps(Float64), 1 - eps(Float64))
 
@@ -350,6 +370,61 @@ end
         @test actual_coefficients == expected.coefficients
         @test actual_mu == expected.mu
         @test actual_pi isa AbstractVector
+        @test actual_pi == expected_pi
+    end
+
+    @testset "single-trait annotated BayesC uses coordinate probit update with shrunken slopes" begin
+        geno = get_genotypes(
+            DataFrame(ID=["a1", "a2", "a3"], m1=[0.0, 1.0, 2.0]),
+            1.0;
+            method="BayesC",
+            quality_control=false,
+        )
+        design_matrix = [
+            1.0 0.0
+            1.0 1.0
+            1.0 2.0
+        ]
+        initial_coefficients = [-0.4, 0.8]
+        geno.δ = [Float64[0.0, 1.0, 0.0]]
+        geno.π = fill(0.5, 3)
+        geno.annotations = JWAS.MarkerAnnotations(design_matrix; variance=0.25)
+        geno.annotations.coefficients .= initial_coefficients
+        geno.annotations.mu .= geno.annotations.design_matrix * geno.annotations.coefficients
+
+        Random.seed!(20260610)
+        JWAS.update_marker_annotation_priors!(geno)
+        actual_liability = copy(geno.annotations.liability)
+        actual_coefficients = copy(geno.annotations.coefficients)
+        actual_mu = copy(geno.annotations.mu)
+        actual_pi = copy(geno.π)
+
+        expected = JWAS.MarkerAnnotations(design_matrix; variance=0.25)
+        expected.coefficients .= initial_coefficients
+        expected.mu .= expected.design_matrix * expected.coefficients
+        Random.seed!(20260610)
+        JWAS.annotation_binary_bounds!(expected.lower_bound, expected.upper_bound, geno.δ[1])
+        JWAS.sample_binary_annotation_liabilities!(
+            expected.liability,
+            expected.mu,
+            expected.lower_bound,
+            expected.upper_bound,
+            geno.δ[1];
+            latent_sd=1.0,
+        )
+        latent_residual = expected.liability .- expected.mu
+        JWAS.gibbs_update_binary_probit_annotation_coefficients!(
+            expected.coefficients,
+            expected.design_matrix,
+            latent_residual,
+            expected.variance,
+        )
+        expected.mu .= expected.design_matrix * expected.coefficients
+        expected_pi = clamp.(1 .- cdf.(Normal(), expected.mu), eps(Float64), 1 - eps(Float64))
+
+        @test actual_liability == expected.liability
+        @test actual_coefficients == expected.coefficients
+        @test actual_mu == expected.mu
         @test actual_pi == expected_pi
     end
 

@@ -62,14 +62,18 @@ end
 
 BayesC one-probit coefficient update.
 
-This keeps the existing JWAS BayesC behavior: a single multivariate Gibbs update
-on the latent regression
-
-`l = Xα + ε`.
+This uses the same coordinate update as the binary annotated BayesR steps:
+the intercept has a flat prior, while annotation slopes are shrunken by
+`ann.variance`.
 """
 function gibbs_update_one_probit_annotation_coefficients!(ann)
-    rhs = ann.design_matrix' * ann.liability
-    Gibbs(ann.lhs, ann.coefficients, rhs, ann.variance)
+    latent_residual = ann.liability .- ann.mu
+    gibbs_update_binary_probit_annotation_coefficients!(
+        ann.coefficients,
+        ann.design_matrix,
+        latent_residual,
+        ann.variance,
+    )
     ann.mu .= ann.design_matrix * ann.coefficients
     return nothing
 end
