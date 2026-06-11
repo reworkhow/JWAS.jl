@@ -58,15 +58,15 @@ function sample_binary_annotation_liabilities!(liability::AbstractVector,
 end
 
 """
-    gibbs_update_one_probit_annotation_coefficients!(ann)
+    gibbs_update_bayesc_binary_annotation_coefficients!(ann)
 
-BayesC one-probit coefficient update.
+BayesC binary annotation coefficient update.
 
 This uses the same coordinate update as the binary annotated BayesR steps:
 the intercept has a flat prior, while annotation slopes are shrunken by
 `ann.variance`.
 """
-function gibbs_update_one_probit_annotation_coefficients!(ann)
+function gibbs_update_bayesc_binary_annotation_coefficients!(ann)
     latent_residual = ann.liability .- ann.mu
     gibbs_update_binary_probit_annotation_coefficients!(
         ann.coefficients,
@@ -123,7 +123,7 @@ function gibbs_update_binary_probit_annotation_coefficients!(coeffs::AbstractVec
 end
 
 """
-    sample_annotation_effect_variance!(variance, coeffs)
+    sample_annotation_effect_variance(coeffs)
 
 Update the slope variance for one annotation step using the same scaled
 inverse-chi-square form as Jian's `sbayesrc.R`:
@@ -132,25 +132,35 @@ inverse-chi-square form as Jian's `sbayesrc.R`:
 
 where `p` is the total number of annotation coefficients including the intercept.
 """
+function sample_annotation_effect_variance(coeffs::AbstractVector)
+    return (sum(abs2, view(coeffs, 2:length(coeffs))) + 2.0) / rand(Chisq(length(coeffs) + 1.0))
+end
+
 function sample_annotation_effect_variance!(variance::AbstractVector, step::Integer, coeffs::AbstractVector)
-    variance[step] = (sum(abs2, view(coeffs, 2:length(coeffs))) + 2.0) / rand(Chisq(length(coeffs) + 1.0))
+    variance[step] = sample_annotation_effect_variance(coeffs)
+    return nothing
+end
+
+function sample_bayesc_binary_annotation_effect_variance!(ann)
+    length(ann.coefficients) > 1 || return nothing
+    ann.variance = sample_annotation_effect_variance(ann.coefficients)
     return nothing
 end
 
 """
-    update_bayesc_one_probit_bounds!(Mi)
+    update_bayesc_binary_bounds!(Mi)
 
-Annotated BayesC is the one-probit binary special case. The thresholds remain the
+Annotated BayesC is the binary inclusion special case. The thresholds remain the
 current BayesC convention, and this refactor preserves that behavior.
 """
-function update_bayesc_one_probit_bounds!(Mi)
+function update_bayesc_binary_bounds!(Mi)
     ann = Mi.annotations
     ann.lower_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 1]
     ann.upper_bound .= ann.thresholds[Int.(Mi.δ[1]) .+ 2]
     return nothing
 end
 
-function sample_bayesc_one_probit_liabilities!(Mi)
+function sample_bayesc_binary_liabilities!(Mi)
     ann = Mi.annotations
     # Annotated BayesC uses the same standard-probit convention as annotated
     # BayesR: the latent annotation error variance is fixed to 1 for
@@ -166,11 +176,12 @@ function sample_bayesc_one_probit_liabilities!(Mi)
     return nothing
 end
 
-function update_bayesc_one_probit_priors!(Mi)
+function update_bayesc_binary_priors!(Mi)
     ann = Mi.annotations
-    update_bayesc_one_probit_bounds!(Mi)
-    sample_bayesc_one_probit_liabilities!(Mi)
-    gibbs_update_one_probit_annotation_coefficients!(ann)
+    update_bayesc_binary_bounds!(Mi)
+    sample_bayesc_binary_liabilities!(Mi)
+    gibbs_update_bayesc_binary_annotation_coefficients!(ann)
+    sample_bayesc_binary_annotation_effect_variance!(ann)
     pi_values = clamp.(1 .- cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
     if Mi.π isa AbstractVector && length(Mi.π) == length(pi_values)
         Mi.π .= pi_values
@@ -320,7 +331,7 @@ function update_marker_annotation_priors!(Mi)
     end
     ann = Mi.annotations
     if ann.nsteps == 1
-        return update_bayesc_one_probit_priors!(Mi)
+        return update_bayesc_binary_priors!(Mi)
     end
 
     if Mi.method == "BayesR"

@@ -20,7 +20,7 @@ This treats all annotation coefficients the same way and does not explicitly sep
 
 ## Proposed Fix
 
-Update `gibbs_update_one_probit_annotation_coefficients!` to:
+Update `gibbs_update_bayesc_binary_annotation_coefficients!` to:
 
 1. compute the latent residual `ann.liability - ann.mu`
 2. call `gibbs_update_binary_probit_annotation_coefficients!`
@@ -30,7 +30,7 @@ The first pass will keep `ann.variance` fixed, preserving current user-facing st
 
 ## Tests
 
-Add a unit test that sets a small annotation design with an intercept and one slope, samples liabilities from a fixed seed, and verifies the one-probit update matches `gibbs_update_binary_probit_annotation_coefficients!`. This test should fail against the old joint update and pass once single-trait BayesC uses the coordinate helper.
+Add a unit test that sets a small annotation design with an intercept and one slope, samples liabilities from a fixed seed, and verifies the BayesC binary update matches `gibbs_update_binary_probit_annotation_coefficients!`. This test should fail against the old joint update and pass once single-trait BayesC uses the coordinate helper.
 
 ## Validation
 

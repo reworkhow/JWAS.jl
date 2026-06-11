@@ -2,7 +2,7 @@
 
 ## Code Change
 
-Single-trait annotated BayesC now updates the one-probit annotation
+Single-trait annotated BayesC now updates the binary annotation
 coefficients with the existing coordinate Gibbs helper:
 
 - intercept: flat prior

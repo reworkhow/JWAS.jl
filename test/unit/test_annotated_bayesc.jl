@@ -396,6 +396,7 @@ end
         JWAS.update_marker_annotation_priors!(geno)
         actual_liability = copy(geno.annotations.liability)
         actual_coefficients = copy(geno.annotations.coefficients)
+        actual_variance = geno.annotations.variance
         actual_mu = copy(geno.annotations.mu)
         actual_pi = copy(geno.π)
 
@@ -419,13 +420,33 @@ end
             latent_residual,
             expected.variance,
         )
+        expected_variance = (sum(abs2, view(expected.coefficients, 2:length(expected.coefficients))) + 2.0) /
+                            rand(Chisq(length(expected.coefficients) + 1.0))
         expected.mu .= expected.design_matrix * expected.coefficients
         expected_pi = clamp.(1 .- cdf.(Normal(), expected.mu), eps(Float64), 1 - eps(Float64))
 
         @test actual_liability == expected.liability
         @test actual_coefficients == expected.coefficients
+        @test actual_variance == expected_variance
         @test actual_mu == expected.mu
         @test actual_pi == expected_pi
+    end
+
+    @testset "single-trait annotated BayesC leaves intercept-only annotation variance unchanged" begin
+        geno = get_genotypes(
+            DataFrame(ID=["a1", "a2"], m1=[0.0, 1.0]),
+            1.0;
+            method="BayesC",
+            quality_control=false,
+        )
+        geno.δ = [Float64[0.0]]
+        geno.π = fill(0.5, 1)
+        geno.annotations = JWAS.MarkerAnnotations(reshape([1.0], 1, 1); variance=0.25)
+
+        Random.seed!(20260611)
+        JWAS.update_marker_annotation_priors!(geno)
+
+        @test geno.annotations.variance == 0.25
     end
 
     @testset "genetic-to-marker variance setup accepts marker-level BayesC priors" begin

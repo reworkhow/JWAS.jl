@@ -144,7 +144,7 @@ function build_marker_annotations(annotations, method, Pi)
                                  snp_pi=snp_pi)
     end
     # BayesC annotations intentionally stay generic here. Single-trait BayesC
-    # uses a one-probit annotation model, while multi-trait BayesC must defer
+    # uses a binary annotation model, while multi-trait BayesC must defer
     # its nested joint-state setup until build_model knows ntraits.
     return MarkerAnnotations(design_matrix)
 end
