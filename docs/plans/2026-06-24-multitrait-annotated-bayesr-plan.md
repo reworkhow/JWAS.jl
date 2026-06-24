@@ -4,7 +4,7 @@
 
 **Goal:** Build dense 2-trait annotated BayesR with a 16-state trait-by-magnitude prior, trait-specific annotation effects for magnitude classes, and full cross-trait marker-effect covariance.
 
-**Architecture:** Reuse the existing annotated multi-trait BayesC active-pattern tree as the first annotation layer, then add trait-specific nested BayesR magnitude layers. Add a dense multi-trait BayesR sampler that samples the active pattern by aggregating 16 state weights, samples the within-pattern magnitude state, stores full latent `beta` effects for the `G` update, and updates realized marker effects through BayesR scale matrices.
+**Architecture:** Reuse the existing annotated multi-trait BayesC active-pattern tree as the first annotation layer, then add trait-specific nested BayesR magnitude layers. Add a dense multi-trait BayesR sampler by adapting the multi-trait BayesC Gibbs-sampler-I loop: replace each binary active/inactive trait update with a four-class BayesR update, store full latent `beta` effects for every marker, and update realized marker effects through BayesR scale factors. Use JWAS BayesR class labels `1:4` internally, where class `1` is zero.
 
 **Tech Stack:** Julia, JWAS dense genotype sampler internals, Distributions.jl, LinearAlgebra, Test stdlib, existing `MarkerAnnotations` storage.
 
@@ -41,18 +41,18 @@ Add tests under `@testset "Annotated BayesR API and validation"`:
     states = JWAS.annotated_bayesr_mt_state_keys()
 
     @test length(states) == 16
-    @test states[1] == [0, 0]
-    @test states[end] == [3, 3]
+    @test states[1] == [1, 1]
+    @test states[end] == [4, 4]
     @test length(unique(Tuple.(states))) == 16
 
     for (idx, state) in enumerate(states)
         @test JWAS.annotated_bayesr_mt_state_index(state) == idx
     end
 
-    @test JWAS.annotated_bayesr_mt_pattern([0, 0]) == [0.0, 0.0]
-    @test JWAS.annotated_bayesr_mt_pattern([2, 0]) == [1.0, 0.0]
-    @test JWAS.annotated_bayesr_mt_pattern([0, 3]) == [0.0, 1.0]
-    @test JWAS.annotated_bayesr_mt_pattern([1, 2]) == [1.0, 1.0]
+    @test JWAS.annotated_bayesr_mt_pattern([1, 1]) == [0.0, 0.0]
+    @test JWAS.annotated_bayesr_mt_pattern([3, 1]) == [1.0, 0.0]
+    @test JWAS.annotated_bayesr_mt_pattern([1, 4]) == [0.0, 1.0]
+    @test JWAS.annotated_bayesr_mt_pattern([2, 3]) == [1.0, 1.0]
 end
 ```
 
@@ -73,14 +73,14 @@ In `src/1.JWAS/src/markers/annotation_setup.jl`, add near existing annotated Bay
 ```julia
 const ANNOTATED_BAYESR_MT_STATES = let
     states = Vector{Vector{Int}}()
-    push!(states, [0, 0])
-    for k in 1:3
-        push!(states, [k, 0])
+    push!(states, [1, 1])
+    for k in 2:4
+        push!(states, [k, 1])
     end
-    for k in 1:3
-        push!(states, [0, k])
+    for k in 2:4
+        push!(states, [1, k])
     end
-    for k in 1:3, l in 1:3
+    for k in 2:4, l in 2:4
         push!(states, [k, l])
     end
     Tuple(Tuple(s) for s in states)
@@ -96,12 +96,12 @@ function annotated_bayesr_mt_state_index(state::AbstractVector{<:Integer})
     for (idx, candidate) in enumerate(ANNOTATED_BAYESR_MT_STATES)
         key == candidate && return idx
     end
-    error("Annotated multi-trait BayesR expects class labels in 0:3.")
+    error("Annotated multi-trait BayesR expects JWAS BayesR class labels in 1:4.")
 end
 
 function annotated_bayesr_mt_pattern(state::AbstractVector{<:Integer})
     length(state) == 2 || error("Annotated multi-trait BayesR expects 2-trait class labels.")
-    return [state[1] > 0 ? 1.0 : 0.0, state[2] > 0 ? 1.0 : 0.0]
+    return [state[1] > 1 ? 1.0 : 0.0, state[2] > 1 ? 1.0 : 0.0]
 end
 ```
 
@@ -262,16 +262,16 @@ Add deterministic prior rebuild tests:
     JWAS.rebuild_bayesr_mt_priors!(ann)
 
     @test all(abs.(sum(ann.snp_pi, dims=2) .- 1.0) .< 1e-10)
-    @test ann.snp_pi[1, JWAS.annotated_bayesr_mt_state_index([0, 0])] ≈ 0.5
+    @test ann.snp_pi[1, JWAS.annotated_bayesr_mt_state_index([1, 1])] ≈ 0.5
 
     # Make trait 1 large-class probability annotation-sensitive without changing trait 2.
     ann.coefficients[:, 5] .= [0.0, 3.0]
     JWAS.rebuild_bayesr_mt_priors!(ann)
 
-    idx_30 = JWAS.annotated_bayesr_mt_state_index([3, 0])
-    idx_03 = JWAS.annotated_bayesr_mt_state_index([0, 3])
-    @test ann.snp_pi[2, idx_30] > ann.snp_pi[1, idx_30]
-    @test ann.snp_pi[2, idx_03] ≈ ann.snp_pi[1, idx_03]
+    idx_41 = JWAS.annotated_bayesr_mt_state_index([4, 1])
+    idx_14 = JWAS.annotated_bayesr_mt_state_index([1, 4])
+    @test ann.snp_pi[2, idx_41] > ann.snp_pi[1, idx_41]
+    @test ann.snp_pi[2, idx_14] ≈ ann.snp_pi[1, idx_14]
 end
 ```
 
@@ -311,14 +311,14 @@ function rebuild_bayesr_mt_priors!(ann)
     mag2 = hcat(1 .- q21, q21 .* (1 .- q22), q21 .* q22)
 
     ann.snp_pi[:, :] .= 0.0
-    ann.snp_pi[:, annotated_bayesr_mt_state_index([0, 0])] .= pattern00
+    ann.snp_pi[:, annotated_bayesr_mt_state_index([1, 1])] .= pattern00
 
-    for k in 1:3
-        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, 0])] .= pattern10 .* mag1[:, k]
-        ann.snp_pi[:, annotated_bayesr_mt_state_index([0, k])] .= pattern01 .* mag2[:, k]
+    for k in 2:4
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, 1])] .= pattern10 .* mag1[:, k - 1]
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([1, k])] .= pattern01 .* mag2[:, k - 1]
     end
-    for k in 1:3, l in 1:3
-        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, l])] .= pattern11 .* mag1[:, k] .* mag2[:, l]
+    for k in 2:4, l in 2:4
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, l])] .= pattern11 .* mag1[:, k - 1] .* mag2[:, l - 1]
     end
 
     row_sums = sum(ann.snp_pi, dims=2)
@@ -357,7 +357,7 @@ Add:
 
 ```julia
 @testset "multi-trait BayesR annotation responses" begin
-    delta = [Int[0, 1, 2, 3, 0, 3], Int[0, 0, 0, 0, 2, 1]]
+    delta = [Int[1, 2, 3, 4, 1, 4], Int[1, 1, 1, 1, 3, 2]]
     responses, active_sets = JWAS.bayesr_mt_step_indicators(delta)
 
     @test responses[1] == Int[0, 1, 1, 1, 1, 1] # active
@@ -396,8 +396,8 @@ In `annotation_updates.jl`, add:
 function bayesr_mt_step_indicators(deltaArray::AbstractVector)
     c1 = Int.(deltaArray[1])
     c2 = Int.(deltaArray[2])
-    active1 = c1 .> 0
-    active2 = c2 .> 0
+    active1 = c1 .> 1
+    active2 = c2 .> 1
     any_active = active1 .| active2
     shared = active1 .& active2
     singleton = xor.(active1, active2)
@@ -405,19 +405,19 @@ function bayesr_mt_step_indicators(deltaArray::AbstractVector)
     z1 = Int.(any_active)
     z2 = Int.(shared)
     z3 = Int.(active1 .& singleton)
-    z4 = Int.(c1 .>= 2)
-    z5 = Int.(c1 .== 3)
-    z6 = Int.(c2 .>= 2)
-    z7 = Int.(c2 .== 3)
+    z4 = Int.(c1 .>= 3)
+    z5 = Int.(c1 .== 4)
+    z6 = Int.(c2 .>= 3)
+    z7 = Int.(c2 .== 4)
 
     active_sets = (
         collect(eachindex(c1)),
         findall(any_active),
         findall(singleton),
         findall(active1),
-        findall(c1 .>= 2),
+        findall(c1 .>= 3),
         findall(active2),
-        findall(c2 .>= 2),
+        findall(c2 .>= 3),
     )
     return (z1, z2, z3, z4, z5, z6, z7), active_sets
 end
@@ -480,7 +480,7 @@ Add:
     model = build_model("y1 = intercept + geno\ny2 = intercept + geno", [1.0 0.2; 0.2 1.0])
     Mi = model.M[1]
     Mi.annotations.snp_pi .= 0.0
-    Mi.annotations.snp_pi[:, JWAS.annotated_bayesr_mt_state_index([3, 3])] .= 1.0
+    Mi.annotations.snp_pi[:, JWAS.annotated_bayesr_mt_state_index([4, 4])] .= 1.0
 
     JWAS.genetic2marker(Mi, Mi.annotations.snp_pi)
 
@@ -513,8 +513,8 @@ if M.method == "BayesR" && M.ntraits == 2
     denom = zeros(Float64, 2, 2)
 
     for (state_idx, state) in enumerate(states)
-        s1 = sqrt(BAYESR_GAMMA[state[1] + 1])
-        s2 = sqrt(BAYESR_GAMMA[state[2] + 1])
+        s1 = sqrt(BAYESR_GAMMA[state[1]])
+        s2 = sqrt(BAYESR_GAMMA[state[2]])
         probs = Float64.(snp_pi[:, state_idx])
         denom[1, 1] += sum(twopq .* probs .* s1^2)
         denom[2, 2] += sum(twopq .* probs .* s2^2)
@@ -554,51 +554,35 @@ git commit -m "feat: initialize multi-trait BayesR marker covariance"
 - Modify: `src/1.JWAS/src/JWAS.jl`
 - Modify: `test/unit/test_multitrait_mcmc.jl`
 
-**Step 1: Write failing exact-probability test**
+**Step 1: Write failing conditional-helper tests**
 
-Add helper to `test/unit/test_multitrait_mcmc.jl`:
-
-```julia
-function exact_mt_bayesr_state_probs(x, y_by_trait, vare, G, priors, states)
-    xp = dot(x, x)
-    Rinv = inv(vare)
-    Ginv = inv(G)
-    w = [dot(x, y_trait) for y_trait in y_by_trait]
-    log_delta = zeros(Float64, length(states))
-
-    for (idx, state) in enumerate(states)
-        S = Diagonal(sqrt.(JWAS.BAYESR_GAMMA[Int.(state) .+ 1]))
-        C = Ginv + xp * Matrix(S) * Rinv * Matrix(S)
-        b = Matrix(S) * Rinv * w
-        ghat = C \ b
-        log_delta[idx] = log(priors[1, idx]) - 0.5 * log(det(C)) + 0.5 * dot(b, ghat)
-    end
-
-    log_delta .-= maximum(log_delta)
-    probs = exp.(log_delta)
-    probs ./= sum(probs)
-    return probs
-end
-```
-
-Add an empirical sampler test:
+Add tests for the scalar four-class conditional used inside the multi-trait
+sampler:
 
 ```julia
-@testset "Multi-trait BayesR dense sampler matches one-marker target" begin
-    x = [1.0, -0.5, 0.25, 1.2]
-    y_by_trait = [[0.5, -0.1, 0.2, 0.8], [-0.3, 0.4, 0.1, 0.7]]
+@testset "multi-trait BayesR trait class conditionals" begin
     vare = [1.0 0.2; 0.2 1.2]
     G = [0.8 0.25; 0.25 0.9]
-    states = JWAS.annotated_bayesr_mt_state_keys()
-    priors = reshape(fill(1 / 16, 16), 1, 16)
-    exact = exact_mt_bayesr_state_probs(x, y_by_trait, vare, G, priors, states)
+    Rinv = inv(vare)
+    Ginv = inv(G)
+    w = [0.4, -0.2]
+    beta = [0.3, -0.1]
+    delta = [2, 1]
+    prior_row = fill(1 / 16, 16)
 
-    empirical = empirical_mt_bayesr_state_probs(x, y_by_trait, vare, G, priors, states)
-    @test maximum(abs.(empirical .- exact)) < 0.03
+    logw, means, vars = JWAS.mt_bayesr_trait_class_conditionals(
+        1, 1, w, beta, delta, 1.7, Rinv, Ginv, prior_row, JWAS.BAYESR_GAMMA,
+    )
+
+    @test length(logw) == 4
+    @test vars[1] ≈ 1 / Ginv[1, 1]
+    @test means[1] ≈ -Ginv[1, 2] * beta[2] / Ginv[1, 1]
+    @test all(isfinite, logw)
 end
 ```
 
-Define `empirical_mt_bayesr_state_probs` analogously to existing BayesC empirical tests, calling the new sampler repeatedly and counting sampled states.
+The zero-class checks protect the BayesC-style latent `beta` behavior: class
+`1` has zero realized effect, but still samples a latent `beta`.
 
 **Step 2: Run test to verify it fails**
 
@@ -608,7 +592,7 @@ Run:
 julia --project=. --startup-file=no -e 'include("test/unit/test_multitrait_mcmc.jl")'
 ```
 
-Expected: FAIL because `MTBayesR!` does not exist.
+Expected: FAIL because `mt_bayesr_trait_class_conditionals` does not exist.
 
 **Step 3: Implement sampler**
 
@@ -619,22 +603,25 @@ function MTBayesR!(genotypes, ycorr_array, vare)
     priors = genotypes.annotations === false ? genotypes.π : genotypes.annotations.snp_pi
     MTBayesR!(genotypes.mArray, genotypes.mRinvArray, genotypes.mpRinvm,
               ycorr_array, genotypes.β, genotypes.δ, genotypes.α,
-              vare, genotypes.G.val, priors, BAYESR_GAMMA,
-              annotated_bayesr_mt_state_keys())
+              vare, genotypes.G.val, priors, BAYESR_GAMMA)
 end
 ```
 
 The internal method should:
 
-- compute all 16 log weights
-- aggregate by `00/10/01/11` pattern using `logsumexp`
-- sample pattern
-- sample class state within pattern
-- sample `β` from `N(mu, inv(C))`
-- store full latent `β` for every marker, including `00`
-- set realized marker effects with `α = S*β`
-- update residual arrays by old minus new realized `α`
-- store `δ[trait][marker] = class` in `0:3`
+- mirror `_MTBayesABC_samplerI!` rather than creating a new 16-state joint sampler
+- loop over markers, then traits
+- for each trait, evaluate four candidate BayesR classes `1:4`
+- use `annotations.snp_pi[marker, annotated_bayesr_mt_state_index(candidate_state)]` as the joint annotation prior
+- sample the class with `bayesr_logsumexp` and `Categorical`
+- sample latent `β[k]` from the selected scalar Gaussian conditional
+- set realized `α[k] = sqrt(gamma[class]) * β[k]`
+- update residual arrays by old minus new realized `α[k]`, matching the current BayesC update pattern
+- store `δ[trait][marker] = class` using JWAS BayesR labels `1:4`
+
+Do not call the current single-trait `BayesR!` function directly per trait. It
+assumes scalar `R` and scalar marker variance, so it would drop the cross-trait
+terms. Reuse its four-class class-weight idea, not the whole function.
 
 **Step 4: Include the file**
 
@@ -648,7 +635,7 @@ Run:
 julia --project=. --startup-file=no -e 'include("test/unit/test_multitrait_mcmc.jl")'
 ```
 
-Expected: one-marker sampler test PASS.
+Expected: conditional-helper tests PASS.
 
 **Step 6: Commit**
 
@@ -671,7 +658,7 @@ Add unit tests for sufficient statistics:
 ```julia
 @testset "multi-trait BayesR G sufficient statistics" begin
     beta = [Float64[0.2, 0.0, 0.4, 0.7], Float64[0.3, 0.5, 0.0, -0.2]]
-    delta = [Int[3, 0, 3, 0], Int[1, 3, 0, 0]]
+    delta = [Int[4, 1, 4, 1], Int[2, 4, 1, 1]]
     ssq, nmarkers = JWAS.bayesr_mt_sigma_sufficient_statistics(beta, delta)
 
     @test nmarkers == 4
@@ -683,6 +670,13 @@ end
 Use a local helper `beta_matrix_outer_sum` in the test to compute the expected
 sum of `beta_j * beta_j'` over all markers. The fourth marker is `00`, so this
 test protects the intended all-marker `G` update.
+
+Note for later experimentation: do not implement this now, but keep the helper
+small enough that a future benchmark can switch to an active-only update using
+markers where at least one trait has class `> 1`. That alternative may reduce
+the influence of `00` latent draws on `G`, but it is not the v1 target because
+the current design intentionally matches multi-trait BayesC's all-marker
+`beta` update.
 
 **Step 2: Run test to verify it fails**
 
@@ -945,9 +939,9 @@ Create:
 
 ## Summary
 
-Implemented dense 2-trait annotated BayesR with a 16-state state space,
-trait-specific magnitude annotation models, and a full global marker-effect
-covariance matrix.
+Implemented dense 2-trait annotated BayesR with a 16-state prior, an adapted
+multi-trait BayesC-style four-class marker sampler, trait-specific magnitude
+annotation models, and a full global marker-effect covariance matrix.
 
 ## Files Changed
 
@@ -963,6 +957,8 @@ covariance matrix.
 - no RRM
 - no streaming
 - full latent `beta` covariance update may need benchmarking for G12 mixing
+- future benchmark candidate: active-only `G` update using markers with at
+  least one class `> 1`
 ```
 
 **Step 2: Run docs only if manual docs changed**

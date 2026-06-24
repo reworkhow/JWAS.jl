@@ -41,6 +41,39 @@ JWAS already has:
 The new method should reuse those pieces where possible instead of introducing
 a multinomial annotation model.
 
+## Minimum Update Principle
+
+The implementation should be a small extension of the current dense
+multi-trait annotated BayesC path. The important existing separation is:
+
+```text
+beta_j  = full latent base marker effect
+alpha_j = realized marker effect used in residual updates
+```
+
+Multi-trait BayesR should keep that separation and only add BayesR class
+scales:
+
+```text
+alpha_j = S_j * beta_j
+```
+
+The current single-trait `BayesR!` function should not be called literally for
+each trait inside a multi-trait sampler, because it assumes scalar residual
+variance and scalar marker-effect variance. That would ignore the cross-trait
+terms in `R` and `G`. Instead, the implementation should reuse the single-trait
+BayesR four-class logic by factoring out a small helper for "given four class
+log weights, sample the class and Gaussian effect", then call that helper inside
+an adapted multi-trait BayesC sampler.
+
+If the implementation requires a large rewrite of the marker sampler, that is a
+warning sign. The preferred v1 path is:
+
+1. reuse the multi-trait BayesC Gibbs-sampler-I structure
+2. replace each binary active/inactive update with a four-class BayesR update
+3. keep `beta` for all markers and traits
+4. compute realized `alpha` by multiplying `beta` by the BayesR scale
+
 ## Plain-Text Math Notation
 
 The equations in this document are written in plain text so they are readable in
@@ -503,20 +536,14 @@ The complete annotation model has seven binary probit steps:
 
 ## Marker State And Effect Sampling
 
-The marker sampler should use a two-stage implementation while preserving the
-correct BayesR likelihood contribution.
+The marker sampler should be a direct extension of the existing dense
+multi-trait BayesC Gibbs sampler I. For each marker, the sampler already loops
+over traits and samples a latent `beta` value even when that trait is inactive.
+BayesR should keep the same loop structure, but each trait update considers four
+BayesR classes instead of two BayesC states.
 
-For marker `j`, define all 16 possible class states `c`.
-
-For each state `c`, build:
-
-```text
-S_c = [ sqrt(gamma[c1])  0
-        0                sqrt(gamma[c2]) ]
-```
-
-Let `w_j` be the current marker right-hand-side vector, analogous to the dense
-multi-trait BayesC sampler's `w`:
+Let `w_j` be the current marker right-hand-side vector, as in the dense
+multi-trait BayesC sampler:
 
 ```text
 w_j = [
@@ -533,127 +560,104 @@ q_j = x_j'x_j
 
 or the weighted equivalent already used by the dense sampler.
 
-Conditional on state `c`, the unscaled base effect has Gaussian full
-conditional:
+For trait `k`, hold the other trait's current class and `beta` fixed. Evaluate
+the four candidate classes for trait `k`:
 
 ```text
-beta_j | c, rest ~ N_2(mean = mu_jc, covariance = inv(C_jc))
+r in {0, 1, 2, 3}
 ```
 
-where:
+with candidate scale:
 
 ```text
-C_jc = inv(G) + q_j * S_c * inv(R) * S_c
+s_r = sqrt(gamma[r])
 ```
 
-and:
+Let `l` be the other trait and let:
 
 ```text
-b_jc = S_c * inv(R) * w_j
+s_l = sqrt(gamma[c_jl])
 ```
+
+The scalar Gaussian conditional for candidate class `r` has precision:
 
 ```text
-mu_jc = inv(C_jc) * b_jc
+C_r = inv(G)[k,k] + q_j * s_r^2 * inv(R)[k,k]
 ```
 
-The state log weight, up to constants common across states, is:
+and linear term:
 
 ```text
-log_weight_jc =
-    log Pr(c_j = c | a_j)
-    - 0.5 * logdet(C_jc)
-    + 0.5 * b_jc' * inv(C_jc) * b_jc
+b_r =
+    s_r * (w_j' * inv(R)[:, k])
+    - ( inv(G)[k,l] + q_j * s_r * s_l * inv(R)[k,l] ) * beta_jl
 ```
 
-This is the same Gaussian integration idea used in multi-trait BayesC, but with
-state-specific scaling matrix `S_c`.
-
-### Two-Stage Sampling
-
-Do not ignore magnitude classes when sampling the active-trait pattern. Instead,
-aggregate the full 16-state weights.
-
-For each active pattern `d`, compute:
+Then:
 
 ```text
-weight_jd = sum of weight_jc over all states c whose pattern is d
+beta_jk | r, rest ~ N(mean = b_r / C_r, var = 1 / C_r)
 ```
 
-Then sample:
+The class log weight, up to constants common across the four candidate classes,
+is:
 
 ```text
-d_j ~ Categorical(weight_j00, weight_j10, weight_j01, weight_j11)
+log_weight_r =
+    log Pr(c_jk = r, c_jl = current class | a_j)
+    - 0.5 * log(C_r)
+    + 0.5 * b_r^2 / C_r
 ```
 
-After `d_j` is chosen, sample the class state within that pattern:
-
-```text
-c_j | d_j ~ Categorical(weight_jc for states c whose pattern is d_j)
-```
-
-Finally sample:
-
-```text
-beta_j ~ N_2(mean = mu_for_sampled_state, covariance = inv(C_for_sampled_state))
-```
-
-and set:
-
-```text
-alpha_j = S_sampled_state * beta_j
-```
-
-The realized effect `alpha_j` updates the phenotype residual. The unscaled
-effect `beta_j` is stored for the `G` update.
-
-For `00`, `S_c=0`, `alpha_j=0`, and the sampled `beta_j` is a prior draw
-from the current `G`. It is still stored and used in the `G` update, matching
-the current multi-trait BayesC strategy where `G` is sampled from full `beta`
-rather than realized `alpha`.
+Sampling class `0` is not a special case mathematically. It has `s_r = 0`, so
+the realized effect is zero, but `beta_jk` is still sampled from its conditional
+latent distribution. This is the same idea as the current multi-trait BayesC
+sampler, where inactive dimensions still have a sampled `beta`.
 
 ## Marker Sampler Pseudocode
 
 ```text
 for marker j in 1:nMarkers:
 
-    old_alpha = alpha[j, :]
+    old_alpha = [alpha[1][j], alpha[2][j]]
     w = marker_rhs_with_old_alpha(j)
 
-    for each state c in 16 states:
+    for trait k in {1, 2}:
 
-        prior[c] = annotation_prior[j, c]
+        l = the other trait
+        current_other_class = delta[l][j]
+        current_other_beta = beta[l][j]
+        current_other_scale = sqrt(gamma[current_other_class])
 
-        S = diag(sqrt(gamma[c1]), sqrt(gamma[c2]))
+        for candidate class r in {zero, small, medium, large}:
 
-        C = inv(G) + xpRinvx[j] * S * inv(R) * S
-        b = S * inv(R) * w
-        mu = inv(C) * b
+            candidate_scale = sqrt(gamma[r])
 
-        log_weight[c] =
-            log(prior[c])
-            - 0.5 * logdet(C)
-            + 0.5 * b' * inv(C) * b
+            C = inv(G)[k,k] + xpRinvx[j] * candidate_scale^2 * inv(R)[k,k]
 
-        store mu[c], inv(C)
+            b =
+                candidate_scale * dot(w, inv(R)[:, k])
+                - (
+                    inv(G)[k,l]
+                    + xpRinvx[j] * candidate_scale * current_other_scale * inv(R)[k,l]
+                  ) * current_other_beta
 
-    for d in {00, 10, 01, 11}:
-        log_pattern_weight[d] =
-            logsumexp(log_weight[c] for states c with pattern d)
+            mean = b / C
+            var = 1 / C
 
-    sampled_pattern = categorical_softmax(log_pattern_weight)
+            log_weight[r] =
+                log_joint_annotation_prior(j, candidate class r, current_other_class)
+                - 0.5 * log(C)
+                + 0.5 * b^2 / C
 
-    sampled_state =
-        categorical_softmax(log_weight[c] for states c with sampled_pattern)
+            store mean[r], var[r]
 
-    beta[j, :] = Normal(mu[sampled_state], invC[sampled_state])
+        sampled_class = categorical_softmax(log_weight)
+        delta[k][j] = sampled_class
+        beta[k][j] = Normal(mean[sampled_class], var[sampled_class])
+        alpha[k][j] = sqrt(gamma[sampled_class]) * beta[k][j]
 
-    S = scale_matrix(sampled_state)
-    alpha[j, :] = S * beta[j, :]
-
-    update residual arrays by old_alpha - alpha[j, :]
-
-    delta[1][j] = sampled class for trait 1
-    delta[2][j] = sampled class for trait 2
+        update residual array for trait k by old_alpha[k] - alpha[k][j]
 ```
 
 ## Sampling `G` With Full Latent `beta`
@@ -713,6 +717,30 @@ sum over nonzero markers of alpha_j^2 / gamma[c_j]
 That single-trait convention remains unchanged. The dense multi-trait BayesR
 extension follows the multi-trait BayesC convention because cross-trait
 covariance is modeled through the full latent base effect vector.
+
+### Future Alternative: Active-Only `G` Update
+
+The current v1 design samples and stores `beta_j` for all SNPs and uses all SNPs
+in the `G` update. This is the closest match to the existing multi-trait BayesC
+implementation.
+
+A later experiment should consider using only SNPs with at least one nonzero
+BayesR class in the `G` update:
+
+```text
+active for G update means c_j1 > 0 or c_j2 > 0
+```
+
+That alternative would make the multi-trait BayesR variance update closer to the
+current single-trait BayesR convention and would reduce the influence of `00`
+latent prior draws on `G`. The cost is that singleton SNPs would still need
+their inactive trait's latent `beta` component if we want a conjugate full
+cross-trait `G` update. It would also make the multi-trait BayesR covariance
+interpretation less aligned with multi-trait BayesC.
+
+This is a useful strategy to test later, especially if diagnostics show that
+the all-SNP update makes `G12` too prior-driven. It is intentionally not part of
+the first implementation.
 
 ## `G` Update Pseudocode
 
@@ -959,6 +987,8 @@ Dense 2-trait annotated BayesR should:
 - allow different magnitude classes for the two traits at shared markers
 - allow trait-specific annotation effects on magnitude classes
 - use all latent `beta` vectors in the `G` update, matching multi-trait BayesC
+- reuse the multi-trait BayesC sampler structure and BayesR four-class logic
+  instead of introducing a large independent sampler
 - retain conditionally conjugate annotation coefficient updates
 - reject unsupported combinations explicitly
 - leave existing single-trait BayesR, annotated BayesR, and annotated BayesC
