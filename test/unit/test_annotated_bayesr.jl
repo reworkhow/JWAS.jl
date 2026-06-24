@@ -335,6 +335,22 @@ using Random
         @test active_sets[7] == [5]
     end
 
+    @testset "multi-trait BayesR G sufficient statistics" begin
+        beta = [Float64[0.2, 0.0, 0.4, 0.7], Float64[0.3, 0.5, 0.0, -0.2]]
+        delta = [Int[4, 1, 4, 1], Int[2, 4, 1, 1]]
+        ssq, nmarkers = JWAS.bayesr_mt_sigma_sufficient_statistics(beta, delta)
+
+        expected = zeros(Float64, 2, 2)
+        for marker in eachindex(beta[1])
+            beta_j = [beta[1][marker], beta[2][marker]]
+            expected .+= beta_j * beta_j'
+        end
+
+        @test nmarkers == 4
+        @test size(ssq) == (2, 2)
+        @test isapprox(ssq, expected; atol=1e-12)
+    end
+
     @testset "dense BayesR sweep accepts per-SNP class priors" begin
         x1 = Float64[0.0, 1.0, 2.0, 1.0]
         x2 = Float64[2.0, 1.0, 0.0, 1.0]

@@ -78,6 +78,24 @@ function bayesr_sigma_sufficient_statistics(alpha, delta, gamma)
     return ssq, nnz
 end
 
+function bayesr_mt_sigma_sufficient_statistics(betaArray, deltaArray)
+    ntraits = length(betaArray)
+    nmarkers = length(betaArray[1])
+    length(deltaArray) == ntraits || error("Multi-trait BayesR beta and delta arrays must have the same trait count.")
+    ssq = zeros(Float64, ntraits, ntraits)
+
+    for trait in 1:ntraits
+        length(betaArray[trait]) == nmarkers || error("Multi-trait BayesR beta arrays must have the same marker count.")
+        length(deltaArray[trait]) == nmarkers || error("Multi-trait BayesR delta arrays must have the same marker count.")
+    end
+
+    for marker in 1:nmarkers
+        beta_j = [Float64(betaArray[trait][marker]) for trait in 1:ntraits]
+        ssq .+= beta_j * beta_j'
+    end
+    return ssq, nmarkers
+end
+
 #multi-trait i.i.d  #?reduce(hcat,array of array)' may be used to replace loops with matrix multiplication
 function sample_variance(ycorr_array, nobs, df, scale, invweights, constraint; binary_trait_index=false)
     if invweights != false
@@ -178,6 +196,9 @@ function sample_marker_effect_variance(Mi)
             if Mi.method == "BayesL"
                 sampleGammaArray!(Mi.gammaArray,Mi.α,Mi.G.val) #MH sampler of gammaArray (Appendix C in paper)
             end
+        elseif Mi.method == "BayesR"
+            ssq, nmarkers = bayesr_mt_sigma_sufficient_statistics(Mi.β, Mi.δ)
+            Mi.G.val = rand(InverseWishart(Mi.G.df + nmarkers, convert(Array, Symmetric(Mi.G.scale + ssq))))
         elseif Mi.method == "BayesB" #potential slowdown (scalar multiplication is used instead of matrices)
             marker_effects_matrix = reduce(hcat,Mi.β)'
             for i = 1:Mi.nMarkers
