@@ -215,6 +215,24 @@ using Random
         @test size(geno.annotations.snp_pi) == (geno.nMarkers, 4)
     end
 
+    @testset "multi-trait BayesR state helpers" begin
+        states = JWAS.annotated_bayesr_mt_state_keys()
+
+        @test length(states) == 16
+        @test states[1] == [1, 1]
+        @test states[end] == [4, 4]
+        @test length(unique(Tuple.(states))) == 16
+
+        for (idx, state) in enumerate(states)
+            @test JWAS.annotated_bayesr_mt_state_index(state) == idx
+        end
+
+        @test JWAS.annotated_bayesr_mt_pattern([1, 1]) == [0.0, 0.0]
+        @test JWAS.annotated_bayesr_mt_pattern([3, 1]) == [1.0, 0.0]
+        @test JWAS.annotated_bayesr_mt_pattern([1, 4]) == [0.0, 1.0]
+        @test JWAS.annotated_bayesr_mt_pattern([2, 3]) == [1.0, 1.0]
+    end
+
     @testset "binary annotation bounds helper" begin
         lower = fill(999.0, 4)
         upper = fill(999.0, 4)

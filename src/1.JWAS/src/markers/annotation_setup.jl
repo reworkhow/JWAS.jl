@@ -16,11 +16,29 @@ annotated methods: the same annotation matrix and starting `Pi` always go into
 """
 
 const ANNOTATED_BAYESC_MT_STATES = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0))
+const ANNOTATED_BAYESR_MT_STATES = let
+    states = Vector{Tuple{Int,Int}}()
+    push!(states, (1, 1))
+    for k in 2:4
+        push!(states, (k, 1))
+    end
+    for k in 2:4
+        push!(states, (1, k))
+    end
+    for k in 2:4, l in 2:4
+        push!(states, (k, l))
+    end
+    Tuple(states)
+end
 
 annotated_bayesc_mt_default_row() = Float64[0.0, 0.0, 0.0, 1.0]
 
 function annotated_bayesc_mt_state_keys()
     return [Float64[state...] for state in ANNOTATED_BAYESC_MT_STATES]
+end
+
+function annotated_bayesr_mt_state_keys()
+    return [Int[state...] for state in ANNOTATED_BAYESR_MT_STATES]
 end
 
 function annotated_bayesc_mt_state_index(state::AbstractVector{<:Real})
@@ -37,6 +55,20 @@ function annotated_bayesc_mt_state_index(state::AbstractVector{<:Real})
         return 4
     end
     error("Annotated multi-trait BayesC v1 expects binary 2-trait state labels.")
+end
+
+function annotated_bayesr_mt_state_index(state::AbstractVector{<:Integer})
+    length(state) == 2 || error("Annotated multi-trait BayesR expects 2-trait class labels.")
+    key = (Int(state[1]), Int(state[2]))
+    for (idx, candidate) in enumerate(ANNOTATED_BAYESR_MT_STATES)
+        key == candidate && return idx
+    end
+    error("Annotated multi-trait BayesR expects JWAS BayesR class labels in 1:4.")
+end
+
+function annotated_bayesr_mt_pattern(state::AbstractVector{<:Integer})
+    length(state) == 2 || error("Annotated multi-trait BayesR expects 2-trait class labels.")
+    return [state[1] > 1 ? 1.0 : 0.0, state[2] > 1 ? 1.0 : 0.0]
 end
 
 function annotated_bayesc_mt_row_from_dict(pi::AbstractDict)
