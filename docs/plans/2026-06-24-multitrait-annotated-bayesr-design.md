@@ -41,6 +41,26 @@ JWAS already has:
 The new method should reuse those pieces where possible instead of introducing
 a multinomial annotation model.
 
+## Plain-Text Math Notation
+
+The equations in this document are written in plain text so they are readable in
+any Markdown viewer. The notation is:
+
+```text
+Pr(x | y)       probability of x conditional on y
+Phi(x)          standard normal cumulative distribution function
+N(mean, var)    normal distribution
+N_2(mean, cov)  two-dimensional normal distribution
+IW(df, scale)   inverse-Wishart distribution
+A'              transpose of A
+inv(A)          matrix inverse
+sqrt(x)         square root of x
+sum_j f(j)      sum over markers j
+```
+
+Subscripts are written with underscores. For example, `c_j1` means the class
+for marker `j` and trait 1.
+
 ## BayesR Class Convention
 
 For the statistical description, use class labels:
@@ -59,8 +79,8 @@ In JWAS implementation terms, this maps naturally to existing BayesR labels:
 
 Let
 
-```math
-\gamma = (0,\;0.01,\;0.1,\;1.0)
+```text
+gamma = (0, 0.01, 0.1, 1.0)
 ```
 
 in JWAS class-label order.
@@ -69,14 +89,14 @@ in JWAS class-label order.
 
 For marker `j`, define a two-trait BayesR class vector:
 
-```math
-c_j = (c_{j1}, c_{j2}),
+```text
+c_j = (c_j1, c_j2)
 ```
 
 where each trait-specific class is one of:
 
-```math
-c_{jt} \in \{0,1,2,3\}.
+```text
+c_jt in {0, 1, 2, 3}
 ```
 
 The complete state space has 16 states:
@@ -94,13 +114,9 @@ The complete state space has 16 states:
 
 The active-trait pattern is derived from the class vector:
 
-```math
-d_j =
-\left(
-1(c_{j1}>0),
-1(c_{j2}>0)
-\right)
-\in \{00,10,01,11\}.
+```text
+d_j = (1(c_j1 > 0), 1(c_j2 > 0))
+d_j is one of: 00, 10, 01, 11
 ```
 
 This means the method has two conceptual layers:
@@ -117,39 +133,29 @@ non-brain trait to have the same magnitude.
 
 Let `G` be the global base marker-effect covariance matrix:
 
-```math
-G =
-\begin{bmatrix}
-G_{11} & G_{12}\\
-G_{21} & G_{22}
-\end{bmatrix}.
+```text
+G = [ G11  G12
+      G21  G22 ]
 ```
 
 For every active marker, introduce an unscaled base effect:
 
-```math
-u_j =
-\begin{bmatrix}
-u_{j1}\\
-u_{j2}
-\end{bmatrix}
-\sim N_2(0,G).
+```text
+u_j = [u_j1, u_j2]'
+u_j ~ N_2(mean = [0, 0]', covariance = G)
 ```
 
 The realized marker effect used in the phenotype model is:
 
-```math
-\alpha_j = S_j u_j,
+```text
+alpha_j = S_j * u_j
 ```
 
 where
 
-```math
-S_j =
-\begin{bmatrix}
-\sqrt{\gamma_{c_{j1}}} & 0\\
-0 & \sqrt{\gamma_{c_{j2}}}
-\end{bmatrix}.
+```text
+S_j = [ sqrt(gamma[c_j1])  0
+        0                  sqrt(gamma[c_j2]) ]
 ```
 
 If a trait class is zero, its multiplier is zero and the realized effect for
@@ -157,38 +163,31 @@ that trait is zero.
 
 For example, if a marker has classes `(large, small)`, then:
 
-```math
-S_j =
-\begin{bmatrix}
-\sqrt{1.0} & 0\\
-0 & \sqrt{0.01}
-\end{bmatrix}.
+```text
+S_j = [ sqrt(1.0)   0
+        0           sqrt(0.01) ]
 ```
 
 The SNP-specific realized covariance is:
 
-```math
-\operatorname{Var}(\alpha_j \mid c_j,G)
-=
-S_j G S_j.
+```text
+Var(alpha_j | c_j, G) = S_j * G * S_j
 ```
 
 Therefore:
 
-```math
-\operatorname{Var}(\alpha_{j1}) = \gamma_{c_{j1}}G_{11},
+```text
+Var(alpha_j1) = gamma[c_j1] * G11
 ```
 
-```math
-\operatorname{Var}(\alpha_{j2}) = \gamma_{c_{j2}}G_{22},
+```text
+Var(alpha_j2) = gamma[c_j2] * G22
 ```
 
 and
 
-```math
-\operatorname{Cov}(\alpha_{j1},\alpha_{j2})
-=
-\sqrt{\gamma_{c_{j1}}\gamma_{c_{j2}}}G_{12}.
+```text
+Cov(alpha_j1, alpha_j2) = sqrt(gamma[c_j1] * gamma[c_j2]) * G12
 ```
 
 The correlation implied by `G` is preserved for shared nonzero states, while
@@ -198,20 +197,20 @@ the covariance is scaled by the two trait-specific magnitude classes.
 
 For each individual, the two-trait marker contribution is:
 
-```math
-\sum_j x_{ij}\alpha_j.
+```text
+marker contribution for individual i = sum_j x_ij * alpha_j
 ```
 
 Equivalently:
 
-```math
-y_i = X_i b + \sum_{j=1}^m x_{ij}S_j u_j + e_i,
+```text
+y_i = X_i * b + sum_j x_ij * S_j * u_j + e_i
 ```
 
 with
 
-```math
-e_i \sim N_2(0,R).
+```text
+e_i ~ N_2(mean = [0, 0]', covariance = R)
 ```
 
 The new BayesR machinery changes only the marker prior and marker sampler. The
@@ -221,20 +220,19 @@ fixed effects, residual covariance, and broader MCMC structure remain the same.
 
 For each marker, annotations determine:
 
-```math
-Pr(c_j \mid a_j),
+```text
+Pr(c_j | a_j)
 ```
 
 where `a_j` is the marker annotation row with an intercept.
 
 The proposed prior factorization is:
 
-```math
-Pr(c_j \mid a_j)
-=
-Pr(d_j \mid a_j)
-Pr(c_{j1}\mid c_{j1}>0,a_j)^{1(d_{j1}=1)}
-Pr(c_{j2}\mid c_{j2}>0,a_j)^{1(d_{j2}=1)}.
+```text
+Pr(c_j | a_j)
+  = Pr(d_j | a_j)
+    * Pr(c_j1 | c_j1 > 0, a_j) if trait 1 is active
+    * Pr(c_j2 | c_j2 > 0, a_j) if trait 2 is active
 ```
 
 This says:
@@ -253,37 +251,37 @@ Reuse the current multi-trait annotated BayesC tree.
 
 Define:
 
-```math
-p_{1j} = Pr(d_j \ne 00 \mid a_j)
-       = \Phi(a_j'\theta_1),
+```text
+p1_j = Pr(d_j != 00 | a_j)
+     = Phi(a_j' * theta_1)
 ```
 
-```math
-p_{2j} = Pr(d_j = 11 \mid d_j \ne 00, a_j)
-       = \Phi(a_j'\theta_2),
+```text
+p2_j = Pr(d_j = 11 | d_j != 00, a_j)
+     = Phi(a_j' * theta_2)
 ```
 
-```math
-p_{3j} = Pr(d_j = 10 \mid d_j \in \{10,01\}, a_j)
-       = \Phi(a_j'\theta_3).
+```text
+p3_j = Pr(d_j = 10 | d_j is 10 or 01, a_j)
+     = Phi(a_j' * theta_3)
 ```
 
 Then:
 
-```math
-\pi_{j,00} = 1 - p_{1j},
+```text
+pi_j00 = 1 - p1_j
 ```
 
-```math
-\pi_{j,11} = p_{1j}p_{2j},
+```text
+pi_j11 = p1_j * p2_j
 ```
 
-```math
-\pi_{j,10} = p_{1j}(1-p_{2j})p_{3j},
+```text
+pi_j10 = p1_j * (1 - p2_j) * p3_j
 ```
 
-```math
-\pi_{j,01} = p_{1j}(1-p_{2j})(1-p_{3j}).
+```text
+pi_j01 = p1_j * (1 - p2_j) * (1 - p3_j)
 ```
 
 These are the active-trait pattern probabilities.
@@ -292,47 +290,43 @@ These are the active-trait pattern probabilities.
 
 For each trait `t`, define two nested BayesR magnitude probabilities:
 
-```math
-q_{t1,j} =
-Pr(c_{jt} \ge 2 \mid c_{jt}>0,a_j)
-=
-\Phi(a_j'\eta_{t1}),
+```text
+q_t1j = Pr(c_jt >= 2 | c_jt > 0, a_j)
+      = Phi(a_j' * eta_t1)
 ```
 
-```math
-q_{t2,j} =
-Pr(c_{jt} = 3 \mid c_{jt}\ge 2,a_j)
-=
-\Phi(a_j'\eta_{t2}).
+```text
+q_t2j = Pr(c_jt = 3 | c_jt >= 2, a_j)
+      = Phi(a_j' * eta_t2)
 ```
 
 Then the three nonzero class probabilities for trait `t` are:
 
-```math
-m_{t,j,1} = Pr(c_{jt}=1 \mid c_{jt}>0,a_j)
-          = 1 - q_{t1,j},
+```text
+m_tj1 = Pr(c_jt = 1 | c_jt > 0, a_j)
+      = 1 - q_t1j
 ```
 
-```math
-m_{t,j,2} = Pr(c_{jt}=2 \mid c_{jt}>0,a_j)
-          = q_{t1,j}(1-q_{t2,j}),
+```text
+m_tj2 = Pr(c_jt = 2 | c_jt > 0, a_j)
+      = q_t1j * (1 - q_t2j)
 ```
 
-```math
-m_{t,j,3} = Pr(c_{jt}=3 \mid c_{jt}>0,a_j)
-          = q_{t1,j}q_{t2,j}.
+```text
+m_tj3 = Pr(c_jt = 3 | c_jt > 0, a_j)
+      = q_t1j * q_t2j
 ```
 
 Trait 1 and trait 2 use separate coefficients:
 
-```math
-\eta_{11}, \eta_{12}
+```text
+eta_11, eta_12
 ```
 
 for trait 1 and
 
-```math
-\eta_{21}, \eta_{22}
+```text
+eta_21, eta_22
 ```
 
 for trait 2.
@@ -345,45 +339,39 @@ large-effect probability for trait 2, even when it is active for both.
 Using the active-pattern probabilities and trait-specific magnitude
 probabilities:
 
-```math
-Pr(c_j=(0,0)\mid a_j) = \pi_{j,00}.
+```text
+Pr(c_j = (0, 0) | a_j) = pi_j00
 ```
 
 For trait-1-only states:
 
-```math
-Pr(c_j=(k,0)\mid a_j)
-=
-\pi_{j,10}m_{1,j,k},
-\quad k \in \{1,2,3\}.
+```text
+Pr(c_j = (k, 0) | a_j) = pi_j10 * m_1jk
+where k is 1, 2, or 3
 ```
 
 For trait-2-only states:
 
-```math
-Pr(c_j=(0,l)\mid a_j)
-=
-\pi_{j,01}m_{2,j,l},
-\quad l \in \{1,2,3\}.
+```text
+Pr(c_j = (0, l) | a_j) = pi_j01 * m_2jl
+where l is 1, 2, or 3
 ```
 
 For shared states:
 
-```math
-Pr(c_j=(k,l)\mid a_j)
-=
-\pi_{j,11}m_{1,j,k}m_{2,j,l},
-\quad k,l \in \{1,2,3\}.
+```text
+Pr(c_j = (k, l) | a_j) = pi_j11 * m_1jk * m_2jl
+where k and l are each 1, 2, or 3
 ```
 
 The probabilities sum to one:
 
-```math
-\pi_{j,00}
-+\pi_{j,10}\sum_k m_{1,j,k}
-+\pi_{j,01}\sum_l m_{2,j,l}
-+\pi_{j,11}\sum_k\sum_l m_{1,j,k}m_{2,j,l}
-=1.
+```text
+pi_j00
+  + pi_j10 * sum_k m_1jk
+  + pi_j01 * sum_l m_2jl
+  + pi_j11 * sum_k sum_l m_1jk * m_2jl
+  = 1
 ```
 
 ## Annotation Coefficient Priors
@@ -398,15 +386,14 @@ For a generic annotation coefficient vector `b_h`:
 
 For slope `k > 1`:
 
-```math
-b_{hk}\mid \sigma_h^2 \sim N(0,\sigma_h^2).
+```text
+b_hk | sigma_h^2 ~ N(mean = 0, variance = sigma_h^2)
 ```
 
 The slope variance uses the existing scaled inverse-chi-square form:
 
-```math
-\sigma_h^2 =
-\frac{\sum_{k>1}b_{hk}^2 + 2}{\chi^2_{p+1}},
+```text
+sigma_h^2 = (sum over slopes k>1 of b_hk^2 + 2) / chi_square(df = p + 1)
 ```
 
 where `p` is the number of annotation coefficients including the intercept.
@@ -417,24 +404,21 @@ The latent probit residual variance is fixed to one for identifiability.
 
 Each binary probit step uses a latent liability:
 
-```math
-\ell_{jh} = a_j'b_h + \epsilon_{jh},
-\quad
-\epsilon_{jh}\sim N(0,1).
+```text
+l_jh = a_j' * b_h + epsilon_jh
+epsilon_jh ~ N(mean = 0, variance = 1)
 ```
 
 For binary response `z_jh`:
 
-```math
-z_{jh}=1(\ell_{jh}>0).
+```text
+z_jh = 1(l_jh > 0)
 ```
 
 The full conditional for the liability is:
 
-```math
-\ell_{jh}\mid z_{jh},b_h
-\sim
-N(a_j'b_h,1)
+```text
+l_jh | z_jh, b_h ~ N(mean = a_j' * b_h, variance = 1)
 ```
 
 truncated to:
@@ -453,26 +437,26 @@ After each marker sweep, derive binary responses from the sampled class states.
 
 Let:
 
-```math
-d_j=(1(c_{j1}>0),1(c_{j2}>0)).
+```text
+d_j = (1(c_j1 > 0), 1(c_j2 > 0))
 ```
 
 Use the existing annotated BayesC responses:
 
-```math
-z_{1j}=1(d_j\ne 00)
+```text
+z1_j = 1(d_j != 00)
 ```
 
 on all markers,
 
-```math
-z_{2j}=1(d_j=11)
+```text
+z2_j = 1(d_j = 11)
 ```
 
 on active markers only, and
 
-```math
-z_{3j}=1(d_j=10)
+```text
+z3_j = 1(d_j = 10)
 ```
 
 on singleton markers only.
@@ -481,28 +465,28 @@ on singleton markers only.
 
 For trait 1:
 
-```math
-h_{11,j}=1(c_{j1}\ge 2)
+```text
+h11_j = 1(c_j1 >= 2)
 ```
 
 on markers with `c_j1 > 0`, and
 
-```math
-h_{12,j}=1(c_{j1}=3)
+```text
+h12_j = 1(c_j1 = 3)
 ```
 
 on markers with `c_j1 >= 2`.
 
 For trait 2:
 
-```math
-h_{21,j}=1(c_{j2}\ge 2)
+```text
+h21_j = 1(c_j2 >= 2)
 ```
 
 on markers with `c_j2 > 0`, and
 
-```math
-h_{22,j}=1(c_{j2}=3)
+```text
+h22_j = 1(c_j2 = 3)
 ```
 
 on markers with `c_j2 >= 2`.
@@ -526,28 +510,24 @@ For marker `j`, define all 16 possible class states `c`.
 
 For each state `c`, build:
 
-```math
-S_c =
-\begin{bmatrix}
-\sqrt{\gamma_{c_1}} & 0\\
-0 & \sqrt{\gamma_{c_2}}
-\end{bmatrix}.
+```text
+S_c = [ sqrt(gamma[c1])  0
+        0                sqrt(gamma[c2]) ]
 ```
 
 Let `w_j` be the current marker right-hand-side vector, analogous to the dense
 multi-trait BayesC sampler's `w`:
 
-```math
-w_j =
-\begin{bmatrix}
-x_j'(y_{\text{corr},1}+x_j\alpha_{j1}^{old})\\
-x_j'(y_{\text{corr},2}+x_j\alpha_{j2}^{old})
-\end{bmatrix}.
+```text
+w_j = [
+    x_j' * (y_corr_1 + x_j * alpha_j1_old),
+    x_j' * (y_corr_2 + x_j * alpha_j2_old)
+]'
 ```
 
 Let:
 
-```math
+```text
 q_j = x_j'x_j
 ```
 
@@ -556,40 +536,33 @@ or the weighted equivalent already used by the dense sampler.
 Conditional on state `c`, the unscaled base effect has Gaussian full
 conditional:
 
-```math
-u_j\mid c,\text{rest}
-\sim
-N_2(\mu_{jc}, C_{jc}^{-1}),
+```text
+u_j | c, rest ~ N_2(mean = mu_jc, covariance = inv(C_jc))
 ```
 
 where:
 
-```math
-C_{jc}
-=
-G^{-1} + q_j S_c R^{-1}S_c,
+```text
+C_jc = inv(G) + q_j * S_c * inv(R) * S_c
 ```
 
 and:
 
-```math
-b_{jc}
-=
-S_c R^{-1}w_j,
+```text
+b_jc = S_c * inv(R) * w_j
 ```
 
-```math
-\mu_{jc}=C_{jc}^{-1}b_{jc}.
+```text
+mu_jc = inv(C_jc) * b_jc
 ```
 
 The state log weight, up to constants common across states, is:
 
-```math
-\log W_{jc}
-=
-\log Pr(c_j=c\mid a_j)
--\frac{1}{2}\log|C_{jc}|
-+\frac{1}{2}b_{jc}'C_{jc}^{-1}b_{jc}.
+```text
+log_weight_jc =
+    log Pr(c_j = c | a_j)
+    - 0.5 * logdet(C_jc)
+    + 0.5 * b_jc' * inv(C_jc) * b_jc
 ```
 
 This is the same Gaussian integration idea used in multi-trait BayesC, but with
@@ -602,34 +575,32 @@ aggregate the full 16-state weights.
 
 For each active pattern `d`, compute:
 
-```math
-W_{jd} = \sum_{c:\;d(c)=d} W_{jc}.
+```text
+weight_jd = sum of weight_jc over all states c whose pattern is d
 ```
 
 Then sample:
 
-```math
-d_j \sim \text{Categorical}(W_{j,00},W_{j,10},W_{j,01},W_{j,11}).
+```text
+d_j ~ Categorical(weight_j00, weight_j10, weight_j01, weight_j11)
 ```
 
 After `d_j` is chosen, sample the class state within that pattern:
 
-```math
-c_j \mid d_j
-\sim
-\text{Categorical}\{W_{jc}:d(c)=d_j\}.
+```text
+c_j | d_j ~ Categorical(weight_jc for states c whose pattern is d_j)
 ```
 
 Finally sample:
 
-```math
-u_j \sim N_2(\mu_{jc_j},C_{jc_j}^{-1})
+```text
+u_j ~ N_2(mean = mu_for_sampled_state, covariance = inv(C_for_sampled_state))
 ```
 
 and set:
 
-```math
-\alpha_j = S_{c_j}u_j.
+```text
+alpha_j = S_sampled_state * u_j
 ```
 
 The realized effect `alpha_j` updates the phenotype residual. The unscaled
@@ -697,44 +668,45 @@ phenotype model. It is only used to keep the `G` update conjugate.
 
 For active markers:
 
-```math
-u_j\mid G \sim N_2(0,G).
+```text
+u_j | G ~ N_2(mean = [0, 0]', covariance = G)
 ```
 
 Use an inverse-Wishart prior:
 
-```math
-G \sim IW(\nu_0,S_0).
+```text
+G ~ IW(df = nu_0, scale = S_0)
 ```
 
 Given completed base effects for currently active markers:
 
-```math
-\{u_j:c_j\ne(0,0)\},
+```text
+active base effects = {u_j for markers with c_j != (0, 0)}
 ```
 
 the posterior is:
 
-```math
-G\mid \{u_j\}
-\sim
-IW\left(
-\nu_0+n_{\text{active}},
-S_0+\sum_{j:c_j\ne(0,0)}u_ju_j'
-\right).
+```text
+G | active base effects
+  ~ IW(
+        df    = nu_0 + n_active,
+        scale = S_0 + sum over active markers of u_j * u_j'
+    )
 ```
 
 This is the direct multi-trait analogue of single-trait BayesR, where the
 global variance update uses:
 
-```math
-\sum_{j:c_j>0}\alpha_j^2/\gamma_{c_j}.
+```text
+single-trait BayesR uses:
+
+sum over nonzero markers of alpha_j^2 / gamma[c_j]
 ```
 
 Here:
 
-```math
-u_j = S_j^{-1}\alpha_j
+```text
+u_j = inv(S_j) * alpha_j
 ```
 
 for active dimensions, with missing dimensions completed by the Gaussian
@@ -747,46 +719,41 @@ be sampled explicitly.
 
 For a `10` marker:
 
-```math
-u_{j1} = \alpha_{j1}/\sqrt{\gamma_{c_{j1}}}.
+```text
+u_j1 = alpha_j1 / sqrt(gamma[c_j1])
 ```
 
 Then:
 
-```math
-u_{j2}\mid u_{j1},G
-\sim
-N\left(
-\frac{G_{21}}{G_{11}}u_{j1},
-G_{22}-\frac{G_{21}^2}{G_{11}}
-\right).
+```text
+u_j2 | u_j1, G ~ N(mean, variance)
+
+mean     = (G21 / G11) * u_j1
+variance = G22 - (G21^2 / G11)
 ```
 
 For a `01` marker:
 
-```math
-u_{j2} = \alpha_{j2}/\sqrt{\gamma_{c_{j2}}},
+```text
+u_j2 = alpha_j2 / sqrt(gamma[c_j2])
 ```
 
 and:
 
-```math
-u_{j1}\mid u_{j2},G
-\sim
-N\left(
-\frac{G_{12}}{G_{22}}u_{j2},
-G_{11}-\frac{G_{12}^2}{G_{22}}
-\right).
+```text
+u_j1 | u_j2, G ~ N(mean, variance)
+
+mean     = (G12 / G22) * u_j2
+variance = G11 - (G12^2 / G22)
 ```
 
 For a `11` marker:
 
-```math
-u_j =
-\begin{bmatrix}
-\alpha_{j1}/\sqrt{\gamma_{c_{j1}}}\\
-\alpha_{j2}/\sqrt{\gamma_{c_{j2}}}
-\end{bmatrix}.
+```text
+u_j = [
+    alpha_j1 / sqrt(gamma[c_j1]),
+    alpha_j2 / sqrt(gamma[c_j2])
+]'
 ```
 
 For a `00` marker, skip the marker in the `G` update.
@@ -834,8 +801,10 @@ Implementation should follow JWAS's existing `sample_variance` convention for
 whether the prior scale is passed as `G.scale + SSE` or initialized inside the
 helper. The statistical posterior is:
 
-```math
-IW(\nu_0+n_{\text{active}}, S_0+\sum u_ju_j').
+```text
+G | active base effects
+  ~ IW(df = nu_0 + n_active,
+       scale = S_0 + sum over active markers of u_j * u_j')
 ```
 
 ## Initial Marker Variance From Genetic Variance
@@ -845,52 +814,42 @@ and marker allele frequencies.
 
 For multi-trait annotated BayesR, the expected genetic covariance is:
 
-```math
-V_g
-\approx
-\sum_j 2p_jq_j \; E(S_jGS_j\mid a_j).
+```text
+V_g approx sum_j 2 * p_j * q_j * E(S_j * G * S_j | a_j)
 ```
 
 Elementwise:
 
-```math
-V_{g,ab}
-\approx
-G_{ab}
-\sum_j 2p_jq_j \; E(s_{ja}s_{jb}\mid a_j),
+```text
+V_g_ab approx G_ab * sum_j 2 * p_j * q_j * E(s_ja * s_jb | a_j)
 ```
 
 where:
 
-```math
-s_{jt} = \sqrt{\gamma_{c_{jt}}}.
+```text
+s_jt = sqrt(gamma[c_jt])
 ```
 
 Therefore, initialize:
 
-```math
-G_{ab}
-=
-\frac{V_{g,ab}}
-{\sum_j 2p_jq_j E(s_{ja}s_{jb}\mid a_j)}.
+```text
+G_ab = V_g_ab / denominator_ab
+
+denominator_ab = sum_j 2 * p_j * q_j * E(s_ja * s_jb | a_j)
 ```
 
 For diagonal entries:
 
-```math
-E(s_{jt}^2\mid a_j)
-=
-E(\gamma_{c_{jt}}\mid a_j).
+```text
+E(s_jt^2 | a_j) = E(gamma[c_jt] | a_j)
 ```
 
 For the off-diagonal entry:
 
-```math
-E(s_{j1}s_{j2}\mid a_j)
-=
-\sum_{k=1}^3\sum_{l=1}^3
-Pr(c_j=(k,l)\mid a_j)
-\sqrt{\gamma_k\gamma_l}.
+```text
+E(s_j1 * s_j2 | a_j)
+  = sum over k=1..3 and l=1..3 of
+      Pr(c_j = (k, l) | a_j) * sqrt(gamma[k] * gamma[l])
 ```
 
 Only shared states contribute to the off-diagonal denominator because one scale
@@ -996,24 +955,24 @@ The method should report:
 
 For GWAS-style summaries, useful marker-level quantities include:
 
-```math
-Pr(c_{j1}>0\mid y),
+```text
+Pr(c_j1 > 0 | y)
 ```
 
-```math
-Pr(c_{j2}>0\mid y),
+```text
+Pr(c_j2 > 0 | y)
 ```
 
-```math
-Pr(c_{j1}>0,c_{j2}>0\mid y),
+```text
+Pr(c_j1 > 0 and c_j2 > 0 | y)
 ```
 
-```math
-Pr(c_{j1}=3\mid y),
+```text
+Pr(c_j1 = 3 | y)
 ```
 
-```math
-Pr(c_{j2}=3\mid y).
+```text
+Pr(c_j2 = 3 | y)
 ```
 
 ## Tests
