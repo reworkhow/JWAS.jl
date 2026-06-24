@@ -266,6 +266,32 @@ using Random
         @test all((0.0 .< geno.annotations.snp_pi) .& (geno.annotations.snp_pi .< 1.0))
     end
 
+    @testset "multi-trait annotated BayesR prior rows" begin
+        design = [1.0 0.0; 1.0 1.0]
+        ann = JWAS.MarkerAnnotations(
+            design;
+            nsteps=7,
+            nclasses=16,
+            coefficients=zeros(Float64, 2, 7),
+            snp_pi=zeros(Float64, 2, 16),
+        )
+        ann.mu .= ann.design_matrix * ann.coefficients
+
+        JWAS.rebuild_bayesr_mt_priors!(ann)
+
+        @test all(abs.(sum(ann.snp_pi, dims=2) .- 1.0) .< 1e-10)
+        @test ann.snp_pi[1, JWAS.annotated_bayesr_mt_state_index([1, 1])] ≈ 0.5
+
+        ann.coefficients[:, 5] .= [0.0, 3.0]
+        ann.mu .= ann.design_matrix * ann.coefficients
+        JWAS.rebuild_bayesr_mt_priors!(ann)
+
+        idx_41 = JWAS.annotated_bayesr_mt_state_index([4, 1])
+        idx_14 = JWAS.annotated_bayesr_mt_state_index([1, 4])
+        @test ann.snp_pi[2, idx_41] > ann.snp_pi[1, idx_41]
+        @test ann.snp_pi[2, idx_14] ≈ ann.snp_pi[1, idx_14]
+    end
+
     @testset "dense BayesR sweep accepts per-SNP class priors" begin
         x1 = Float64[0.0, 1.0, 2.0, 1.0]
         x2 = Float64[2.0, 1.0, 0.0, 1.0]

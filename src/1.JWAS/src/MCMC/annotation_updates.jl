@@ -272,6 +272,42 @@ function rebuild_bayesr_nested_priors!(ann)
     return nothing
 end
 
+function rebuild_bayesr_mt_priors!(ann)
+    probs = clamp.(cdf.(Normal(), ann.mu), eps(Float64), 1 - eps(Float64))
+
+    p1 = probs[:, 1]
+    p2 = probs[:, 2]
+    p3 = probs[:, 3]
+
+    pattern00 = 1 .- p1
+    pattern11 = p1 .* p2
+    pattern10 = p1 .* (1 .- p2) .* p3
+    pattern01 = p1 .* (1 .- p2) .* (1 .- p3)
+
+    q11 = probs[:, 4]
+    q12 = probs[:, 5]
+    q21 = probs[:, 6]
+    q22 = probs[:, 7]
+
+    mag1 = hcat(1 .- q11, q11 .* (1 .- q12), q11 .* q12)
+    mag2 = hcat(1 .- q21, q21 .* (1 .- q22), q21 .* q22)
+
+    ann.snp_pi[:, :] .= 0.0
+    ann.snp_pi[:, annotated_bayesr_mt_state_index([1, 1])] .= pattern00
+
+    for k in 2:4
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, 1])] .= pattern10 .* mag1[:, k - 1]
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([1, k])] .= pattern01 .* mag2[:, k - 1]
+    end
+    for k in 2:4, l in 2:4
+        ann.snp_pi[:, annotated_bayesr_mt_state_index([k, l])] .= pattern11 .* mag1[:, k - 1] .* mag2[:, l - 1]
+    end
+
+    row_sums = sum(ann.snp_pi, dims=2)
+    ann.snp_pi[:, :] ./= row_sums
+    return nothing
+end
+
 function bayesc_mt_tree_step_indicators(deltaArray::AbstractVector)
     d1 = Int.(deltaArray[1])
     d2 = Int.(deltaArray[2])
