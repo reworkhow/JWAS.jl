@@ -292,6 +292,27 @@ using Random
         @test ann.snp_pi[2, idx_14] ≈ ann.snp_pi[1, idx_14]
     end
 
+    @testset "multi-trait BayesR annotation responses" begin
+        delta = [Int[1, 2, 3, 4, 1, 4], Int[1, 1, 1, 1, 3, 2]]
+        responses, active_sets = JWAS.bayesr_mt_step_indicators(delta)
+
+        @test responses[1] == Int[0, 1, 1, 1, 1, 1]
+        @test responses[2] == Int[0, 0, 0, 0, 0, 1]
+        @test responses[3] == Int[0, 1, 1, 1, 0, 0]
+        @test responses[4] == Int[0, 0, 1, 1, 0, 1]
+        @test responses[5] == Int[0, 0, 0, 1, 0, 1]
+        @test responses[6] == Int[0, 0, 0, 0, 1, 0]
+        @test responses[7] == Int[0, 0, 0, 0, 0, 0]
+
+        @test active_sets[1] == collect(1:6)
+        @test active_sets[2] == [2, 3, 4, 5, 6]
+        @test active_sets[3] == [2, 3, 4, 5]
+        @test active_sets[4] == [2, 3, 4, 6]
+        @test active_sets[5] == [3, 4, 6]
+        @test active_sets[6] == [5, 6]
+        @test active_sets[7] == [5]
+    end
+
     @testset "dense BayesR sweep accepts per-SNP class priors" begin
         x1 = Float64[0.0, 1.0, 2.0, 1.0]
         x2 = Float64[2.0, 1.0, 0.0, 1.0]

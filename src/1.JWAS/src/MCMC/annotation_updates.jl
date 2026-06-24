@@ -214,6 +214,35 @@ function bayesr_nested_step_indicators(delta::AbstractVector{<:Integer})
     return (z1, z2, z3), active
 end
 
+function bayesr_mt_step_indicators(deltaArray::AbstractVector)
+    c1 = Int.(deltaArray[1])
+    c2 = Int.(deltaArray[2])
+    active1 = c1 .> 1
+    active2 = c2 .> 1
+    any_active = active1 .| active2
+    shared = active1 .& active2
+    singleton = xor.(active1, active2)
+
+    z1 = Int.(any_active)
+    z2 = Int.(shared)
+    z3 = Int.(active1 .& singleton)
+    z4 = Int.(c1 .>= 3)
+    z5 = Int.(c1 .== 4)
+    z6 = Int.(c2 .>= 3)
+    z7 = Int.(c2 .== 4)
+
+    active = (
+        collect(eachindex(c1)),
+        findall(any_active),
+        findall(singleton),
+        findall(active1),
+        findall(c1 .>= 3),
+        findall(active2),
+        findall(c2 .>= 3),
+    )
+    return (z1, z2, z3, z4, z5, z6, z7), active
+end
+
 """
     sample_nested_annotation_probit_step!(ann, step, response, active)
 
@@ -368,6 +397,21 @@ function update_marker_annotation_priors!(Mi)
     ann = Mi.annotations
     if ann.nsteps == 1
         return update_bayesc_binary_priors!(Mi)
+    end
+
+    if Mi.method == "BayesR" && Mi.ntraits == 2
+        responses, active_sets = bayesr_mt_step_indicators(Mi.δ)
+        for step in 1:ann.nsteps
+            sample_nested_annotation_probit_step!(ann, step, responses[step], active_sets[step])
+        end
+        rebuild_bayesr_mt_priors!(ann)
+        mean_pi = vec(mean(ann.snp_pi, dims=1))
+        if Mi.π isa AbstractVector
+            Mi.π .= mean_pi
+        else
+            Mi.π = mean_pi
+        end
+        return nothing
     end
 
     if Mi.method == "BayesR"
