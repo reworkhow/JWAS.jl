@@ -377,7 +377,7 @@ function set_marker_hyperparameters_variances_and_pi(mme::MME)
             #(2) marker effect variances
             if Mi.G.val == false
                 if Mi.method!="GBLUP"
-                    if Mi.method == "BayesC" && Mi.annotations !== false && Mi.ntraits == 2
+                    if Mi.method in ["BayesC", "BayesR"] && Mi.annotations !== false && Mi.ntraits == 2
                         genetic2marker(Mi, Mi.annotations.snp_pi)
                     else
                         genetic2marker(Mi,Mi.π)
@@ -451,7 +451,30 @@ function genetic2marker(M::Genotypes, snp_pi::AbstractMatrix{<:Real})
         M.G.val = M.genetic_variance.val ./ denom
         return nothing
     end
-    error("Matrix-valued Pi is supported here only for annotated 2-trait BayesC.")
+
+    if M.method == "BayesR" && M.ntraits == 2
+        states = annotated_bayesr_mt_state_keys()
+        size(snp_pi, 1) == M.nMarkers || error("Annotated multi-trait BayesR snp_pi row count must match nMarkers.")
+        size(snp_pi, 2) == length(states) || error("Annotated multi-trait BayesR snp_pi must have $(length(states)) columns.")
+        allele_freq = vec(Float64.(M.alleleFreq))
+        twopq = 2.0 .* allele_freq .* (1.0 .- allele_freq)
+        denom = zeros(Float64, 2, 2)
+
+        for (state_idx, state) in enumerate(states)
+            scale1 = sqrt(BAYESR_GAMMA[state[1]])
+            scale2 = sqrt(BAYESR_GAMMA[state[2]])
+            probs = Float64.(snp_pi[:, state_idx])
+            denom[1, 1] += sum(twopq .* probs .* scale1^2)
+            denom[2, 2] += sum(twopq .* probs .* scale2^2)
+            denom[1, 2] += sum(twopq .* probs .* scale1 .* scale2)
+        end
+        denom[2, 1] = denom[1, 2]
+        all(denom .> 0) || error("Annotated multi-trait BayesR implied covariance denominator must be positive.")
+        M.G.val = M.genetic_variance.val ./ denom
+        return nothing
+    end
+
+    error("Matrix-valued Pi is supported here only for annotated 2-trait BayesC/BayesR.")
 end
 
 function genetic2marker(M::Genotypes,π::Float64)

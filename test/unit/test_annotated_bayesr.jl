@@ -134,6 +134,28 @@ using Random
         @test all(abs.(sum(ann.snp_pi, dims=2) .- 1.0) .< 1e-10)
     end
 
+    @testset "multi-trait BayesR genetic2marker uses class scales" begin
+        global annotated_bayesr_g = get_genotypes(
+            genofile,
+            [2.0 0.4; 0.4 1.5];
+            method="BayesR",
+            annotations=rand(Float64, 5, 2),
+            separator=',',
+            quality_control=false,
+        )
+        model = build_model(
+            "y1 = intercept + annotated_bayesr_g\ny2 = intercept + annotated_bayesr_g",
+            [1.0 0.2; 0.2 1.0],
+        )
+        Mi = model.M[1]
+        Mi.annotations.snp_pi .= 0.0
+        Mi.annotations.snp_pi[:, JWAS.annotated_bayesr_mt_state_index([4, 4])] .= 1.0
+
+        JWAS.genetic2marker(Mi, Mi.annotations.snp_pi)
+
+        @test Mi.G.val ≈ Mi.genetic_variance.val ./ Mi.sum2pq atol=1e-6 rtol=1e-6
+    end
+
     @testset "rejects degenerate annotated BayesR Pi splits" begin
         annotations = rand(Float64, 5, 2)
 
