@@ -253,7 +253,10 @@ function MCMC_BayesianAlphabet(mme,df)
                         end
                     end
                 elseif Mi.method == "BayesR"
-                    if fast_blocks == false
+                    if is_multi_trait
+                        fast_blocks == false || error("Annotated multi-trait BayesR v1 supports fast_blocks=false only.")
+                        MTBayesR!(Mi, wArray, mme.R.val)
+                    elseif fast_blocks == false
                         BayesR!(Mi, ycorr, mme.R.val)
                     else
                         BayesR_block!(Mi, ycorr, mme.R.val, invweights, iter, burnin, mme.MCMCinfo.independent_blocks)

@@ -159,7 +159,17 @@ function output_result(mme,output_folder,
                       SD=annotation_sd,
                   )
               else
-                  step_labels = if Mi.method == "BayesR"
+                  step_labels = if Mi.method == "BayesR" && Mi.ntraits == 2 && ann.nsteps == 7
+                      [
+                          "zero_vs_active",
+                          "11_vs_singleton",
+                          "10_vs_01",
+                          "trait1_medium_or_large_vs_small",
+                          "trait1_large_vs_medium",
+                          "trait2_medium_or_large_vs_small",
+                          "trait2_large_vs_medium",
+                      ]
+                  elseif Mi.method == "BayesR"
                       ["step1_zero_vs_nonzero", "step2_small_vs_larger", "step3_medium_vs_large"]
                   elseif Mi.method == "BayesC" && Mi.ntraits == 2
                       ["step1_zero_vs_active", "step2_11_vs_singleton", "step3_10_vs_01"]

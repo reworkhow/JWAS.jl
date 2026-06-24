@@ -207,6 +207,53 @@ end
     isdir("test_mt_annotated_bayesc") && rm("test_mt_annotated_bayesc", recursive=true, force=true)
 end
 
+@testset "Multi-trait annotated BayesR dense run" begin
+    annotations = rand(Float64, 5, 2)
+    phenotypes_mt = DataFrame(
+        ID=copy(phenotypes.ID),
+        y1=copy(phenotypes.y1),
+        y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+    )
+    global annotated_mt_bayesr = get_genotypes(
+        genofile,
+        [1.0 0.3; 0.3 1.0];
+        separator=',',
+        method="BayesR",
+        quality_control=false,
+        annotations=annotations,
+    )
+    model = build_model("y1 = intercept + annotated_mt_bayesr\ny2 = intercept + annotated_mt_bayesr", R)
+    outdir = "test_mt_annotated_bayesr"
+    output = runMCMC(
+        model,
+        phenotypes_mt;
+        chain_length=20,
+        burnin=5,
+        output_samples_frequency=5,
+        output_folder=outdir,
+        seed=123,
+        printout_model_info=false,
+        outputEBV=false,
+        output_heritability=false,
+    )
+
+    @test haskey(output, "annotation coefficients annotated_mt_bayesr")
+    @test Set(output["annotation coefficients annotated_mt_bayesr"][!, :Step]) == Set([
+        "zero_vs_active",
+        "11_vs_singleton",
+        "10_vs_01",
+        "trait1_medium_or_large_vs_small",
+        "trait1_large_vs_medium",
+        "trait2_medium_or_large_vs_small",
+        "trait2_large_vs_medium",
+    ])
+    @test haskey(output, "pi_annotated_mt_bayesr")
+    @test nrow(output["pi_annotated_mt_bayesr"]) == 16
+    @test all(abs.(sum(model.M[1].annotations.snp_pi, dims=2) .- 1.0) .< 1e-8)
+
+    isdir(outdir) && rm(outdir, recursive=true, force=true)
+end
+
 @testset "Multi-trait annotated BayesC sampler II override" begin
     G = [1.0 0.5; 0.5 1.0]
     annotations = [
