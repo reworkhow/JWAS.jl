@@ -96,27 +96,6 @@ using Random
         end
 
         begin
-            global annotated_bayesr_mt = get_genotypes(
-                genofile, [1.0 0.0; 0.0 1.0];
-                method="BayesR",
-                annotations=annotations,
-                separator=',',
-                quality_control=false,
-            )
-            model_mt = build_model(
-                "y1 = intercept + annotated_bayesr_mt\ny2 = intercept + annotated_bayesr_mt",
-                [1.0 0.0; 0.0 1.0],
-            )
-            phenotypes_mt = DataFrame(
-                ID=copy(phenotypes.ID),
-                y1=copy(phenotypes.y1),
-                y2=coalesce.(phenotypes.y1, 0.0),
-            )
-            err_mt = bayesr_annotation_run_error(model_mt, phenotypes_mt)
-            @test err_mt isa Exception
-        end
-
-        begin
             global annotated_bayesr_rrm = get_genotypes(
                 genofile, 1.0;
                 method="BayesR",
@@ -128,6 +107,31 @@ using Random
             err_rrm = bayesr_annotation_run_error(model_rrm, phenotypes; RRM=ones(Float64, 1, 1))
             @test err_rrm isa Exception
         end
+    end
+
+    @testset "initializes dense 2-trait annotated BayesR state" begin
+        annotations = rand(Float64, 5, 2)
+        global annotated_bayesr_mt = get_genotypes(
+            genofile,
+            [1.0 0.25; 0.25 1.0];
+            method="BayesR",
+            annotations=annotations,
+            separator=',',
+            quality_control=false,
+        )
+        model = build_model(
+            "y1 = intercept + annotated_bayesr_mt\ny2 = intercept + annotated_bayesr_mt",
+            [1.0 0.2; 0.2 1.0],
+        )
+        ann = model.M[1].annotations
+
+        @test model.M[1].ntraits == 2
+        @test ann !== false
+        @test ann.nsteps == 7
+        @test ann.nclasses == 16
+        @test size(ann.coefficients) == (size(annotations, 2) + 1, 7)
+        @test size(ann.snp_pi) == (model.M[1].nMarkers, 16)
+        @test all(abs.(sum(ann.snp_pi, dims=2) .- 1.0) .< 1e-10)
     end
 
     @testset "rejects degenerate annotated BayesR Pi splits" begin

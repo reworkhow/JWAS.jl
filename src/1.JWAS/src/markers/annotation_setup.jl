@@ -41,6 +41,8 @@ function annotated_bayesr_mt_state_keys()
     return [Int[state...] for state in ANNOTATED_BAYESR_MT_STATES]
 end
 
+annotated_bayesr_mt_default_row() = fill(1.0 / length(ANNOTATED_BAYESR_MT_STATES), length(ANNOTATED_BAYESR_MT_STATES))
+
 function annotated_bayesc_mt_state_index(state::AbstractVector{<:Real})
     length(state) == 2 || error("Annotated multi-trait BayesC v1 expects 2-trait state labels.")
     d1 = Int(round(Float64(state[1])))
@@ -164,6 +166,26 @@ function initialize_bayesc_mt_annotations!(genotypei::Genotypes)
     return nothing
 end
 
+function initialize_bayesr_mt_annotations!(genotypei::Genotypes)
+    if genotypei.annotations === false || genotypei.method != "BayesR" || genotypei.ntraits == 1
+        return nothing
+    end
+    genotypei.ntraits == 2 || error("Annotated multi-trait BayesR currently supports exactly 2 traits.")
+
+    start_row = annotated_bayesr_mt_default_row()
+    design_matrix = genotypei.annotations.design_matrix
+    coeffs = zeros(Float64, size(design_matrix, 2), 7)
+    genotypei.annotations = MarkerAnnotations(
+        design_matrix;
+        nsteps=7,
+        nclasses=length(ANNOTATED_BAYESR_MT_STATES),
+        coefficients=coeffs,
+        snp_pi=repeat(reshape(start_row, 1, :), genotypei.nMarkers, 1),
+    )
+    genotypei.π = copy(start_row)
+    return nothing
+end
+
 """
     finalize_marker_annotation_setup!(genotypei)
 
@@ -187,6 +209,8 @@ function finalize_marker_annotation_setup!(genotypei::Genotypes)
         elseif genotypei.ntraits > 1
             initialize_bayesc_mt_annotations!(genotypei)
         end
+    elseif genotypei.method == "BayesR" && genotypei.ntraits > 1
+        initialize_bayesr_mt_annotations!(genotypei)
     end
     return nothing
 end

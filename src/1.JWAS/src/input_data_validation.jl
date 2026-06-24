@@ -43,15 +43,20 @@ function errors_args(mme)
                 end
             end
             if Mi.method == "BayesR"
-                mme.nModels == 1 || error("BayesR v1 supports single-trait analysis only.")
                 Mi.storage_mode == :dense || error("BayesR v1 supports storage=:dense only.")
                 mme.MCMCinfo.RRM == false || error("BayesR v1 does not support random regression model (RRM).")
+                if mme.nModels > 1
+                    Mi.annotations !== false || error("BayesR v1 supports multi-trait analysis only with annotations.")
+                    mme.nModels == 2 || error("Annotated multi-trait BayesR currently supports exactly 2 traits.")
+                    Mi.G.constraint == false || error("Annotated multi-trait BayesR v1 supports constraint=false only.")
+                end
                 if Mi.π != 0.0
                     Mi.π isa AbstractVector || error("BayesR Pi must be a length 4 vector or 0.0 for defaults.")
-                    length(Mi.π) == 4 || error("BayesR Pi must have length 4.")
+                    expected_pi_length = mme.nModels == 1 ? 4 : length(annotated_bayesr_mt_state_keys())
+                    length(Mi.π) == expected_pi_length || error("BayesR Pi must have length $expected_pi_length.")
                     all(x -> x >= 0, Mi.π) || error("BayesR Pi entries must be nonnegative.")
                     isapprox(sum(Mi.π), 1.0; atol=1e-8) || error("BayesR Pi must sum to 1.")
-                    if Mi.annotations !== false
+                    if Mi.annotations !== false && mme.nModels == 1
                         total_nonzero = Mi.π[2] + Mi.π[3] + Mi.π[4]
                         total_larger = Mi.π[3] + Mi.π[4]
                         total_nonzero > 0 || error("Annotated BayesR requires positive nonzero prior mass.")

@@ -18,8 +18,10 @@ function MCMC_BayesianAlphabet(mme,df)
     fast_blocks              = mme.MCMCinfo.fast_blocks
     if is_multi_trait && mme.M != 0
         for Mi in mme.M
-            if has_marker_annotations(Mi) && !(Mi.method == "BayesC" && mme.nModels == 2 && Mi.storage_mode == :dense && Mi.G.constraint == false)
-                error("Annotated multi-trait BayesC currently supports exactly 2 traits with storage=:dense and constraint=false.")
+            supported_annotated_mt_bayesc = Mi.method == "BayesC" && mme.nModels == 2 && Mi.storage_mode == :dense && Mi.G.constraint == false
+            supported_annotated_mt_bayesr = Mi.method == "BayesR" && mme.nModels == 2 && Mi.storage_mode == :dense && Mi.G.constraint == false
+            if has_marker_annotations(Mi) && !(supported_annotated_mt_bayesc || supported_annotated_mt_bayesr)
+                error("Annotated multi-trait BayesC/BayesR currently supports exactly 2 traits with storage=:dense and constraint=false.")
             end
         end
     end
