@@ -35,6 +35,7 @@ include("markers/BayesianAlphabet/BayesR.jl")
 include("markers/BayesianAlphabet/BayesC0L.jl")
 include("markers/BayesianAlphabet/GBLUP.jl")
 include("markers/BayesianAlphabet/MTBayesABC.jl")
+include("markers/BayesianAlphabet/MTBayesR.jl")
 include("markers/BayesianAlphabet/MTBayesC0L.jl")
 include("markers/Pi.jl")
 

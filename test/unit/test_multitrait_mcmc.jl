@@ -108,6 +108,26 @@ phenotypes = CSV.read(phenofile, DataFrame, delim=',', missingstring=["NA"])
 
 R = [1.0 0.5; 0.5 1.0]
 
+@testset "multi-trait BayesR trait class conditionals" begin
+    vare = [1.0 0.2; 0.2 1.2]
+    G = [0.8 0.25; 0.25 0.9]
+    Rinv = inv(vare)
+    Ginv = inv(G)
+    w = [0.4, -0.2]
+    beta = [0.3, -0.1]
+    delta = [2, 1]
+    prior_row = fill(1 / 16, 16)
+
+    logw, means, vars = JWAS.mt_bayesr_trait_class_conditionals(
+        1, 1, w, beta, delta, 1.7, Rinv, Ginv, prior_row, JWAS.BAYESR_GAMMA,
+    )
+
+    @test length(logw) == 4
+    @test vars[1] ≈ 1 / Ginv[1, 1]
+    @test means[1] ≈ -Ginv[1, 2] * beta[2] / Ginv[1, 1]
+    @test all(isfinite, logw)
+end
+
 @testset "Multi-trait BayesC" begin
     G = [1.0 0.5; 0.5 1.0]
     global geno = get_genotypes(genofile, G, separator=',', method="BayesC")
