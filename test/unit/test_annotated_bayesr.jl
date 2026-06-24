@@ -95,6 +95,38 @@ using Random
             end
         end
 
+        mktempdir() do tmpdir
+            cd(tmpdir) do
+                open("annotated_bayesr_mt_stream.csv", "w") do io
+                    println(io, "ID,m1,m2,m3,m4,m5")
+                    println(io, "a1,0,1,2,1,0")
+                    println(io, "a2,1,0,1,2,1")
+                    println(io, "a3,2,1,0,1,2")
+                    println(io, "a4,0,2,1,0,1")
+                end
+                prefix = JWAS.prepare_streaming_genotypes(
+                    "annotated_bayesr_mt_stream.csv";
+                    separator=',',
+                    header=true,
+                    quality_control=false,
+                    center=true,
+                )
+                err_mt_stream = try
+                    get_genotypes(
+                        prefix,
+                        [1.0 0.2; 0.2 1.0];
+                        method="BayesR",
+                        storage=:stream,
+                        annotations=rand(Float64, 5, 2),
+                    )
+                    nothing
+                catch exc
+                    exc
+                end
+                @test err_mt_stream isa Exception
+            end
+        end
+
         begin
             global annotated_bayesr_rrm = get_genotypes(
                 genofile, 1.0;
@@ -106,6 +138,74 @@ using Random
             model_rrm = build_model("y1 = intercept + annotated_bayesr_rrm", 1.0)
             err_rrm = bayesr_annotation_run_error(model_rrm, phenotypes; RRM=ones(Float64, 1, 1))
             @test err_rrm isa Exception
+        end
+
+        begin
+            phenotypes_mt = DataFrame(
+                ID=copy(phenotypes.ID),
+                y1=copy(phenotypes.y1),
+                y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+            )
+            global annotated_bayesr_mt_rrm = get_genotypes(
+                genofile,
+                [1.0 0.2; 0.2 1.0];
+                method="BayesR",
+                annotations=annotations,
+                separator=',',
+                quality_control=false,
+            )
+            model_mt_rrm = build_model(
+                "y1 = intercept + annotated_bayesr_mt_rrm\ny2 = intercept + annotated_bayesr_mt_rrm",
+                [1.0 0.2; 0.2 1.0],
+            )
+            err_mt_rrm = bayesr_annotation_run_error(model_mt_rrm, phenotypes_mt; RRM=ones(Float64, 1, 1))
+            @test err_mt_rrm isa Exception
+        end
+
+        begin
+            err_three_trait = try
+                global annotated_bayesr_three_trait = get_genotypes(
+                    genofile,
+                    [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0];
+                    method="BayesR",
+                    annotations=annotations,
+                    separator=',',
+                    quality_control=false,
+                )
+                build_model(
+                    "y1 = intercept + annotated_bayesr_three_trait\n" *
+                    "y2 = intercept + annotated_bayesr_three_trait\n" *
+                    "y3 = intercept + annotated_bayesr_three_trait",
+                    [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0],
+                )
+                nothing
+            catch exc
+                exc
+            end
+            @test err_three_trait isa Exception
+        end
+
+        begin
+            phenotypes_mt = DataFrame(
+                ID=copy(phenotypes.ID),
+                y1=copy(phenotypes.y1),
+                y2=Float32.(coalesce.(phenotypes.y1, 0.0)),
+            )
+            global annotated_bayesr_constraint = get_genotypes(
+                genofile,
+                [1.0 0.2; 0.2 1.0];
+                method="BayesR",
+                annotations=annotations,
+                separator=',',
+                quality_control=false,
+                constraint=true,
+            )
+            model_constraint = build_model(
+                "y1 = intercept + annotated_bayesr_constraint\ny2 = intercept + annotated_bayesr_constraint",
+                [1.0 0.2; 0.2 1.0],
+            )
+            err_constraint = bayesr_annotation_run_error(model_constraint, phenotypes_mt)
+            @test err_constraint isa Exception
         end
     end
 
