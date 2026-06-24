@@ -4,7 +4,7 @@
 
 **Goal:** Build dense 2-trait annotated BayesR with a 16-state trait-by-magnitude prior, trait-specific annotation effects for magnitude classes, and full cross-trait marker-effect covariance.
 
-**Architecture:** Reuse the existing annotated multi-trait BayesC active-pattern tree as the first annotation layer, then add trait-specific nested BayesR magnitude layers. Add a dense multi-trait BayesR sampler that samples the active pattern by aggregating 16 state weights, samples the within-pattern magnitude state, stores unscaled base effects for the `G` update, and updates realized marker effects through BayesR scale matrices.
+**Architecture:** Reuse the existing annotated multi-trait BayesC active-pattern tree as the first annotation layer, then add trait-specific nested BayesR magnitude layers. Add a dense multi-trait BayesR sampler that samples the active pattern by aggregating 16 state weights, samples the within-pattern magnitude state, stores full latent `beta` effects for the `G` update, and updates realized marker effects through BayesR scale matrices.
 
 **Tech Stack:** Julia, JWAS dense genotype sampler internals, Distributions.jl, LinearAlgebra, Test stdlib, existing `MarkerAnnotations` storage.
 
@@ -630,9 +630,9 @@ The internal method should:
 - aggregate by `00/10/01/11` pattern using `logsumexp`
 - sample pattern
 - sample class state within pattern
-- sample `u` from `N(mu, inv(C))`
-- store `β = u`
-- set `α = S*u`
+- sample `β` from `N(mu, inv(C))`
+- store full latent `β` for every marker, including `00`
+- set realized marker effects with `α = S*β`
 - update residual arrays by old minus new realized `α`
 - store `δ[trait][marker] = class` in `0:3`
 
@@ -670,17 +670,19 @@ Add unit tests for sufficient statistics:
 
 ```julia
 @testset "multi-trait BayesR G sufficient statistics" begin
-    beta = [Float64[0.2, 0.0, 0.4], Float64[0.3, 0.5, 0.0]]
-    delta = [Int[3, 0, 3], Int[1, 3, 0]]
-    ssq, nactive = JWAS.bayesr_mt_sigma_sufficient_statistics(beta, delta)
+    beta = [Float64[0.2, 0.0, 0.4, 0.7], Float64[0.3, 0.5, 0.0, -0.2]]
+    delta = [Int[3, 0, 3, 0], Int[1, 3, 0, 0]]
+    ssq, nmarkers = JWAS.bayesr_mt_sigma_sufficient_statistics(beta, delta)
 
-    @test nactive == 3
+    @test nmarkers == 4
     @test size(ssq) == (2, 2)
     @test isapprox(ssq, beta_matrix_outer_sum(beta); atol=1e-12)
 end
 ```
 
-Use a local helper `beta_matrix_outer_sum` in the test to compute the expected `sum(u*u')`.
+Use a local helper `beta_matrix_outer_sum` in the test to compute the expected
+sum of `beta_j * beta_j'` over all markers. The fourth marker is `00`, so this
+test protects the intended all-marker `G` update.
 
 **Step 2: Run test to verify it fails**
 
@@ -701,15 +703,11 @@ function bayesr_mt_sigma_sufficient_statistics(betaArray, deltaArray)
     ntraits = length(betaArray)
     nmarkers = length(betaArray[1])
     ssq = zeros(Float64, ntraits, ntraits)
-    nactive = 0
     for j in 1:nmarkers
-        active = any(deltaArray[t][j] > 0 for t in 1:ntraits)
-        active || continue
-        nactive += 1
-        u = [Float64(betaArray[t][j]) for t in 1:ntraits]
-        ssq .+= u * u'
+        beta_j = [Float64(betaArray[t][j]) for t in 1:ntraits]
+        ssq .+= beta_j * beta_j'
     end
-    return ssq, nactive
+    return ssq, nmarkers
 end
 ```
 
@@ -717,8 +715,8 @@ Update `sample_marker_effect_variance(Mi)`:
 
 ```julia
 elseif Mi.method == "BayesR" && Mi.ntraits == 2
-    ssq, nactive = bayesr_mt_sigma_sufficient_statistics(Mi.β, Mi.δ)
-    Mi.G.val = rand(InverseWishart(Mi.G.df + nactive, convert(Array, Symmetric(Mi.G.scale + ssq))))
+    ssq, nmarkers = bayesr_mt_sigma_sufficient_statistics(Mi.β, Mi.δ)
+    Mi.G.val = rand(InverseWishart(Mi.G.df + nmarkers, convert(Array, Symmetric(Mi.G.scale + ssq))))
 ```
 
 **Step 4: Run test to verify it passes**
@@ -964,7 +962,7 @@ covariance matrix.
 - dense 2-trait only
 - no RRM
 - no streaming
-- latent completion covariance update may need benchmarking for G12 mixing
+- full latent `beta` covariance update may need benchmarking for G12 mixing
 ```
 
 **Step 2: Run docs only if manual docs changed**

@@ -138,17 +138,17 @@ G = [ G11  G12
       G21  G22 ]
 ```
 
-For every active marker, introduce an unscaled base effect:
+For every marker, introduce an unscaled base effect:
 
 ```text
-u_j = [u_j1, u_j2]'
-u_j ~ N_2(mean = [0, 0]', covariance = G)
+beta_j = [beta_j1, beta_j2]'
+beta_j ~ N_2(mean = [0, 0]', covariance = G)
 ```
 
 The realized marker effect used in the phenotype model is:
 
 ```text
-alpha_j = S_j * u_j
+alpha_j = S_j * beta_j
 ```
 
 where
@@ -204,7 +204,7 @@ marker contribution for individual i = sum_j x_ij * alpha_j
 Equivalently:
 
 ```text
-y_i = X_i * b + sum_j x_ij * S_j * u_j + e_i
+y_i = X_i * b + sum_j x_ij * S_j * beta_j + e_i
 ```
 
 with
@@ -537,7 +537,7 @@ Conditional on state `c`, the unscaled base effect has Gaussian full
 conditional:
 
 ```text
-u_j | c, rest ~ N_2(mean = mu_jc, covariance = inv(C_jc))
+beta_j | c, rest ~ N_2(mean = mu_jc, covariance = inv(C_jc))
 ```
 
 where:
@@ -594,20 +594,22 @@ c_j | d_j ~ Categorical(weight_jc for states c whose pattern is d_j)
 Finally sample:
 
 ```text
-u_j ~ N_2(mean = mu_for_sampled_state, covariance = inv(C_for_sampled_state))
+beta_j ~ N_2(mean = mu_for_sampled_state, covariance = inv(C_for_sampled_state))
 ```
 
 and set:
 
 ```text
-alpha_j = S_sampled_state * u_j
+alpha_j = S_sampled_state * beta_j
 ```
 
 The realized effect `alpha_j` updates the phenotype residual. The unscaled
-effect `u_j` is stored for the `G` update.
+effect `beta_j` is stored for the `G` update.
 
-For `00`, `S_c=0`, `alpha_j=0`, and the sampled `u_j` is not needed for the
-`G` update.
+For `00`, `S_c=0`, `alpha_j=0`, and the sampled `beta_j` is a prior draw
+from the current `G`. It is still stored and used in the `G` update, matching
+the current multi-trait BayesC strategy where `G` is sampled from full `beta`
+rather than realized `alpha`.
 
 ## Marker Sampler Pseudocode
 
@@ -643,10 +645,10 @@ for marker j in 1:nMarkers:
     sampled_state =
         categorical_softmax(log_weight[c] for states c with sampled_pattern)
 
-    u[j, :] = Normal(mu[sampled_state], invC[sampled_state])
+    beta[j, :] = Normal(mu[sampled_state], invC[sampled_state])
 
     S = scale_matrix(sampled_state)
-    alpha[j, :] = S * u[j, :]
+    alpha[j, :] = S * beta[j, :]
 
     update residual arrays by old_alpha - alpha[j, :]
 
@@ -654,22 +656,25 @@ for marker j in 1:nMarkers:
     delta[2][j] = sampled class for trait 2
 ```
 
-## Sampling `G` With Latent `u` Completion
+## Sampling `G` With Full Latent `beta`
 
-The marker sampler above already produces a full two-dimensional `u_j` for each
-nonzero marker. For singleton markers, the inactive trait's component of `u_j`
-is a latent completion sampled from the conditional Gaussian posterior implied
-by the current `G` and the observed active-trait effect.
+The marker sampler above produces a full two-dimensional `beta_j` for every
+marker, regardless of whether the realized marker-effect pattern is `00`, `10`,
+`01`, or `11`. This mirrors the current multi-trait BayesC implementation:
+`beta_j` is the latent base marker effect, and `alpha_j` is the realized marker
+effect after gating or scaling.
 
-The inactive component is not a realized marker effect and does not enter the
-phenotype model. It is only used to keep the `G` update conjugate.
+Inactive components are not realized marker effects and do not enter the
+phenotype model. They are used only to keep the `G` update conditionally
+conjugate and to keep cross-trait covariance on the same full latent scale as
+multi-trait BayesC.
 
 ### Derivation
 
-For active markers:
+For every marker:
 
 ```text
-u_j | G ~ N_2(mean = [0, 0]', covariance = G)
+beta_j | G ~ N_2(mean = [0, 0]', covariance = G)
 ```
 
 Use an inverse-Wishart prior:
@@ -678,24 +683,26 @@ Use an inverse-Wishart prior:
 G ~ IW(df = nu_0, scale = S_0)
 ```
 
-Given completed base effects for currently active markers:
+Given full latent base effects for all markers:
 
 ```text
-active base effects = {u_j for markers with c_j != (0, 0)}
+base effects = {beta_j for all markers j}
 ```
 
 the posterior is:
 
 ```text
-G | active base effects
+G | base effects
   ~ IW(
-        df    = nu_0 + n_active,
-        scale = S_0 + sum over active markers of u_j * u_j'
+        df    = nu_0 + nMarkers,
+        scale = S_0 + sum over all markers of beta_j * beta_j'
     )
 ```
 
-This is the direct multi-trait analogue of single-trait BayesR, where the
-global variance update uses:
+This is the direct multi-trait analogue of the existing multi-trait BayesC
+implementation, where `G` is sampled from latent `beta` rather than realized
+`alpha`. It differs from the current single-trait BayesR update, which uses
+only nonzero marker classes:
 
 ```text
 single-trait BayesR uses:
@@ -703,98 +710,22 @@ single-trait BayesR uses:
 sum over nonzero markers of alpha_j^2 / gamma[c_j]
 ```
 
-Here:
-
-```text
-u_j = inv(S_j) * alpha_j
-```
-
-for active dimensions, with missing dimensions completed by the Gaussian
-posterior.
-
-### Explicit Singleton Completion
-
-If the marker sampler stores only active dimensions, the missing dimension can
-be sampled explicitly.
-
-For a `10` marker:
-
-```text
-u_j1 = alpha_j1 / sqrt(gamma[c_j1])
-```
-
-Then:
-
-```text
-u_j2 | u_j1, G ~ N(mean, variance)
-
-mean     = (G21 / G11) * u_j1
-variance = G22 - (G21^2 / G11)
-```
-
-For a `01` marker:
-
-```text
-u_j2 = alpha_j2 / sqrt(gamma[c_j2])
-```
-
-and:
-
-```text
-u_j1 | u_j2, G ~ N(mean, variance)
-
-mean     = (G12 / G22) * u_j2
-variance = G11 - (G12^2 / G22)
-```
-
-For a `11` marker:
-
-```text
-u_j = [
-    alpha_j1 / sqrt(gamma[c_j1]),
-    alpha_j2 / sqrt(gamma[c_j2])
-]'
-```
-
-For a `00` marker, skip the marker in the `G` update.
+That single-trait convention remains unchanged. The dense multi-trait BayesR
+extension follows the multi-trait BayesC convention because cross-trait
+covariance is modeled through the full latent base effect vector.
 
 ## `G` Update Pseudocode
 
 ```text
 SSE = prior_scale
-n_active = 0
 
 for marker j in 1:nMarkers:
 
-    c1 = delta[1][j]
-    c2 = delta[2][j]
+    beta_j = [beta[1][j], beta[2][j]]
 
-    if c1 == zero_class and c2 == zero_class:
-        continue
+    SSE += beta_j * beta_j'
 
-    n_active += 1
-
-    if u[j, :] was stored by marker sampler:
-        uj = u[j, :]
-
-    else:
-        if c1 nonzero and c2 nonzero:
-            u1 = alpha[1][j] / sqrt(gamma[c1])
-            u2 = alpha[2][j] / sqrt(gamma[c2])
-
-        else if c1 nonzero and c2 zero:
-            u1 = alpha[1][j] / sqrt(gamma[c1])
-            u2 = draw_conditional_normal(u2 | u1, current_G)
-
-        else if c1 zero and c2 nonzero:
-            u2 = alpha[2][j] / sqrt(gamma[c2])
-            u1 = draw_conditional_normal(u1 | u2, current_G)
-
-        uj = [u1, u2]
-
-    SSE += uj * uj'
-
-G = rand(InverseWishart(G.df + n_active, G.scale + SSE_without_prior_if_needed))
+G = rand(InverseWishart(G.df + nMarkers, G.scale + SSE_without_prior_if_needed))
 ```
 
 Implementation should follow JWAS's existing `sample_variance` convention for
@@ -802,9 +733,9 @@ whether the prior scale is passed as `G.scale + SSE` or initialized inside the
 helper. The statistical posterior is:
 
 ```text
-G | active base effects
-  ~ IW(df = nu_0 + n_active,
-       scale = S_0 + sum over active markers of u_j * u_j')
+G | base effects
+  ~ IW(df = nu_0 + nMarkers,
+       scale = S_0 + sum over all markers of beta_j * beta_j')
 ```
 
 ## Initial Marker Variance From Genetic Variance
@@ -899,7 +830,7 @@ For each MCMC iteration:
 3. sample multi-trait BayesR marker states and marker effects
 4. update annotation probit steps from sampled class states
 5. rebuild marker-specific 16-state priors
-6. sample global marker-effect covariance `G` using completed base effects `u`
+6. sample global marker-effect covariance `G` using full latent `beta`
 7. accumulate posterior means and write MCMC samples
 
 The order of steps 4 and 6 can be aligned with the existing JWAS MCMC order as
@@ -911,7 +842,7 @@ The implementation should keep these concepts separate:
 
 - `delta[trait][marker]`: BayesR class label for that trait
 - `alpha[trait][marker]`: realized scaled marker effect used in residual updates
-- `beta[trait][marker]` or a new equivalent: unscaled base effect `u`
+- `beta[trait][marker]`: unscaled latent base effect used in the `G` update
 - `annotations.snp_pi`: marker-specific full 16-state prior matrix
 - `annotations.coefficients`: annotation coefficients for seven probit steps
 - `annotations.mu`, `liability`, `lower_bound`, `upper_bound`: `nMarkers x 7`
@@ -982,11 +913,10 @@ Focused tests should cover:
 - state-index mapping for all 16 states
 - annotation prior rows sum to one
 - trait-specific magnitude priors differ when annotation coefficients differ
-- `00` markers do not contribute to `G`
-- singleton markers produce completed `u` vectors for the `G` update
+- every marker, including `00`, stores a full latent `beta` vector
+- `G` update uses the outer-product sum over all latent `beta` vectors
 - shared markers allow unequal class pairs such as `(large, small)`
-- `G` update reduces to single-trait BayesR sufficient statistics on diagonal
-  when only one trait is active
+- realized `alpha` remains zero for inactive trait dimensions
 - marker sampler probabilities match exact one-marker calculations
 - dense 2-trait annotated BayesR runs end to end on a tiny fixture
 
@@ -1002,9 +932,10 @@ large-effect recovery, prediction accuracy, runtime, and `G12` mixing.
 
 ## Risks
 
-The largest statistical risk is mixing of the cross-trait covariance `G12`.
-Latent completion is conjugate and simple, but if most active markers are
-singleton states, `G12` is weakly informed by observed shared marker effects.
+The largest statistical risk is mixing and interpretation of the cross-trait
+covariance `G12`. Full latent `beta` sampling is conjugate and simple, but if
+most markers are `00` or singleton states, `G12` is informed mainly through
+data augmentation rather than directly observed shared realized effects.
 
 Diagnostics should track:
 
@@ -1013,10 +944,11 @@ Diagnostics should track:
 - posterior state occupancy across all 16 states
 - annotation coefficient trace behavior
 
-If `G12` mixes poorly, a later implementation can replace the conjugate latent
-completion update with an observed-block likelihood update for `G`. That would
-avoid latent completions, but it would require Metropolis-Hastings or slice
-sampling and is intentionally out of scope for v1.
+If `G12` mixes poorly or appears too prior-driven, a later implementation can
+replace the conjugate full-latent update with an observed-block likelihood
+update for `G`. That would avoid using inactive latent components in the
+covariance update, but it would require Metropolis-Hastings or slice sampling
+and is intentionally out of scope for v1.
 
 ## Acceptance Criteria
 
@@ -1026,7 +958,7 @@ Dense 2-trait annotated BayesR should:
 - preserve cross-trait marker-effect covariance through full `G`
 - allow different magnitude classes for the two traits at shared markers
 - allow trait-specific annotation effects on magnitude classes
-- use only nonzero markers in the `G` update
+- use all latent `beta` vectors in the `G` update, matching multi-trait BayesC
 - retain conditionally conjugate annotation coefficient updates
 - reject unsupported combinations explicitly
 - leave existing single-trait BayesR, annotated BayesR, and annotated BayesC
