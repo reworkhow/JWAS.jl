@@ -34,6 +34,10 @@ The implementation keeps the minimum-update design:
   - added state, prior, response, covariance, and guardrail tests
 - `test/unit/test_multitrait_mcmc.jl`
   - added conditional-helper and end-to-end dense 2-trait annotated BayesR tests
+- `benchmarks/simulated_annotations_multitrait_comparison.jl`
+  - added a focused `MT_Annotated_BayesR` simulated-annotations benchmark case
+- `benchmarks/reports/2026-06-24-multitrait-annotated-bayesr-simulated-annotations-report.md`
+  - recorded the focused simulated-annotations smoke run
 
 ## Verification
 
@@ -41,6 +45,10 @@ Focused tests run during implementation:
 
 - `julia --project=. --startup-file=no -e 'include("test/unit/test_annotated_bayesr.jl")'`
 - `julia --project=. --startup-file=no -e 'include("test/unit/test_multitrait_mcmc.jl")'`
+
+Focused simulation smoke test:
+
+- `JWAS_SIMULATED_MT_FOCUS_MODE=mt_annotated_bayesr JWAS_SIMULATED_MT_SEEDS=101 JWAS_SIMULATED_MT_CHAIN_LENGTH=300 JWAS_SIMULATED_MT_BURNIN=100 JWAS_SIMULATED_MT_OUTPUT_FREQ=20 JWAS_SIMULATED_MT_WARMUP=false julia --project=. --startup-file=no benchmarks/simulated_annotations_multitrait_comparison.jl benchmarks/out/mt_annotated_bayesr_smoke_20260624`
 
 The implementation record is a plan document only. If manual docs are updated later, run:
 

@@ -82,6 +82,7 @@ function method_cases()
         (variant="MT_Annotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:real),
         (variant="MT_EmptyAnnotated_BayesC_I", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:I, annotation_mode=:empty),
         (variant="MT_EmptyAnnotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:empty),
+        (variant="MT_Annotated_BayesR", method="BayesR", annotated=true, multitrait=true, trait="", multi_trait_sampler=:auto, annotation_mode=:real),
         (variant="BayesC_y1", method="BayesC", annotated=false, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:none),
         (variant="Annotated_BayesC_y1", method="BayesC", annotated=true, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:real),
         (variant="BayesC_y2", method="BayesC", annotated=false, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:none),
@@ -113,6 +114,9 @@ function selected_method_cases(focus_mode::Symbol)
             "MT_EmptyAnnotated_BayesC_II",
         ])
         return filter(case -> case.variant in selected, cases)
+    elseif focus_mode == :mt_annotated_bayesr
+        selected = Set(["MT_Annotated_BayesR"])
+        return filter(case -> case.variant in selected, cases)
     else
         error("Unsupported focus mode: $focus_mode")
     end
@@ -127,6 +131,7 @@ function cv_method_cases()
         "MT_Annotated_BayesC_II",
         "MT_EmptyAnnotated_BayesC_I",
         "MT_EmptyAnnotated_BayesC_II",
+        "MT_Annotated_BayesR",
         "BayesC_y1",
         "Annotated_BayesC_y1",
         "BayesC_y2",
@@ -725,7 +730,14 @@ function run_case(case::NamedTuple, seed::Int, paths;
         start_g = Matrix(cov(ymat)) .* start_h2
         start_r = Matrix(cov(ymat)) .* (1 - start_h2)
 
-        global bench_geno = if case.annotated
+        global bench_geno = if case.method == "BayesR"
+            case.annotated || error("The simulated annotations benchmark currently supports multi-trait BayesR only with annotations.")
+            get_genotypes(
+                paths.genotypes, start_g;
+                geno_kwargs...,
+                annotations=ann_matrix,
+            )
+        elseif case.annotated
             get_genotypes(
                 paths.genotypes, start_g;
                 geno_kwargs...,

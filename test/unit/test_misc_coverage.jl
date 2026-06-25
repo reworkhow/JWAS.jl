@@ -235,10 +235,12 @@ end
     Base.include(benchmark_mod, benchmark_path)
 
     cases = getfield(benchmark_mod, :method_cases)()
-    @test length(cases) == 15
+    @test length(cases) == 16
     focused_cases = getfield(benchmark_mod, :selected_method_cases)(:multitrait)
-    @test length(focused_cases) == 7
+    @test length(focused_cases) == 8
     @test all(case -> case.multitrait, focused_cases)
+    focused_bayesr_cases = getfield(benchmark_mod, :selected_method_cases)(:mt_annotated_bayesr)
+    @test length(focused_bayesr_cases) == 1
     focused_plain_empty_cases = getfield(benchmark_mod, :selected_method_cases)(:plain_empty_sampler)
     @test length(focused_plain_empty_cases) == 4
     focused_empty_cases = getfield(benchmark_mod, :selected_method_cases)(:empty_annotated_sampler)
@@ -253,6 +255,7 @@ end
         "MT_Annotated_BayesC_II",
         "MT_EmptyAnnotated_BayesC_I",
         "MT_EmptyAnnotated_BayesC_II",
+        "MT_Annotated_BayesR",
         "BayesC_y1",
         "Annotated_BayesC_y1",
         "BayesC_y2",
@@ -270,6 +273,7 @@ end
     @test case_lookup["MT_Annotated_BayesC_II"] == (variant="MT_Annotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:real)
     @test case_lookup["MT_EmptyAnnotated_BayesC_I"] == (variant="MT_EmptyAnnotated_BayesC_I", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:I, annotation_mode=:empty)
     @test case_lookup["MT_EmptyAnnotated_BayesC_II"] == (variant="MT_EmptyAnnotated_BayesC_II", method="BayesC", annotated=true, multitrait=true, trait="", multi_trait_sampler=:II, annotation_mode=:empty)
+    @test case_lookup["MT_Annotated_BayesR"] == (variant="MT_Annotated_BayesR", method="BayesR", annotated=true, multitrait=true, trait="", multi_trait_sampler=:auto, annotation_mode=:real)
     @test case_lookup["Annotated_BayesR_y1"] == (variant="Annotated_BayesR_y1", method="BayesR", annotated=true, multitrait=false, trait="y1", multi_trait_sampler=:auto, annotation_mode=:real)
     @test case_lookup["Annotated_BayesR_y2"] == (variant="Annotated_BayesR_y2", method="BayesR", annotated=true, multitrait=false, trait="y2", multi_trait_sampler=:auto, annotation_mode=:real)
     @test Set(case.variant for case in focused_cases) == Set([
@@ -280,6 +284,10 @@ end
         "MT_Annotated_BayesC_II",
         "MT_EmptyAnnotated_BayesC_I",
         "MT_EmptyAnnotated_BayesC_II",
+        "MT_Annotated_BayesR",
+    ])
+    @test Set(case.variant for case in focused_bayesr_cases) == Set([
+        "MT_Annotated_BayesR",
     ])
     @test Set(case.variant for case in focused_plain_empty_cases) == Set([
         "MT_BayesC_I",
@@ -441,6 +449,7 @@ end
         "MT_Annotated_BayesC_II",
         "MT_EmptyAnnotated_BayesC_I",
         "MT_EmptyAnnotated_BayesC_II",
+        "MT_Annotated_BayesR",
         "BayesC_y1",
         "Annotated_BayesC_y1",
         "BayesC_y2",
