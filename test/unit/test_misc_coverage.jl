@@ -241,6 +241,8 @@ end
     @test all(case -> case.multitrait, focused_cases)
     focused_bayesr_cases = getfield(benchmark_mod, :selected_method_cases)(:mt_annotated_bayesr)
     @test length(focused_bayesr_cases) == 1
+    focused_quality_cases = getfield(benchmark_mod, :selected_method_cases)(:bayesr_quality)
+    @test length(focused_quality_cases) == 6
     focused_plain_empty_cases = getfield(benchmark_mod, :selected_method_cases)(:plain_empty_sampler)
     @test length(focused_plain_empty_cases) == 4
     focused_empty_cases = getfield(benchmark_mod, :selected_method_cases)(:empty_annotated_sampler)
@@ -289,6 +291,14 @@ end
     @test Set(case.variant for case in focused_bayesr_cases) == Set([
         "MT_Annotated_BayesR",
     ])
+    @test Set(case.variant for case in focused_quality_cases) == Set([
+        "MT_Annotated_BayesR",
+        "MT_Annotated_BayesC_I",
+        "BayesR_y1",
+        "BayesR_y2",
+        "Annotated_BayesR_y1",
+        "Annotated_BayesR_y2",
+    ])
     @test Set(case.variant for case in focused_plain_empty_cases) == Set([
         "MT_BayesC_I",
         "MT_BayesC_II",
@@ -309,6 +319,17 @@ end
         "MT_EmptyAnnotated_BayesC_I",
         "MT_EmptyAnnotated_BayesC_II",
     ])
+
+    scores = [0.9, 0.8, 0.1]
+    truth_binary = [true, false, true]
+    @test getfield(benchmark_mod, :top_k_precision)(scores, truth_binary, 2) ≈ 0.5
+    @test getfield(benchmark_mod, :top_k_count)(scores, truth_binary, 2) == 1
+    @test getfield(benchmark_mod, :average_precision)(scores, truth_binary) ≈ (1.0 + 2 / 3) / 2
+    @test isnan(getfield(benchmark_mod, :average_precision)(scores, falses(3)))
+    @test getfield(benchmark_mod, :jaccard_index)(
+        [true, false, true],
+        [true, true, false],
+    ) ≈ 1 / 3
 
     multi_row = getfield(benchmark_mod, :shared_posterior_row)(
         "MT_Annotated_BayesC_I",
@@ -348,6 +369,36 @@ end
     @test single_row.true_shared_declared_count == 1
     @test single_row.shared_precision == 1.0
     @test single_row.shared_recall == 1.0
+
+    stability_truth = DataFrame(
+        marker_id=["m1", "m2", "m3"],
+        is_active_y1=[true, false, true],
+        is_active_y2=[false, true, true],
+    )
+    stability_tables = Dict{String,Dict{Int,Dict{String,DataFrame}}}(
+        "MT_Annotated_BayesR" => Dict(
+            101 => Dict(
+                "y1" => DataFrame(marker_id=["m1", "m2", "m3"], pip=[0.90, 0.10, 0.80], estimate=[1.0, 0.1, 0.8]),
+                "y2" => DataFrame(marker_id=["m1", "m2", "m3"], pip=[0.10, 0.95, 0.85], estimate=[0.1, 1.1, 0.9]),
+            ),
+            202 => Dict(
+                "y1" => DataFrame(marker_id=["m1", "m2", "m3"], pip=[0.85, 0.20, 0.70], estimate=[0.9, 0.2, 0.7]),
+                "y2" => DataFrame(marker_id=["m1", "m2", "m3"], pip=[0.20, 0.90, 0.80], estimate=[0.2, 1.0, 0.8]),
+            ),
+        ),
+    )
+    mktempdir() do tmpdir
+        stability = getfield(benchmark_mod, :summarize_marker_stability)(stability_tables, stability_truth, tmpdir)
+        @test isfile(joinpath(tmpdir, "marker_stability_pairwise.csv"))
+        @test isfile(joinpath(tmpdir, "marker_stability_summary.csv"))
+        @test nrow(stability.pairwise) == 3
+        @test Set(stability.pairwise.trait) == Set(["y1", "y2", "any_active"])
+        @test all(stability.pairwise.topk_jaccard .≈ 1.0)
+        @test all(stability.pairwise.marker_count .== 3)
+        @test all(stability.pairwise.seed_a .== 101)
+        @test all(stability.pairwise.seed_b .== 202)
+        @test nrow(stability.summary) == 3
+    end
 
     multitrait_shared_summary = DataFrame(
         label=["MT_BayesC", "MT_Annotated_BayesC_I"],
@@ -390,9 +441,18 @@ end
         pip_gap_sd=[0.01, 0.02],
         topk_recall_mean=[0.3, 0.35],
         topk_recall_sd=[0.02, 0.03],
+        topk_precision_mean=[0.3, 0.35],
+        topk_precision_sd=[0.02, 0.03],
+        average_precision_mean=[0.2, 0.25],
+        average_precision_sd=[0.01, 0.02],
         active_count=[20, 20],
         any_active_topk_recall_mean=[0.4, 0.45],
         any_active_topk_recall_sd=[0.01, 0.02],
+        any_active_topk_precision_mean=[0.4, 0.45],
+        any_active_topk_precision_sd=[0.01, 0.02],
+        any_active_average_precision_mean=[0.3, 0.35],
+        any_active_average_precision_sd=[0.01, 0.02],
+        any_active_count=[30, 30],
     )
     mixing_summary = getfield(benchmark_mod, :summarize_multitrait_mixing)(method_summary, multitrait_shared_summary)
     @test Set(Symbol.(names(mixing_summary))) == Set([
@@ -411,9 +471,18 @@ end
         :pip_gap_sd,
         :topk_recall_mean,
         :topk_recall_sd,
+        :topk_precision_mean,
+        :topk_precision_sd,
+        :average_precision_mean,
+        :average_precision_sd,
         :active_count,
         :any_active_topk_recall_mean,
         :any_active_topk_recall_sd,
+        :any_active_topk_precision_mean,
+        :any_active_topk_precision_sd,
+        :any_active_average_precision_mean,
+        :any_active_average_precision_sd,
+        :any_active_count,
         :shared_score_source,
         :shared_truth_count,
         :declared_shared_count_mean,

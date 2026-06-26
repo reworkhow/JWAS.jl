@@ -34,9 +34,11 @@ function initialize_local_bayesr_state(data;
     geno.MArray = mGibbs.XArray
     geno.MRinvArray = mGibbs.XRinvArray
     geno.MpRinvM = mGibbs.XpRinvX
+    geno.ntraits = 1
     geno.α = [zeros(T, geno.nMarkers)]
     geno.δ = [ones(Int, geno.nMarkers)]
     geno.G.val = T(start_sigma_sq)
+    geno.G.scale = T(start_sigma_sq * (geno.G.df - 2.0) / geno.G.df)
 
     return geno, T, block_starts
 end

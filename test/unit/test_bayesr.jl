@@ -169,7 +169,7 @@ end
             end
         end
 
-        @testset "multi-trait is rejected" begin
+        @testset "unannotated multi-trait is rejected" begin
             phenotypes_mt = DataFrame(ID=copy(phenotypes.ID),
                                       y1=copy(phenotypes.y1),
                                       y2=coalesce.(phenotypes.y1, 0.0))
@@ -183,7 +183,7 @@ end
                                 [1.0 0.0; 0.0 1.0])
             err = bayesr_run_error(model, phenotypes_mt)
             @test err isa ErrorException
-            @test occursin("single-trait", sprint(showerror, err))
+            @test occursin("multi-trait analysis only with annotations", sprint(showerror, err))
         end
 
         @testset "RRM is rejected" begin

@@ -55,6 +55,38 @@ function top_k_count(scores::AbstractVector{<:Real}, truth::AbstractVector{Bool}
     return sum(truth[selected])
 end
 
+function top_k_precision(scores::AbstractVector{<:Real}, truth::AbstractVector{Bool}, k::Integer)
+    k <= 0 && return NaN
+    order = sortperm(Float64.(scores); rev=true)
+    selected = order[1:min(k, length(order))]
+    isempty(selected) && return NaN
+    return sum(truth[selected]) / length(selected)
+end
+
+function average_precision(scores::AbstractVector{<:Real}, truth::AbstractVector{Bool})
+    truth_bool = Bool.(truth)
+    positive_count = sum(truth_bool)
+    positive_count == 0 && return NaN
+
+    order = sortperm(Float64.(scores); rev=true)
+    true_positive_count = 0
+    precision_sum = 0.0
+    for (rank, idx) in enumerate(order)
+        if truth_bool[idx]
+            true_positive_count += 1
+            precision_sum += true_positive_count / rank
+        end
+    end
+    return precision_sum / positive_count
+end
+
+function jaccard_index(a::AbstractVector{Bool}, b::AbstractVector{Bool})
+    length(a) == length(b) || error("Jaccard inputs must have the same length.")
+    union_count = sum(a .| b)
+    union_count == 0 && return NaN
+    return sum(a .& b) / union_count
+end
+
 function top_k_mask(scores::AbstractVector{<:Real}, k::Integer)
     mask = falses(length(scores))
     k <= 0 && return mask
@@ -116,6 +148,16 @@ function selected_method_cases(focus_mode::Symbol)
         return filter(case -> case.variant in selected, cases)
     elseif focus_mode == :mt_annotated_bayesr
         selected = Set(["MT_Annotated_BayesR"])
+        return filter(case -> case.variant in selected, cases)
+    elseif focus_mode == :bayesr_quality
+        selected = Set([
+            "MT_Annotated_BayesR",
+            "MT_Annotated_BayesC_I",
+            "BayesR_y1",
+            "BayesR_y2",
+            "Annotated_BayesR_y1",
+            "Annotated_BayesR_y2",
+        ])
         return filter(case -> case.variant in selected, cases)
     else
         error("Unsupported focus mode: $focus_mode")
@@ -473,9 +515,18 @@ function summarize_multitrait_mixing(method_summary::DataFrame, multitrait_share
         :pip_gap_sd,
         :topk_recall_mean,
         :topk_recall_sd,
+        :topk_precision_mean,
+        :topk_precision_sd,
+        :average_precision_mean,
+        :average_precision_sd,
         :active_count,
         :any_active_topk_recall_mean,
         :any_active_topk_recall_sd,
+        :any_active_topk_precision_mean,
+        :any_active_topk_precision_sd,
+        :any_active_average_precision_mean,
+        :any_active_average_precision_sd,
+        :any_active_count,
     )
 
     mix = innerjoin(mt_method, mt_shared; on=[:variant, :method, :annotated, :multitrait])
@@ -845,6 +896,7 @@ function summarize_case(case::NamedTuple, seed::Int, run_result, paths)
         effect_col = Symbol("true_effect_" * trait)
         active_truth = Bool.(joined_marker[!, active_col])
         k_trait = sum(active_truth)
+        trait_topk_true_positive_count = top_k_count(joined_marker.pip, active_truth, k_trait)
 
         ebv_df = ebv_frame(output, trait)
         pheno_trait = select(copy(pheno), :ID, Symbol(trait))
@@ -865,8 +917,17 @@ function summarize_case(case::NamedTuple, seed::Int, run_result, paths)
             marker_effect_correlation=safe_cor(joined_marker.estimate, joined_marker[!, effect_col]),
             pip_gap=mean(Float64.(joined_marker.pip[active_truth])) - mean(Float64.(joined_marker.pip[.!active_truth])),
             topk_recall=top_k_recall(joined_marker.pip, active_truth, k_trait),
+            topk_precision=top_k_precision(joined_marker.pip, active_truth, k_trait),
+            topk_true_positive_count=trait_topk_true_positive_count,
+            average_precision=average_precision(joined_marker.pip, active_truth),
+            mean_pip_active=mean(Float64.(joined_marker.pip[active_truth])),
+            mean_pip_inactive=mean(Float64.(joined_marker.pip[.!active_truth])),
             active_count=k_trait,
             any_active_topk_recall=NaN,
+            any_active_topk_precision=NaN,
+            any_active_topk_true_positive_count=NaN,
+            any_active_average_precision=NaN,
+            any_active_count=NaN,
         ))
     end
 
@@ -882,10 +943,19 @@ function summarize_case(case::NamedTuple, seed::Int, run_result, paths)
         any_join.any_score = max.(Float64.(any_join.pip_y1), Float64.(any_join.pip_y2))
         any_k = sum(any_join.any_active)
         any_recall = top_k_recall(any_join.any_score, any_join.any_active, any_k)
+        any_precision = top_k_precision(any_join.any_score, any_join.any_active, any_k)
+        any_true_positive_count = top_k_count(any_join.any_score, any_join.any_active, any_k)
+        any_ap = average_precision(any_join.any_score, any_join.any_active)
         CSV.write(joinpath(dirname(run_result.output_dir), "joined_markers_any_active.csv"), any_join)
 
         per_run_rows = [
-            merge(row, (any_active_topk_recall=any_recall,)) for row in per_run_rows
+            merge(row, (
+                any_active_topk_recall=any_recall,
+                any_active_topk_precision=any_precision,
+                any_active_topk_true_positive_count=any_true_positive_count,
+                any_active_average_precision=any_ap,
+                any_active_count=any_k,
+            )) for row in per_run_rows
         ]
     end
 
@@ -1043,6 +1113,197 @@ function summarize_single_family_any_active(case_results::Dict, truth::DataFrame
     return DataFrame(family_rows)
 end
 
+function marker_stability_empty_pairwise()
+    return DataFrame(
+        label=String[],
+        method=String[],
+        annotated=Bool[],
+        multitrait=Bool[],
+        trait=String[],
+        score_source=String[],
+        seed_a=Int[],
+        seed_b=Int[],
+        marker_count=Int[],
+        active_count=Int[],
+        pip_correlation=Float64[],
+        effect_correlation=Float64[],
+        topk_jaccard=Float64[],
+        topk_overlap_count=Int[],
+    )
+end
+
+function marker_stability_empty_summary()
+    return DataFrame(
+        label=String[],
+        method=String[],
+        annotated=Bool[],
+        multitrait=Bool[],
+        trait=String[],
+        score_source=String[],
+        marker_count=Int[],
+        active_count=Int[],
+        pip_correlation_mean=Float64[],
+        pip_correlation_sd=Float64[],
+        effect_correlation_mean=Float64[],
+        effect_correlation_sd=Float64[],
+        topk_jaccard_mean=Float64[],
+        topk_jaccard_sd=Float64[],
+        topk_overlap_count_mean=Float64[],
+        topk_overlap_count_sd=Float64[],
+    )
+end
+
+function marker_stability_input_table(marker_table::DataFrame)
+    df = select(copy(marker_table), :marker_id, :pip, :estimate)
+    df.marker_id = normalize_marker_id.(df.marker_id)
+    df.pip = Float64.(df.pip)
+    df.estimate = Float64.(df.estimate)
+    return df
+end
+
+function any_active_stability_input_table(seed_tables::Dict{String,DataFrame})
+    y1 = marker_stability_input_table(seed_tables["y1"])
+    y2 = marker_stability_input_table(seed_tables["y2"])
+    joined = innerjoin(
+        y1,
+        y2;
+        on=:marker_id,
+        renamecols="_y1" => "_y2",
+    )
+    nrow(y1) == nrow(y2) || error("Trait marker tables do not have the same row count.")
+    length(unique(y1.marker_id)) == nrow(y1) || error("Trait y1 marker table contains duplicate marker IDs.")
+    length(unique(y2.marker_id)) == nrow(y2) || error("Trait y2 marker table contains duplicate marker IDs.")
+    Set(y1.marker_id) == Set(y2.marker_id) || error("Trait marker ID sets do not match.")
+    nrow(joined) == nrow(y1) || error("Trait marker join did not produce the expected row count.")
+    return DataFrame(
+        marker_id=joined.marker_id,
+        pip=max.(Float64.(joined.pip_y1), Float64.(joined.pip_y2)),
+        estimate=max.(abs.(Float64.(joined.estimate_y1)), abs.(Float64.(joined.estimate_y2))),
+    )
+end
+
+function stability_truth_table(truth::DataFrame, trait::AbstractString)
+    truth_df = select(copy(truth), :marker_id, Symbol("is_active_" * trait) => :active)
+    truth_df.marker_id = normalize_marker_id.(truth_df.marker_id)
+    truth_df.active = Bool.(truth_df.active)
+    return truth_df
+end
+
+function any_active_truth_table(truth::DataFrame)
+    truth_df = select(copy(truth), :marker_id, :is_active_y1, :is_active_y2)
+    truth_df.marker_id = normalize_marker_id.(truth_df.marker_id)
+    return DataFrame(
+        marker_id=truth_df.marker_id,
+        active=Bool.(truth_df.is_active_y1) .| Bool.(truth_df.is_active_y2),
+    )
+end
+
+function marker_stability_pairwise_row(label::AbstractString, seed_a::Int, seed_b::Int,
+                                       trait::AbstractString, score_source::AbstractString,
+                                       marker_table_a::DataFrame, marker_table_b::DataFrame,
+                                       truth_active::DataFrame)
+    a = marker_stability_input_table(marker_table_a)
+    b = marker_stability_input_table(marker_table_b)
+    rename!(a, :pip => :pip_a, :estimate => :estimate_a)
+    rename!(b, :pip => :pip_b, :estimate => :estimate_b)
+    joined = innerjoin(a, b; on=:marker_id)
+    joined = leftjoin(joined, truth_active; on=:marker_id)
+    assert_marker_join(select(copy(joined), :marker_id), select(copy(truth_active), :marker_id), joined)
+
+    active_truth = Bool.(joined.active)
+    active_count = sum(active_truth)
+    top_a = top_k_mask(joined.pip_a, active_count)
+    top_b = top_k_mask(joined.pip_b, active_count)
+    meta = pleiotropy_metadata(label)
+
+    return (
+        label=label,
+        method=meta.method,
+        annotated=meta.annotated,
+        multitrait=meta.multitrait,
+        trait=trait,
+        score_source=score_source,
+        seed_a=seed_a,
+        seed_b=seed_b,
+        marker_count=nrow(joined),
+        active_count=active_count,
+        pip_correlation=safe_cor(joined.pip_a, joined.pip_b),
+        effect_correlation=safe_cor(joined.estimate_a, joined.estimate_b),
+        topk_jaccard=jaccard_index(top_a, top_b),
+        topk_overlap_count=sum(top_a .& top_b),
+    )
+end
+
+function summarize_marker_stability(case_results::Dict, truth::DataFrame, output_root::AbstractString)
+    rows = NamedTuple[]
+    for (family, seed_map) in case_results
+        seeds = sort(collect(keys(seed_map)))
+        length(seeds) >= 2 || continue
+
+        for i in 1:(length(seeds) - 1)
+            for j in (i + 1):length(seeds)
+                seed_a = seeds[i]
+                seed_b = seeds[j]
+                tables_a = seed_map[seed_a]
+                tables_b = seed_map[seed_b]
+                common_traits = sort(collect(intersect(Set(keys(tables_a)), Set(keys(tables_b)))))
+
+                for trait in common_traits
+                    trait in ("y1", "y2") || continue
+                    truth_active = stability_truth_table(truth, trait)
+                    push!(rows, marker_stability_pairwise_row(
+                        family,
+                        seed_a,
+                        seed_b,
+                        trait,
+                        "trait_pip",
+                        tables_a[trait],
+                        tables_b[trait],
+                        truth_active,
+                    ))
+                end
+
+                if all(haskey(tables_a, trait) && haskey(tables_b, trait) for trait in ("y1", "y2"))
+                    truth_active = any_active_truth_table(truth)
+                    push!(rows, marker_stability_pairwise_row(
+                        family,
+                        seed_a,
+                        seed_b,
+                        "any_active",
+                        "max_trait_pip",
+                        any_active_stability_input_table(tables_a),
+                        any_active_stability_input_table(tables_b),
+                        truth_active,
+                    ))
+                end
+            end
+        end
+    end
+
+    pairwise_df = isempty(rows) ? marker_stability_empty_pairwise() : DataFrame(rows)
+    if nrow(pairwise_df) == 0
+        summary_df = marker_stability_empty_summary()
+    else
+        summary_df = combine(
+            groupby(pairwise_df, [:label, :method, :annotated, :multitrait, :trait, :score_source]),
+            :marker_count => first => :marker_count,
+            :active_count => first => :active_count,
+            :pip_correlation => mean => :pip_correlation_mean,
+            :pip_correlation => std => :pip_correlation_sd,
+            :effect_correlation => mean => :effect_correlation_mean,
+            :effect_correlation => std => :effect_correlation_sd,
+            :topk_jaccard => mean => :topk_jaccard_mean,
+            :topk_jaccard => std => :topk_jaccard_sd,
+            :topk_overlap_count => mean => :topk_overlap_count_mean,
+            :topk_overlap_count => std => :topk_overlap_count_sd,
+        )
+    end
+
+    CSV.write(joinpath(output_root, "marker_stability_pairwise.csv"), pairwise_df)
+    CSV.write(joinpath(output_root, "marker_stability_summary.csv"), summary_df)
+    return (pairwise=pairwise_df, summary=summary_df)
+end
+
 function main(args=ARGS)
     output_dir = length(args) == 1 ? abspath(args[1]) :
                  length(args) == 0 ? joinpath(@__DIR__, "out", "simulated_annotations_multitrait_comparison") :
@@ -1136,9 +1397,26 @@ function main(args=ARGS)
             :pip_gap => std => :pip_gap_sd,
             :topk_recall => mean => :topk_recall_mean,
             :topk_recall => std => :topk_recall_sd,
+            :topk_precision => mean => :topk_precision_mean,
+            :topk_precision => std => :topk_precision_sd,
+            :topk_true_positive_count => mean => :topk_true_positive_count_mean,
+            :topk_true_positive_count => std => :topk_true_positive_count_sd,
+            :average_precision => mean => :average_precision_mean,
+            :average_precision => std => :average_precision_sd,
+            :mean_pip_active => mean => :mean_pip_active_mean,
+            :mean_pip_active => std => :mean_pip_active_sd,
+            :mean_pip_inactive => mean => :mean_pip_inactive_mean,
+            :mean_pip_inactive => std => :mean_pip_inactive_sd,
             :active_count => first => :active_count,
             :any_active_topk_recall => mean => :any_active_topk_recall_mean,
             :any_active_topk_recall => std => :any_active_topk_recall_sd,
+            :any_active_topk_precision => mean => :any_active_topk_precision_mean,
+            :any_active_topk_precision => std => :any_active_topk_precision_sd,
+            :any_active_topk_true_positive_count => mean => :any_active_topk_true_positive_count_mean,
+            :any_active_topk_true_positive_count => std => :any_active_topk_true_positive_count_sd,
+            :any_active_average_precision => mean => :any_active_average_precision_mean,
+            :any_active_average_precision => std => :any_active_average_precision_sd,
+            :any_active_count => first => :any_active_count,
         )
         CSV.write(joinpath(output_dir, "method_summary.csv"), method_summary)
 
@@ -1163,6 +1441,7 @@ function main(args=ARGS)
 
     family_any_active = summarize_single_family_any_active(family_marker_tables, truth, output_dir)
     CSV.write(joinpath(output_dir, "single_trait_family_any_active_summary.csv"), family_any_active)
+    summarize_marker_stability(family_marker_tables, truth, output_dir)
 
     multitrait_shared === nothing && (multitrait_shared = summarize_multitrait_shared_posteriors(output_dir, truth, cases, seeds))
     single_trait_shared = summarize_single_trait_shared_overlaps(family_marker_tables, truth, output_dir)

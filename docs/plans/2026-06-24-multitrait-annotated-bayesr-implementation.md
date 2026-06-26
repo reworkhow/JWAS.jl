@@ -54,6 +54,16 @@ The implementation record is a plan document only. If manual docs are updated la
 
 - `julia --project=docs --startup-file=no docs/make.jl`
 
+## Production Quality Benchmark
+
+Additional causal-discovery benchmark coverage was added after the initial smoke test:
+
+- `benchmarks/reports/2026-06-25-multitrait-annotated-bayesr-production-quality-report.md`
+- baseline comparison: five seeds, 10,000 iterations, 2,000 burn-in, `bayesr_quality` focus mode
+- long-chain confirmatory run: five seeds, 50,000 iterations, 10,000 burn-in, `mt_annotated_bayesr` focus mode
+
+Result summary: the 10k run predicts reasonably but is not reliable for causal discovery because inactive-marker PIPs are high and cross-seed PIP stability is low. The 50k run substantially improves average precision and stability, making the method promising but still not fully production-ready for causal discovery without longer chains and more calibration.
+
 ## Known Limitations
 
 - dense 2-trait only
