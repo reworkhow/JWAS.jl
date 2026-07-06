@@ -17,8 +17,9 @@ annotated methods: the same annotation matrix and starting `Pi` always go into
 
 const ANNOTATED_BAYESC_MT_STATES = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0))
 
-# In multi-trait BayesR, class 1 means zero effect. Classes 2, 3,
-# and 4 are the nonzero BayesR magnitude classes.
+# Multi-trait BayesR keeps the single-trait BayesR class convention
+# internally: class 1 means zero effect, while classes 2, 3, and 4 are
+# the nonzero BayesR magnitude classes.
 # Therefore (1, 1) is 00, (2:4, 1) is trait-1-only,
 # (1, 2:4) is trait-2-only, and (2:4, 2:4) is shared.
 const ANNOTATED_BAYESR_MT_STATES = let
@@ -73,6 +74,12 @@ function annotated_bayesr_mt_state_index(state::AbstractVector{<:Integer})
     error("Annotated multi-trait BayesR expects JWAS BayesR class labels in 1:4.")
 end
 
+"""
+    annotated_bayesr_mt_pattern(state)
+
+Map a 2-trait BayesR class state back to the BayesC-style active pattern:
+class 1 becomes 0, and classes 2:4 become 1.
+"""
 function annotated_bayesr_mt_pattern(state::AbstractVector{<:Integer})
     length(state) == 2 || error("Annotated multi-trait BayesR expects 2-trait class labels.")
     return [state[1] > 1 ? 1.0 : 0.0, state[2] > 1 ? 1.0 : 0.0]
