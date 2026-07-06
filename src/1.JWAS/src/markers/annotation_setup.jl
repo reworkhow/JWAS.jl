@@ -213,9 +213,17 @@ genotype input.
 
 `get_genotypes` handles annotation validation and stores the raw design
 information. This finalizer is called from `build_model` after `genotypei.ntraits`
-is known, which is necessary for methods such as annotated multi-trait BayesC
-whose nested probit structure and joint-state labels depend on the modeled trait
-count.
+is known. At that point JWAS can choose the method- and trait-specific
+annotation structure:
+
+- single-trait BayesC uses one binary inclusion step
+- multi-trait BayesC uses a 3-step tree over 00, 10, 01, and 11 states
+- multi-trait BayesR uses a 7-step tree over active patterns and BayesR
+  magnitude classes
+
+Single-trait BayesR already has its ordered 4-class annotation structure at
+genotype loading time, so this finalizer only rebuilds BayesR annotations for
+the multi-trait case.
 """
 function finalize_marker_annotation_setup!(genotypei::Genotypes)
     if genotypei.annotations === false
