@@ -40,6 +40,120 @@ const ANNOTATED_BAYESR_MT_STATES = let
     Tuple(states)
 end
 
+"""
+    finalize_marker_annotation_setup!(genotypei)
+
+Finalize any annotation state that depends on the model rather than the raw
+genotype input.
+
+`get_genotypes` handles annotation validation and stores the raw design
+information. This finalizer is called from `build_model` after `genotypei.ntraits`
+is known. At that point JWAS can choose the method- and trait-specific
+annotation structure:
+
+- single-trait BayesC uses one binary inclusion step
+- multi-trait BayesC uses a 3-step tree over 00, 10, 01, and 11 states
+- multi-trait BayesR uses a 7-step tree over active patterns and BayesR
+  magnitude classes
+
+Single-trait BayesR already has its ordered 4-class annotation structure at
+genotype loading time, so this finalizer only rebuilds BayesR annotations for
+the multi-trait case.
+"""
+function finalize_marker_annotation_setup!(genotypei::Genotypes)
+    if genotypei.annotations === false
+        return nothing
+    end
+
+    if genotypei.method == "BayesC"
+        if genotypei.ntraits == 1
+            initialize_bayesc_single_trait_annotations!(genotypei)
+        elseif genotypei.ntraits > 1
+            initialize_bayesc_mt_annotations!(genotypei)
+        end
+    elseif genotypei.method == "BayesR" && genotypei.ntraits > 1
+        initialize_bayesr_mt_annotations!(genotypei)
+    end
+    return nothing
+end
+
+function initialize_bayesc_single_trait_annotations!(genotypei::Genotypes)
+    if genotypei.annotations === false || genotypei.method != "BayesC" || genotypei.ntraits != 1
+        return nothing
+    end
+
+    raw_pi = genotypei.annotation_start_pi
+    raw_pi isa AbstractDict && error("Annotated BayesC genotypes initialized with a joint Pi dictionary cannot be rebuilt for a single-trait model. Use a fresh get_genotypes call with scalar/vector Pi for single-trait analysis.")
+
+    start_pi = if raw_pi isa AbstractVector
+        length(raw_pi) == genotypei.nMarkers || error("Annotated BayesC starting Pi vector length $(length(raw_pi)) must match the number of markers ($(genotypei.nMarkers)).")
+        collect(Float64, raw_pi)
+    else
+        fill(Float64(raw_pi), genotypei.nMarkers)
+    end
+
+    design_matrix = genotypei.annotations.design_matrix
+    genotypei.annotations = MarkerAnnotations(design_matrix)
+    initialize_bayesc_single_trait_annotation_coefficients!(genotypei.annotations, start_pi)
+    genotypei.π = start_pi
+    return nothing
+end
+
+function initialize_bayesc_mt_annotations!(genotypei::Genotypes)
+    if genotypei.annotations === false || genotypei.method != "BayesC" || genotypei.ntraits == 1
+        return nothing
+    end
+    genotypei.ntraits == 2 || error("Annotated multi-trait BayesC currently supports exactly 2 traits.")
+
+    raw_pi = genotypei.annotation_start_pi
+    start_row = if raw_pi isa AbstractDict
+        annotated_bayesc_mt_row_from_dict(raw_pi)
+    elseif raw_pi == 0.0
+        # Preserve the legacy multi-trait BayesC default: before seeing data,
+        # all markers start in the all-traits-active state when Pi is omitted.
+        annotated_bayesc_mt_default_row()
+    elseif raw_pi isa AbstractVector{<:Real} &&
+           length(raw_pi) == genotypei.nMarkers &&
+           all(iszero, Float64.(raw_pi))
+        annotated_bayesc_mt_default_row()
+    else
+        error("Annotated multi-trait BayesC requires Pi=0.0 or a joint Pi dictionary.")
+    end
+    validate_bayesc_mt_start_row(start_row)
+
+    design_matrix = genotypei.annotations.design_matrix
+    coeffs = zeros(Float64, size(design_matrix, 2), 3)
+    genotypei.annotations = MarkerAnnotations(
+        design_matrix;
+        nsteps=3,
+        nclasses=4,
+        coefficients=coeffs,
+        snp_pi=repeat(reshape(start_row, 1, :), genotypei.nMarkers, 1),
+    )
+    genotypei.π = annotated_bayesc_mt_pi_dict(start_row)
+    return nothing
+end
+
+function initialize_bayesr_mt_annotations!(genotypei::Genotypes)
+    if genotypei.annotations === false || genotypei.method != "BayesR" || genotypei.ntraits == 1
+        return nothing
+    end
+    genotypei.ntraits == 2 || error("Annotated multi-trait BayesR currently supports exactly 2 traits.")
+
+    start_row = annotated_bayesr_mt_default_row()
+    design_matrix = genotypei.annotations.design_matrix
+    coeffs = zeros(Float64, size(design_matrix, 2), 7)
+    genotypei.annotations = MarkerAnnotations(
+        design_matrix;
+        nsteps=7,
+        nclasses=length(ANNOTATED_BAYESR_MT_STATES),
+        coefficients=coeffs,
+        snp_pi=repeat(reshape(start_row, 1, :), genotypei.nMarkers, 1),
+    )
+    genotypei.π = copy(start_row)
+    return nothing
+end
+
 # Default startup row for annotated 2-trait BayesC, in the
 # ANNOTATED_BAYESC_MT_STATES order: 00, 10, 01, 11. This keeps the
 # legacy multi-trait BayesC default that all markers start in state 11
@@ -125,119 +239,5 @@ function initialize_bayesc_single_trait_annotation_coefficients!(ann::MarkerAnno
     ann.coefficients .= 0.0
     ann.coefficients[1] = quantile(Normal(), start_inclusion)
     ann.mu .= ann.design_matrix * ann.coefficients
-    return nothing
-end
-
-function initialize_bayesc_single_trait_annotations!(genotypei::Genotypes)
-    if genotypei.annotations === false || genotypei.method != "BayesC" || genotypei.ntraits != 1
-        return nothing
-    end
-
-    raw_pi = genotypei.annotation_start_pi
-    raw_pi isa AbstractDict && error("Annotated BayesC genotypes initialized with a joint Pi dictionary cannot be rebuilt for a single-trait model. Use a fresh get_genotypes call with scalar/vector Pi for single-trait analysis.")
-
-    start_pi = if raw_pi isa AbstractVector
-        length(raw_pi) == genotypei.nMarkers || error("Annotated BayesC starting Pi vector length $(length(raw_pi)) must match the number of markers ($(genotypei.nMarkers)).")
-        collect(Float64, raw_pi)
-    else
-        fill(Float64(raw_pi), genotypei.nMarkers)
-    end
-
-    design_matrix = genotypei.annotations.design_matrix
-    genotypei.annotations = MarkerAnnotations(design_matrix)
-    initialize_bayesc_single_trait_annotation_coefficients!(genotypei.annotations, start_pi)
-    genotypei.π = start_pi
-    return nothing
-end
-
-function initialize_bayesc_mt_annotations!(genotypei::Genotypes)
-    if genotypei.annotations === false || genotypei.method != "BayesC" || genotypei.ntraits == 1
-        return nothing
-    end
-    genotypei.ntraits == 2 || error("Annotated multi-trait BayesC currently supports exactly 2 traits.")
-
-    raw_pi = genotypei.annotation_start_pi
-    start_row = if raw_pi isa AbstractDict
-        annotated_bayesc_mt_row_from_dict(raw_pi)
-    elseif raw_pi == 0.0
-        # Preserve the legacy multi-trait BayesC default: before seeing data,
-        # all markers start in the all-traits-active state when Pi is omitted.
-        annotated_bayesc_mt_default_row()
-    elseif raw_pi isa AbstractVector{<:Real} &&
-           length(raw_pi) == genotypei.nMarkers &&
-           all(iszero, Float64.(raw_pi))
-        annotated_bayesc_mt_default_row()
-    else
-        error("Annotated multi-trait BayesC requires Pi=0.0 or a joint Pi dictionary.")
-    end
-    validate_bayesc_mt_start_row(start_row)
-
-    design_matrix = genotypei.annotations.design_matrix
-    coeffs = zeros(Float64, size(design_matrix, 2), 3)
-    genotypei.annotations = MarkerAnnotations(
-        design_matrix;
-        nsteps=3,
-        nclasses=4,
-        coefficients=coeffs,
-        snp_pi=repeat(reshape(start_row, 1, :), genotypei.nMarkers, 1),
-    )
-    genotypei.π = annotated_bayesc_mt_pi_dict(start_row)
-    return nothing
-end
-
-function initialize_bayesr_mt_annotations!(genotypei::Genotypes)
-    if genotypei.annotations === false || genotypei.method != "BayesR" || genotypei.ntraits == 1
-        return nothing
-    end
-    genotypei.ntraits == 2 || error("Annotated multi-trait BayesR currently supports exactly 2 traits.")
-
-    start_row = annotated_bayesr_mt_default_row()
-    design_matrix = genotypei.annotations.design_matrix
-    coeffs = zeros(Float64, size(design_matrix, 2), 7)
-    genotypei.annotations = MarkerAnnotations(
-        design_matrix;
-        nsteps=7,
-        nclasses=length(ANNOTATED_BAYESR_MT_STATES),
-        coefficients=coeffs,
-        snp_pi=repeat(reshape(start_row, 1, :), genotypei.nMarkers, 1),
-    )
-    genotypei.π = copy(start_row)
-    return nothing
-end
-
-"""
-    finalize_marker_annotation_setup!(genotypei)
-
-Finalize any annotation state that depends on the model rather than the raw
-genotype input.
-
-`get_genotypes` handles annotation validation and stores the raw design
-information. This finalizer is called from `build_model` after `genotypei.ntraits`
-is known. At that point JWAS can choose the method- and trait-specific
-annotation structure:
-
-- single-trait BayesC uses one binary inclusion step
-- multi-trait BayesC uses a 3-step tree over 00, 10, 01, and 11 states
-- multi-trait BayesR uses a 7-step tree over active patterns and BayesR
-  magnitude classes
-
-Single-trait BayesR already has its ordered 4-class annotation structure at
-genotype loading time, so this finalizer only rebuilds BayesR annotations for
-the multi-trait case.
-"""
-function finalize_marker_annotation_setup!(genotypei::Genotypes)
-    if genotypei.annotations === false
-        return nothing
-    end
-
-    if genotypei.method == "BayesC"
-        if genotypei.ntraits == 1
-            initialize_bayesc_single_trait_annotations!(genotypei)
-        elseif genotypei.ntraits > 1
-            initialize_bayesc_mt_annotations!(genotypei)
-        end
-    elseif genotypei.method == "BayesR" && genotypei.ntraits > 1
-        initialize_bayesr_mt_annotations!(genotypei)
-    end
     return nothing
 end
