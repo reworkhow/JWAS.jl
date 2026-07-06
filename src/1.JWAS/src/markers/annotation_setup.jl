@@ -16,6 +16,11 @@ annotated methods: the same annotation matrix and starting `Pi` always go into
 """
 
 const ANNOTATED_BAYESC_MT_STATES = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0))
+
+# In multi-trait BayesR, class 1 means zero effect. Classes 2, 3,
+# and 4 are the nonzero BayesR magnitude classes.
+# Therefore (1, 1) is 00, (2:4, 1) is trait-1-only,
+# (1, 2:4) is trait-2-only, and (2:4, 2:4) is shared.
 const ANNOTATED_BAYESR_MT_STATES = let
     states = Vector{Tuple{Int,Int}}()
     push!(states, (1, 1))
