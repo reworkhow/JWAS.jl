@@ -40,6 +40,10 @@ const ANNOTATED_BAYESR_MT_STATES = let
     Tuple(states)
 end
 
+# Default startup row for annotated 2-trait BayesC, in the
+# ANNOTATED_BAYESC_MT_STATES order: 00, 10, 01, 11. This keeps the
+# legacy multi-trait BayesC default that all markers start in state 11
+# when Pi is omitted.
 annotated_bayesc_mt_default_row() = Float64[0.0, 0.0, 0.0, 1.0]
 
 function annotated_bayesc_mt_state_keys()
