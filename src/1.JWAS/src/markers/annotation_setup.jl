@@ -20,6 +20,9 @@ const ANNOTATED_BAYESC_MT_STATES = ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.
 # Multi-trait BayesR keeps the single-trait BayesR class convention
 # internally: class 1 means zero effect, while classes 2, 3, and 4 are
 # the nonzero BayesR magnitude classes.
+# This is the BayesR analogue of BayesC's 0/1 inclusion indicator:
+# BayesC 0 maps to BayesR class 1, and BayesC 1 maps to BayesR
+# classes 2, 3, or 4 depending on the nonzero effect magnitude.
 # Therefore (1, 1) is 00, (2:4, 1) is trait-1-only,
 # (1, 2:4) is trait-2-only, and (2:4, 2:4) is shared.
 const ANNOTATED_BAYESR_MT_STATES = let
@@ -78,7 +81,7 @@ end
     annotated_bayesr_mt_pattern(state)
 
 Map a 2-trait BayesR class state back to the BayesC-style active pattern:
-class 1 becomes 0, and classes 2:4 become 1.
+class 1 becomes BayesC-style 0, and classes 2:4 become BayesC-style 1.
 """
 function annotated_bayesr_mt_pattern(state::AbstractVector{<:Integer})
     length(state) == 2 || error("Annotated multi-trait BayesR expects 2-trait class labels.")
