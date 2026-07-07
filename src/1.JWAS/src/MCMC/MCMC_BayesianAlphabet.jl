@@ -120,6 +120,7 @@ function MCMC_BayesianAlphabet(mme,df)
             if Mi.method == "BayesR"
                 Mi.δ = [ones(Int, Mi.nMarkers) for traiti = 1:Mi.ntraits]
                 Mi.meanDelta = [zeros(Float64, Mi.nMarkers) for traiti = 1:Mi.ntraits]
+                Mi.meanDeltaClass = [zeros(Float64, Mi.nMarkers, length(BAYESR_GAMMA)) for traiti = 1:Mi.ntraits]
                 if mme.MCMCinfo.printout_model_info == true
                     printstyled("BayesR gamma: $(Float64.(BAYESR_GAMMA))\n", bold=false, color=:green)
                     printstyled("BayesR starting pi: $(Float64.(Mi.π))\n", bold=false, color=:green)

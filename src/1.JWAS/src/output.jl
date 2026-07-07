@@ -140,7 +140,25 @@ function output_result(mme,output_folder,
                 whichdelta     = vcat(whichdelta,Mi.meanDelta[traiti])
             end
 
-          output["marker effects "*Mi.name]=DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+          marker_effects_output = DataFrame([whichtrait whichmarker whicheffect whicheffectsd whichdelta],[:Trait,:Marker_ID,:Estimate,:SD,:Model_Frequency])
+          if Mi.method == "BayesR"
+              class1 = Mi.meanDeltaClass[1][:, 1]
+              class2 = Mi.meanDeltaClass[1][:, 2]
+              class3 = Mi.meanDeltaClass[1][:, 3]
+              class4 = Mi.meanDeltaClass[1][:, 4]
+              for traiti in 2:ntraits_geno
+                  class1 = vcat(class1, Mi.meanDeltaClass[traiti][:, 1])
+                  class2 = vcat(class2, Mi.meanDeltaClass[traiti][:, 2])
+                  class3 = vcat(class3, Mi.meanDeltaClass[traiti][:, 3])
+                  class4 = vcat(class4, Mi.meanDeltaClass[traiti][:, 4])
+              end
+              marker_effects_output[!, :Class1_Frequency] = class1
+              marker_effects_output[!, :Class2_Frequency] = class2
+              marker_effects_output[!, :Class3_Frequency] = class3
+              marker_effects_output[!, :Class4_Frequency] = class4
+              marker_effects_output[!, :MediumLarge_Frequency] = class3 .+ class4
+          end
+          output["marker effects "*Mi.name] = marker_effects_output
           #output["marker effects variance "*Mi.name] = matrix2dataframe(string.(mme.lhsVec),Mi.meanVara,Mi.meanVara2)
           if Mi.estimatePi == true
               output["pi_"*Mi.name] = pi2dataframe(Mi, Mi.mean_pi, Mi.mean_pi2)
@@ -339,9 +357,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   
   if mme.M !=0 #write samples for marker effects to a text file
     for Mi in mme.M
-        geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
-        for traiti in geno_names
-            push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+        if mme.MCMCinfo.output_marker_effect_samples
+            geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+            for traiti in geno_names
+                push!(outvar,"marker_effects_"*Mi.name*"_"*traiti)
+            end
         end
         push!(outvar,"marker_effects_variances"*"_"*Mi.name)
         push!(outvar,"pi"*"_"*Mi.name)
@@ -416,9 +436,11 @@ function output_MCMC_samples_setup(mme,nIter,output_samples_frequency,file_name=
   
   if mme.M !=0
     for Mi in mme.M
-        geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
-        for traiti in geno_names
-            writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+        if mme.MCMCinfo.output_marker_effect_samples
+            geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+            for traiti in geno_names
+                writedlm(outfile["marker_effects_"*Mi.name*"_"*traiti],transubstrarr(Mi.markerID),',')
+            end
         end
     end
   end
@@ -471,10 +493,12 @@ function output_MCMC_samples(mme,vRes,G0,
     end
     if mme.M != 0 && outfile != false
       for Mi in mme.M
-         ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
-         geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
-         for traiti in 1:ntraits_geno
-            writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
+         if mme.MCMCinfo.output_marker_effect_samples
+             ntraits_geno = mme.MCMCinfo.RRM == false ? Mi.ntraits : length(mme.lhsVec)
+             geno_names = mme.MCMCinfo.RRM == false ? Mi.trait_names : string.(mme.lhsVec)
+             for traiti in 1:ntraits_geno
+                writedlm(outfile["marker_effects_"*Mi.name*"_"*geno_names[traiti]],Mi.α[traiti]',',')
+             end
          end
           
          if Mi.G.val != false
@@ -580,7 +604,12 @@ function output_posterior_mean_variance(mme,nsamples)
                 Mi.meanAlpha[trait] += (Mi.α[trait] - Mi.meanAlpha[trait])/nsamples
                 Mi.meanAlpha2[trait]+= (Mi.α[trait].^2 - Mi.meanAlpha2[trait])/nsamples
                 if Mi.method == "BayesR"
-                    Mi.meanDelta[trait] += (Float64.(Mi.δ[trait] .> 1) - Mi.meanDelta[trait]) / nsamples
+                    delta = Mi.δ[trait]
+                    Mi.meanDelta[trait] += (Float64.(delta .> 1) - Mi.meanDelta[trait]) / nsamples
+                    for classi in axes(Mi.meanDeltaClass[trait], 2)
+                        Mi.meanDeltaClass[trait][:, classi] +=
+                            (Float64.(delta .== classi) - Mi.meanDeltaClass[trait][:, classi]) / nsamples
+                    end
                 else
                     Mi.meanDelta[trait] += (Mi.δ[trait] - Mi.meanDelta[trait])/nsamples
                 end

@@ -312,6 +312,7 @@ On line 1, MCMC samples from `runMCMC` for `x2` is saved to a file, where each r
 On line 2, a multi-trait BayesC analysis is performed with `model` and `phenotypes` as had been defined in step 1-6.
 MCMC samples for marker effects, location parameters specified on line 1, and all variance components from this analysis
 are saved every `output_samples_frequency` iterations to files.
+Set `output_marker_effect_samples=false` in `runMCMC` to skip the large marker-effect MCMC sample files while keeping final marker-effect summaries and smaller sample files such as marker-effect variances and pi. This option is not supported with `causal_structure`, because SEM post-processing requires marker-effect MCMC sample files.
 
 For large marker panels, `runMCMC(...; fast_blocks=...)` enables the block BayesC path. `fast_blocks` can be `true`, a numeric block size, or explicit block starts such as `[1, 501, 975]`. The default block mode is the exact sequential sweep. Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism. See [Block BayesC](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
 For a real cluster benchmark comparing `fast_blocks=true` vs `fast_blocks=false` at target scale (`N=50,000`, `P=2,000,000`, `chain_length=2000`), see [Benchmark](benchmark.md).

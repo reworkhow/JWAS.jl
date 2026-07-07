@@ -343,6 +343,84 @@ end
     isdir(outdir) && rm(outdir, recursive=true)
 end
 
+@testset "BayesR class frequency output" begin
+    global geno = get_genotypes(genofile, 1.0, separator=',',
+                                method="BayesR",
+                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                estimatePi=true,
+                                estimate_variance=true)
+    model = build_model("y1 = intercept + geno", 1.0)
+    outdir = tempname()
+    output = runMCMC(model, phenotypes,
+                     chain_length=30,
+                     burnin=5,
+                     output_samples_frequency=5,
+                     output_folder=outdir,
+                     seed=321,
+                     printout_model_info=false,
+                     outputEBV=false,
+                     output_heritability=false,
+                     fast_blocks=false)
+
+    marker_effects = output["marker effects geno"]
+    for col in [:Class1_Frequency, :Class2_Frequency, :Class3_Frequency,
+                :Class4_Frequency, :MediumLarge_Frequency]
+        @test col in propertynames(marker_effects)
+        @test all(0.0 .<= marker_effects[!, col] .<= 1.0)
+    end
+
+    @test all(isapprox.(
+        marker_effects[!, :Model_Frequency],
+        marker_effects[!, :Class2_Frequency] .+
+        marker_effects[!, :Class3_Frequency] .+
+        marker_effects[!, :Class4_Frequency];
+        atol=1e-12,
+    ))
+    @test all(isapprox.(
+        marker_effects[!, :MediumLarge_Frequency],
+        marker_effects[!, :Class3_Frequency] .+
+        marker_effects[!, :Class4_Frequency];
+        atol=1e-12,
+    ))
+    @test all(isapprox.(
+        marker_effects[!, :Class1_Frequency] .+
+        marker_effects[!, :Model_Frequency],
+        1.0;
+        atol=1e-12,
+    ))
+
+    isdir(outdir) && rm(outdir, recursive=true)
+end
+
+@testset "BayesR can skip marker effect samples" begin
+    global geno = get_genotypes(genofile, 1.0, separator=',',
+                                method="BayesR",
+                                Pi=Float64[0.95, 0.03, 0.015, 0.005],
+                                estimatePi=true,
+                                estimate_variance=true)
+    model = build_model("y1 = intercept + geno", 1.0)
+    outdir = tempname()
+    output = runMCMC(model, phenotypes,
+                     chain_length=30,
+                     burnin=5,
+                     output_samples_frequency=5,
+                     output_folder=outdir,
+                     seed=321,
+                     printout_model_info=false,
+                     outputEBV=false,
+                     output_heritability=false,
+                     output_marker_effect_samples=false,
+                     fast_blocks=false)
+
+    @test haskey(output, "marker effects geno")
+    @test haskey(output, "pi_geno")
+    @test !isfile(joinpath(outdir, "MCMC_samples_marker_effects_geno_y1.txt"))
+    @test isfile(joinpath(outdir, "MCMC_samples_pi_geno.txt"))
+    @test isfile(joinpath(outdir, "MCMC_samples_marker_effects_variances_geno.txt"))
+
+    isdir(outdir) && rm(outdir, recursive=true)
+end
+
 @testset "BayesR fast_blocks dispatch" begin
     global geno = get_genotypes(genofile, 1.0, separator=',',
                                 method="BayesR",

@@ -297,6 +297,33 @@ end
         isdir("test_sem_validation_2") && rm("test_sem_validation_2", recursive=true)
     end
 
+    @testset "marker effect samples required for causal_structure" begin
+        R = [1.0 0.2; 0.2 1.0]
+        G = [1.0 0.2; 0.2 1.0]
+        global genotypes = get_genotypes(genofile, G, separator=',', method="BayesC")
+        model = build_model("y1 = intercept + genotypes\ny2 = intercept + genotypes", R)
+        cs = [0.0 0.0; 1.0 0.0]
+        err = try
+            runMCMC(model, phenotypes_complete;
+                causal_structure=cs,
+                chain_length=10,
+                burnin=2,
+                output_samples_frequency=5,
+                printout_model_info=false,
+                outputEBV=false,
+                output_heritability=false,
+                output_marker_effect_samples=false,
+                output_folder="test_sem_validation_marker_samples",
+                seed=42)
+            nothing
+        catch exc
+            exc
+        end
+        @test err isa ErrorException
+        @test occursin("output_marker_effect_samples=false", sprint(showerror, err))
+        isdir("test_sem_validation_marker_samples") && rm("test_sem_validation_marker_samples", recursive=true)
+    end
+
     @testset "constraints are set correctly" begin
         R = [1.0 0.2; 0.2 1.0]
         G = [1.0 0.2; 0.2 1.0]

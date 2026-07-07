@@ -119,6 +119,32 @@ In that step, `sigmaSq` is the shared **marker-effect variance** scale, while
 | `Annotated_BayesC` vs `Annotated_BayesR` | `Annotated_BayesC` uses one annotation-driven binary probit model to produce marker-specific `π_j`. `Annotated_BayesR` uses three nested annotation probit models to produce marker-specific four-class probabilities `snp_pi`. |
 | Plain vs annotated methods | The plain methods learn one shared mixture prior. The annotated methods learn marker-specific priors from the supplied annotations. |
 
+## BayesR Marker Frequency Output
+
+For BayesR, `Model_Frequency` reports the posterior nonzero frequency
+`Pr(delta > 1)`. It includes small-, medium-, and large-effect classes.
+
+BayesR marker-effect output also reports class-specific frequencies:
+
+- `Class1_Frequency = Pr(delta == 1)`, the zero-effect class
+- `Class2_Frequency = Pr(delta == 2)`, the small-effect class
+- `Class3_Frequency = Pr(delta == 3)`, the medium-effect class
+- `Class4_Frequency = Pr(delta == 4)`, the large-effect class
+- `MediumLarge_Frequency = Pr(delta >= 3)`
+
+Use `MediumLarge_Frequency` when a plot should ignore small class-2 effects.
+Comparing `Class2_Frequency` with `Class3_Frequency + Class4_Frequency` can
+show whether a high BayesR `Model_Frequency` is mostly driven by small-effect
+class assignments.
+
+Set `output_marker_effect_samples=false` in `runMCMC` to skip writing the large
+`MCMC_samples_marker_effects_*` files. Final marker-effect summaries, including
+`Estimate`, `SD`, `Model_Frequency`, and BayesR class-frequency columns, are
+still computed. Smaller sample files such as `MCMC_samples_pi_*` and
+`MCMC_samples_marker_effects_variances_*` are still written. This option is not
+supported with `causal_structure`, because SEM post-processing requires
+marker-effect MCMC sample files.
+
 ## Related Pages
 
 - [Annotated BayesC](annotated_bayesc.md)
