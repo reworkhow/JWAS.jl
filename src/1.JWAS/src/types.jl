@@ -138,6 +138,7 @@ mutable struct Genotypes
   meanAlpha         #arrays of results
   meanAlpha2
   meanDelta
+  meanDeltaClass
   mean_pi
   mean_pi2
   meanVara
@@ -160,7 +161,7 @@ mutable struct Genotypes
                                          false,true, #true,false,
                                          false,false,false,false,false,false,false,false,false,
                                          false,false,false,false,
-                                         false,false,false,false,false,false,false,false,false,
+                                         false,false,false,false,false,false,false,false,false,false,
                                          false,:dense,false,a9,false,false,:I)
 end
 
@@ -227,6 +228,7 @@ mutable struct MCMCinfo
     chain_length
     burnin
     output_samples_frequency
+    output_marker_effect_samples
     printout_model_info
     printout_frequency
     single_step_analysis

@@ -115,6 +115,7 @@ end
             memory_guard_ratio              = 0.80,
             ##MCMC samples (defaut to marker effects and hyperparametes (variance components))
             output_folder                     = "results",
+            output_marker_effect_samples      = true,
             output_samples_for_all_parameters = false,
             ##for deprecated JWAS
             methods                         = "conventional (no markers)",
@@ -127,6 +128,8 @@ end
     * The first `burnin` iterations are discarded at the beginning of a MCMC chain of length `chain_length`.
     * Save MCMC samples every `output_samples_frequency` iterations, defaulting to `chain_length/1000`, to a folder `output_folder`,
       defaulting to `results`. MCMC samples for hyperparametes (variance componets) and marker effects are saved by default.
+      Set `output_marker_effect_samples=false` to skip writing the large marker-effect sample files while keeping final
+      marker-effect summaries and smaller MCMC sample files such as marker variances and pi.
       MCMC samples for location parametes can be saved using function `output_MCMC_samples()`. Note that saving MCMC samples too
       frequently slows down the computation.
     * The `starting_value` can be provided as a vector for all location parameteres and marker effects, defaulting to `0.0`s.
@@ -192,6 +195,7 @@ function runMCMC(mme::MME,df;
                 memory_guard_ratio::Float64     = 0.80,
                 #MCMC samples (defaut to marker effects and hyperparametes (variance componets))
                 output_folder                     = "results",
+                output_marker_effect_samples      = true,
                 output_samples_for_all_parameters = false,
                 #for deprecated JWAS
                 methods                         = "conventional (no markers)",
@@ -265,7 +269,7 @@ function runMCMC(mme::MME,df;
     # Save MCMC argumenets in MCMCinfo
     ############################################################################
     mme.MCMCinfo = MCMCinfo(heterogeneous_residuals,
-                   chain_length,burnin,output_samples_frequency,
+                   chain_length,burnin,output_samples_frequency,output_marker_effect_samples,
                    printout_model_info,printout_frequency, single_step_analysis,
                    fitting_J_vector,missing_phenotypes,
                    update_priors_frequency,outputEBV,output_heritability,prediction_equation,
@@ -329,6 +333,9 @@ function runMCMC(mme::MME,df;
     #structure equation model
     mme.causal_structure = causal_structure
     if causal_structure != false
+        if output_marker_effect_samples == false
+            error("output_marker_effect_samples=false is not supported with causal_structure because SEM post-processing requires marker-effect MCMC samples.")
+        end
         #no missing phenotypes and residual covariance for identifiability
         mme.MCMCinfo.missing_phenotypes = false
         mme.R.constraint = true
@@ -586,6 +593,7 @@ function getMCMCinfo(mme)
     @printf("%-30s %20s\n","starting_value",mme.sol != false ? "true" : "false")
     @printf("%-30s %20d\n","printout_frequency",MCMCinfo.printout_frequency)
     @printf("%-30s %20d\n","output_samples_frequency",MCMCinfo.output_samples_frequency)
+    @printf("%-30s %20s\n","output_marker_effect_samples",MCMCinfo.output_marker_effect_samples ? "true" : "false")
     # @printf("%-30s %20s\n","constraint",MCMCinfo.constraint ? "true" : "false")
     @printf("%-30s %19s\n","constraint on residual variance",mme.R.constraint ? "true" : "false")
     if mme.M != 0
