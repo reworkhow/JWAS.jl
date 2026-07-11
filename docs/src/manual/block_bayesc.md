@@ -187,7 +187,13 @@ julia --project=.
 
 Reference paper: BayesR3 (Communications Biology, 2022), DOI: `10.1038/s42003-022-03624-1`.
 
-JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely follows the same blocked Gibbs pattern.
+The tables below are a worked comparison between the original BayesR3 method and the JWAS block BayesC implementation. JWAS also applies this generalized block strategy to BayesR and to the supported annotated paths described above.
+
+For the repeat schedules in this comparison:
+
+- `b` is the nominal block size.
+- `s_i` is the realized number of markers in block `i`.
+- `r_i` is the number of inner marker-update repeats performed while block `i` is active.
 
 #### Step-by-step correspondence
 
@@ -205,20 +211,20 @@ JWAS uses BayesC (not BayesR), but the block linear-algebra strategy closely fol
 | --- | --- | --- | --- |
 | Marker prior model | BayesR mixture (multiple non-zero normal components plus zero component) | BayesC spike-slab style inclusion (`δ∈{0,1}` for this path) | Same acceleration idea, different posterior model |
 | Marker state sampling | Multi-class mixture state | Binary include/exclude state | Not numerically identical to BayesR |
-| Inner-repeat schedule | Uses nominal block size as fixed repeat count across blocks | `nreps = current block_size` | Last short block may receive fewer inner repeats |
+| Inner-repeat schedule | `r_i = b` for every block, including a final block with `s_i < b` | `r_i = s_i` | Short blocks receive fewer repeats; explicit unequal blocks can receive different repeat counts |
 | Outer-loop scheduling | Described as a fixed block sweep schedule | For `fast_blocks=true` or numeric `fast_blocks=<block_size>`, JWAS rescales outer `chain_length` by block size; explicit starts keep full-sweep `chain_length` | Compare effective updates and partition semantics, not just outer iterations |
 | Scope | BayesR algorithm | JWAS block path is wired to BayesA/B/C and BayesR marker samplers, with multi-trait BayesC honoring sampler I/II dispatch | Strategy reused across Bayesian alphabet members |
 
 #### Scheduling detail (explicit)
 
-JWAS sets `nreps` equal to the current block size.
+Under the original BayesR3 convention, most blocks have `s_i = b`, while the final block may have `s_i < b`. BayesR3 nevertheless uses `r_i = b` for that final short block. Consequently, every SNP effect receives the same number of updates under the paper's chain-length convention.
 
-- Full blocks: `nreps` equals the nominal block size.
-- Final short block: `nreps` is smaller than full blocks.
+Current JWAS repeat policies depend on the marker sampler:
 
-In the BayesR3 description, `nreps` is treated as fixed by the nominal block size for all blocks, including the final short block.
+- BayesC uses `r_i = s_i`.
+- BayesR uses `r_i = 1` during burn-in and `r_i = s_i` afterward.
 
-This difference changes the number of within-block Gibbs sweeps for short blocks, but not the core residual/RHS block-update identity.
+With fixed-size partitioning, full blocks have `s_i = b`, while a final short block has a smaller repeat count under the JWAS BayesC policy and under the post-burn-in JWAS BayesR policy. Explicit unequal starts can likewise produce different repeat counts among blocks. These scheduling differences do not stop JWAS from using the generalized BayesR3 block strategy: the block RHS, Gram-matrix update, and block-exit residual reconciliation remain the shared computational pattern.
 
 ## Algorithm Comparison
 
