@@ -393,11 +393,12 @@ So for unit weights, block mode remains dominated by `X`, with `XpRinvX` as the 
    - too small: less speedup (`N/b` term remains large)
    - too large: `XpRinvX` memory and precompute cost rise (`~P*b` memory and `~NPb` setup trend)
 2. Effective chain length:
-   - with `fast_blocks=true` or numeric `fast_blocks=<block_size>`, current implementation rescales outer iterations and uses inner repeats (`nreps = block_size`)
+   - with `fast_blocks=true` or numeric `fast_blocks=<block_size>`, current implementation rescales outer iterations by the nominal block size `b`
+   - BayesC uses `r_i = s_i`; BayesR uses `r_i = 1` during burn-in and `r_i = s_i` afterward
    - with explicit `fast_blocks=[...]`, one outer iteration is a full sweep over the supplied block starts and `chain_length` is not rescaled
    - compare runs by effective updates, not only outer-iteration count
 3. Final short block behavior:
-   - last block uses smaller `nreps` (equal to its own size), so sweep symmetry differs slightly
+   - a final short block has realized size `s_i < b`; it follows the same method-specific repeat rule: BayesC uses `r_i = s_i`, while BayesR uses `r_i = 1` during burn-in and `r_i = s_i` afterward
 4. Independent blocks:
    - exact only when off-block weighted genotype crossproducts vanish
    - otherwise it is an explicit approximation for speed and parallelism
