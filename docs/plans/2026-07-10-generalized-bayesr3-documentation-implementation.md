@@ -57,8 +57,9 @@ different block linear-algebra strategy.
 
 ## Behavior and API
 
-Sampler behavior and the public API are unchanged. No Julia source files or
-test files were modified. The existing forms `fast_blocks=true`,
+Sampler behavior and the public API are unchanged. No production sampler/source
+files under `src/` or test files were modified; `docs/make.jl` changed only the
+navigation label. The existing forms `fast_blocks=true`,
 `fast_blocks=<integer>`, `fast_blocks=<ordered start positions>`, and
 `independent_blocks=true` retain their current behavior.
 
