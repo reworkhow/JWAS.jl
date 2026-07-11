@@ -19,6 +19,14 @@ For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `c
 
 Changing the statistical model from BayesR to BayesC changes its prior and conditional sampling details, but not the core block RHS, Gram-matrix update, and block-exit residual-reconciliation strategy. Likewise, changing the block partition does not by itself select the independent-block approximation; only `independent_blocks=true` changes the inter-block execution schedule.
 
+## User-Defined Unequal Blocks
+
+Users may choose block boundaries using scientific information about LD, recombination, IBD, pedigree information, or genomic regions. These user-defined blocks do not need to have equal sizes.
+
+The current API accepts ordered block start positions, so every block is contiguous in the current marker order. Arbitrary non-contiguous marker membership is not currently supported.
+
+Grouping strongly coupled markers in the same block can improve computational locality or mixing per unit of computation. This does not guarantee better convergence: mixing and convergence depend on posterior correlations, block sizes, boundaries, and the repeat policy.
+
 ## Configuration and Supported Paths
 
 Block updates are enabled with:
