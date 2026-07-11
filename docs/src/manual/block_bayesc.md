@@ -8,7 +8,7 @@ The default execution schedule remains an exact sequential block sweep. The expl
 For detailed non-block vs block memory accounting, see [Memory Usage](memory_usage.md).
 For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `chain_length=2000`, see [Benchmark](benchmark.md).
 
-BayesR3 paper (Methods): https://www.nature.com/articles/s42003-022-03624-1
+[BayesR3 paper (Methods)](https://www.nature.com/articles/s42003-022-03624-1)
 
 ## Four Independent Choices
 
@@ -36,25 +36,20 @@ out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
 
 ### Quick Semantics Checklist
 
-- `fast_blocks=true` and numeric `fast_blocks=<block_size>` keep exact sequential block behavior when `independent_blocks=false` (the default). JWAS still refreshes the global corrected phenotype / residual after each block before sampling the next block.
+- `fast_blocks=true` chooses `block_size = floor(sqrt(nObs))`; numeric `fast_blocks=<block_size>` uses the requested fixed size. In the current implementation, a numeric block size should be less than `nMarkers` because chain-length scaling indexes the second block start.
+- An explicit `fast_blocks=[...]` vector contains ordered marker start positions, not block lengths. The positions must be sorted, unique, start at `1`, and stay within `1:nMarkers`. In the current marker order, each position starts a contiguous block, so the vector can define unequal block sizes. Explicit starts use full-sweep semantics: one outer MCMC iteration sweeps every supplied block, and JWAS does not rescale `chain_length`.
+- `independent_blocks=false` is the default exact sequential schedule: JWAS refreshes the global corrected phenotype / residual after each block. `independent_blocks=true` instead freezes the sweep-level residual, updates blocks with Julia threads, and merges their deltas after a barrier; this parallel schedule is approximate unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) are effectively zero.
 - `fast_blocks` is currently dense-storage only; `storage=:stream` rejects `fast_blocks != false`.
-- An explicit `fast_blocks=[...]` vector contains ordered marker start positions, not block lengths. In the current marker order, each position starts a contiguous block, so the vector can define unequal block sizes. The first start must be `1`.
-- Explicit block starts use full-sweep chain semantics: one outer MCMC iteration sweeps all supplied blocks, and JWAS does not rescale `chain_length`.
-- `independent_blocks=true` is an approximate parallel schedule unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) are effectively zero.
 - On servers, set `OPENBLAS_NUM_THREADS=1` when using Julia threads (for example, with `independent_blocks=true`) to avoid nested BLAS oversubscription.
 
-- If `fast_blocks=true`, JWAS chooses `block_size = floor(sqrt(nObs))`.
-- If `fast_blocks` is numeric, JWAS uses that fixed block size.
-- If `fast_blocks` is a vector, JWAS treats the entries as explicit starts for unequal contiguous blocks in the current marker order. The vector must be sorted, unique, start at `1`, and stay within `1:nMarkers`.
-- `independent_blocks=false` is the default. It keeps the exact sequential block sweep: after each block, JWAS updates the global corrected phenotype / residual before sampling the next block.
-- `independent_blocks=true` is opt-in. It freezes the sweep-level corrected phenotype / residual, updates blocks independently using Julia threads, and merges all block deltas after the block barrier.
+### Supported Sampler Paths
+
 - In single-trait BayesA/B/C, JWAS calls `BayesABC_block!`.
 - In single-trait BayesR, JWAS calls `BayesR_block!`.
 - Dense annotated single-trait BayesC and BayesR use the same block machinery with marker-specific annotation priors.
 - In multi-trait BayesA/B/C with unconstrained marker covariance (`Mi.G.constraint == false`), JWAS calls `MTBayesABC_block!` and honors `multi_trait_sampler=:I`, `:II`, or `:auto`.
 - Dense annotated 2-trait BayesC uses the same multi-trait block sampler choices.
 - If `Mi.G.constraint == true`, JWAS uses `megaBayesABC!` (non-block path).
-- In current implementation, numeric `fast_blocks` should satisfy `block_size < nMarkers` (chain-length scaling indexes the second block start).
 
 ## Single-Trait BayesC Example: Without Blocks
 
