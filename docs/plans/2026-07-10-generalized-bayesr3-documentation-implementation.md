@@ -51,13 +51,16 @@ different block linear-algebra strategy.
 - `docs/make.jl`: renamed the navigation entry to
   `BayesR3 Block Strategy` while retaining `manual/block_bayesc.md` as its
   destination.
+- `docs/plans/2026-07-10-generalized-bayesr3-documentation-implementation.md`:
+  recorded the completed documentation scope, terminology decisions,
+  verification results, and remaining explicit-block limitation.
 
 ## Behavior and API
 
-Sampler behavior and the public API are unchanged. No source or test files were
-modified. The existing forms `fast_blocks=true`, `fast_blocks=<integer>`,
-`fast_blocks=<ordered start positions>`, and `independent_blocks=true` retain
-their current behavior.
+Sampler behavior and the public API are unchanged. No Julia source files or
+test files were modified. The existing forms `fast_blocks=true`,
+`fast_blocks=<integer>`, `fast_blocks=<ordered start positions>`, and
+`independent_blocks=true` retain their current behavior.
 
 ## Verification
 
