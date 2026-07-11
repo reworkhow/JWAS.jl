@@ -343,15 +343,17 @@ Current v1 exclusions:
 - multi-trait BayesR, including annotated multi-trait BayesR
 - random regression models (`RRM`)
 
-`fast_blocks` is supported for dense annotated BayesR. The block sampler uses the
-same annotation-induced marker-specific class probabilities `pi_j` as the dense
-sampler, but it is a block update path rather than the same transition as the
-full dense marker-by-marker sweep.
+`fast_blocks` is supported for dense annotated BayesR. The block sampler uses
+the same marker-specific priors, including the annotation-induced class
+probabilities `pi_j`, as the dense sampler, but it uses a sequential blocked
+Gibbs transition schedule rather than the dense marker-by-marker schedule.
 Explicit block starts such as `fast_blocks=[1, 501, 975]` are also supported.
-With the default `independent_blocks=false`, this is the exact sequential block
-sweep. Set `independent_blocks=true` only when you intentionally want the
-approximate independent-block mode for block-level thread parallelism. See
-[Block BayesC](block_bayesc.md) for the shared block-sampler interpretation.
+With the default `independent_blocks=false`, this is the exact sequential
+blocked schedule for the implemented annotated BayesR model. Set
+`independent_blocks=true` only when you intentionally want the frozen-residual
+independent-block approximation for block-level thread parallelism. See the
+[BayesR3 Block Strategy](block_bayesc.md) for the shared block-sampler
+interpretation.
 
 ## Dense Example
 

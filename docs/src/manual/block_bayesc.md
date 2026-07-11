@@ -46,7 +46,7 @@ out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
 
 - `fast_blocks=true` chooses `block_size = floor(sqrt(nObs))`; numeric `fast_blocks=<block_size>` uses the requested fixed size. In the current implementation, a numeric block size should be less than `nMarkers` because chain-length scaling indexes the second block start.
 - An explicit `fast_blocks=[...]` vector contains ordered marker start positions, not block lengths. The positions must be sorted, unique, start at `1`, and stay within `1:nMarkers`. In the current marker order, each position starts a contiguous block, so the vector can define unequal block sizes. Explicit starts use full-sweep semantics: one outer MCMC iteration sweeps every supplied block, and JWAS does not rescale `chain_length`.
-- `independent_blocks=false` is the default exact sequential schedule: JWAS refreshes the global corrected phenotype / residual after each block. `independent_blocks=true` instead freezes the sweep-level residual, updates blocks with Julia threads, and merges their deltas after a barrier; this parallel schedule is approximate unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) are effectively zero.
+- `independent_blocks=false` is the default exact sequential schedule: JWAS refreshes the global corrected phenotype / residual after each block. `independent_blocks=true` instead freezes the sweep-level residual, updates blocks with Julia threads, and merges their deltas after a barrier; this parallel schedule is approximate unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) vanish.
 - `fast_blocks` is currently dense-storage only; `storage=:stream` rejects `fast_blocks != false`.
 - On servers, set `OPENBLAS_NUM_THREADS=1` when using Julia threads (for example, with `independent_blocks=true`) to avoid nested BLAS oversubscription.
 
@@ -108,8 +108,17 @@ The explicit block-start form uses sweep semantics because user-provided LD or p
 
 ## Exact Sequential Blocks vs Independent Blocks
 
-The default block sampler is exact for the current model because blocks are updated in sequence and the global corrected phenotype / residual is refreshed after each block.
-The independent-block mode changes only the inter-block schedule.
+The default block sampler composes conditional Gibbs updates in sequence. After
+one block finishes, JWAS reconciles that block's effect changes into the global
+corrected phenotype / residual before it constructs the right-hand side for the
+next block. These steps form the exact sequential blocked schedule for the
+implemented model.
+
+This is a different transition schedule from dense marker-by-marker Gibbs: it
+groups conditional marker updates by block and can repeat updates within a
+block. It does not, however, introduce the frozen-residual approximation
+described below. That approximation is selected only by
+`independent_blocks=true`.
 
 ### Single-Trait View
 
@@ -120,14 +129,17 @@ Let:
 - `alpha_b` be marker effects in block `b`
 - `W` be the diagonal observation-weight matrix represented by `Rinv`
 
-The exact block update for block `b` uses:
+The sequential update for block `b` uses:
 
 ```text
 s_b = X_b' W (r + X_b alpha_b)
     = X_b' W (y* - sum_{c != b} X_c alpha_c)
 ```
 
-`independent_blocks=true` assumes the off-block weighted genotype crossproducts are negligible:
+By contrast, `independent_blocks=true` freezes the global residual at the start
+of a marker sweep, so blocks do not see effect changes made by other blocks
+during that sweep. This independent-block schedule is exact only when the
+off-block weighted genotype crossproducts vanish:
 
 ```text
 X_b' W X_c = 0  for b != c
@@ -145,7 +157,8 @@ when:
 x1' W x2 = 0
 ```
 
-If the off-block crossproducts are small but not zero, `independent_blocks=true` is an approximation.
+If the off-block crossproducts are small but not zero,
+`independent_blocks=true` is an approximation.
 
 ### Multi-Trait View
 
@@ -162,7 +175,7 @@ The independent-block assumption is still about genotype-side block leakage:
 X_b' W X_c = 0  for b != c
 ```
 
-So the approximate parallel mode:
+So the independent-block approximation:
 
 1. freezes the trait-wise corrected phenotype vectors at the start of the marker sweep;
 2. updates each genotype block independently from that frozen state;
