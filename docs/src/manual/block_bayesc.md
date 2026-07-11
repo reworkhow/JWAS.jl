@@ -1,14 +1,25 @@
-# Block BayesC (`fast_blocks`)
+# BayesR3 Block Strategy in JWAS (`fast_blocks`)
 
-This page explains how JWAS implements block updates for marker sampling and how the block path changes speed and memory usage.
-The block BayesC implementation uses a strategy similar to the blocked update scheme described in the BayesR3 paper.
-JWAS keeps the exact sequential block sweep as the default and also provides an explicit approximate parallel mode through `independent_blocks=true`.
+JWAS adopts and generalizes the BayesR3 computational strategy for block marker sampling. On this page, that strategy means three operations: constructing a block right-hand side (RHS), performing repeated conditional marker updates through the block Gram matrix, and reconciling the global corrected phenotype / residual when leaving the block.
+
+This terminology describes the shared computational strategy; JWAS does not claim to reproduce every statistical-model or scheduling detail of the original BayesR3 software. JWAS uses the strategy in the supported single-trait BayesA/B/C and BayesR paths, annotated variants, and multi-trait paths listed below.
+
+The default execution schedule remains an exact sequential block sweep. The explicit `independent_blocks=true` option instead selects an approximate parallel schedule.
 For detailed non-block vs block memory accounting, see [Memory Usage](memory_usage.md).
 For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `chain_length=2000`, see [Benchmark](benchmark.md).
 
 BayesR3 paper (Methods): https://www.nature.com/articles/s42003-022-03624-1
 
-## When This Path Is Used
+## Four Independent Choices
+
+- **Statistical model:** BayesA/B/C, BayesR, or an annotated or multi-trait variant determines the prior and conditional marker-sampling logic.
+- **Block partition:** `fast_blocks` determines which markers are grouped for the block linear algebra. JWAS can choose a size, use a requested fixed size, or use explicit contiguous blocks.
+- **Repeat policy:** the sampler determines how many conditional marker-update passes are performed while a block RHS and Gram matrix are active.
+- **Execution schedule:** `independent_blocks=false` updates blocks sequentially and reconciles the global residual after each block; `independent_blocks=true` updates blocks from a frozen sweep-level residual and merges their changes after a barrier.
+
+Changing the statistical model from BayesR to BayesC changes its prior and conditional sampling details, but not the core block RHS, Gram-matrix update, and block-exit residual-reconciliation strategy. Likewise, changing the block partition does not by itself select the independent-block approximation; only `independent_blocks=true` changes the inter-block execution schedule.
+
+## Configuration and Supported Paths
 
 Block updates are enabled with:
 
@@ -27,14 +38,14 @@ out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
 
 - `fast_blocks=true` and numeric `fast_blocks=<block_size>` keep exact sequential block behavior when `independent_blocks=false` (the default). JWAS still refreshes the global corrected phenotype / residual after each block before sampling the next block.
 - `fast_blocks` is currently dense-storage only; `storage=:stream` rejects `fast_blocks != false`.
-- Explicit `fast_blocks=[...]` entries are marker start positions, not block lengths. The first start must be `1`.
+- An explicit `fast_blocks=[...]` vector contains ordered marker start positions, not block lengths. In the current marker order, each position starts a contiguous block, so the vector can define unequal block sizes. The first start must be `1`.
 - Explicit block starts use full-sweep chain semantics: one outer MCMC iteration sweeps all supplied blocks, and JWAS does not rescale `chain_length`.
 - `independent_blocks=true` is an approximate parallel schedule unless off-block weighted genotype crossproducts (`X_b' W X_c` for `b != c`) are effectively zero.
 - On servers, set `OPENBLAS_NUM_THREADS=1` when using Julia threads (for example, with `independent_blocks=true`) to avoid nested BLAS oversubscription.
 
 - If `fast_blocks=true`, JWAS chooses `block_size = floor(sqrt(nObs))`.
 - If `fast_blocks` is numeric, JWAS uses that fixed block size.
-- If `fast_blocks` is a vector, JWAS treats the entries as explicit marker block starts. The vector must be sorted, unique, start at `1`, and stay within `1:nMarkers`.
+- If `fast_blocks` is a vector, JWAS treats the entries as explicit starts for unequal contiguous blocks in the current marker order. The vector must be sorted, unique, start at `1`, and stay within `1:nMarkers`.
 - `independent_blocks=false` is the default. It keeps the exact sequential block sweep: after each block, JWAS updates the global corrected phenotype / residual before sampling the next block.
 - `independent_blocks=true` is opt-in. It freezes the sweep-level corrected phenotype / residual, updates blocks independently using Julia threads, and merges all block deltas after the block barrier.
 - In single-trait BayesA/B/C, JWAS calls `BayesABC_block!`.
@@ -45,7 +56,7 @@ out = runMCMC(model, phenotypes; fast_blocks=[1, 501, 975, 1600],
 - If `Mi.G.constraint == true`, JWAS uses `megaBayesABC!` (non-block path).
 - In current implementation, numeric `fast_blocks` should satisfy `block_size < nMarkers` (chain-length scaling indexes the second block start).
 
-## Single-Trait BayesC Without Blocks
+## Single-Trait BayesC Example: Without Blocks
 
 In the standard BayesC update (`BayesABC!`), each marker `j` is updated one-by-one:
 
@@ -56,7 +67,7 @@ In the standard BayesC update (`BayesABC!`), each marker `j` is updated one-by-o
 
 So `yCorr` is updated every marker.
 
-## Single-Trait Block BayesC in JWAS
+## Single-Trait BayesC Example: Block Strategy in JWAS
 
 In the block version (`BayesABC_block!`), markers are partitioned into blocks.
 
