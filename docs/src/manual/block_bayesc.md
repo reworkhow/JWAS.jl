@@ -259,7 +259,7 @@ Use the notation:
 - `P`: number of markers (`nMarkers`)
 - `b`: nominal block size
 - `B = ceil(P/b)`: number of blocks
-- `L`: standard (non-block) chain length
+- `L`: requested chain length
 
 ### Standard BayesC (non-block)
 
@@ -289,27 +289,7 @@ For explicit `fast_blocks=[...]`, JWAS instead treats one outer iteration as one
 
 - `O(L * (NP + sum_i s_i^3))`
 
-### BayesR3 (block strategy and paper fit)
-
-BayesR3 uses the same blocked-update strategy family (block RHS, in-block updates using a block Gram matrix, then a block-exit residual update), but it is a BayesR mixture model rather than BayesC. This changes constants (more mixture-state work per marker), not the core block linear-algebra pattern.
-
-**Operation-count view (dense blocked implementation):**
-
-- BayesR3 runs a *nominal* number of inner cycles `n` per block, and the paper recommends `n` be equal to the (nominal) block size `b`.
-- With `n = b`, the leading operation-count terms match the same block strategy family as JWAS: total work scales like `O(LP(N/b + b))`.
-
-**Paper runtime fit (Fig. 5):**
-
-- The BayesR3 paper reports an empirical timing model where processing time per SNP is proportional to `(N + b)/b = N/b + 1`.
-- This is a fit to measured runtime for their implementation/hardware and is not a formal asymptotic operation-count derivation. It effectively treats the in-block work (the `+b`-type term) as a small constant relative to the `N/b` term in that regime.
-
-### Practical differences in complexity interpretation
-
-- JWAS and BayesR3 share the same blocked-update strategy family, but are not identical in constants/scheduling details.
-- JWAS uses `nreps = current block_size` for each block (including the final short block).
-- BayesR3 describes using the nominal block repeat count for all blocks, including the final short block.
-
-### Numerical example (`N=200,000`, `P=2,000,000`)
+### JWAS arithmetic operation-count example (`N=200,000`, `P=2,000,000`)
 
 Assume `fast_blocks=true`, so JWAS uses `b = floor(sqrt(N)) = 447`.
 Then:
@@ -317,19 +297,27 @@ Then:
 - `B = ceil(P/b) = ceil(2,000,000/447) = 4,475` blocks
 - Standard BayesC total scaling: `O(LPN) = O(L * 2,000,000 * 200,000)`
 - JWAS block BayesC main scaling: `O(LP(N/b + b)) = O(L * 2,000,000 * (200,000/447 + 447))`
-- BayesR3 paper timing fit: runtime per SNP `∝ (N + b)/b`, so total runtime `∝ L * 2,000,000 * (200,000/447 + 1)`
 
-So the per-`LP` coefficients are:
+Dividing these leading arithmetic expressions gives
+`N / (N/b + b) ≈ 224`. This is a theoretical arithmetic operation-count
+comparison between the two JWAS paths, not a measured speedup. Wall-clock
+performance also depends on implementation constants, memory traffic, BLAS,
+hardware, and the workload.
 
-- Standard BayesC: `200,000`
-- JWAS block BayesC operation-count: `~894.4` (from `N/b + b`)
-- BayesR3 paper fit: `~448.4` (from `N/b + 1`)
+### BayesR3 published empirical runtime fit
 
-This implies:
+BayesR3 uses the same block-strategy family but is a distinct BayesR mixture
+implementation with its own repeat schedule. Figure 5 of the BayesR3 paper
+reports that its measured processing time per SNP is proportional to
+`(N + b)/b = N/b + 1`. This is an empirical fit for that implementation, data,
+software libraries and hardware, and the sample-size and block-size regime
+tested in the paper. It is not an operation-count derivation.
 
-- JWAS block vs standard: `~224x` lower
-- BayesR3 paper fit vs standard: `~446x` lower
-- The apparent `~2.0x` gap between `~894` and `~448` is not an apples-to-apples complexity comparison: it is the difference between an operation-count model (`N/b + b`) and an empirical runtime fit (`N/b + 1`).
+The JWAS operation-count expression above and the BayesR3 empirical fit must
+not be compared coefficient by coefficient or interpreted as a JWAS-versus-
+BayesR3 software benchmark. A software performance comparison would require
+both implementations to be timed under a controlled benchmark using aligned
+models, chain schedules, data, libraries, and hardware.
 
 ## Detailed Resource Model (Current `fast_blocks` Path)
 
