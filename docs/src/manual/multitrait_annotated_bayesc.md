@@ -156,7 +156,7 @@ The fast-block sweep also supports explicit block starts, for example
 `fast_blocks=[1, 501, 975]`. `independent_blocks=false` is the default exact
 sequential block sweep. Set `independent_blocks=true` only when you intentionally
 want the approximate independent-block mode for block-level thread parallelism.
-See [Block BayesC](block_bayesc.md) for the statistical assumption and server
+See [BayesR3 Block Strategy](block_bayesc.md) for the statistical assumption and server
 threading guidance.
 
 ## Example

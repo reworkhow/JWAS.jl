@@ -21,7 +21,7 @@ makedocs(
             "Multi-Trait Annotated BayesC" => "manual/multitrait_annotated_bayesc.md",
             "Annotated BayesR" => "manual/annotated_bayesr.md",
             "Structural Equation Model (SEM)" => "manual/sem.md",
-            "Block BayesC" => "manual/block_bayesc.md",
+            "BayesR3 Block Strategy" => "manual/block_bayesc.md",
             "Benchmark" => "manual/benchmark.md",
             "Prototype-to-Production Benchmarking" => "manual/prototype_to_production_benchmarking.md",
             "Memory Usage" => "manual/memory_usage.md",

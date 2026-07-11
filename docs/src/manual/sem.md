@@ -218,4 +218,4 @@ This path is covered by unit regression test `test/unit/test_sem_issue162.jl`.
 
 - [Workflow](workflow.md)
 - [Public API](public.md)
-- [Block BayesC](block_bayesc.md)
+- [BayesR3 Block Strategy](block_bayesc.md)

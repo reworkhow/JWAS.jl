@@ -20,7 +20,7 @@ For method-specific workflows beyond the general setup in this page, see:
 - [Annotated BayesC](annotated_bayesc.md)
 - [Multi-Trait Annotated BayesC](multitrait_annotated_bayesc.md)
 - [Annotated BayesR](annotated_bayesr.md)
-- [Block BayesC](block_bayesc.md)
+- [BayesR3 Block Strategy](block_bayesc.md)
 
 
 ## Available Models
@@ -314,7 +314,7 @@ MCMC samples for marker effects, location parameters specified on line 1, and al
 are saved every `output_samples_frequency` iterations to files.
 Set `output_marker_effect_samples=false` in `runMCMC` to skip the large marker-effect MCMC sample files while keeping final marker-effect summaries and smaller sample files such as marker-effect variances and pi. This option is not supported with `causal_structure`, because SEM post-processing requires marker-effect MCMC sample files.
 
-For large marker panels, `runMCMC(...; fast_blocks=...)` enables the block BayesC path. `fast_blocks` can be `true`, a numeric block size, or explicit block starts such as `[1, 501, 975]`. The default block mode is the exact sequential sweep. Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism. See [Block BayesC](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
+For large marker panels, `runMCMC(...; fast_blocks=...)` enables the generalized BayesR3 strategy for supported model paths. `fast_blocks` can be `true`, a numeric block size, or explicit block starts such as `[1, 501, 975]`. The default block mode is the exact sequential sweep. Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism. See [BayesR3 Block Strategy](block_bayesc.md) for algorithm details and speed/memory tradeoffs.
 For a real cluster benchmark comparing `fast_blocks=true` vs `fast_blocks=false` at target scale (`N=50,000`, `P=2,000,000`, `chain_length=2000`), see [Benchmark](benchmark.md).
 For standard original BayesC (`fast_blocks=false`) at very large `N` and `P`, see [Handling Large Genotype Data Without Loading the Full Matrix into Memory](large_genotype_data_streaming.md) for memory/speed tradeoffs across storage approaches.
 For feature-level details of the opt-in streaming backend (`storage=:stream`), including API and benchmarks, see [Streaming Genotype Backend (BayesC MVP)](streaming_genotype_backend.md).

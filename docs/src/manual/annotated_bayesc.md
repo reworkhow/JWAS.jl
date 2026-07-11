@@ -147,7 +147,7 @@ JWAS rescales the outer `chain_length` in block mode, so the nominal `chain_leng
 You can also provide explicit block starts, for example `fast_blocks=[1, 501, 975]`.
 With the default `independent_blocks=false`, this is the exact sequential block sweep.
 Set `independent_blocks=true` only when you intentionally want the approximate independent-block mode for block-level thread parallelism.
-For block-update details, see [Block BayesC](block_bayesc.md).
+For block-update details, see [BayesR3 Block Strategy](block_bayesc.md).
 
 ## Streaming Example
 

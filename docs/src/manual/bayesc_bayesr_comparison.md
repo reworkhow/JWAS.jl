@@ -149,7 +149,7 @@ marker-effect MCMC sample files.
 
 - [Annotated BayesC](annotated_bayesc.md)
 - [Annotated BayesR](annotated_bayesr.md)
-- [Block BayesC](block_bayesc.md)
+- [BayesR3 Block Strategy](block_bayesc.md)
 
 ## Multi-Trait Note
 
