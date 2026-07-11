@@ -289,7 +289,7 @@ For explicit `fast_blocks=[...]`, JWAS instead treats one outer iteration as one
 
 - `O(L * (NP + sum_i s_i^3))`
 
-### JWAS arithmetic operation-count example (`N=200,000`, `P=2,000,000`)
+### JWAS simplified unit-cost proxy example (`N=200,000`, `P=2,000,000`)
 
 Assume `fast_blocks=true`, so JWAS uses `b = floor(sqrt(N)) = 447`.
 Then:
@@ -298,24 +298,26 @@ Then:
 - Standard BayesC total scaling: `O(LPN) = O(L * 2,000,000 * 200,000)`
 - JWAS block BayesC main scaling: `O(LP(N/b + b)) = O(L * 2,000,000 * (200,000/447 + 447))`
 
-Dividing these leading arithmetic expressions gives
-`N / (N/b + b) ≈ 224`. This is a theoretical arithmetic operation-count
-comparison between the two JWAS paths, not a measured speedup. Wall-clock
-performance also depends on implementation constants, memory traffic, BLAS,
-hardware, and the workload.
+For a simplified unit-cost proxy, define `C_standard = LPN` and
+`C_block = LP(N/b + b)`. Assigning equal cost to each retained term gives
+`C_standard / C_block = N / (N/b + b) ≈ 224`. This proxy omits constants and
+kernel-specific costs; it is neither a flop count nor a measured speedup.
+Wall-clock performance also depends on memory traffic, BLAS, hardware, and the
+workload.
 
 ### BayesR3 published empirical runtime fit
 
 BayesR3 uses the same block-strategy family but is a distinct BayesR mixture
-implementation with its own repeat schedule. Figure 5 of the BayesR3 paper
-reports that its measured processing time per SNP is proportional to
-`(N + b)/b = N/b + 1`. This is an empirical fit for that implementation, data,
-software libraries and hardware, and the sample-size and block-size regime
-tested in the paper. It is not an operation-count derivation.
+implementation with its own repeat schedule. At fixed `N = 41,925`,
+`P = 400,000`, and chain length `10,000`, Figure 5 of the BayesR3 paper reports
+measured processing time across the tested block sizes and fits processing time
+per SNP as proportional to `(N + b)/b = N/b + 1`. This is an empirical fit for
+that implementation, data, software libraries and hardware, and those tested
+block sizes. It is not an operation-count derivation.
 
 The JWAS operation-count expression above and the BayesR3 empirical fit must
-not be compared coefficient by coefficient or interpreted as a JWAS-versus-
-BayesR3 software benchmark. A software performance comparison would require
+not be compared coefficient by coefficient or interpreted as a software
+benchmark comparison between JWAS and BayesR3. Such a comparison would require
 both implementations to be timed under a controlled benchmark using aligned
 models, chain schedules, data, libraries, and hardware.
 
