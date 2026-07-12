@@ -6,8 +6,6 @@ This terminology describes the shared computational strategy; JWAS does not clai
 
 The default execution schedule remains an exact sequential block sweep. The explicit `independent_blocks=true` option instead selects an approximate parallel schedule.
 For detailed non-block vs block memory accounting, see [Memory Usage](memory_usage.md).
-For a real cluster timing benchmark at `N=50,000` targeting `P=2,000,000` and `chain_length=2000`, see [Benchmark](benchmark.md).
-
 [BayesR3 paper (Methods)](https://www.nature.com/articles/s42003-022-03624-1)
 
 ## Four Independent Choices
