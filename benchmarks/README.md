@@ -153,7 +153,7 @@ If you change target scale, keep calibration sizes feasible for your node memory
 
 ### Farm preset (tested on 2026-02-26)
 
-The settings below were used for the published `Benchmark` doc page and can be used as a known-good starting point on `farm`.
+The settings below were used for the archived calibration report and can be used as a known-good starting point on `farm`.
 
 Common Slurm settings:
 
