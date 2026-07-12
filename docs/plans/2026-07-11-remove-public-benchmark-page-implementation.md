@@ -43,10 +43,13 @@ changed.
 
 ## Verification
 
-The following checks were run from the repository worktree:
+The following commands and results correspond to the documentation correction
+recorded at commit `1b6f9ce7`.
+
+These checks were run from the repository worktree:
 
 ```bash
-git diff --check 6b1cf84e..HEAD
+git diff --check 6b1cf84e..1b6f9ce7
 test -f benchmarks/reports/2026-02-26-fast-block-calibration-and-target-extrapolation.md
 test ! -e docs/src/manual/benchmark.md
 if rg -n -i 'benchmark\.md|\[Benchmark\]|real cluster benchmark|target-scale benchmark' \
@@ -58,12 +61,14 @@ internal report exists, the public source page is absent, and no stale public
 references were found.
 
 ```bash
-/Users/haocheng/.juliaup/bin/julia --project=docs --startup-file=no docs/make.jl
+julia --project=docs --startup-file=no docs/make.jl
 ```
 
 The documentation build exited successfully. Documenter's warning that it
 could not auto-detect a deployment environment and skipped deployment is
-expected for this local build.
+expected for this local build. In the verification environment, `julia` was not
+on `PATH`, so this equivalent command was run with Julia 1.11.7 via
+`/Users/haocheng/.juliaup/bin/julia`.
 
 ```bash
 test ! -e docs/build/manual/benchmark
@@ -77,8 +82,8 @@ label, or target-scale benchmark wording.
 
 ```bash
 git status --short
-git diff --stat 6b1cf84e..HEAD
-git diff 6b1cf84e..HEAD -- docs/make.jl docs/src benchmarks \
+git diff --stat 6b1cf84e..1b6f9ce7
+git diff 6b1cf84e..1b6f9ce7 -- docs/make.jl docs/src benchmarks \
   docs/plans/2026-07-11-remove-public-benchmark-page-plan.md \
   docs/plans/2026-07-11-remove-public-benchmark-page-implementation.md
 ```
