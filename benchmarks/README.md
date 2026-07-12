@@ -85,7 +85,7 @@ julia --project benchmarks/streaming_large_benchmark.jl \
 
 ## Cluster BayesC Benchmarks (Fast-Block vs Non-Block)
 
-This folder also includes Slurm-oriented scripts used for the benchmark page:
+This folder also includes Slurm-oriented scripts used for the archived calibration report:
 
 - `benchmarks/jwas_full_benchmark.jl`
 - `benchmarks/jwas_full_benchmark.sbatch`
