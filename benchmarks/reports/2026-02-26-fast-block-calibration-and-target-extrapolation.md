@@ -1,6 +1,8 @@
-# Benchmark
+# Fast-Block Calibration Timings and Target Extrapolation
 
-This page records a real benchmark run comparing `runMCMC(...; fast_blocks=true)` and `runMCMC(...; fast_blocks=false)` for the same target-scale question:
+This engineering report preserves wall-clock calibration timings measured at `P = 100,000` and `P = 200,000` for `runMCMC(...; fast_blocks=true)` and `runMCMC(...; fast_blocks=false)`. The target values at `P = 2,000,000` and `chain_length = 2000`, including the speed ratio, were extrapolated from those smaller measurements. This is not a direct full-scale benchmark or a general performance guarantee. The two Slurm calibration jobs ran on different CPU node types, so the comparison includes hardware variance.
+
+The target-scale question used:
 
 - `N = 50,000` individuals
 - target `P = 2,000,000` markers
@@ -95,18 +97,18 @@ Estimate wall-clock MCMC time for a single-trait BayesC run at target scale, and
 - `target_hours = 204.261` (about 8.5 days)
 - Replicate-based range: about `701539` to `769141` seconds (`194.9` to `213.7` hours)
 
-## Summary Comparison
+## Extrapolated Target Comparison
 
 | Path | Estimated MCMC time at target (`N=50k`, `P=2M`, `L=2000`) |
 | --- | --- |
 | `fast_blocks=true` | `3449 sec` (`0.958 h`) |
 | `fast_blocks=false` | `735340 sec` (`204.261 h`) |
 
-Approximate speedup from block mode in this benchmark setup: about `213x`.
+The extrapolated speed ratio for block mode in this calibration setup is about `213x`.
 
 ## Notes and Interpretation
 
 - These are empirical estimates from short-chain calibration runs, not exact guarantees.
 - For `fast_blocks=true`, chain interpretation is two-level (outer iterations + inner block repeats).
 - The two Slurm jobs landed on different CPU node types, so absolute times include some hardware variance.
-- Even with that caveat, the gap between block and non-block is very large for this target-scale scenario.
+- Even with that caveat, the extrapolated gap between block and non-block is very large for this target-scale scenario.
