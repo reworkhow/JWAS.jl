@@ -172,6 +172,7 @@ end
                   ## others:
                   center=true,starting_value=false,
                   annotations=false,
+                  copy_genotypes=(method != "BayesC"),
                   storage=:dense)
 * Get marker informtion from a genotype file/matrix. This file needs to be column-wise sorted by marker positions.
 * If `a text file` is provided, the file format should be:
@@ -209,6 +210,13 @@ O3,0,0,2,1,1
 * `storage=:dense` (default) keeps the existing in-memory dense loading behavior.
   `storage=:stream` loads an opt-in packed backend prepared by `prepare_streaming_genotypes`.
 
+* copy_genotypes=false defaults on for BayesC; other methods default to copying. It adopts
+  `double_precision`; imputation and centering may modify the caller's matrix
+  in place. Set `copy_genotypes=true` to preserve the input or convert precision.
+  QC or relationship-matrix construction may still allocate a replacement. Use
+  `quality_control=false` to avoid the QC filtering copy. This option does not
+  affect file, DataFrame, or streaming inputs, which allocate their own storage.
+
 """
 function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32,2},Array{Int64,2}, Array{Int32,2}, Array{Any,2}, DataFrames.DataFrame}, G = false;
                        ## method:
@@ -225,6 +233,7 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
                        center = true, starting_value = false,
                        annotations = false,
                        multi_trait_sampler::Symbol = :I,
+                       copy_genotypes::Bool = method != "BayesC",
                        storage::Symbol = :dense)
     if !(multi_trait_sampler in (:auto, :I, :II))
         error("multi_trait_sampler must be one of :auto, :I, or :II.")
@@ -342,7 +351,14 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
         printstyled("The marker IDs are set to 1,2,...,#markers\n",bold=true)
         obsID     = map(string,string.(1:size(file,1)))
         printstyled("The individual IDs is set to 1,2,...,#observations\n",bold=true)
-        genotypes = map(data_type, convert(Matrix,file))
+        if copy_genotypes
+            genotypes = map(data_type, convert(Matrix,file))
+        else
+            eltype(file) === data_type ||
+                error("copy_genotypes=false requires matrix element type $data_type when double_precision=$double_precision; received $(eltype(file)). Set copy_genotypes=true to allow conversion.")
+            genotypes = file
+            printstyled("JWAS is adopting the supplied genotype matrix without copying it; preprocessing may mutate the caller's matrix.\n", bold=true, color=:yellow)
+        end
     else
         error("The data type is not supported.")
     end

@@ -155,6 +155,8 @@ end
 * Miscellaneous Options
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
+  * shared_genotypes=true defaults on for one dense BayesC term in single- or multi-trait analyses with unit weights. Other methods and unsupported model modes keep copying. Set shared_genotypes=false for noncontiguous/repeated rows.
+  * BayesC block residual updates use in-place BLAS with multipliers matching the genotype element type; floating-point rounding can change seeded trajectories.
   * If `seed`, defaulting to `false`, is provided, a reproducible sequence of numbers will be generated for random number generation.
   * If `big_memory`=true, defaulting to `false`, a machine with  lots of memory is assumed which may speed up the analysis.
   * `fast_blocks` enables block marker updates. It can be `false`, `true`, a numeric block size, or a vector of explicit marker block starts such as `[1, 501, 1201]`.
@@ -190,6 +192,11 @@ function runMCMC(mme::MME,df;
                 big_memory                      = false,
                 double_precision                = false,
                 fast_blocks                     = false,
+                shared_genotypes::Bool          = (
+                    mme.M != 0 && length(mme.M) == 1 &&
+                    only(mme.M).method == "BayesC" &&
+                    only(mme.M).storage_mode == :dense && !only(mme.M).isGRM &&
+                    !single_step_analysis && RRM == false && !heterogeneous_residuals),
                 independent_blocks              = false,
                 memory_guard                    = :error,
                 memory_guard_ratio::Float64     = 0.80,
@@ -205,6 +212,12 @@ function runMCMC(mme::MME,df;
                 estimate_variance               = true,   #this has been moved to build_MME() and set_random()
                 categorical_trait               = false,  #this has been moved to build_model()
                 censored_trait                  = false)  #this has been moved to build_model()
+
+    # Conventional models have no genotype storage to share.
+    shared_genotypes = shared_genotypes && mme.M != 0
+    if shared_genotypes
+        validate_shared_genotypes(mme; single_step_analysis, RRM, double_precision)
+    end
 
     #for deprecated JWAS fucntions
     ############################################################################
@@ -405,11 +418,13 @@ function runMCMC(mme::MME,df;
             end
             printstyled("storage=:stream is enabled; genotype alignment is skipped and original ID order is used.\n",bold=false,color=:green)
         else
-            align_genotypes(mme,output_heritability,single_step_analysis)
+            align_genotypes(mme,output_heritability,single_step_analysis; shared_genotypes)
         end
     end
     # initiate Mixed Model Equations and check starting values
     init_mixed_model_equations(mme,df,starting_value)
+    shared_genotypes && !is_unit_weights(mme.invweights) &&
+        error("shared_genotypes=true currently requires unit residual weights to avoid a weighted genotype copy.")
     if mme.M != 0
         for Mi in mme.M
             if Mi.storage_mode == :stream
@@ -439,6 +454,8 @@ function runMCMC(mme::MME,df;
                                          has_nonunit_weights=has_nonunit_weights,
                                          block_starts=mme.MCMCinfo.fast_blocks,
                                          storage_mode=Mi.storage_mode)
+            retained_extra = shared_genotypes ?
+                max(Int128(genotype_storage_report(Mi).backing_matrix_bytes) - est.bytes_X, Int128(0)) : Int128(0)
             geno_name = (Mi.name == false ? "geno" : string(Mi.name))
             if Mi.storage_mode == :stream
                 context_str =
@@ -457,10 +474,11 @@ function runMCMC(mme::MME,df;
                     "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
             end
 
+            shared_genotypes && (context_str *= ", retained_parent_extra=$(format_bytes_human(retained_extra))")
             check_marker_memory_guard!(;
                                        mode=guard_mode,
                                        ratio=memory_guard_ratio,
-                                       estimated_bytes=est.bytes_total,
+                                       estimated_bytes=est.bytes_total + retained_extra,
                                        total_memory_bytes=total_memory_bytes,
                                        context_string=context_str)
         end

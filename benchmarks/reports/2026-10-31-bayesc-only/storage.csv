@@ -1,0 +1,9 @@
+traits,mode,seed,copied_bytes,shared_bytes,copied_parents,shared_parents
+1,ordinary,73,230272,131584,2,1
+1,ordinary,123,230272,131584,2,1
+1,sequential,73,230272,131584,2,1
+1,sequential,123,230272,131584,2,1
+2,ordinary,73,230272,131584,2,1
+2,ordinary,123,230272,131584,2,1
+2,sequential,73,230272,131584,2,1
+2,sequential,123,230272,131584,2,1

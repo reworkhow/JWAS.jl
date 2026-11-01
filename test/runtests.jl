@@ -68,6 +68,8 @@ println()
     # UNIT TESTS (Always run - fast feedback)
     # ========================================================================
     @testset "Unit Tests" begin
+        include(joinpath(@__DIR__, "unit", "test_bayesc_shared_memory.jl"))
+        include(joinpath(@__DIR__, "unit", "test_bayesc_residual_modes.jl"))
         @testset "Memory Guardrails" begin
             include(joinpath(@__DIR__, "unit", "test_memory_guardrails.jl"))
         end

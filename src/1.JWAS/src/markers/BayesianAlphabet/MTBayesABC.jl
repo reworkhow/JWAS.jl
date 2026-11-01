@@ -212,29 +212,31 @@ end
 #block
 function MTBayesABC_block!(genotypes,ycorr_array,vare,locus_effect_variances,Rinv=ones(eltype(ycorr_array[1]),length(ycorr_array[1])),independent_blocks=false)
     prior, sampler_mode = mt_bayesc_block_context(genotypes, genotypes.ntraits)
+    residual_update! = genotypes.method == "BayesC" ? bayesc_block_residual! :
+        (independent_blocks ? legacy_abc_block_residual! : legacy_mt_abc_block_residual!)
     if sampler_mode == :I
         if independent_blocks == true
             return _MTBayesABC_block_samplerI_independent!(genotypes.MArray,genotypes.mpRinvm,
                                                            genotypes.genotypes,genotypes.MpRinvM,
                                                            ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                                                           locus_effect_variances,prior,Rinv)
+                                                           locus_effect_variances,prior,Rinv;residual_update!)
         end
         return _MTBayesABC_block_samplerI!(genotypes.MArray,genotypes.mpRinvm,
                                            genotypes.genotypes,genotypes.MpRinvM,
                                            ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                                           locus_effect_variances,prior,Rinv)
+                                           locus_effect_variances,prior,Rinv;residual_update!)
     elseif sampler_mode == :II
         state_labels = collect(keys(genotypes.π))
         if independent_blocks == true
             return _MTBayesABC_block_samplerII_independent!(genotypes.MArray,genotypes.mpRinvm,
                                                             genotypes.genotypes,genotypes.MpRinvM,
                                                             ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                                                            locus_effect_variances,state_labels,prior,Rinv)
+                                                            locus_effect_variances,state_labels,prior,Rinv;residual_update!)
         end
         return _MTBayesABC_block_samplerII!(genotypes.MArray,genotypes.mpRinvm,
                                             genotypes.genotypes,genotypes.MpRinvM,
                                             ycorr_array,genotypes.β,genotypes.δ,genotypes.α,vare,
-                                            locus_effect_variances,state_labels,prior,Rinv)
+                                            locus_effect_variances,state_labels,prior,Rinv;residual_update!)
     else
         error("multi_trait_sampler must resolve to :I or :II.")
     end
@@ -245,7 +247,7 @@ function _MTBayesABC_block_samplerI!(XArray,xpRinvx,
                                      wArray,
                                      betaArray,deltaArray,alphaArray,
                                      vare,varEffects,
-                                     prior,Rinvw)
+                                     prior,Rinvw;residual_update! = bayesc_block_residual!)
     nMarkers = length(xpRinvx)
     ntraits  = length(alphaArray)
 
@@ -271,7 +273,8 @@ function _MTBayesABC_block_samplerI!(XArray,xpRinvx,
         for trait = 1:ntraits
             block_rhs!(XpRinvycorr[trait],XArray[i],wArray[trait],Rinvw,unit_weights)
         end
-        oldalphaArray = deepcopy(alphaArray)
+        block_range = start_pos+1:start_pos+block_size
+        oldalphaArray = [copy(view(a,block_range)) for a in alphaArray]
         nreps       = block_size #user-defined nreps=block_size, outer_niter =niter/block_size
         for reps = 1:nreps
             for j = 1:block_size #additional code to save all sampled αs is needed
@@ -326,7 +329,8 @@ function _MTBayesABC_block_samplerI!(XArray,xpRinvx,
             end
         end
         for trait = 1:ntraits
-            wArray[trait][:] = wArray[trait] + XArray[i] * (oldalphaArray[trait] - alphaArray[trait])[(start_pos+1):(start_pos+block_size)]
+            oldalphaArray[trait] .-= view(alphaArray[trait],block_range)
+            residual_update!(wArray[trait],XArray[i],oldalphaArray[trait])
         end
         start_pos += block_size
     end
@@ -337,7 +341,7 @@ function _MTBayesABC_block_samplerI_independent!(XArray,xpRinvx,
                                                  wArray,
                                                  betaArray,deltaArray,alphaArray,
                                                  vare,varEffects,
-                                                 prior,Rinvw)
+                                                 prior,Rinvw;residual_update! = bayesc_block_residual!)
     ntraits  = length(alphaArray)
 
     Rinv     = inv(vare)
@@ -430,7 +434,7 @@ function _MTBayesABC_block_samplerI_independent!(XArray,xpRinvx,
 
     for i in 1:nblocks
         for trait = 1:ntraits
-            mul!(wArray[trait], XArray[i], block_deltas[i][trait], 1.0, 1.0)
+            residual_update!(wArray[trait],XArray[i],block_deltas[i][trait])
         end
     end
     return nothing
@@ -442,7 +446,7 @@ function _MTBayesABC_block_samplerII!(XArray,xpRinvx,
                                       betaArray,deltaArray,alphaArray,
                                       vare,varEffects,
                                       state_labels,
-                                      prior,Rinvw)
+                                      prior,Rinvw;residual_update! = bayesc_block_residual!)
     nMarkers = length(xpRinvx)
     ntraits  = length(alphaArray)
 
@@ -530,7 +534,8 @@ function _MTBayesABC_block_samplerII!(XArray,xpRinvx,
         end
 
         for trait = 1:ntraits
-            wArray[trait][:] = wArray[trait] + XArray[i] * (block_old_alpha[trait] - alphaArray[trait][block_range])
+            block_old_alpha[trait] .-= view(alphaArray[trait],block_range)
+            residual_update!(wArray[trait],XArray[i],block_old_alpha[trait])
         end
         start_pos += block_size
     end
@@ -542,7 +547,7 @@ function _MTBayesABC_block_samplerII_independent!(XArray,xpRinvx,
                                                   betaArray,deltaArray,alphaArray,
                                                   vare,varEffects,
                                                   state_labels,
-                                                  prior,Rinvw)
+                                                  prior,Rinvw;residual_update! = bayesc_block_residual!)
     ntraits  = length(alphaArray)
 
     Rinv     = inv(vare)
@@ -639,7 +644,7 @@ function _MTBayesABC_block_samplerII_independent!(XArray,xpRinvx,
 
     for i in 1:nblocks
         for trait = 1:ntraits
-            mul!(wArray[trait], XArray[i], block_deltas[i][trait], 1.0, 1.0)
+            residual_update!(wArray[trait],XArray[i],block_deltas[i][trait])
         end
     end
     return nothing

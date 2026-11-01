@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-10-31
+
+### BayesC memory and residual updates
+
+- Dense BayesC matrix input defaults to adoption and may be modified during
+  preprocessing; copy_genotypes=true preserves input or permits conversion.
+- Single-/multi-trait BayesC can share contiguous training/prediction/block
+  views. Other methods retain upstream copying defaults.
+- Ordinary and fast-block BayesC, multi-trait samplers I/II, and sequential/
+  independent blocks are supported. Priors and sampling schedules are retained.
+- BayesC blocks use one in-place residual path with genotype-typed BLAS
+  multipliers. Multi-trait sequential updates copy only the current alpha block
+  and do not allocate a residual product workspace. Seeded chains can differ
+  from upstream through floating-point rounding.
+
 ## 2026-05-01
 
 ### Added

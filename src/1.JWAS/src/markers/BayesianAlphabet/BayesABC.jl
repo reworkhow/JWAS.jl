@@ -1,3 +1,14 @@
+# Use the genotype precision for in-place block residual accumulation.
+function bayesc_block_residual!(residual, block, delta)
+    scale = one(eltype(block))
+    mul!(residual,block,delta,scale,scale)
+    nothing
+end
+
+# Other methods share the ABC sampler and retain upstream residual arithmetic.
+legacy_abc_block_residual!(residual, block, delta) = mul!(residual,block,delta,1.0,1.0)
+legacy_mt_abc_block_residual!(residual, block, delta) = (residual[:] = residual + block*delta)
+
 function megaBayesABC!(genotypes,wArray,vare,locus_effect_variances)
     Threads.@threads for i in 1:length(wArray) #ntraits
          BayesABC!(genotypes.mArray,genotypes.mRinvArray,genotypes.mpRinvm,
@@ -112,20 +123,21 @@ function BayesABC_block!(genotypes,ycorr,vare,locus_effect_variances,Rinv=ones(e
     BayesABC_block!(genotypes.MArray,genotypes.mpRinvm,
               genotypes.genotypes,genotypes.MpRinvM,
               ycorr,genotypes.α[1],genotypes.β[1],genotypes.δ[1],vare,
-              locus_effect_variances,genotypes.π,Rinv,independent_blocks)
+              locus_effect_variances,genotypes.π,Rinv,independent_blocks;
+              residual_update! = genotypes.method == "BayesC" ? bayesc_block_residual! : legacy_abc_block_residual!)
 end
 
 function BayesABC_block!(XArray,xpRinvx,
                    X, XpRinvX,
                    yCorr,
                    α,β,δ,
-                   vare,varEffects,π,Rinv,independent_blocks=false)
+                   vare,varEffects,π,Rinv,independent_blocks=false;residual_update! = bayesc_block_residual!)
     if independent_blocks == true
         return BayesABC_block_independent!(XArray,xpRinvx,
                                            X,XpRinvX,
                                            yCorr,
                                            α,β,δ,
-                                           vare,varEffects,π,Rinv)
+                                           vare,varEffects,π,Rinv;residual_update!)
     end
 
     nMarkers      = length(α)
@@ -181,7 +193,7 @@ function BayesABC_block!(XArray,xpRinvx,
         @views begin
             αold_view = view(αold_block,1:block_size)
             αold_view .-= α[block_range]
-            mul!(yCorr,XArray[i],αold_view,1.0,1.0)
+            residual_update!(yCorr,XArray[i],αold_view)
         end
         start_pos += block_size
     end
@@ -191,7 +203,7 @@ function BayesABC_block_independent!(XArray,xpRinvx,
                                      X, XpRinvX,
                                      yCorr,
                                      α,β,δ,
-                                     vare,varEffects,π,Rinv)
+                                     vare,varEffects,π,Rinv;residual_update! = bayesc_block_residual!)
     nMarkers      = length(α)
     pi_vec        = bayesabc_pi_vector(π, nMarkers)
     logPi         = log.(pi_vec)
@@ -249,7 +261,7 @@ function BayesABC_block_independent!(XArray,xpRinvx,
     end
 
     for i in 1:nblocks
-        mul!(yCorr,XArray[i],block_deltas[i],1.0,1.0)
+        residual_update!(yCorr,XArray[i],block_deltas[i])
     end
     return nothing
 end
