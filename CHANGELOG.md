@@ -6,6 +6,10 @@ All notable changes to this project are documented in this file.
 
 ### BayesC no-copy revision
 
+- Infer runMCMC precision from stored genotype terms when double_precision is
+  omitted: Float32 selects false and Float64 selects true. Models without
+  genotypes retain false; mixed genotype precisions require an explicit choice.
+  Explicit true/false behavior and the existing mixed arithmetic are retained.
 - Keep BayesC matrix-adoption and shared-view defaults, enabling automatic
   sharing only when the initial matrix matches the requested run precision.
   Explicit sharing still validates precision; mismatched automatic runs retain

@@ -108,7 +108,7 @@ end
             printout_model_info             = true,
             printout_frequency              = chain_length+1,
             big_memory                      = false,
-            double_precision                = false,
+            double_precision                = infer_run_double_precision(model),
             fast_blocks                     = false,
             independent_blocks              = false,
             memory_guard                    = :error,
@@ -153,6 +153,10 @@ end
     * Individual estimted genetic values and prediction error variances (PEVs) are returned if `outputEBV`=true, defaulting to `true`. Heritability and genetic
     variances are returned if `output_heritability`=`true`, defaulting to `true`. Note that estimation of heritability is computaionally intensive.
 * Miscellaneous Options
+  * When `double_precision` is omitted, run precision follows the genotype matrices: all Float32 uses `false`, all Float64 uses `true`.
+    This checks element types without copying genotype data. Models without genotypes keep `false`; streaming genotypes remain Float32.
+    Mixed Float32/Float64 terms require an explicit choice before run setup. Explicit `true`/`false` preserve existing behavior:
+    `true` can promote genotype matrices to Float64 after the memory precheck; `false` does not downcast existing Float64 matrices.
   * Print out the model information in REPL if `printout_model_info`=true; print out the monte carlo mean in REPL with `printout_frequency`,
     defaulting to `false`.
   * shared_genotypes=true defaults on for one dense BayesC term in single- or multi-trait analyses with unit weights. Other methods and unsupported model modes keep copying. Set shared_genotypes=false for noncontiguous/repeated rows.
@@ -190,7 +194,7 @@ function runMCMC(mme::MME,df;
                 printout_model_info             = true,
                 printout_frequency              = chain_length+1,
                 big_memory                      = false,
-                double_precision                = false,
+                double_precision                = infer_run_double_precision(mme),
                 fast_blocks                     = false,
                 shared_genotypes::Bool          = (
                     mme.M != 0 && length(mme.M) == 1 &&

@@ -2,7 +2,8 @@ using Test, JWAS, DataFrames, CSV, Random, Statistics, LinearAlgebra
 
 function bayesc_memory_case(;traits=1,sampler=:I,precision=Float32,mode="ordinary",
     seed=73,annotated=false,copying=false,upstream=false,
-    n=36,t=24,p=17,outer=200,burnin=50,freq=10,folder=nothing,prediction_all=false)
+    n=36,t=24,p=17,outer=200,burnin=50,freq=10,folder=nothing,prediction_all=false,
+    inherit_run_precision=false)
     rng=MersenneTwister(20261031)
     X=precision.(rand(rng,0:2,n,p))
     ids=["animal_$(lpad(i,4,'0'))" for i in 1:n]
@@ -16,6 +17,7 @@ function bayesc_memory_case(;traits=1,sampler=:I,precision=Float32,mode="ordinar
     R=traits==1 ? 1.0 : [1.0 0.1;0.1 1.0]
     ownership=(!upstream && copying) ? (;copy_genotypes=true) : (;)
     alignment=(!upstream && copying) ? (;shared_genotypes=false) : (;)
+    run_precision=inherit_run_precision ? (;) : (;double_precision=(precision===Float64))
     global bayesc_memory_genotypes=get_genotypes(X,G;method="BayesC",Pi=pi,
         quality_control=false,double_precision=(precision===Float64),
         annotations=annotation,multi_trait_sampler=sampler,ownership...)
@@ -38,7 +40,7 @@ function bayesc_memory_case(;traits=1,sampler=:I,precision=Float32,mode="ordinar
     outdir=folder===nothing ? joinpath(mktempdir(),"mcmc") : folder
     output=runMCMC(model,ph;chain_length=(fast===false ? outer : outer*fast),
         burnin,output_samples_frequency=freq,seed,fast_blocks=fast,
-        independent_blocks=(mode=="independent"),double_precision=(precision===Float64),
+        independent_blocks=(mode=="independent"),run_precision...,
         output_folder=outdir,output_heritability=false,printout_model_info=false,
         printout_frequency=outer+1,alignment...)
     animals=DataFrame[]
@@ -64,7 +66,7 @@ function bayesc_memory_case(;traits=1,sampler=:I,precision=Float32,mode="ordinar
         @test storage.output_shares_training_parent && storage.all_blocks_share_training
         @test g.genotypes isa StridedMatrix{precision}
     end
-    (;ebv,marker,storage,model,g,outdir)
+    (;ebv,marker,storage,model,g,outdir,input=X)
 end
 
 function compare_bayesc_memory(a,b)

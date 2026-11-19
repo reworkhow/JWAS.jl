@@ -30,7 +30,8 @@ geno = get_genotypes(X, G; method="BayesC", quality_control=false,
 # Set geno.obsID and geno.markerID to the input IDs.
 model = build_model("y1 = intercept + geno\ny2 = intercept + geno", R)
 outputEBV(model, prediction_ids)
-result = runMCMC(model, phenotypes; double_precision=false,
+# Omitting double_precision inherits the genotype matrix's Float32 precision.
+result = runMCMC(model, phenotypes;
     fast_blocks=100, output_folder="bayesc_shared")
 report = JWAS.genotype_storage_report(only(model.M))
 @assert report.backing_matrix_count == 1
@@ -42,20 +43,32 @@ priors G, R and Pi as required by the existing upstream API.
 
 ## Precision and conversion
 
-Match double_precision in get_genotypes and runMCMC to use shared storage.
-For a Float64 matrix, set double_precision=true in both calls. If a genotype
-matrix was imported with the default Float32 precision and runMCMC requests
-double_precision=true, automatic sharing is disabled and the existing Float64
-conversion and copying path is used. Explicit shared_genotypes=true still
-rejects a precision mismatch before conversion.
+get_genotypes defaults to double_precision=false, producing Float32 genotype
+storage. When double_precision is omitted from runMCMC, the run inherits the
+stored genotype precision: all Float32 terms select false and all Float64 terms
+select true. Thus, for a Float64 matrix, set double_precision=true at import and
+omit it from runMCMC; supported shared views can retain the imported parent
+without a precision-conversion copy.
 
-The default double_precision=false selects Float32 for genotype storage, marker
-effect arrays and the main residual buffer. The analysis uses mixed arithmetic:
-inclusion probabilities, annotation state and some multi-trait workspaces use
-Float64. Multi-trait mixed-model equations can also use Float64 even when marker
-effects remain Float32. Sampled BayesC marker and residual variances are cast
-back to Float32 when double_precision=false. This revision preserves that
-existing precision behavior.
+Models without genotype terms retain false as the default. Streaming genotype
+storage uses Float32 and also selects false. Models with a mixture of Float32
+and Float64 genotype terms require an explicit double_precision choice rather
+than an implicit conversion.
+
+Explicit true or false keeps its existing behavior. In particular, explicitly
+requesting double_precision=true for an imported Float32 matrix disables
+automatic sharing and uses the guarded Float64 conversion and copying path.
+Explicit shared_genotypes=true still rejects a precision mismatch before
+conversion.
+
+With a Float32 import and the inferred run setting, genotype storage, marker
+effect arrays and the main residual buffer use Float32. The analysis uses mixed
+arithmetic: inclusion probabilities, annotation state and some multi-trait
+workspaces use Float64. Multi-trait mixed-model equations can also use Float64
+even when marker effects remain Float32. Sampled BayesC marker and residual
+variances are cast back to Float32 when the resolved run setting is false.
+Inferring the run setting preserves the existing arithmetic of the selected
+precision mode; it does not make every computation use one floating-point type.
 
 ## Residual updates
 

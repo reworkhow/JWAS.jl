@@ -308,6 +308,23 @@ function contiguous_genotype_rows(desired_ids::AbstractVector, genotype_ids::Abs
     first_row:last(rows)
 end
 
+"""Infer the default run precision from genotype element types without reading data."""
+function infer_run_double_precision(mme::MME)
+    (mme.M == 0 || isempty(mme.M)) && return false
+    genotype_type = nothing
+    for Mi in mme.M
+        current_type = eltype(Mi.genotypes)
+        current_type in (Float32, Float64) ||
+            error("Cannot infer run precision: unsupported genotype precision $current_type. Expected Float32 or Float64 genotype storage.")
+        if genotype_type === nothing
+            genotype_type = current_type
+        elseif current_type !== genotype_type
+            error("Cannot infer run precision from mixed genotype precision (Float32 and Float64). Set double_precision=true or false explicitly; true can allocate Float64 genotype buffers.")
+        end
+    end
+    genotype_type === Float64
+end
+
 function validate_shared_genotypes(mme::MME; single_step_analysis=false, RRM=false,
                                    double_precision=false)
     mme.M != 0 && length(mme.M) == 1 ||
