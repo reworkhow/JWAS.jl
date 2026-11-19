@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-11-18
+
+### BayesC no-copy revision
+
+- Keep BayesC matrix-adoption and shared-view defaults, enabling automatic
+  sharing only when the initial matrix matches the requested run precision.
+  Explicit sharing still validates precision; mismatched automatic runs retain
+  the existing conversion and copying path.
+- Check known retained genotype buffers plus the Float64 destination before
+  run-time conversion, using the existing memory guard options. Dense estimates
+  use the actual stored precision.
+- Keep the genotype matrix when all SNPs pass QC; actual SNP removal still
+  allocates a filtered matrix. Document mixed precision and the limits of dense
+  import and conversion memory checks.
+
 ## 2026-10-31
 
 ### BayesC memory and residual updates

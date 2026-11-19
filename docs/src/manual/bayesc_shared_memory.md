@@ -6,31 +6,56 @@ I and II and sequential/independent blocks are supported.
 
 For matching-precision matrix input, BayesC defaults to copy_genotypes=false.
 Imputation and centering can modify the input. Use copy_genotypes=true to retain
-caller ownership or permit precision conversion. File/DataFrame imports retain
-their existing allocation behavior; QC filtering can still allocate a replacement.
+the original input or permit precision conversion. With quality_control=true,
+JWAS keeps the genotype matrix when every SNP passes QC. Removing any SNP still
+allocates a filtered matrix. File/DataFrame imports retain their existing loading
+and intermediate allocations.
 
-BayesC defaults to shared_genotypes=true for one dense genotype term, matching
-precision, standard non-single-step/non-RRM analysis, and unit residual weights.
+Use quality_control=false only when missing genotypes and marker filtering have
+already been handled; it skips JWAS's imputation and marker QC checks.
+
+BayesC automatically enables shared_genotypes for one dense genotype term whose
+initial Matrix precision matches the requested run precision, in a standard
+non-single-step/non-RRM analysis with unit residual weights.
 Training and prediction selections must each be contiguous and ordered in
 genotype order, without duplicates. Other methods and unsupported model modes
 retain upstream copying defaults. Use shared_genotypes=false for noncontiguous
 or repeated records. Traits can have different missing phenotypes within the
 common training rows; prediction-only animals can have all traits missing.
 
-    # X is Matrix{Float32}; rows are ordered training first, prediction-only last.
-    geno = get_genotypes(X, G; method="BayesC", quality_control=false,
-        double_precision=false)
-    # Set geno.obsID and geno.markerID to the input IDs.
-    model = build_model("y1 = intercept + geno\ny2 = intercept + geno", R)
-    outputEBV(model, prediction_ids)
-    result = runMCMC(model, phenotypes; double_precision=false,
-        fast_blocks=100, output_folder="bayesc_shared")
-    report = JWAS.genotype_storage_report(only(model.M))
-    @assert report.backing_matrix_count == 1
+```julia
+# X is Matrix{Float32}; rows are ordered training first, prediction-only last.
+geno = get_genotypes(X, G; method="BayesC", quality_control=false,
+    double_precision=false)
+# Set geno.obsID and geno.markerID to the input IDs.
+model = build_model("y1 = intercept + geno\ny2 = intercept + geno", R)
+outputEBV(model, prediction_ids)
+result = runMCMC(model, phenotypes; double_precision=false,
+    fast_blocks=100, output_folder="bayesc_shared")
+report = JWAS.genotype_storage_report(only(model.M))
+@assert report.backing_matrix_count == 1
+```
 
 Use fast_blocks=false for the ordinary sampler and multi_trait_sampler=:II
 in get_genotypes to select multi-trait sampler II. Set single-/multi-trait
 priors G, R and Pi as required by the existing upstream API.
+
+## Precision and conversion
+
+Match double_precision in get_genotypes and runMCMC to use shared storage.
+For a Float64 matrix, set double_precision=true in both calls. If a genotype
+matrix was imported with the default Float32 precision and runMCMC requests
+double_precision=true, automatic sharing is disabled and the existing Float64
+conversion and copying path is used. Explicit shared_genotypes=true still
+rejects a precision mismatch before conversion.
+
+The default double_precision=false selects Float32 for genotype storage, marker
+effect arrays and the main residual buffer. The analysis uses mixed arithmetic:
+inclusion probabilities, annotation state and some multi-trait workspaces use
+Float64. Multi-trait mixed-model equations can also use Float64 even when marker
+effects remain Float32. Sampled BayesC marker and residual variances are cast
+back to Float32 when double_precision=false. This revision preserves that
+existing precision behavior.
 
 ## Residual updates
 
@@ -44,7 +69,28 @@ or replace it. Ordinary marker updates retain their existing arithmetic.
 Different floating-point rounding from upstream can alter seeded stochastic
 trajectories. Prediction formulas, priors and sampling schedules are unchanged.
 
-Views keep the entire genotype parent alive. Memory reports count unique parents
-and block Gram caches; they do not measure peak process RSS or other model state.
-The memory guard includes the full retained parent. No out-of-core storage,
-prediction formula, prior or sampling-schedule change is introduced.
+## Memory accounting and limits
+
+Views keep the entire genotype parent alive. Memory reports count unique dense
+genotype parents and block Gram caches separately; they do not measure peak
+process RSS or all other model state. Dense memory estimates use the actual
+stored element type, and the existing guard after alignment includes the full
+retained parent for shared genotypes.
+
+Before a requested Float64 genotype conversion, an additional check counts the
+known unique retained dense genotype parents plus the new Float64 destination.
+It uses memory_guard and memory_guard_ratio: :error stops before allocating the
+destination when the estimate exceeds the threshold, :warn reports the estimate
+and continues, and :off skips enforcement. This check covers known genotype
+buffers rather than total available memory or peak RSS.
+
+For example, 50,000 individuals by one million SNPs require 200 GB for one
+Float32 matrix or 400 GB for one Float64 matrix (decimal units). Converting the
+Float32 matrix while retaining its source requires at least 600 GB for those
+two buffers alone. Loading intermediates, actual SNP filtering, alignment
+copies, block caches and other model state can increase the total.
+
+Neither guard protects the earlier dense file import or its intermediate
+allocations from running out of memory. Efficient CSV ingestion and avoiding
+copies when SNPs are actually removed require separate changes. The shared
+dense path does not provide out-of-core storage.
