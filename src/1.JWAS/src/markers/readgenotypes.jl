@@ -405,7 +405,9 @@ function get_genotypes(file::Union{AbstractString,Array{Float64,2},Array{Float32
          select1   = MAF .< vec(p) .< 1-MAF
          select2   = vec(var(genotypes,dims=1)) .!= 0
          select    = select1 .& select2
-         genotypes = genotypes[:,select]
+         if !all(select)
+             genotypes = genotypes[:,select]
+         end
          p         = p[:,select]
          markerID  = markerID[select]
          if annotation_matrix !== false

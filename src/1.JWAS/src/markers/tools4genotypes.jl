@@ -334,19 +334,46 @@ function dense_genotype_parent(matrix::AbstractMatrix)
     root
 end
 
-"""Count actual unique dense parent buffers retained by a genotype term."""
-function genotype_storage_report(Mi::Genotypes)
+function retained_dense_genotype_parents(genotype_terms)
     parents = IdDict{Any,Nothing}()
     function register(matrix)
         matrix isa AbstractMatrix || return
         parents[dense_genotype_parent(matrix)] = nothing
     end
-    register(Mi.genotypes)
-    register(Mi.output_genotypes)
-    blocks = Mi.MArray === false ? () : Mi.MArray
-    for block in blocks
-        register(block)
+    for Mi in genotype_terms
+        Mi.storage_mode == :dense || continue
+        register(Mi.genotypes)
+        register(Mi.output_genotypes)
+        if Mi.MArray !== false
+            for block in Mi.MArray
+                register(block)
+            end
+        end
     end
+    parents
+end
+
+"""Estimate retained genotype parents plus new buffers for precision conversion.
+
+This is a known-buffer estimate, not a bound on total process memory. Existing
+caller buffers outside the genotype terms and other model allocations are excluded.
+"""
+function estimate_genotype_precision_conversion(genotype_terms; target_type=Float64)
+    parents = retained_dense_genotype_parents(genotype_terms)
+    retained_bytes = sum(matrix -> Int128(sizeof(matrix)), keys(parents); init=Int128(0))
+    destination_bytes = Int128(0)
+    for Mi in genotype_terms
+        if Mi.storage_mode == :dense && eltype(Mi.genotypes) !== target_type
+            destination_bytes += Int128(length(Mi.genotypes)) * sizeof(target_type)
+        end
+    end
+    (; retained_bytes, destination_bytes, peak_bytes=retained_bytes + destination_bytes)
+end
+
+"""Count actual unique dense parent buffers retained by a genotype term."""
+function genotype_storage_report(Mi::Genotypes)
+    parents = retained_dense_genotype_parents((Mi,))
+    blocks = Mi.MArray === false ? () : Mi.MArray
     shared_output = Mi.output_genotypes isa AbstractMatrix &&
                     dense_genotype_parent(Mi.genotypes) === dense_genotype_parent(Mi.output_genotypes)
     all_blocks_shared = all(block -> dense_genotype_parent(block) === dense_genotype_parent(Mi.genotypes), blocks)

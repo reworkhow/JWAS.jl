@@ -196,6 +196,7 @@ function runMCMC(mme::MME,df;
                     mme.M != 0 && length(mme.M) == 1 &&
                     only(mme.M).method == "BayesC" &&
                     only(mme.M).storage_mode == :dense && !only(mme.M).isGRM &&
+                    only(mme.M).genotypes isa Matrix{double_precision ? Float64 : Float32} &&
                     !single_step_analysis && RRM == false && !heterogeneous_residuals),
                 independent_blocks              = false,
                 memory_guard                    = :error,
@@ -369,6 +370,19 @@ function runMCMC(mme::MME,df;
     end
     if double_precision == true
         if mme.M != 0
+            conversion_memory = estimate_genotype_precision_conversion(mme.M)
+            if conversion_memory.destination_bytes > 0
+                guard_mode = (memory_guard isa Symbol) ? memory_guard : Symbol(memory_guard)
+                check_marker_memory_guard!(;
+                    mode=guard_mode,
+                    ratio=memory_guard_ratio,
+                    estimated_bytes=conversion_memory.peak_bytes,
+                    total_memory_bytes=Sys.total_memory(),
+                    context_string="genotype precision conversion to Float64, " *
+                        "retained_dense_parents=$(format_bytes_human(conversion_memory.retained_bytes)), " *
+                        "destination=$(format_bytes_human(conversion_memory.destination_bytes)); " *
+                        "known genotype buffers only, not total process memory")
+            end
             for Mi in mme.M
                 if Mi.storage_mode == :dense
                     Mi.genotypes = tofloat64_if_needed(Mi.genotypes)
@@ -444,11 +458,11 @@ function runMCMC(mme::MME,df;
     #   :off => skip check).
     if mme.M != 0
         guard_mode = (memory_guard isa Symbol) ? memory_guard : Symbol(memory_guard)
-        bytes_per_value = (double_precision == true ? 8 : 4)
         has_nonunit_weights = any(mme.invweights .!= one(eltype(mme.invweights)))
         total_memory_bytes = Sys.total_memory()
 
         for Mi in mme.M
+            bytes_per_value = Mi.storage_mode == :stream ? sizeof(Float32) : sizeof(eltype(Mi.genotypes))
             est = estimate_marker_memory(Mi.nObs,Mi.nMarkers;
                                          element_bytes=bytes_per_value,
                                          has_nonunit_weights=has_nonunit_weights,
@@ -466,7 +480,7 @@ function runMCMC(mme::MME,df;
                     "xpRinvx=$(format_bytes_human(est.bytes_xpRinvx))"
             else
                 context_str =
-                    "geno=$geno_name, storage=:dense, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=$(double_precision ? "Float64" : "Float32"), "*
+                    "geno=$geno_name, storage=:dense, nObs=$(Mi.nObs), nMarkers=$(Mi.nMarkers), precision=$(eltype(Mi.genotypes)), "*
                     "X=$(format_bytes_human(est.bytes_X)), "*
                     "xRinvArray=$(format_bytes_human(est.bytes_xRinvArray)), "*
                     "XRinvArray=$(format_bytes_human(est.bytes_XRinvArray)), "*
