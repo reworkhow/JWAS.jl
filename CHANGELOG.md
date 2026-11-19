@@ -2,6 +2,40 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-11-18
+
+### BayesC no-copy revision
+
+- Infer runMCMC precision from stored genotype terms when double_precision is
+  omitted: Float32 selects false and Float64 selects true. Models without
+  genotypes retain false; mixed genotype precisions require an explicit choice.
+  Explicit true/false behavior and the existing mixed arithmetic are retained.
+- Keep BayesC matrix-adoption and shared-view defaults, enabling automatic
+  sharing only when the initial matrix matches the requested run precision.
+  Explicit sharing still validates precision; mismatched automatic runs retain
+  the existing conversion and copying path.
+- Check known retained genotype buffers plus the Float64 destination before
+  run-time conversion, using the existing memory guard options. Dense estimates
+  use the actual stored precision.
+- Keep the genotype matrix when all SNPs pass QC; actual SNP removal still
+  allocates a filtered matrix. Document mixed precision and the limits of dense
+  import and conversion memory checks.
+
+## 2026-10-31
+
+### BayesC memory and residual updates
+
+- Dense BayesC matrix input defaults to adoption and may be modified during
+  preprocessing; copy_genotypes=true preserves input or permits conversion.
+- Single-/multi-trait BayesC can share contiguous training/prediction/block
+  views. Other methods retain upstream copying defaults.
+- Ordinary and fast-block BayesC, multi-trait samplers I/II, and sequential/
+  independent blocks are supported. Priors and sampling schedules are retained.
+- BayesC blocks use one in-place residual path with genotype-typed BLAS
+  multipliers. Multi-trait sequential updates copy only the current alpha block
+  and do not allocate a residual product workspace. Seeded chains can differ
+  from upstream through floating-point rounding.
+
 ## 2026-05-01
 
 ### Added

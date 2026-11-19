@@ -106,7 +106,7 @@ mutable struct Genotypes
   alleleFreq
   sum2pq::AbstractFloat
   centered::Bool
-  genotypes::Union{Array{Float64,2},Array{Float32,2}}
+  genotypes::AbstractMatrix{<:AbstractFloat}
   nLoci             #number of markers included in the model
   ntraits           #number of traits included in the model
 

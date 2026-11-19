@@ -1,0 +1,35 @@
+{
+  "source_fingerprint_sha256": "05bb8345b24a74ffd79c08f1fb08f83ab2d872c8df70b7ffea462372e45dcb8d",
+  "source_path": "/Users/haocheng/Github/JWAS.jl/.worktrees/pr-175-no-copy-fixes/src/JWAS.jl",
+  "git_head": "2de114ef501100cf5b4ab77ee6873a06e03fbe06",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "python": "3.13.4",
+  "sizes": [
+    [
+      128,
+      257
+    ],
+    [
+      512,
+      1025
+    ],
+    [
+      2048,
+      4097
+    ]
+  ],
+  "seeds": [
+    73,
+    123
+  ],
+  "outer": 200,
+  "burnin": 50,
+  "block_size": 64,
+  "workers": 2,
+  "case_count": 36,
+  "comparison_count": 24,
+  "elapsed_seconds": 563.2659656670003,
+  "execution_mode": "measure",
+  "rss_units": "bytes; Sys.maxrss() process-lifetime maximum, including startup/JIT/fixture generation",
+  "all_comparisons_pass": true
+}
